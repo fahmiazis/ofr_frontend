@@ -11,7 +11,7 @@ import { SiReason } from 'react-icons/si'
 import { BsClipboardData, BsHouseDoor, BsFileCheck } from 'react-icons/bs'
 import { GiFamilyTree } from 'react-icons/gi'
 import { MdKeyboardArrowLeft, MdKeyboardArrowDown } from 'react-icons/md'
-import { AiFillSetting, AiOutlineClockCircle, AiOutlineUnlock, AiOutlineMenu } from 'react-icons/ai'
+import { AiFillSetting, AiOutlineClockCircle, AiOutlineUnlock, AiOutlineMenu, AiFillDashboard } from 'react-icons/ai'
 import { GrDocumentVerified } from 'react-icons/gr'
 import { useHistory } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
@@ -44,6 +44,10 @@ function Sidebar(props) {
                 <button className="menuSides" onClick={() => goHome('')}>
                     <AiFillHome size={20} className="iconSide" />
                     <text className="txtMenu">Home</text>
+                </button>
+                <button className="menuSides" onClick={() => goHome('dashboard')}>
+                    <AiFillDashboard size={20} className="iconSide" />
+                    <text className="txtMenu">Dashboard</text>
                 </button>
                 <button className="menuSides" onClick={() => goHome('navklaim')}>
                     <FaHandshake size={20} className="iconSide" />
@@ -86,6 +90,10 @@ function Sidebar(props) {
                 <button onClick={() => goHome('bank')} className={stile.btnSide}>
                     <RiBankCardFill size={20} className="mr-2"/>
                     Master Bank
+                </button>
+                <button onClick={() => goHome('rekening')} className={stile.btnSide}>
+                    <RiBankCardFill size={20} className="mr-2"/>
+                    Master Rekening
                 </button>
                 <button onClick={() => goHome('menu')} className={stile.btnSide}>
                     <AiOutlineMenu size={20} className="mr-2"/>

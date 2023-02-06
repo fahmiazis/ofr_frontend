@@ -7,33 +7,32 @@ import PrivateRoute from './components/PrivateRoute'
 
 import Login from './pages/Login'
 import Home from './pages/Home'
-import Tespeng from './pages/Pengadaan2'
-import EditEksekusi from './pages/EditEksekusi'
-import NavStock from './pages/NavStock'
-import Sidebar from './components/Sidebar'
 import Notif from './pages/Notif'
-import TrackingStock from './pages/TrackingStock'
+import Dashboard from './pages/Dashboard'
 //Klaim
-import NavKlaim from './pages/NavKlaim'
-import Klaim from './pages/Klaim'
-import CartKlaim from './pages/CartKlaim'
-import VerifFinanceKlaim from './pages/VerifFinanceKlaim'
-import RevisiKlaim from './pages/RevisiKlaim'
+import NavKlaim from './pages/Klaim/NavKlaim'
+import Klaim from './pages/Klaim/Klaim'
+import CartKlaim from './pages/Klaim/CartKlaim'
+import VerifFinanceKlaim from './pages/Klaim/VerifFinanceKlaim'
+import RevisiKlaim from './pages/Klaim/RevisiKlaim'
+import ReportKlaim from './pages/Klaim/ReportKlaim'
+import AjuanBayarKlaim from './pages/Klaim/AjuanBayarKlaim'
 
 //Operasional
-import NavOps from './pages/NavOps'
-import Operasional from './pages/Operasional'
-import CartOps from './pages/CartOps'
+import NavOps from './pages/Operasional/NavOps'
+import Operasional from './pages/Operasional/Operasional'
+import CartOps from './pages/Operasional/CartOps'
 
 //Master
-import MasterDepo from './pages/MasterDepo'
-import MasterDokumen from './pages/MasterDokumen'
-import MasterCoa from './pages/MasterCoa'
-import MasterBank from './pages/MasterBank'
-import MasterUser from './pages/MasterUser'
-import Approve from './pages/Approve'
-import MasterMenu from './pages/MasterMenu'
-import MasterReason from './pages/MasterReason'
+import MasterDepo from './pages/Master/MasterDepo'
+import MasterDokumen from './pages/Master/MasterDokumen'
+import MasterCoa from './pages/Master/MasterCoa'
+import MasterBank from './pages/Master/MasterBank'
+import MasterUser from './pages/Master/MasterUser'
+import Approve from './pages/Master/Approve'
+import MasterMenu from './pages/Master/MasterMenu'
+import MasterReason from './pages/Master/MasterReason'
+import MasterRekening from './pages/Master/MasterRekening'
 
 //For Tes
 import Tes from './pages/Tes'
@@ -51,22 +50,12 @@ class App extends Component {
         <BrowserRouter>
             <Switch>
                 <Route path='/login' exact component={Login} />
-                <Route path='/side' exact component={Sidebar} />
                 <Route path='/tes' exact component={Tes} />
                 <PrivateRoute path='/' exact>
                     <Home />
                 </PrivateRoute>
-                <PrivateRoute path='/pengadaan'>
-                    <Tespeng />
-                </PrivateRoute>
-                <PrivateRoute path='/navstock'>
-                    <NavStock />
-                </PrivateRoute>
-                <PrivateRoute path='/editeks'>
-                    <EditEksekusi />
-                </PrivateRoute>
-                <PrivateRoute path='/trackstock'>
-                    <TrackingStock />
+                <PrivateRoute path='/dashboard'>
+                    <Dashboard />
                 </PrivateRoute>
                 <PrivateRoute path='/notif'>
                     <Notif />
@@ -87,6 +76,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/revklm'>
                     <RevisiKlaim />
+                </PrivateRoute>
+                <PrivateRoute path='/repklm'>
+                    <ReportKlaim />
                 </PrivateRoute>
 
                 {/* Operasional */}
@@ -124,6 +116,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/dokumen'>
                     <MasterDokumen />
+                </PrivateRoute>
+                <PrivateRoute path='/rekening'>
+                    <MasterRekening />
                 </PrivateRoute>
 
             </Switch>

@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/alt-text */
 import React, { Component } from 'react'
-import Sidebar from '../components/Sidebar'
+import Sidebar from '../../components/Sidebar'
 import {VscAccount} from 'react-icons/vsc'
 import { Row, DropdownItem, UncontrolledDropdown, DropdownToggle, DropdownMenu, Button,
     Modal, ModalHeader, ModalBody, Input } from 'reactstrap'
@@ -9,15 +9,14 @@ import {FaFileSignature} from 'react-icons/fa'
 import {BsBell, BsFillCircleFill} from 'react-icons/bs'
 import moment from 'moment'
 import {connect} from 'react-redux'
-import auth from '../redux/actions/auth'
-import user from '../redux/actions/user'
+import auth from '../../redux/actions/auth'
+import user from '../../redux/actions/user'
 // import notif from '../redux/actions/notif'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import '../assets/css/style.css'
-import Bell from '../components/Bell'
-import Account from '../components/Account'
-import style from '../assets/css/input.module.css'
+import Bell from '../../components/Bell'
+import Account from '../../components/Account'
+import style from '../../assets/css/input.module.css'
 
 const changeSchema = Yup.object().shape({
     current_password: Yup.string().required('must be filled'),
@@ -49,7 +48,7 @@ class NavStock extends Component {
         const fullname = localStorage.getItem('fullname')
         const id = localStorage.getItem('id')
         const level = localStorage.getItem('level')
-        this.getNotif()
+        // this.getNotif()
         if (email === 'null' || email === '' || fullname === 'null' || fullname === '') {
             if (id !== null && level !== '5') {
                 this.openModalEdit()
@@ -118,7 +117,8 @@ class NavStock extends Component {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
         const {dataNull} = this.state
-        const dataNotif = this.props.notif.data
+        // const dataNotif = this.props.notif.data
+        const dataNotif = []
         return (
             <>
             <div className="bodyHome">
@@ -134,38 +134,64 @@ class NavStock extends Component {
                         </div>
                     </div>
                     <div>
-                        <div className="titHome">Stock opname menu</div>
+                        <div className="titHome">Klaim menu</div>
                         <div className="txtChoose">Please select an option</div>
                         <div className="mainBody">
-                            <button className="cardNav1" onClick={() => this.goRoute('stock')}>
-                                <div className="titCard">
-                                    Pengajuan stock opname
-                                </div>
-                            </button>
-                            <button className="cardNav1" onClick={() => this.goRoute('trackstock')}>
-                                <div className="titCard">
-                                    Tracking stock opname
-                                </div>
-                            </button>
                             {level === '5' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('editstock')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('klaim')}>
                                         <div className="titCard">
-                                            Revisi stock opname
+                                            Pengajuan Klaim
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
+                                        <div className="titCard">
+                                            Revisi Klaim
+                                        </div>
+                                    </button>
+                                </>
+                            ) : level === '2' ? (
+                                <>
+                                    <button className="cardNav1" onClick={() => this.goRoute('veriffinklm')}>
+                                        <div className="titCard">
+                                            Verifikasi Finance
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
+                                        <div className="titCard">
+                                            Revisi Klaim
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('listklm')}>
+                                        <div className="titCard">
+                                            List Ajuan Bayar
+                                        </div>
+                                    </button>
+                                    {/* <button className="cardNav1" onClick={() => this.goRoute('repklm')}>
+                                        <div className="titCard">
+                                            Report Klaim
+                                        </div>
+                                    </button> */}
+                                </>
+                            ) : level === '3' ? (
+                                <>
+                                    <button className="cardNav1" onClick={() => this.goRoute('veriffinklm')}>
+                                        <div className="titCard">
+                                            Verifikasi Klaim
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
+                                        <div className="titCard">
+                                            Revisi Klaim
                                         </div>
                                     </button>
                                 </>
                             ) : (
-                                <div></div>
-                            )}
-                            {level === '2' ? (
-                                <button className="cardNav1" onClick={() => this.goRoute('repstock')}>
+                                <button className="cardNav1" onClick={() => this.goRoute('klaim')}>
                                     <div className="titCard">
-                                        Report stock opname
+                                        Pengajuan Klaim
                                     </div>
                                 </button>
-                            ) : (
-                                <div></div>
                             )}
                         </div>
                     </div>

@@ -2,35 +2,37 @@ import React, { Component } from 'react'
 import {  NavbarBrand, DropdownToggle, DropdownMenu,
     DropdownItem, Table, ButtonDropdown, Input, Button,
     Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
-import style from '../assets/css/input.module.css'
-import {FaSearch, FaCoaCircle, FaBars} from 'react-icons/fa'
+import style from '../../assets/css/input.module.css'
+import {FaSearch, FaUserCircle, FaBars} from 'react-icons/fa'
 import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
-import depo from '../redux/actions/depo'
-import user from '../redux/actions/user'
-import coa from '../redux/actions/coa'
+import depo from '../../redux/actions/depo'
+import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import auth from '../redux/actions/auth'
+import auth from '../../redux/actions/auth'
 import {default as axios} from 'axios'
-import Sidebar from "../components/Header";
-import MaterialTitlePanel from "../components/material_title_panel";
-import SidebarContent from "../components/sidebar_content";
-import NavBar from '../components/NavBar'
+import Sidebar from "../../components/Header";
+import MaterialTitlePanel from "../../components/material_title_panel";
+import SidebarContent from "../../components/sidebar_content";
+import NavBar from '../../components/NavBar'
 const {REACT_APP_BACKEND_URL} = process.env
 
-const coaSchema = Yup.object().shape({
-    no_coa: Yup.number().required(),
-    nama_coa: Yup.string().required(),
-    nama_subcoa: Yup.string().required(),
-    tipe: Yup.string().required()
+const userSchema = Yup.object().shape({
+    username: Yup.string().required(),
+    fullname: Yup.string().required(),
+    email: Yup.string().email().required(),
+    password: Yup.string().required(),
+    depo: Yup.string(),
+    level: Yup.number('must be filled').required('must be filled')
 });
 
-const coaEditSchema = Yup.object().shape({
-    no_coa: Yup.number().required(),
-    nama_coa: Yup.string().required(),
-    nama_subcoa: Yup.string().required(),
-    tipe: Yup.string().required()
+const userEditSchema = Yup.object().shape({
+    username: Yup.string().required(),
+    fullname: Yup.string().required(),
+    email: Yup.string().email().required(),
+    depo: Yup.string(),
+    level: Yup.number().required()
 });
 
 const changeSchema = Yup.object().shape({
@@ -38,7 +40,7 @@ const changeSchema = Yup.object().shape({
     new_password: Yup.string().required('must be filled')
 });
 
-class MasterCoa extends Component {
+class MasterUser extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -73,8 +75,7 @@ class MasterCoa extends Component {
             modalReset: false,
             filter: null,
             filterName: 'All',
-            modalDel: false,
-            page: 1
+            modalDel: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -109,7 +110,7 @@ class MasterCoa extends Component {
      }
 
     DownloadMaster = () => {
-        const {link} = this.props.coa
+        const {link} = this.props.user
         axios({
             url: `${link}`,
             method: 'GET',
@@ -118,7 +119,7 @@ class MasterCoa extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master coa.xlsx"); //or any other extension
+            link.setAttribute('download', "master user.xlsx"); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -156,50 +157,60 @@ class MasterCoa extends Component {
 
     DownloadTemplate = () => {
         axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/coa.xlsx`,
+            url: `${REACT_APP_BACKEND_URL}/masters/user.xlsx`,
             method: 'GET',
             responseType: 'blob',
         }).then((response) => {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "coa.xlsx");
+            link.setAttribute('download', "user.xlsx");
             document.body.appendChild(link);
             link.click();
         });
     }
 
-    addCoa = async (values) => {
+    addUser = async (values) => {
         const token = localStorage.getItem("token")
-        await this.props.addCoa(token, values)
-        const {isAdd} = this.props.coa
+        const destruct = values.depo === "-Pilih Depo-" ? ["", ""] : values.depo.split('-') 
+        const data = {
+            username: values.username,
+            fullname: values.fullname,
+            password: values.password,
+            level: values.level,
+            kode_plant: destruct[0],
+            email: values.email,
+            status: values.status
+        }
+        await this.props.addUser(token, data)
+        const {isAdd} = this.props.user
         if (isAdd) {
             this.setState({confirm: 'add'})
             this.openConfirm()
-            await this.getDataCount()
+            await this.getDataUser()
             this.openModalAdd()
         }
     }
 
-    delCoa = async () => {
+    delUser = async () => {
         const token = localStorage.getItem("token")
         const {detail} = this.state
-        await this.props.deleteCoa(token, detail.id)
+        await this.props.deleteUser(token, detail.id)
         this.openModalEdit()
         this.setState({confirm: 'del'})
         this.openConfirm()
-        await this.getDataCount()
+        await this.getDataUser()
         this.openModalDel()
     }
 
     next = async () => {
-        const { page } = this.props.coa
+        const { page } = this.props.user
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.coa
+        const { page } = this.props.user
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.prevLink)
     }
@@ -207,7 +218,7 @@ class MasterCoa extends Component {
     onSearch = (e) => {
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            this.getDataCount({limit: 10, search: this.state.search})
+            this.getDataUser({limit: 10, search: this.state.search})
         }
     }
 
@@ -231,25 +242,35 @@ class MasterCoa extends Component {
         await this.props.uploadMaster(token, data)
     }
 
-    editCoa = async (values, id) => {
+    editUser = async (values,id) => {
         const token = localStorage.getItem("token")
-        await this.props.updateCoa(token, values, id)
-        const {isUpdate} = this.props.coa
+        const destruct = values.depo === "" ? ["", ""] : values.depo.split('-')
+        const data = {
+            username: values.username,
+            fullname: values.fullname,
+            password: values.password,
+            level: values.level,
+            email: values.email,
+            kode_plant: destruct[0],
+            status: values.status
+        }
+        await this.props.updateUser(token, id, data)
+        const {isUpdate} = this.props.user
         if (isUpdate) {
             this.setState({confirm: 'edit'})
             this.openConfirm()
-            this.getDataCount()
+            this.getDataUser()
             this.openModalEdit()
         }
     }
 
-    ExportMaster = async () => {
+    ExportMaster = () => {
         const token = localStorage.getItem('token')
-        await this.props.exportMaster(token)
+        this.props.exportMaster(token)
     }
 
     componentDidUpdate() {
-        const {isError, isUpload, isExport, isReset} = this.props.coa
+        const {isError, isUpload, isExport, isReset} = this.props.user
         if (isError) {
             this.props.resetError()
             this.showAlert()
@@ -264,7 +285,7 @@ class MasterCoa extends Component {
                 this.setState({modalUpload: false})
              }, 2000)
              setTimeout(() => {
-                this.getDataCount()
+                this.getDataUser()
              }, 2100)
         } else if (isExport) {
             this.DownloadMaster()
@@ -274,24 +295,32 @@ class MasterCoa extends Component {
 
     async componentDidMount() {
         const token = localStorage.getItem("token")
-        this.getDataCount()
+        await this.props.getRole(token)
+        this.getDataUser()
+        this.getDataDepo()
     }
 
-    getDataCount = async (value) => {
-        const { page } = this.props.coa
+    getDataUser = async (value) => {
+        const { page } = this.props.user
         const pages = value === undefined || value.page === undefined ? page.currentPage : value.page
         const token = localStorage.getItem("token")
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
         const filter = value === undefined || value.filter === undefined ? this.state.filter : value.filter
         console.log(this.state.filter)
-        await this.props.getCoa(token, limit, search, pages, filter)
-        this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages})
+        await this.props.getUser(token, limit, search, pages, filter)
+        this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter})
     }
 
     changeFilter = async (val) => {
         this.setState({filter: val.level, filterName: val.name})
-        this.getDataCount({limit: this.state.limit, search: this.state.search, filter: val.level, page: 1})
+        this.getDataUser({limit: this.state.limit, search: this.state.search, filter: val.level, page: 1})
+    }
+
+    getDataDepo = async () => {
+        const token = localStorage.getItem("token")
+        await this.props.getDepo(token, 1000, '')
+        // const { dataDepo } = this.props.depo
     }
 
     menuButtonClick(ev) {
@@ -313,7 +342,8 @@ class MasterCoa extends Component {
 
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
-        const {dataCoa, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.coa
+        const {dataUser, isGet, alertM, alertMsg, alertUpload, page, dataRole} = this.props.user
+        const { dataDepo } = this.props.depo
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
 
@@ -363,7 +393,7 @@ class MasterCoa extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master COA</div>
+                                    <div className={style.titleDashboard}>Master User</div>
                                 </div>
                                 <div className={style.secHeadDashboard} >
                                     <div>
@@ -373,15 +403,15 @@ class MasterCoa extends Component {
                                             {this.state.limit}
                                         </DropdownToggle>
                                         <DropdownMenu>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 10, search: ''})}>10</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 20, search: ''})}>20</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 50, search: ''})}>50</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
                                     </div>
-                                    <div className='filterCoa'>
-                                        {/* <text className='mr-2'>Filter:</text>
+                                    <div className='filterUser'>
+                                        <text className='mr-2'>Filter:</text>
                                         <UncontrolledDropdown className={style.drop}>
                                             <DropdownToggle caret color="light">
                                                 {this.state.filterName}
@@ -411,7 +441,7 @@ class MasterCoa extends Component {
                                                     )
                                                 })}
                                             </DropdownMenu>
-                                        </UncontrolledDropdown> */}
+                                        </UncontrolledDropdown>
                                     </div>
                                 </div>
                                 <div className='secEmail'>
@@ -432,16 +462,17 @@ class MasterCoa extends Component {
                                         </Input>
                                     </div>
                                 </div>
-                                {isAll === false ? (
+                                {isGet === false ? (
                                     <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>No COA</th>
-                                                <th>Nama COA</th>
-                                                <th>Nama SUB COA</th>
-                                                <th>Tipe</th>
+                                                <th>User Name</th>
+                                                <th>Full Name</th>
+                                                <th>Kode Plant</th>
+                                                <th>Email</th>
+                                                <th>User Level</th>
                                             </tr>
                                         </thead>
                                     </Table>
@@ -459,23 +490,25 @@ class MasterCoa extends Component {
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>No COA</th>
-                                                <th>Nama COA</th>
-                                                <th>Nama SUB COA</th>
-                                                <th>Tipe</th>
+                                                <th>User Name</th>
+                                                <th>Full Name</th>
+                                                <th>Kode Plant</th>
+                                                <th>Email</th>
+                                                <th>User Level</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {dataAll.length !== 0 && dataAll.map(item => {
+                                        {dataUser.length !== 0 && dataUser.map(item => {
                                                 return (
                                                 <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
-                                                    <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
-                                                    <td>{item.no_coa}</td>
-                                                    <td>{item.nama_coa}</td>
-                                                    <td>{item.nama_subcoa}</td>
-                                                    <td>{item.tipe}</td>
+                                                    <th scope="row">{(dataUser.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
+                                                    <td>{item.username}</td>
+                                                    <td>{item.fullname}</td>
+                                                    <td>{item.kode_plant === 0 ? "" : item.kode_plant}</td>
+                                                    <td>{item.email}</td>
+                                                    <td className='uppercase'>{item.role.name}</td>
                                                 </tr>
-                                            )})}
+                                                )})}
                                         </tbody>
                                     </Table>
                                 </div>  
@@ -494,88 +527,135 @@ class MasterCoa extends Component {
                     </MaterialTitlePanel>
                 </Sidebar>
                 <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
-                    <ModalHeader toggle={this.openModalAdd}>Add Master Coa</ModalHeader>
+                    <ModalHeader toggle={this.openModalAdd}>Add Master User</ModalHeader>
                     <Formik
                     initialValues={{
-                        no_coa: '',
-                        nama_coa: '',
-                        nama_subcoa: '',
-                        tipe: ''
+                    username: "",
+                    fullname: "",
+                    email: "",
+                    password: "",
+                    depo: "",
+                    level: null
                     }}
-                    validationSchema={coaSchema}
-                    onSubmit={(values) => {this.addCoa(values)}}
+                    validationSchema={userSchema}
+                    onSubmit={(values) => {this.addUser(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                No COA
+                                User Name
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="no_coa"
-                                value={values.no_coa}
-                                onBlur={handleBlur("no_coa")}
-                                onChange={handleChange("no_coa")}
+                                name="username"
+                                value={values.username}
+                                onBlur={handleBlur("username")}
+                                onChange={handleChange("username")}
                                 />
-                                {errors.no_coa ? (
-                                    <text className={style.txtError}>{errors.no_coa}</text>
+                                {errors.username ? (
+                                    <text className={style.txtError}>{errors.username}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama COA
+                                Full Name
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="nama_coa"
-                                value={values.nama_coa}
-                                onBlur={handleBlur("nama_coa")}
-                                onChange={handleChange("nama_coa")}
+                                name="fullname"
+                                value={values.fullname}
+                                onBlur={handleBlur("fullname")}
+                                onChange={handleChange("fullname")}
                                 />
-                                {errors.nama_coa ? (
-                                    <text className={style.txtError}>{errors.nama_coa}</text>
+                                {errors.fullname ? (
+                                    <text className={style.txtError}>{errors.fullname}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama Sub COA
+                                Email
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="nama_subcoa"
-                                value={values.nama_subcoa}
-                                onBlur={handleBlur("nama_subcoa")}
-                                onChange={handleChange("nama_subcoa")}
+                                name="email"
+                                value={values.email}
+                                onBlur={handleBlur("email")}
+                                onChange={handleChange("email")}
                                 />
-                                {errors.nama_subcoa ? (
-                                    <text className={style.txtError}>{errors.nama_subcoa}</text>
+                                {errors.email ? (
+                                    <text className={style.txtError}>{errors.email}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Tipe
+                                Password
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                            type="password" 
+                            name="nama_spv" 
+                            value={values.password}
+                            onChange={handleChange("password")}
+                            onBlur={handleBlur("password")}
+                            />
+                            {errors.password ? (
+                                <text className={style.txtError}>{errors.password}</text>
+                            ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                User Level
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select" 
+                                name="select"
+                                value={values.level}
+                                onChange={handleChange("level")}
+                                onBlur={handleBlur("level")}
+                                >
+                                    <option>-Pilih Level-</option>
+                                    {dataRole.length !== 0 && dataRole.map(item => {
+                                        return (
+                                            <option value={item.level}>{item.name}</option>
+                                        )
+                                    })}
+                                </Input>
+                                {errors.level ? (
+                                    <text className={style.txtError}>{errors.level}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Depo
                             </text>
                             <div className="col-md-9">
                             <Input 
                                 type="select"
-                                name="tipe"
-                                value={values.tipe}
-                                onChange={handleChange("tipe")}
-                                onBlur={handleBlur("tipe")}
-                                >   
-                                    <option>-Pilih-</option>
-                                    <option value="OPS">Operasional</option>
-                                    <option value="KLAIM">Klaim</option>
+                                name="select"
+                                disabled={values.level === "5" ? false : true}
+                                value={values.depo}
+                                onChange={handleChange("depo")}
+                                onBlur={handleBlur("depo")}
+                                >
+                                    <option>-Pilih Depo-</option>
+                                    {dataDepo.length !== 0 && dataDepo.map(item => {
+                                        return (
+                                            <option value={item.kode_plant + '-' + item.area}>{item.kode_plant + '-' + item.area}</option>
+                                        )
+                                    })}
                                 </Input>
-                                {errors.tipe ? (
-                                    <text className={style.txtError}>{errors.tipe}</text>
+                                {errors.depo ? (
+                                    <text className={style.txtError}>{errors.depo}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -583,7 +663,7 @@ class MasterCoa extends Component {
                         <div className={style.foot}>
                             <div></div>
                             <div>
-                                <Button className="mr-2" onClick={handleSubmit} color="primary">Save</Button>
+                                <Button className="mr-2" disabled={values.depo === '' && values.level === '5' ? true : false} onClick={handleSubmit} color="primary">Save</Button>
                                 <Button className="mr-3" onClick={this.openModalAdd}>Cancel</Button>
                             </div>
                         </div>
@@ -592,97 +672,153 @@ class MasterCoa extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
-                    <ModalHeader toggle={this.openModalEdit}>Edit Master Coa</ModalHeader>
+                    <ModalHeader toggle={this.openModalEdit}>Edit Master User</ModalHeader>
                     <Formik
                     initialValues={{
-                    no_coa: detail.no_coa === null ? '' : detail.no_coa,
-                    nama_coa: detail.nama_coa === null ? '' : detail.nama_coa,
-                    nama_subcoa: detail.nama_subcoa === null ? '' : detail.nama_subcoa,
-                    tipe: detail.tipe === null ? '' : detail.tipe
+                    username: detail.username === null ? '' : detail.username,
+                    depo: detail.level === 5 && dataDepo.find(({kode_plant}) => kode_plant === detail.kode_plant) !== undefined ? detail.kode_plant + "-" + dataDepo.find(({kode_plant}) => kode_plant === detail.kode_plant).area  : '',
+                    level: detail.level === null ? '' : detail.level,
+                    email: detail.email === null ? '' : detail.email,
+                    fullname: detail.fullname === null ? '' : detail.fullname
                     }}
-                    validationSchema={coaEditSchema}
-                    onSubmit={(values) => {this.editCoa(values, detail.id)}}
+                    validationSchema={userEditSchema}
+                    onSubmit={(values) => {this.editUser(values, detail.id)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                No COA
+                                User Name
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="no_coa"
-                                value={values.no_coa}
-                                onBlur={handleBlur("no_coa")}
-                                onChange={handleChange("no_coa")}
+                                name="username"
+                                value={values.username}
+                                onBlur={handleBlur("username")}
+                                onChange={handleChange("username")}
                                 />
-                                {errors.no_coa ? (
-                                    <text className={style.txtError}>{errors.no_coa}</text>
+                                {errors.username ? (
+                                    <text className={style.txtError}>{errors.username}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama COA
+                                Full Name
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="nama_coa"
-                                value={values.nama_coa}
-                                onBlur={handleBlur("nama_coa")}
-                                onChange={handleChange("nama_coa")}
+                                name="fullname"
+                                value={values.fullname}
+                                onBlur={handleBlur("fullname")}
+                                onChange={handleChange("fullname")}
                                 />
-                                {errors.nama_coa ? (
-                                    <text className={style.txtError}>{errors.nama_coa}</text>
+                                {errors.fullname ? (
+                                    <text className={style.txtError}>{errors.fullname}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        {detail.level === '5' || detail.level === 5 ? (
+                            <div className={style.addModalDepo}>
+                                <text className="col-md-3">
+                                    Depo
+                                </text>
+                                <div className="col-md-9">
+                                <Input 
+                                    type="select" 
+                                    name="select"
+                                    value={values.depo}
+                                    onChange={handleChange("depo")}
+                                    onBlur={handleBlur("depo")}
+                                    >
+                                        <option>-Pilih Depo-</option>
+                                        {dataDepo.length !== 0 && dataDepo.map(item => {
+                                            return (
+                                                <option value={item.kode_plant + '-' + item.area}>{item.kode_plant + '-' + item.area}</option>
+                                            )
+                                        })}
+                                        {/* <option value="50-MEDAN TIMUR">50-MEDAN TIMUR</option>
+                                        <option value="53-MEDAN BARAT">53-MEDAN BARAT</option> */}
+                                    </Input>
+                                    {errors.depo ? (
+                                        <text className={style.txtError}>{errors.depo}</text>
+                                    ) : null}
+                                </div>
+                            </div>
+                        ) : (
+                            <div></div>
+                        )}
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                User Level
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select" 
+                                name="select"
+                                value={values.level}
+                                onChange={handleChange("level")}
+                                onBlur={handleBlur("level")}
+                                >
+                                    <option>-Pilih Level-</option>
+                                    {dataRole.length !== 0 && dataRole.map(item => {
+                                        return (
+                                            <option value={item.level}>{item.name}</option>
+                                        )
+                                    })}
+                                </Input>
+                                {errors.level ? (
+                                    <text className={style.txtError}>{errors.level}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama Sub COA
+                                Email
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="nama_subcoa"
-                                value={values.nama_subcoa}
-                                onBlur={handleBlur("nama_subcoa")}
-                                onChange={handleChange("nama_subcoa")}
+                                name="email"
+                                value={values.email}
+                                onBlur={handleBlur("email")}
+                                onChange={handleChange("email")}
                                 />
-                                {errors.nama_subcoa ? (
-                                    <text className={style.txtError}>{errors.nama_subcoa}</text>
+                                {errors.email ? (
+                                    <text className={style.txtError}>{errors.email}</text>
                                 ) : null}
                             </div>
                         </div>
-                        <div className={style.addModalDepo}>
+                        {/* <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Tipe
+                                Status
                             </text>
                             <div className="col-md-9">
                             <Input 
                                 type="select"
-                                name="tipe"
-                                value={values.tipe}
-                                onChange={handleChange("tipe")}
-                                onBlur={handleBlur("tipe")}
+                                name="select"
+                                value={values.status}
+                                onChange={handleChange("status")}
+                                onBlur={handleBlur("status")}
                                 >   
-                                    <option>-Pilih-</option>
-                                    <option value="OPS">Operasional</option>
-                                    <option value="KLAIM">Klaim</option>
+                                    <option>-Pilih Status-</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
                                 </Input>
-                                {errors.tipe ? (
-                                    <text className={style.txtError}>{errors.tipe}</text>
+                                {errors.status ? (
+                                    <text className={style.txtError}>{errors.status}</text>
                                 ) : null}
                             </div>
-                        </div>
+                        </div> */}
                         <hr/>
                         <div className={style.foot}>
                             <div>
-                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Coa</Button>
+                                <Button onClick={this.openModalReset} color='warning'>Change Password</Button>
                             </div>
                             <div>
+                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete User</Button>
                                 <Button  onClick={handleSubmit} color="primary">Save</Button>
                             </div>
                         </div>
@@ -691,7 +827,7 @@ class MasterCoa extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
-                    <ModalHeader>Upload Master Coa</ModalHeader>
+                    <ModalHeader>Upload Master User</ModalHeader>
                     <ModalBody className={style.modalUpload}>
                         <div className={style.titleModalUpload}>
                             <text>Upload File: </text>
@@ -719,23 +855,23 @@ class MasterCoa extends Component {
                         {this.state.confirm === 'edit' ? (
                         <div className={style.cekUpdate}>
                             <AiFillCheckCircle size={80} className={style.green} />
-                            <div className={style.sucUpdate}>Berhasil Memperbarui Coa</div>
+                            <div className={style.sucUpdate}>Berhasil Memperbarui User</div>
                         </div>
                         ) : this.state.confirm === 'add' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menambahkan Coa</div>
+                                <div className={style.sucUpdate}>Berhasil Menambahkan User</div>
                             </div>
                         ) : this.state.confirm === 'del' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menghapus Coa</div>
+                                <div className={style.sucUpdate}>Berhasil Menghapus User</div>
                             </div>
                         ) : this.state.confirm === 'upload' ?(
                             <div>
                                 <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Mengupload Master Coa</div>
+                                <div className={style.sucUpdate}>Berhasil Mengupload Master User</div>
                             </div>
                             </div>
                         ) : this.state.confirm === 'reset' ? (
@@ -750,7 +886,7 @@ class MasterCoa extends Component {
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.coa.isLoading ? true: false} size="sm">
+                <Modal isOpen={this.props.user.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -760,7 +896,7 @@ class MasterCoa extends Component {
                         </div>
                         </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.coa.isUpload ? true: false} size="sm">
+                <Modal isOpen={this.props.user.isUpload ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -837,11 +973,11 @@ class MasterCoa extends Component {
                     <div className={style.modalApprove}>
                         <div>
                             <text>
-                                Anda yakin untuk delete coa {detail.nama_subcoa} ?
+                                Anda yakin untuk delete user {detail.username} ?
                             </text>
                         </div>
                         <div className={style.btnApprove}>
-                            <Button color="primary" onClick={() => this.delCoa()}>Ya</Button>
+                            <Button color="primary" onClick={() => this.delUser()}>Ya</Button>
                             <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                         </div>
                     </div>
@@ -849,26 +985,28 @@ class MasterCoa extends Component {
             </Modal>
             </>
         )
-    } 
+    }
 }
 
 const mapStateToProps = state => ({
     user: state.user,
-    coa: state.coa
+    depo: state.depo
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
-    addCoa: coa.addCoa,
-    updateCoa: coa.updateCoa,
-    getCoa: coa.getAllCoa,
-    uploadMaster: coa.uploadMaster,
-    nextPage: coa.nextPage,
-    exportMaster: coa.exportMaster,
-    resetError: coa.resetError,
+    addUser: user.addUser,
+    updateUser: user.updateUser,
+    getUser: user.getUser,
+    resetError: user.resetError,
+    getDepo: depo.getDepo,
+    uploadMaster: user.uploadMaster,
+    nextPage: user.nextPage,
+    exportMaster: user.exportMaster,
+    getRole: user.getRole,
     resetPassword: user.resetPassword,
-    deleteCoa: coa.deleteCoa
+    deleteUser: user.deleteUser
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(MasterCoa)
+export default connect(mapStateToProps, mapDispatchToProps)(MasterUser)
 	

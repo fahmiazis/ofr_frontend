@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/alt-text */
 import React, { Component } from 'react'
-import Sidebar from '../components/Sidebar'
+import Sidebar from '../../components/Sidebar'
 import {VscAccount} from 'react-icons/vsc'
 import { Row, DropdownItem, UncontrolledDropdown, DropdownToggle, DropdownMenu, Button,
     Modal, ModalHeader, ModalBody, Input } from 'reactstrap'
@@ -9,15 +9,14 @@ import {FaFileSignature} from 'react-icons/fa'
 import {BsBell, BsFillCircleFill} from 'react-icons/bs'
 import moment from 'moment'
 import {connect} from 'react-redux'
-import auth from '../redux/actions/auth'
-import user from '../redux/actions/user'
+import auth from '../../redux/actions/auth'
+import user from '../../redux/actions/user'
 // import notif from '../redux/actions/notif'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import '../assets/css/style.css'
-import Bell from '../components/Bell'
-import Account from '../components/Account'
-import style from '../assets/css/input.module.css'
+import Bell from '../../components/Bell'
+import Account from '../../components/Account'
+import style from '../../assets/css/input.module.css'
 
 const changeSchema = Yup.object().shape({
     current_password: Yup.string().required('must be filled'),
@@ -135,59 +134,33 @@ class NavStock extends Component {
                         </div>
                     </div>
                     <div>
-                        <div className="titHome">Klaim menu</div>
+                        <div className="titHome">Operasional menu</div>
                         <div className="txtChoose">Please select an option</div>
                         <div className="mainBody">
+                            <button className="cardNav1" onClick={() => this.goRoute('ops')}>
+                                <div className="titCard">
+                                    Pengajuan Operasional
+                                </div>
+                            </button>
                             {level === '5' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('klaim')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('editops')}>
                                         <div className="titCard">
-                                            Pengajuan Klaim
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
-                                        <div className="titCard">
-                                            Revisi Klaim
-                                        </div>
-                                    </button>
-                                </>
-                            ) : level === '2' ? (
-                                <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('veriffinklm')}>
-                                        <div className="titCard">
-                                            Verifikasi Finance
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
-                                        <div className="titCard">
-                                            Revisi Klaim
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('repklaim')}>
-                                        <div className="titCard">
-                                            Report Klaim
-                                        </div>
-                                    </button>
-                                </>
-                            ) : level === '3' ? (
-                                <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('veriffinklm')}>
-                                        <div className="titCard">
-                                            Verifikasi Klaim
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
-                                        <div className="titCard">
-                                            Revisi Klaim
+                                            Revisi Operasional
                                         </div>
                                     </button>
                                 </>
                             ) : (
-                                <button className="cardNav1" onClick={() => this.goRoute('klaim')}>
+                                <div></div>
+                            )}
+                            {level === '2' || level === '1' ? (
+                                <button className="cardNav1" onClick={() => this.goRoute('repops')}>
                                     <div className="titCard">
-                                        Pengajuan Klaim
+                                        Report Operasional
                                     </div>
                                 </button>
+                            ) : (
+                                <div></div>
                             )}
                         </div>
                     </div>

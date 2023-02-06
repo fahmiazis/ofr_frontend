@@ -10,6 +10,7 @@ import bank from './bank'
 import menu from './menu'
 import reason from './reason'
 import dokumen from './dokumen'
+import rekening from './rekening'
 import klaim from './klaim'
 import operasional from './operasional'
 
@@ -24,5 +25,6 @@ export default combineReducers({
   menu,
   operasional,
   reason,
-  dokumen
+  dokumen,
+  rekening
 })

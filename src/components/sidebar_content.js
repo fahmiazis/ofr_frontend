@@ -13,7 +13,7 @@ import { useHistory } from 'react-router-dom'
 import { BsClipboardData, BsHouseDoor, BsFileCheck } from 'react-icons/bs'
 import { GiFamilyTree } from 'react-icons/gi'
 import { MdKeyboardArrowLeft, MdKeyboardArrowDown } from 'react-icons/md'
-import { AiOutlineMenu } from 'react-icons/ai'
+import { AiOutlineMenu, AiFillDashboard } from 'react-icons/ai'
 import { useDispatch } from 'react-redux'
 import logoutAction from '../redux/actions/auth'
 import stile from '../assets/css/input.module.css'
@@ -81,6 +81,10 @@ const SidebarContent = props => {
             <FaHome size={20} className="mr-2"/>
             <text className={stile.txtSide}>Home</text>
         </button>
+        <button onClick={() => goHome('dashboard')} className={stile.btnSideTop}>
+            <AiFillDashboard size={20} className="mr-2"/>
+            <text className={stile.txtSide}>Dashboard</text>
+        </button>
         <button className={stile.btnSide} onClick={() => goHome('navklaim')}>
           <FaCartPlus size={20} className="mr-2" />
           <text className={stile.txtSide}>Klaim</text>
@@ -123,6 +127,10 @@ const SidebarContent = props => {
           <button onClick={() => goHome('bank')} className={stile.btnSide}>
             <RiBankCardFill size={20} className="mr-2"/>
             Master Bank
+          </button>
+          <button onClick={() => goHome('rekening')} className={stile.btnSide}>
+            <RiBankCardFill size={20} className="mr-2"/>
+            Master Rekening
           </button>
           <button onClick={() => goHome('menu')} className={stile.btnSide}>
             <AiOutlineMenu size={20} className="mr-2"/>

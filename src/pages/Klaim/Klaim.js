@@ -6,33 +6,33 @@ import { Container, Collapse, Nav, Navbar,
     NavbarToggler, NavbarBrand, NavItem, NavLink,
     Card, CardBody, Table, ButtonDropdown, Input, Button, Col,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
-import approve from '../redux/actions/approve'
+import approve from '../../redux/actions/approve'
 import {BsCircle} from 'react-icons/bs'
 import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList, FaFileSignature} from 'react-icons/fa'
 import {MdAssignment} from 'react-icons/md'
 import {FiSend, FiTruck, FiSettings, FiUpload} from 'react-icons/fi'
-import Sidebar from "../components/Header";
+import Sidebar from "../../components/Header";
 import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
-import MaterialTitlePanel from "../components/material_title_panel"
-import SidebarContent from "../components/sidebar_content"
-import style from '../assets/css/input.module.css'
-import placeholder from  "../assets/img/placeholder.png"
-import user from '../redux/actions/user'
+import MaterialTitlePanel from "../../components/material_title_panel"
+import SidebarContent from "../../components/sidebar_content"
+import style from '../../assets/css/input.module.css'
+import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
 import moment from 'moment'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import auth from '../redux/actions/auth'
-import menu from '../redux/actions/menu'
-import reason from '../redux/actions/reason'
+import auth from '../../redux/actions/auth'
+import menu from '../../redux/actions/menu'
+import reason from '../../redux/actions/reason'
 // import notif from '../redux/actions/notif'
-import Pdf from "../components/Pdf"
-import depo from '../redux/actions/depo'
+import Pdf from "../../components/Pdf"
+import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
-import NavBar from '../components/NavBar'
-import klaim from '../redux/actions/klaim'
+import NavBar from '../../components/NavBar'
+import klaim from '../../redux/actions/klaim'
+import Tracking from '../../components/Klaim/tracking'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -117,7 +117,8 @@ class Klaim extends Component {
             collap: false,
             tipeCol: '',
             formDis: false,
-            history: false
+            history: false,
+            upload: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -181,6 +182,16 @@ class Klaim extends Component {
             data.append('document', e.target.files[0])
             this.props.uploadImage(token, dataId, data)
         }
+    }
+
+    uploadAlert = () => {
+        this.setState({upload: true, modalUpload: false })
+       
+         setTimeout(() => {
+            this.setState({
+                upload: false
+            })
+         }, 10000)
     }
 
     getApproveStock = async (value) => { 
@@ -401,8 +412,9 @@ class Klaim extends Component {
     }
 
     getDataKlaim = async (value) => {
+        const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('available')
+        this.changeFilter(level === '5' ? 'all' : 'available')
     }
 
     getDataList = async () => {
@@ -501,45 +513,24 @@ class Klaim extends Component {
         const {dataKlaim, noDis} = this.props.klaim
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const status = 'all'
+        const status = 2
+        const statusAll = 'all'
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newKlaim = []
-            // for (let i = 0; i < noDis.length; i++) {
-            //     const index = dataKlaim.indexOf(dataKlaim.find(({no_transaksi}) => no_transaksi === noDis[i]))
-            //     if (dataKlaim[index].status_reject === null) {
-            //         newKlaim.push(dataKlaim[index])
-            //     }
-            // }
             await this.props.getKlaim(token, status, 'all', 'all', val, 'approve')
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'reject') {
             const newKlaim = []
-            // for (let i = 0; i < noDis.length; i++) {
-            //     const index = dataKlaim.indexOf(dataKlaim.find(({no_transaksi}) => no_transaksi === noDis[i]))
-            //     if (dataKlaim[index].status_reject !== null && dataKlaim[index].status_reject !== 0) {
-            //         newKlaim.push(dataKlaim[index])
-            //     }
-            // }
             await this.props.getKlaim(token, status, 'all', 'all', val, 'approve')
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'revisi') {
             const newKlaim = []
-            // for (let i = 0; i < noDis.length; i++) {
-            //     const index = dataKlaim.indexOf(dataKlaim.find(({no_transaksi}) => no_transaksi === noDis[i]))
-            //     if (dataKlaim[index].status_reject === 0) {
-            //         newKlaim.push(dataKlaim[index])
-            //     }
-            // }
             await this.props.getKlaim(token, status, 'all', 'all', val, 'approve')
             this.setState({filter: val, newKlaim: newKlaim})
         } else {
             const newKlaim = []
-            // for (let i = 0; i < noDis.length; i++) {
-            //     const index = dataKlaim.indexOf(dataKlaim.find(({no_transaksi}) => no_transaksi === noDis[i]))
-            //     newKlaim.push(dataKlaim[index])
-            // }
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve')
+            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'approve')
             this.setState({filter: val, newKlaim: newKlaim})
         }
     }
@@ -858,20 +849,27 @@ class Klaim extends Component {
                                 <div className={style.titleDashboard}>Pengajuan Klaim</div>
                             </div>
                             <div className={style.secEmail3}>
+                                {/* {(level === '5' || level === '6') && (
+                                    <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Add</Button>
+                                )} */}
+                            </div>
+                            <div className={[style.secEmail4]}>
                                 {(level === '5' || level === '6') && (
                                     <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Add</Button>
                                 )}
-                            </div>
-                            <div className={[style.secEmail4]}>
-                                <div className={style.searchEmail2}>
-                                    <text>Filter:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="all">All</option>
-                                        <option value="reject">Reject</option>
-                                        <option value="available">Available Approve</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                    </Input>
-                                </div>
+                                {(level === '5' || level === '6') ? (
+                                    <div></div>
+                                ) : (
+                                    <div className={style.searchEmail2}>
+                                        <text>Filter:  </text>
+                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        </Input>
+                                    </div>
+                                )}
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 
@@ -1786,7 +1784,7 @@ class Klaim extends Component {
                                     )
                                 })}
                                 <div className={style.btnApprove}>
-                                    <Button color="primary" disabled={(values.alasan === '.' || values.alasan === '') && listReason.length === 0 ? true : false} onClick={handleSubmit}>Submit</Button>
+                                    <Button color="primary" disabled={(values.alasan === '.' || values.alasan === '') && (listReason.length === 0 || listMenu.length === 0) ? true : false} onClick={handleSubmit}>Submit</Button>
                                     <Button className='ml-2' color="secondary" onClick={this.openModalReject}>Close</Button>
                                 </div>
                             </div>
@@ -1794,7 +1792,7 @@ class Klaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.klaim.isLoading || this.props.menu.isLoading || this.props.reason.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1982,222 +1980,33 @@ class Klaim extends Component {
                     </div>
                 </ModalBody>
             </Modal>
-            <Modal isOpen={this.state.formDis} toggle={() => {this.openModalDis(); this.showCollap('close')}} size="xl">
-                    {/* <Alert color="danger" className={style.alertWrong} isOpen={detailKlaim.find(({status_transaksi}) => status_transaksi === 26) === undefined ? false : true}>
-                        <div>Data Penjualan Asset Sedang Dilengkapi oleh divisi purchasing</div>
-                    </Alert> */}
-                    <ModalBody>
-                        <Row className='trackTitle ml-4'>
-                            <Col>
-                                Tracking Pengajuan Klaim
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub'>
-                            <Col md={3}>
-                                Area
-                            </Col>
-                            <Col md={9}>
-                            : {detailKlaim[0] === undefined ? '' : detailKlaim[0].area}
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub'>
-                            <Col md={3}>
-                            No Ajuan
-                            </Col>
-                            <Col md={9}>
-                            : {detailKlaim[0] === undefined ? '' : detailKlaim[0].no_transaksi}
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub1'>
-                            <Col md={3}>
-                            Tanggal Ajuan
-                            </Col>
-                            <Col md={9}>
-                            : {detailKlaim[0] === undefined ? '' : moment(detailKlaim[0].start_klaim === null ? detailKlaim[0].createdAt : detailKlaim[0].start_klaim).locale('idn').format('DD MMMM YYYY ')}
-                            </Col>
-                        </Row>
-                        <Row className='mt-2 ml-4 m40'>
-                            <Col md={12}>
-                                <Button onClick={this.openHistory} size='sm' color='success'>History lengkap</Button>
-                            </Col>
-                        </Row>
-                        <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                            <div class="step completed">
-                                <div class="step-icon-wrap">
-                                <button class="step-icon" onClick={() => this.showCollap('Submit')} ><FiSend size={40} className="center1" /></button>
-                                </div>
-                                <h4 class="step-title">Submit Klaim</h4>
-                            </div>
-                            <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 2 ? "step completed" : 'step'} >
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Proses Approval')}><MdAssignment size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Proses Approval</h4>
-                            </div>
-                            <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Verifikasi Finance')}><FiSettings size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Verifikasi Finance</h4>
-                            </div>
-                            <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Verifikasi Klaim')}><FiSettings size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Verifikasi Klaim</h4>
-                            </div>
-                            <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi === 5 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon"><AiOutlineCheck size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Selesai</h4>
-                            </div>
-                        </div>
-                        <Collapse isOpen={this.state.collap} className="collapBody">
-                            <Card className="cardCollap">
-                                <CardBody>
-                                    <div className='textCard1'>{this.state.tipeCol}</div>
-                                    {this.state.tipeCol === 'submit' ? (
-                                        <div>Tanggal submit : {detailKlaim[0] === undefined ? '' : moment(detailKlaim[0].start_klaim === null ? detailKlaim[0].createdAt : detailKlaim[0].start_klaim).locale('idn').format('DD MMMM YYYY ')}</div>
-                                    ) : (
-                                        <div></div>
-                                    )}
-                                    <div>Rincian Data:</div>
-                                    <Table striped bordered responsive hover className="tableDis mb-3">
-                                        <thead>
-                                            <tr>
-                                                <th>NO</th>
-                                                <th>COST CENTRE</th>
-                                                <th>NO COA</th>
-                                                <th>NAMA COA</th>
-                                                <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
-                                                <th>NILAI YANG DIAJUKAN</th>
-                                                <th>BANK</th>
-                                                <th>NOMOR REKENING</th>
-                                                <th>ATAS NAMA</th>
-                                                <th>MEMILIKI NPWP</th>
-                                                <th>NAMA SESUAI NPWP</th>
-                                                <th>NOMOR NPWP</th>
-                                                <th>PPU</th>
-                                                <th>PA</th>
-                                                <th>NOMINAL</th>
-                                                <th>NILAI YANG DIBAYARKAN</th>
-                                                <th>TANGGAL TRANSFER</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {detailKlaim.length !== 0 && detailKlaim.map(item => {
-                                                return (
-                                                    <tr>
-                                                        <th scope="row">{detailKlaim.indexOf(item) + 1}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
-                                                        <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                        <th>{item.bank_tujuan}</th>
-                                                        <th>{item.norek_ajuan}</th>
-                                                        <th>{item.nama_tujuan}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                        <th>{item.ppu}</th>
-                                                        <th>{item.pa}</th>
-                                                        <th>{item.nominal}</th>
-                                                        <th>{item.nilai_bayar}</th>
-                                                        <th>{item.tanggal_transfer}</th>
-                                                    </tr>
-                                                )
-                                            })}
-                                        </tbody>
-                                    </Table>
-                                    {detailKlaim[0] === undefined || this.state.tipeCol === 'Submit' ? (
-                                        <div></div>
-                                    ) : (
-                                        <div>
-                                            <div className="mb-4 mt-2">Tracking {this.state.tipeCol} :</div>
-                                            {this.state.tipeCol === 'Proses Approval' ? (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    {detailKlaim[0] !== undefined && detailKlaim[0].appForm.length && detailKlaim[0].appForm.slice(0).reverse().map(item => {
-                                                        return (
-                                                            <div class={item.status === '1' ? 'step completed' : item.status === '0' ? 'step reject' : 'step'}>
-                                                                <div class="step-icon-wrap">
-                                                                <button class="step-icon"><FaFileSignature size={30} className="center2" /></button>
-                                                                </div>
-                                                                <h4 class="step-title">{item.jabatan}</h4>
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
-                                            ) : this.state.tipeCol === 'Verifikasi Finance' ? (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Check Dokumen</h4>
-                                                    </div>
-                                                    <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Selesai</h4>
-                                                    </div>
-                                                </div>
-                                            ) : this.state.tipeCol === 'Verifikasi Klaim' && (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FiSettings size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Proses Kelengkapan Data</h4>
-                                                    </div>
-                                                    <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Check Dokumen</h4>
-                                                    </div>
-                                                    <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Selesai</h4>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </CardBody>
-                            </Card>
-                        </Collapse>
-                    </ModalBody>
-                    <hr />
-                    <div className="modalFoot ml-3">
-                        {/* <Button color="primary" onClick={() => this.openModPreview({nama: 'disposal pengajuan', no: detailKlaim[0] !== undefined && detailKlaim[0].no_disposal})}>Preview</Button> */}
-                        <div></div>
-                        <div className="btnFoot">
-                            <Button color="primary" onClick={() => {this.openModalDis(); this.showCollap('close')}}>
-                                Close
-                            </Button>
-                        </div>
+            <Modal isOpen={this.state.formDis} toggle={() => {this.openModalDis()}} size="xl">
+                <ModalBody>
+                    <Tracking />
+                </ModalBody>
+                <hr />
+                <div className="modalFoot ml-3">
+                    <div></div>
+                    <div className="btnFoot">
+                        <Button color="primary" onClick={() => {this.openModalDis()}}>
+                            Close
+                        </Button>
                     </div>
-                </Modal>
-                <Modal isOpen={this.state.history} toggle={this.openHistory}>
-                    <ModalBody>
-                        <div className='mb-4'>History Transaksi</div>
-                        <div className='history'>
-                            {detailKlaim[0].history !== undefined && detailKlaim[0].history.split(',').map(item => {
-                                return (
-                                    item !== null && item !== 'null' && 
-                                    <Button className='mb-2' color='info'>{item}</Button>
-                                )
-                            })}
-                        </div>
-                    </ModalBody>
-                </Modal>
+                </div>
+            </Modal>
+            <Modal isOpen={this.state.history} toggle={this.openHistory}>
+                <ModalBody>
+                    <div className='mb-4'>History Transaksi</div>
+                    <div className='history'>
+                        {detailKlaim.length > 0 && detailKlaim[0].history.split(',').map(item => {
+                            return (
+                                item !== null && item !== 'null' && 
+                                <Button className='mb-2' color='info'>{item}</Button>
+                            )
+                        })}
+                    </div>
+                </ModalBody>
+            </Modal>
             </>
         )
     }

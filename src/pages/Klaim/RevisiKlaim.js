@@ -7,37 +7,43 @@ import { Container, Collapse, Nav, Navbar,
     UncontrolledDropdown, DropdownToggle, DropdownMenu, Dropdown,
     DropdownItem, Table, ButtonDropdown, Input, Button, Col,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
-import approve from '../redux/actions/approve'
+import approve from '../../redux/actions/approve'
 import {BsCircle} from 'react-icons/bs'
 import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList} from 'react-icons/fa'
-import Sidebar from "../components/Header";
+import Sidebar from "../../components/Header";
 import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
-import MaterialTitlePanel from "../components/material_title_panel"
-import SidebarContent from "../components/sidebar_content"
-import style from '../assets/css/input.module.css'
-import placeholder from  "../assets/img/placeholder.png"
-import user from '../redux/actions/user'
+import MaterialTitlePanel from "../../components/material_title_panel"
+import SidebarContent from "../../components/sidebar_content"
+import style from '../../assets/css/input.module.css'
+import placeholder from  "../../assets/img/placeholder.png"
+import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
+import bank from '../../redux/actions/bank'
 import moment from 'moment'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import auth from '../redux/actions/auth'
-import menu from '../redux/actions/menu'
-import reason from '../redux/actions/reason'
+import auth from '../../redux/actions/auth'
+import menu from '../../redux/actions/menu'
+import reason from '../../redux/actions/reason'
 // import notif from '../redux/actions/notif'
-import Pdf from "../components/Pdf"
-import depo from '../redux/actions/depo'
+import Pdf from "../../components/Pdf"
+import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
+import Select from 'react-select'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
-import NavBar from '../components/NavBar'
-import klaim from '../redux/actions/klaim'
+import NavBar from '../../components/NavBar'
+import klaim from '../../redux/actions/klaim'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const klaimSchema = Yup.object().shape({
-    ppu: Yup.string().required('must be filled'),
-    pa: Yup.string().required('must be filled'),
-    nominal: Yup.number().required('must be filled')
+    keterangan: Yup.string().required("must be filled"),
+    periode_awal: Yup.date().required("must be filled"),
+    periode_akhir: Yup.date().required('must be filled'),
+    nilai_ajuan: Yup.string().required("must be filled"),
+    norek_ajuan: Yup.number().required("must be filled"),
+    nama_tujuan: Yup.string().required("must be filled"),
+    status_npwp: Yup.string().required('must be filled'),
 })
 
 const alasanSchema = Yup.object().shape({
@@ -100,7 +106,11 @@ class Klaim extends Component {
             newKlaim: [],
             totalfpd: 0,
             dataMenu: [],
-            listMenu: []
+            listMenu: [],
+            bankList: [],
+            detail: {},
+            bank: '',
+            digit: 0
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -122,11 +132,13 @@ class Klaim extends Component {
             this.setState({errMsg: 'Invalid file type. Only excel, pdf, zip, and rar files are allowed.'})
             this.uploadAlert()
         } else {
-            const {detail} = this.state
+            const { detailKlaim } = this.props.klaim
+            const { detail } = this.state
             const token = localStorage.getItem('token')
             const data = new FormData()
             data.append('document', e.target.files[0])
-            this.props.uploadDocumentDis(token, detail.id, data)
+            this.props.uploadDocKlaim(token, detailKlaim[0].no_transaksi, detail.id, data)
+            // this.props.uploadDocKlaim(token, tempno, data)
         }
     }
 
@@ -186,8 +198,7 @@ class Klaim extends Component {
             no: detailKlaim[0].no_transaksi,
             list: listMut,
             alasan: temp + val.alasan,
-            menu: listMenu.toString(),
-            type: "verif"
+            menu: listMenu.toString()
         }
         await this.props.rejectKlaim(token, data)
         this.getDataKlaim()
@@ -229,6 +240,22 @@ class Klaim extends Component {
 
     openModalApprove = () => {
         this.setState({openApprove: !this.state.openApprove})
+    }
+
+    checkSubmitRev = () => {
+        const { detailKlaim } = this.props.klaim
+        const temp = []
+        detailKlaim.map(item => {
+            return (
+                item.isreject === 1 && temp.push(item)
+            )
+        })
+        if (temp.length > 0) {
+            this.setState({confirm: 'rejSubmit'})
+            this.openConfirm()
+        } else {
+            this.openModalApprove()
+        }
     }
 
     openPreview = async (val) => {
@@ -297,13 +324,15 @@ class Klaim extends Component {
         await this.props.submitAsset(token, detailStock[0].no_stock)
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         // const level = localStorage.getItem('level')
+        const token = localStorage.getItem("token")
+        await this.props.getBank(token)
         this.getDataKlaim()
     }
 
     componentDidUpdate() {
-        const { isApprove, isReject, subVerif } = this.props.klaim
+        const { isApprove, isReject } = this.props.klaim
         if (isApprove === false) {
             this.setState({confirm: 'rejApprove'})
             this.openConfirm()
@@ -314,11 +343,7 @@ class Klaim extends Component {
             this.setState({confirm: 'rejReject'})
             this.openConfirm()
             this.openModalReject()
-            this.props.resetKlaim()
-        } else if (subVerif) {
-            this.setState({confirm: 'rejSubmit'})
-            this.openConfirm()
-            this.openModalApprove()
+            this.openModalRinci()
             this.props.resetKlaim()
         }
     }
@@ -339,10 +364,6 @@ class Klaim extends Component {
             document.body.appendChild(link);
             link.click();
         });
-    }
-
-    openModalDis = () => {
-        this.setState({formDis: !this.state.formDis})
     }
 
     openConfirm = () => {
@@ -382,8 +403,26 @@ class Klaim extends Component {
     }
 
     getDataKlaim = async (value) => {
+        const token = localStorage.getItem("token")
+        const level = localStorage.getItem('level')
+        const menu = level === '5' ? 'Revisi Area' : level === '2' ? "Revisi Finance" : level === '3' && 'Revisi Klaim'
+        await this.props.getKlaim(token, 'all', 1, menu, 'all', 'revisi')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('available')
+        // this.changeFilter('available')
+    }
+
+    prepareSelect = (val) => {
+        const { dataBank } = this.props.bank
+        const digit = dataBank.find(({name}) => name === val).digit
+        const bank = [
+            {value: digit, label: val}
+        ]
+        dataBank.map(item => {
+            return (
+                bank.push({value: item.digit, label: item.name})
+            )
+        })
+        this.setState({bankList: bank, digit: digit, bank: val})
     }
 
     getDataList = async () => {
@@ -460,70 +499,14 @@ class Klaim extends Component {
         this.setState({submitPre: !this.state.submitPre})
     }
 
-    prosesEditKlaim = async (val) => {
-        const token = localStorage.getItem("token")
-        const {dataRinci} = this.state
-        const data = {
-            ppu: val.ppu,
-            pa: val.pa,
-            nominal: val.nominal,
-        }
-        const tempno = {
-            no: dataRinci.no_transaksi,
-            id: dataRinci.id
-        }
-        await this.props.editVerif(token, dataRinci.id, data)
-        await this.props.getDetail(token, tempno)
-        this.setState({confirm: 'approve'})
-        this.openConfirm()
-        this.openModalEdit()
-    }
-
-    changeFilter = async (val) => {
+    changeFilter = (val) => {
         const {dataKlaim, noDis} = this.props.klaim
-        const level = localStorage.getItem('level')
-        const token = localStorage.getItem("token")
-        const status = level === '2' ? 3 : 4
-        const role = localStorage.getItem('role')
-        if (val === 'available') {
-            const newKlaim = []
-            // for (let i = 0; i < noDis.length; i++) {
-            //     const index = dataKlaim.indexOf(dataKlaim.find(({no_transaksi}) => no_transaksi === noDis[i]))
-            //     if (dataKlaim[index].status_reject === null) {
-            //         newKlaim.push(dataKlaim[index])
-            //     }
-            // }
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif')
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'reject') {
-            const newKlaim = []
-            // for (let i = 0; i < noDis.length; i++) {
-            //     const index = dataKlaim.indexOf(dataKlaim.find(({no_transaksi}) => no_transaksi === noDis[i]))
-            //     if (dataKlaim[index].status_reject !== null && dataKlaim[index].status_reject !== 0) {
-            //         newKlaim.push(dataKlaim[index])
-            //     }
-            // }
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif')
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'revisi') {
-            const newKlaim = []
-            // for (let i = 0; i < noDis.length; i++) {
-            //     const index = dataKlaim.indexOf(dataKlaim.find(({no_transaksi}) => no_transaksi === noDis[i]))
-            //     if (dataKlaim[index].status_reject === 0) {
-            //         newKlaim.push(dataKlaim[index])
-            //     }
-            // }
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif')
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else {
-            const newKlaim = []
-            // for (let i = 0; i < noDis.length; i++) {
-            //     const index = dataKlaim.indexOf(dataKlaim.find(({no_transaksi}) => no_transaksi === noDis[i]))
-            //     newKlaim.push(dataKlaim[index])
-            // }
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif')
-            this.setState({filter: val, newKlaim: newKlaim})
+        const newKlaim = []
+        for (let i = 0; i < noDis.length; i++) {
+            const index = dataKlaim.indexOf(dataKlaim.find(({no_transaksi}) => no_transaksi === noDis[i]))
+            newKlaim.push(dataKlaim[index])
         }
+        this.setState({filter: val, newKlaim: newKlaim})
     }
 
     prosesSubmitPre = async () => {
@@ -534,36 +517,16 @@ class Klaim extends Component {
 
     approveDataKlaim = async () => {
         const { detailKlaim } = this.props.klaim
-        const level = localStorage.getItem("level")
         const token = localStorage.getItem("token")
         const tempno = {
             no: detailKlaim[0].no_transaksi
         }
-        if (level === '3') {
-            const cek = []
-            detailKlaim.map(item => {
-                return ((item.ppu !== null && item.pa !== null && item.nominal !== null) && cek.push(item))
-            })
-            if (cek.length === detailKlaim.length) {
-                await this.props.submitVerif(token, tempno)
-                this.getDataKlaim()
-                this.setState({confirm: 'submit'})
-                this.openConfirm()
-                this.openModalApprove()
-                this.openModalRinci()
-            } else {
-                this.setState({confirm: 'rejSubmit'})
-                this.openConfirm()
-                this.openModalApprove()
-            }
-        } else {
-            await this.props.submitVerif(token, tempno)
-            this.getDataKlaim()
-            this.setState({confirm: 'submit'})
-            this.openConfirm()
-            this.openModalApprove()
-            this.openModalRinci()
-        }
+        await this.props.approveKlaim(token, tempno)
+        this.getDataKlaim()
+        this.setState({confirm: 'isApprove'})
+        this.openConfirm()
+        this.openModalApprove()
+        this.openModalRinci()
     }
 
     onSearch = async (e) => {
@@ -574,21 +537,33 @@ class Klaim extends Component {
         }
     }
 
-    updateAsset = async (value) => {
+    prosesEditKlaim = async (val) => {
         const token = localStorage.getItem("token")
-        const { dataRinci } = this.state
-        const { detailAsset } = this.props.asset
+        const {dataRinci} = this.state
         const data = {
-            merk: value.merk,
-            satuan: value.satuan,
-            unit: value.unit,
-            lokasi: value.lokasi,
-            grouping: detailAsset.grouping,
-            keterangan: value.keterangan,
-            status_fisik: detailAsset.fisik,
-            kondisi: detailAsset.kondisi
+            no_coa: dataRinci.no_coa,
+            keterangan: val.keterangan,
+            periode_awal: val.periode_awal,
+            periode_akhir: val.periode_akhir,
+            nilai_ajuan: val.nilai_ajuan,
+            bank_tujuan: this.state.bank,
+            norek_ajuan: val.norek_ajuan,
+            nama_tujuan: val.nama_tujuan,
+            status_npwp: val.status_npwp === 'Tidak' ? 0 : 1,
+            nama_npwp: val.status_npwp === 'Tidak' ? '' : val.nama_npwp,
+            no_npwp: val.status_npwp === 'Tidak' ? '' : val.no_npwp,
+            nama_ktp: val.status_npwp === 'Tidak' ? val.nama_ktp : '',
+            no_ktp: val.status_npwp === 'Tidak' ? val.no_ktp : '',
+            periode: ''
         }
-        await this.props.updateAssetNew(token, dataRinci.id, data)
+        const tempno = {
+            no: dataRinci.no_transaksi,
+            id: dataRinci.id
+        }
+        await this.props.editKlaim(token, dataRinci.id, data)
+        await this.props.appRevisi(token, tempno)
+        await this.props.getDetail(token, tempno)
+        this.openModalEdit()
     }
 
     changeView = (val) => {
@@ -606,6 +581,10 @@ class Klaim extends Component {
             no: val.no_transaksi
         }
         await this.props.getApproval(token, tempno)
+    }
+
+    selectBank = (e) => {
+        this.setState({bank: e.label, digit: e.value})
     }
 
     selectStatus = async (fisik, kondisi) => {
@@ -676,6 +655,7 @@ class Klaim extends Component {
 
     getRincian = async (val) => {
         this.setState({dataRinci: val, bank: val.bank_tujuan})
+        this.prepareSelect(val.bank_tujuan)
         this.openModalEdit()
     }
 
@@ -805,6 +785,20 @@ class Klaim extends Component {
         this.setState({modalStock: !this.state.modalStock})
     }
 
+    prosesSubmitRevisi = async () => {
+        const {detailKlaim} = this.props.klaim
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: detailKlaim[0].no_transaksi
+        }
+        await this.props.submitRevisi(token, tempno)
+        this.openModalRinci()
+        this.openModalApprove()
+        this.getDataKlaim()
+        this.setState({confirm: 'submit'})
+        this.openConfirm()
+    }
+
     dropDown = () => {
         this.setState({drop: !this.state.drop})
     }
@@ -815,7 +809,7 @@ class Klaim extends Component {
         const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim } = this.props.klaim
+        const { noDis, detailKlaim, ttdKlaim, newKlaim, dataDoc } = this.props.klaim
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -855,20 +849,20 @@ class Klaim extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : "Klaim"}</div>
+                                <div className={style.titleDashboard}>Revisi Klaim</div>
                             </div>
                             <div className={style.secEmail3}>
                             </div>
                             <div className={[style.secEmail4]}>
-                                <div className={style.searchEmail2}>
+                                {/* <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                         <option value="all">All</option>
                                         <option value="reject">Reject</option>
                                         <option value="available">Available Approve</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        <option value="revisi">Available Reapprove (Revisi)</option>
                                     </Input>
-                                </div>
+                                </div> */}
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 
@@ -879,40 +873,8 @@ class Klaim extends Component {
                                     >
                                     </Input>
                                 </div>
-                                {/* <div className={style.headEmail2}>
-                                    {this.state.view === 'list' ? (
-                                        <>
-                                        <Button color="primary" className="transBtn" onClick={() => this.changeView('card')}><FaTh size={35} className="mr-2"/> Gallery View</Button>
-                                        </>
-                                    ) : (
-                                        <Button color="primary" className="transBtn" onClick={() => this.changeView('list')}><FaList size={30} className="mr-2"/> List View</Button>
-                                    )}
-                                </div> */}
-                                {/* {this.state.view === 'list' ? (
-                                    <div>
-                                        <Button className='marDown' color='primary' onClick={() => this.getDokumentasi({no: 'all'})} >Download All</Button>
-                                        <ReactHtmlToExcel
-                                            id="test-table-xls-button"
-                                            className="btn btn-success marDown ml-2"
-                                            table="table-klaim"
-                                            filename="Pengajuan Klaim"
-                                            sheet="sheet"
-                                            buttonText="Download"
-                                        />
-                                    </div>
-                                ) : level !== '5' && level !== '9' && (
-                                    <div className='mt-4'>
-                                        <Input type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="available">Available To Approve</option>
-                                            <option value="available">Reject</option>
-                                            <option value="not available">All</option>
-                                        </Input>
-                                    </div>
-                                )} */}
                             </div>
-                                {noDis.length === 0 ? (
-                                    <div></div>
-                                ) : (
+                            {level === '5' ? (
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
@@ -926,13 +888,14 @@ class Klaim extends Component {
                                                 <th>KETERANGAN TAMBAHAN</th>
                                                 <th>PERIODE</th>
                                                 <th>STATUS</th>
+                                                <th>ALASAN</th>
                                                 <th>OPSI</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {newKlaim.map(item => {
                                                 return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                    <tr>
                                                         <th>{newKlaim.indexOf(item) + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.cost_center}</th>
@@ -941,10 +904,10 @@ class Klaim extends Component {
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
-                                                        <th>{item.status_reject === 0 ? item.history.split(',').reverse()[0] : item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 3 ? 'Verifikasi Finance' : item.status_transaksi === 4 ? 'Verifikasi Klaim' : ''}</th>
+                                                        <th>{item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 2 ? 'Proses Approval' : ''}</th>
+                                                        <th>{item.reason}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
-                                                            <Button size='sm' className='mb-1' color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
                                                 )
@@ -952,7 +915,52 @@ class Klaim extends Component {
                                         </tbody>
                                     </Table>
                                 </div>
-                                )}
+                            ) : (
+                                noDis.length === 0 ? (
+                                    <div></div>
+                                ) : (
+                                    <div className={style.tableDashboard}>
+                                        <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>NO.AJUAN</th>
+                                                    <th>COST CENTRE</th>
+                                                    <th>AREA</th>
+                                                    <th>NO.COA</th>
+                                                    <th>NAMA COA</th>
+                                                    <th>KETERANGAN TAMBAHAN</th>
+                                                    <th>PERIODE</th>
+                                                    <th>STATUS</th>
+                                                    <th>ALASAN</th>
+                                                    <th>OPSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {newKlaim.map(item => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{newKlaim.indexOf(item) + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                            <th>{item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 2 ? 'Proses Approval' : ''}</th>
+                                                            <th>{item.reason}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                )
+                            )}
                             <div>
                                 <div className={style.infoPageEmail1}>
                                     <text>Showing 1 of 1 pages</text>
@@ -978,6 +986,21 @@ class Klaim extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
+                <Modal isOpen={this.props.klaim.isLoading ? true : false} size="sm">
+                    <ModalBody>
+                    <div>
+                        <div className={style.cekUpdate}>
+                            <Spinner />
+                            <div sucUpdate>Waiting....</div>
+                        </div>
+                    </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.modalStock} toggle={this.openModalStock} size="lg">
+                    <ModalHeader>
+                        Rincian
+                    </ModalHeader>
+                </Modal>
                 <Modal isOpen={this.state.modalRinci} className='modalrinci'  toggle={this.openModalRinci} size="xl">
                     <ModalBody>
                         <div>
@@ -1000,19 +1023,8 @@ class Klaim extends Component {
                             <Table bordered responsive hover className={style.tab}>
                                 <thead>
                                     <tr className='tbklaim'>
-                                        <th>
-                                            <input  
-                                            className='mr-2'
-                                            type='checkbox'
-                                            checked={listMut.length === 0 ? false : listMut.length === detailKlaim.length ? true : false}
-                                            onChange={() => listMut.length === detailKlaim.length ? this.chekRej('all') : this.chekApp('all')}
-                                            />
-                                            Select
-                                        </th>
-                                        {level === '2' ? (<></>) : (
-                                            <th>OPSI</th>
-                                        )}
                                         <th>NO</th>
+                                        <th>Status</th>
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>
                                         <th>NAMA COA</th>
@@ -1030,26 +1042,21 @@ class Klaim extends Component {
                                         <th>NOMINAL</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>TANGGAL TRANSFER</th>
-                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {detailKlaim.length !== 0 && detailKlaim.map(item => {
                                         return (
                                             <tr>
-                                                <th>
-                                                    <input 
-                                                    type='checkbox'
-                                                    checked={listMut.find(element => element === item.id) !== undefined ? true : false}
-                                                    onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
-                                                    />
-                                                </th>
-                                                {level === '2' ? (<></>) : (
-                                                <th>
-                                                    <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Proses</Button>
-                                                </th>
-                                                )}
                                                 <th scope="row">{detailKlaim.indexOf(item) + 1}</th>
+                                                <th>
+                                                    {item.isreject === 1 || item.isreject === 0 ? 
+                                                    <>
+                                                        {item.isreject === 1 ? 'Perlu Diperbaiki' : 'Telah diperbaiki'}
+                                                        <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Update</Button>
+                                                    </>
+                                                    :'-'}
+                                                </th>
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
@@ -1062,7 +1069,6 @@ class Klaim extends Component {
                                                 <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                <th>-</th>
                                                 <th>-</th>
                                                 <th>-</th>
                                                 <th>-</th>
@@ -1082,20 +1088,279 @@ class Klaim extends Component {
                             <Button color="primary"  onClick={() => this.openProsesModalDoc(detailKlaim[0])}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
-                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
-                                <div></div>
-                            ) : (
-                                <>
-                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
-                                        Reject
-                                    </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
-                                        Submit
-                                    </Button>
-                                </>
-                            )}
+                            {/* <Button className="mr-2" disabled={this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
+                                Reject
+                            </Button> */}
+                            <Button color="success" disabled={this.state.filter !== 'available' ? true : false} onClick={this.checkSubmitRev}>
+                                Submit Revisi
+                            </Button>
                         </div>
                     </div>
+                </Modal>
+                <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
+                    <ModalHeader>
+                        Update Data Klaim
+                    </ModalHeader>
+                    <ModalBody>
+                        <div className="mainRinci2">
+                            <Formik
+                            initialValues = {{
+                                keterangan: dataRinci.keterangan,
+                                periode_awal: dataRinci.periode_awal,
+                                periode_akhir: dataRinci.periode_akhir,
+                                nilai_ajuan: dataRinci.nilai_ajuan,
+                                norek_ajuan: dataRinci.norek_ajuan,
+                                nama_tujuan: dataRinci.nama_tujuan,
+                                status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : 'Ya',
+                                nama_npwp: dataRinci.nama_npwp === null ? '' : dataRinci.nama_npwp,
+                                no_npwp: dataRinci.no_npwp === null ? '' : dataRinci.no_npwp,
+                                no_ktp: dataRinci.no_ktp === null ? '' : dataRinci.no_ktp,
+                                nama_ktp: dataRinci.nama_ktp === null ? '' : dataRinci.nama_ktp
+                            }}
+                            validationSchema = {klaimSchema}
+                            onSubmit={(values) => {this.prosesEditKlaim(values)}}
+                            >
+                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                                <div className="rightRinci2">
+                                    <div>
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>No COA</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={dataRinci.no_coa}
+                                                onBlur={handleBlur("no_coa")}
+                                                onChange={handleChange("no_coa")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.no_coa === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama COA</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={dataRinci.nama_coa}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.no_coa === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Keterangan</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.keterangan}
+                                                onBlur={handleBlur("keterangan")}
+                                                onChange={handleChange("keterangan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.keterangan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Periode</Col>
+                                            <Col md={9} className="colRinci">: 
+                                                <Input
+                                                type= "date"
+                                                disabled
+                                                className="inputRinci"
+                                                value={values.periode_awal}
+                                                onBlur={handleBlur("periode_awal")}
+                                                onChange={handleChange("periode_awal")}
+                                                />
+                                                <text className='mr-1 ml-1'>To</text>
+                                                <Input
+                                                type= "date" 
+                                                disabled
+                                                className="inputRinci"
+                                                value={values.periode_akhir}
+                                                onBlur={handleBlur("periode_akhir")}
+                                                onChange={handleChange("periode_akhir")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.periode_awal || errors.periode_akhir ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : values.periode_awal > values.periode_akhir ? (
+                                            <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
+                                        ) : null }
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nilai Yang Diajukan</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.nilai_ajuan}
+                                                onBlur={handleBlur("nilai_ajuan")}
+                                                onChange={handleChange("nilai_ajuan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.nilai_ajuan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Bank</Col>
+                                            <Col md={9} className="colRinci">: 
+                                                <Select
+                                                    className="inputRinci2"
+                                                    options={this.state.bankList}
+                                                    onChange={this.selectBank}
+                                                    defaultValue={this.state.bankList[0]}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.bank === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor Rekening</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                disabled={this.state.digit === 0 ? true : false}
+                                                minLength={this.state.digit}
+                                                maxLength={this.state.digit}
+                                                value={values.norek_ajuan}
+                                                onBlur={handleBlur("norek_ajuan")}
+                                                onChange={handleChange("norek_ajuan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit ? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Atas Nama</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.nama_tujuan}
+                                                onBlur={handleBlur("nama_tujuan")}
+                                                onChange={handleChange("nama_tujuan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.nama_tujuan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Memiliki NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "select" 
+                                                className="inputRinci"
+                                                value={values.status_npwp}
+                                                onBlur={handleBlur("status_npwp")}
+                                                onChange={handleChange("status_npwp")}
+                                                >
+                                                    <option>{values.status_npwp}</option>
+                                                    <option>-Pilih-</option>
+                                                    <option value="Ya">Ya</option>
+                                                    <option value="Tidak">Tidak</option>
+                                                </Input>
+                                            </Col>
+                                        </Row>
+                                        {errors.status_npwp ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama Sesuai NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Ya' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Ya' ? values.nama_npwp : ''}
+                                                onBlur={handleBlur("nama_npwp")}
+                                                onChange={handleChange("nama_npwp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Ya' && values.nama_npwp === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Ya' ? false : true}
+                                                type= "text" 
+                                                minLength={15}
+                                                maxLength={15}
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Ya' ? values.no_npwp : ''}
+                                                onBlur={handleBlur("no_npwp")}
+                                                onChange={handleChange("no_npwp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
+                                            <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama Sesuai KTP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Tidak' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Tidak' ? values.nama_ktp : ''}
+                                                onBlur={handleBlur("nama_ktp")}
+                                                onChange={handleChange("nama_ktp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Tidak' && values.nama_ktp === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor KTP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Tidak' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                minLength={16}
+                                                maxLength={16}
+                                                value={values.status_npwp === 'Tidak' ? values.no_ktp : ''}
+                                                onBlur={handleBlur("no_ktp")}
+                                                onChange={handleChange("no_ktp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Tidak' && values.no_ktp.length < 16 ? (
+                                            <text className={style.txtError}>must be filled with 16 digits characters</text>
+                                        ) : null}
+                                    </div>
+                                    <div className="modalFoot mt-3">
+                                        <div></div>
+                                        <div className='btnfoot'>
+                                            <Button 
+                                                className="mr-3" 
+                                                size="md" 
+                                                disabled={this.state.no_coa === '' ? true 
+                                                : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp === '' ) ? true 
+                                                : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
+                                                : values.norek_ajuan.length < this.state.digit ? true 
+                                                : false } 
+                                                color="primary" 
+                                                onClick={handleSubmit}>
+                                                Save
+                                            </Button>
+                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            </Formik>
+                        </div>
+                    </ModalBody>
                 </Modal>
                 <Modal className='modalrinci' isOpen={this.state.modalFaa} toggle={this.openModalFaa} size="xl">
                     <ModalHeader>
@@ -1465,308 +1730,6 @@ class Klaim extends Component {
                         </div>
                     </div>
                 </Modal>
-                <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
-                    <ModalHeader>
-                        Update Data Klaim
-                    </ModalHeader>
-                    <ModalBody>
-                        <div className="mainRinci2">
-                            <Formik
-                            initialValues = {{
-                                keterangan: dataRinci.keterangan,
-                                periode_awal: dataRinci.periode_awal,
-                                periode_akhir: dataRinci.periode_akhir,
-                                nilai_ajuan: dataRinci.nilai_ajuan,
-                                norek_ajuan: dataRinci.norek_ajuan,
-                                nama_tujuan: dataRinci.nama_tujuan,
-                                status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : 'Ya',
-                                nama_npwp: dataRinci.nama_npwp === null ? '' : dataRinci.nama_npwp,
-                                no_npwp: dataRinci.no_npwp === null ? '' : dataRinci.no_npwp,
-                                no_ktp: dataRinci.no_ktp === null ? '' : dataRinci.no_ktp,
-                                nama_ktp: dataRinci.nama_ktp === null ? '' : dataRinci.nama_ktp,
-                                ppu: dataRinci.ppu === null ? '' : dataRinci.ppu,
-                                pa: dataRinci.pa === null ? '' : dataRinci.pa,
-                                nominal: dataRinci.nominal === null ? '' : dataRinci.nominal
-                            }}
-                            validationSchema = {klaimSchema}
-                            onSubmit={(values) => {this.prosesEditKlaim(values)}}
-                            >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
-                                <div className="rightRinci2">
-                                    <div>
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>No COA</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={dataRinci.no_coa}
-                                                onBlur={handleBlur("no_coa")}
-                                                onChange={handleChange("no_coa")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {this.state.no_coa === '' ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nama COA</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={dataRinci.nama_coa}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {this.state.no_coa === '' ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Keterangan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                type= "text"
-                                                disabled
-                                                className="inputRinci"
-                                                value={values.keterangan}
-                                                onBlur={handleBlur("keterangan")}
-                                                onChange={handleChange("keterangan")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.keterangan ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Periode</Col>
-                                            <Col md={9} className="colRinci">: 
-                                                <Input
-                                                type= "date"
-                                                disabled
-                                                className="inputRinci"
-                                                value={values.periode_awal}
-                                                onBlur={handleBlur("periode_awal")}
-                                                onChange={handleChange("periode_awal")}
-                                                />
-                                                <text className='mr-1 ml-1'>To</text>
-                                                <Input
-                                                type= "date" 
-                                                disabled
-                                                className="inputRinci"
-                                                value={values.periode_akhir}
-                                                onBlur={handleBlur("periode_akhir")}
-                                                onChange={handleChange("periode_akhir")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.periode_awal || errors.periode_akhir ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : values.periode_awal > values.periode_akhir ? (
-                                            <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
-                                        ) : null }
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nilai Yang Diajukan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.nilai_ajuan}
-                                                onBlur={handleBlur("nilai_ajuan")}
-                                                onChange={handleChange("nilai_ajuan")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.nilai_ajuan ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Bank</Col>
-                                            <Col md={9} className="colRinci">: <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.bank_tujuan}
-                                                onBlur={handleBlur("bank_tujuan")}
-                                                onChange={handleChange("bank_tujuan")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {values.bank_tujuan === '' ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nomor Rekening</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                type= "text" 
-                                                className="inputRinci"
-                                                disabled
-                                                minLength={this.state.digit}
-                                                maxLength={this.state.digit}
-                                                value={values.norek_ajuan}
-                                                onBlur={handleBlur("norek_ajuan")}
-                                                onChange={handleChange("norek_ajuan")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {/* {errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit ? (
-                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
-                                        ) : null} */}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Atas Nama</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.nama_tujuan}
-                                                onBlur={handleBlur("nama_tujuan")}
-                                                onChange={handleChange("nama_tujuan")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.nama_tujuan ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Memiliki NPWP</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "select" 
-                                                className="inputRinci"
-                                                value={values.status_npwp}
-                                                onBlur={handleBlur("status_npwp")}
-                                                onChange={handleChange("status_npwp")}
-                                                >
-                                                    <option>{values.status_npwp}</option>
-                                                    <option>-Pilih-</option>
-                                                    <option value="Ya">Ya</option>
-                                                    <option value="Tidak">Tidak</option>
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {errors.status_npwp ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nama Sesuai NPWP</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.status_npwp === 'Ya' ? values.nama_npwp : ''}
-                                                onBlur={handleBlur("nama_npwp")}
-                                                onChange={handleChange("nama_npwp")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {values.status_npwp === 'Ya' && values.nama_npwp === '' ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nomor NPWP</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                minLength={15}
-                                                maxLength={15}
-                                                className="inputRinci"
-                                                value={values.status_npwp === 'Ya' ? values.no_npwp : ''}
-                                                onBlur={handleBlur("no_npwp")}
-                                                onChange={handleChange("no_npwp")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
-                                            <text className={style.txtError}>must be filled with 15 digits characters</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nama Sesuai KTP</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.status_npwp === 'Tidak' ? values.nama_ktp : ''}
-                                                onBlur={handleBlur("nama_ktp")}
-                                                onChange={handleChange("nama_ktp")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {values.status_npwp === 'Tidak' && values.nama_ktp === '' ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nomor KTP</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                minLength={16}
-                                                maxLength={16}
-                                                value={values.status_npwp === 'Tidak' ? values.no_ktp : ''}
-                                                onBlur={handleBlur("no_ktp")}
-                                                onChange={handleChange("no_ktp")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {values.status_npwp === 'Tidak' && values.no_ktp.length < 16 ? (
-                                            <text className={style.txtError}>must be filled with 16 digits characters</text>
-                                        ) : null}
-                                    </div>
-                                    <Row className="mb-2 rowRinci">
-                                        <Col md={3}>PPU</Col>
-                                        <Col md={9} className="colRinci">:  <Input
-                                            type= "text" 
-                                            className="inputRinci"
-                                            value={values.ppu}
-                                            onBlur={handleBlur("ppu")}
-                                            onChange={handleChange("ppu")}
-                                            />
-                                        </Col>
-                                    </Row>
-                                    <Row className="mb-2 rowRinci">
-                                        <Col md={3}>PA</Col>
-                                        <Col md={9} className="colRinci">:  <Input
-                                            type= "text" 
-                                            className="inputRinci"
-                                            value={values.pa}
-                                            onBlur={handleBlur("pa")}
-                                            onChange={handleChange("pa")}
-                                            />
-                                        </Col>
-                                    </Row>
-                                    <Row className="mb-2 rowRinci">
-                                        <Col md={3}>NOMINAL</Col>
-                                        <Col md={9} className="colRinci">:  <Input
-                                            type= "text" 
-                                            className="inputRinci"
-                                            value={values.nominal}
-                                            onBlur={handleBlur("nominal")}
-                                            onChange={handleChange("nominal")}
-                                            />
-                                        </Col>
-                                    </Row>
-                                    <div className="modalFoot mt-3">
-                                        <div></div>
-                                        <div className='btnfoot'>
-                                            <Button 
-                                                className="mr-3" 
-                                                size="md" 
-                                                disabled={ values.ppu === '' ? true 
-                                                : values.pa === '' ? true 
-                                                : values.nominal === '' ? true 
-                                                : false } 
-                                                color="primary" 
-                                                onClick={handleSubmit}>
-                                                Save
-                                            </Button>
-                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            </Formik>
-                        </div>
-                    </ModalBody>
-                </Modal>
                 <Modal isOpen={this.state.openReject} toggle={this.openModalReject} centered={true}>
                     <ModalBody>
                     <Formik
@@ -1832,29 +1795,19 @@ class Klaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading ? true : false} size="sm">
-                        <ModalBody>
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <Spinner />
-                                <div sucUpdate>Waiting....</div>
-                            </div>
-                        </div>
-                        </ModalBody>
-                </Modal>
-                <Modal isOpen={this.state.openApprove && level !== '5'} toggle={this.openModalApprove} centered={true}>
+                <Modal isOpen={this.state.openApprove} toggle={this.openModalApprove} centered={true}>
                     <ModalBody>
                         <div className={style.modalApprove}>
                             <div>
                                 <text>
-                                    Anda yakin untuk submit     
+                                    Anda yakin untuk submit revisi     
                                     <text className={style.verif}> </text>
                                     pada tanggal
-                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                    <text className={style.verif}> {moment().format('LL')}</text> ?
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveDataKlaim()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prosesSubmitRevisi()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1868,7 +1821,7 @@ class Klaim extends Component {
                                     Anda yakin untuk submit     
                                     <text className={style.verif}> </text>
                                     pada tanggal
-                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                    <text className={style.verif}> {moment().format('LL')}</text> ?
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
@@ -1901,11 +1854,11 @@ class Klaim extends Component {
                             <div className={[style.sucUpdate, style.green]}>Gagal Approve</div>
                         </div>
                         </div>
-                    ) : this.state.confirm === 'rejReject' ?(
+                    ) : this.state.confirm === 'rejSubmit' ?(
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal Reject</div>
+                                <div className={[style.sucUpdate, style.green]}>Gagal submit revisi, pastikan semua data reject telah diupdate</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'isApprove' ? (
@@ -1919,21 +1872,7 @@ class Klaim extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
-                            </div>
-                        </div>
-                    ) : this.state.confirm === 'rejSubmitKlm' ?(
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, dan nominal telah diisi</div>
-                            </div>
-                        </div>
-                    ) : this.state.confirm === 'rejSubmit' ?(
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, dan nominal telah diisi</div>
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Submit Revisi</div>
                             </div>
                         </div>
                     ) : (
@@ -1961,8 +1900,8 @@ class Klaim extends Component {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
-                                        <Col md={12} lg={12} className='mb-2' >
-                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
+                                        <Col md={12} lg={12} >
+                                            <div className="btnDocIo mb-2" >{x.desc}</div>
                                             {x.status === 0 ? (
                                                 <AiOutlineClose size={20} />
                                             ) : x.status === 3 ? (
@@ -1971,27 +1910,34 @@ class Klaim extends Component {
                                                 <BsCircle size={20} />
                                             )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
-                                            {/* <div className="colDoc">
-                                                <input
-                                                className="ml-4"
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                                <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
-                                            </div> */}
+                                            {level === '5' && (
+                                                <div className="colDoc">
+                                                    <input
+                                                    type="file"
+                                                    className='ml-4'
+                                                    onClick={() => this.setState({detail: x})}
+                                                    onChange={this.onChangeUpload}
+                                                    />
+                                                    <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                                </div>
+                                            )}
+                                            
                                         </Col>
                                     ) : (
-                                        <Col md={6} lg={6} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
-                                            <div className="colDoc">
-                                                <input
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                            </div>
-                                            <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                        <Col md={12} lg={12} className="colDoc">
+                                            <text className="btnDocIo" >{x.desc}</text>
+                                            {level === '5' && (
+                                                <>
+                                                    <div className="colDoc">
+                                                        <input
+                                                        type="file"
+                                                        onClick={() => this.setState({detail: x})}
+                                                        onChange={this.onChangeUpload}
+                                                        />
+                                                    </div>
+                                                    <text className="txtError">Maximum file upload is 20 Mb</text>
+                                                </>
+                                            )}
                                         </Col>
                                     )}
                                 </Row>
@@ -2043,10 +1989,10 @@ const mapStateToProps = state => ({
     approve: state.approve,
     depo: state.depo,
     user: state.user,
-    notif: state.notif,
     klaim: state.klaim,
     menu: state.menu,
-    reason: state.reason
+    reason: state.reason,
+    bank: state.bank
 })
 
 const mapDispatchToProps = {
@@ -2064,8 +2010,11 @@ const mapDispatchToProps = {
     getReason: reason.getReason,
     rejectKlaim: klaim.rejectKlaim,
     resetKlaim: klaim.resetKlaim,
-    submitVerif: klaim.submitVerif,
-    editVerif: klaim.editVerif
+    uploadDocKlaim: klaim.UploadDocCart,
+    editKlaim: klaim.editKlaim,
+    appRevisi: klaim.appRevisi,
+    getBank: bank.getBank,
+    submitRevisi: klaim.submitRevisi
     // notifStock: notif.notifStock
 }
 

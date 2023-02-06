@@ -7,32 +7,33 @@ import { Container, Collapse, Nav, Navbar,
     UncontrolledDropdown, DropdownToggle, DropdownMenu, Dropdown,
     DropdownItem, Table, ButtonDropdown, Input, Button, Col,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
-import approve from '../redux/actions/approve'
-import coa from '../redux/actions/coa'
+import approve from '../../redux/actions/approve'
+import coa from '../../redux/actions/coa'
 import {BsCircle} from 'react-icons/bs'
 import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList} from 'react-icons/fa'
-import Sidebar from "../components/Header";
+import Sidebar from "../../components/Header";
 import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
-import MaterialTitlePanel from "../components/material_title_panel"
-import SidebarContent from "../components/sidebar_content"
-import style from '../assets/css/input.module.css'
-import placeholder from  "../assets/img/placeholder.png"
-import user from '../redux/actions/user'
-import klaim from '../redux/actions/klaim'
-import bank from '../redux/actions/bank'
+import MaterialTitlePanel from "../../components/material_title_panel"
+import SidebarContent from "../../components/sidebar_content"
+import style from '../../assets/css/input.module.css'
+import placeholder from  "../../assets/img/placeholder.png"
+import user from '../../redux/actions/user'
+import klaim from '../../redux/actions/klaim'
+import bank from '../../redux/actions/bank'
+import rekening from '../../redux/actions/rekening'
 import {connect} from 'react-redux'
 import moment from 'moment'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import auth from '../redux/actions/auth'
+import auth from '../../redux/actions/auth'
 import Select from 'react-select'
 // import notif from '../redux/actions/notif'
-import Pdf from "../components/Pdf"
-import depo from '../redux/actions/depo'
+import Pdf from "../../components/Pdf"
+import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
-import NavBar from '../components/NavBar'
+import NavBar from '../../components/NavBar'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const addSchema = Yup.object().shape({
@@ -40,8 +41,6 @@ const addSchema = Yup.object().shape({
     periode_awal: Yup.date().required("must be filled"),
     periode_akhir: Yup.date().required('must be filled'),
     nilai_ajuan: Yup.string().required("must be filled"),
-    norek_ajuan: Yup.number().required("must be filled"),
-    nama_tujuan: Yup.string().required("must be filled"),
     status_npwp: Yup.string().required('must be filled'),
 })
 
@@ -109,7 +108,11 @@ class CartKlaim extends Component {
             modalFaa: false,
             totalfpd: 0,
             bank: '',
-            digit: 0
+            digit: 0,
+            rekList: [],
+            norek: '',
+            tiperek: '',
+            tujuan_tf: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -606,6 +609,7 @@ class CartKlaim extends Component {
         }
     }
 
+
     deleteCart = async (val) => {
         const token = localStorage.getItem("token")
         await this.props.deleteCart(token, val)
@@ -614,6 +618,7 @@ class CartKlaim extends Component {
 
     addCartKlaim = async (val) => {
         const token = localStorage.getItem("token")
+        const {detailDepo} = this.props.depo
         const data = {
             no_coa: this.state.no_coa,
             keterangan: val.keterangan,
@@ -621,8 +626,10 @@ class CartKlaim extends Component {
             periode_akhir: val.periode_akhir,
             nilai_ajuan: val.nilai_ajuan,
             bank_tujuan: this.state.bank,
-            norek_ajuan: val.norek_ajuan,
-            nama_tujuan: val.nama_tujuan,
+            norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
+            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : val.nama_tujuan,
+            tujuan_tf: this.state.tujuan_tf,
+            tiperek: this.state.tiperek,
             status_npwp: val.status_npwp === 'Tidak' ? 0 : 1,
             nama_npwp: val.status_npwp === 'Tidak' ? '' : val.nama_npwp,
             no_npwp: val.status_npwp === 'Tidak' ? '' : val.no_npwp,
@@ -712,6 +719,21 @@ class CartKlaim extends Component {
         }
     }
 
+    prosesOpenAdd = async () => {
+        const token = localStorage.getItem('token')
+        await this.props.getRek(token)
+        await this.props.getDetailDepo(token)
+        const { dataRek } = this.props.rekening
+        const temp = [
+            {value: '', label: '-Pilih-'},
+            {label: dataRek[0].rek_spending, value: 'Rekening Spending Card'},
+            {label: dataRek[0].rek_zba, value: 'Rekening ZBA'},
+            {label: dataRek[0].rek_bankcol, value: 'Rekening Bank Coll'}
+        ]
+        this.setState({rekList: temp})
+        this.openModalAdd()
+    }
+
     showDokumen = async (value) => {
         const token = localStorage.getItem('token')
         await this.props.showDokumen(token, value.id)
@@ -746,7 +768,7 @@ class CartKlaim extends Component {
     }
 
     openModalAdd = () => {
-        this.setState({no_coa: '', nama_coa: ''})
+        this.setState({no_coa: '', nama_coa: '', bank: '', digit: 0, norek: '', tiperek: '', tujuan_tf: ''})
         this.setState({modalAdd: !this.state.modalAdd})
     }
 
@@ -763,6 +785,18 @@ class CartKlaim extends Component {
 
     selectBank = (e) => {
         this.setState({bank: e.label, digit: e.value})
+    }
+
+    selectRek = (e) => {
+        this.setState({norek: e.label, tiperek: e.value})
+    }
+
+    selectTujuan = (val) => {
+        if (val === 'PMA') {
+            this.setState({tujuan_tf: val, bank: 'Bank Mandiri', digit: 13})
+        } else {
+            this.setState({tujuan_tf: val, bank: '', digit: 0})
+        }
     }
 
     modalStatus = () => {
@@ -855,7 +889,7 @@ class CartKlaim extends Component {
                                 <div className={style.titleDashboard}>Draft Pengajuan Klaim</div>
                             </div>
                             <div className={style.secklaim}>
-                                <Button className='mr-2 mb-2' onClick={this.openModalAdd} color="info" size="lg">Add</Button>
+                                <Button className='mr-2 mb-2' onClick={this.prosesOpenAdd} color="info" size="lg">Add</Button>
                                 <Button className='mb-2' onClick={this.prosesSubmitPre} color="success" size="lg">Submit</Button>
                             </div>
                                 <div className={style.tableDashboard}>
@@ -1044,6 +1078,24 @@ class CartKlaim extends Component {
                                             <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Tujuan Transfer</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "select" 
+                                                className="inputRinci"
+                                                value={this.state.tujuan_tf}
+                                                onChange={e => this.selectTujuan(e.target.value)}
+                                                >
+                                                    <option value=''>Pilih</option>
+                                                    <option value="PMA">PMA</option>
+                                                    <option value="Outlet">Outlet</option>
+                                                </Input>
+                                            </Col>
+                                        </Row>
+                                        {this.state.tujuan_tf === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
                                             <Col md={3}>Keterangan</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 type= "text" 
@@ -1100,11 +1152,21 @@ class CartKlaim extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Bank</Col>
                                             <Col md={9} className="colRinci">: 
-                                                <Select
-                                                    className="inputRinci2"
-                                                    options={this.state.bankList}
-                                                    onChange={this.selectBank}
+                                            {this.state.tujuan_tf === 'PMA' ? (
+                                                <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={this.state.bank}
+                                                disabled
                                                 />
+                                            ) : (
+                                                <Select
+                                                isDisabled={this.state.tujuan_tf === '' && true}
+                                                className="inputRinci2"
+                                                options={this.state.bankList}
+                                                onChange={this.selectBank}
+                                                />
+                                            )}
                                             </Col>
                                         </Row>
                                         {this.state.bank === '' ? (
@@ -1112,7 +1174,15 @@ class CartKlaim extends Component {
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nomor Rekening</Col>
-                                            <Col md={9} className="colRinci">:  <Input
+                                            <Col md={9} className="colRinci">:  
+                                            {this.state.tujuan_tf === 'PMA' ? (
+                                                <Select
+                                                    className="inputRinci2"
+                                                    options={this.state.rekList}
+                                                    onChange={this.selectRek}
+                                                />
+                                            ) : (
+                                                <Input
                                                 type= "text" 
                                                 className="inputRinci"
                                                 disabled={this.state.digit === 0 ? true : false}
@@ -1122,24 +1192,27 @@ class CartKlaim extends Component {
                                                 onBlur={handleBlur("norek_ajuan")}
                                                 onChange={handleChange("norek_ajuan")}
                                                 />
+                                            )}
                                             </Col>
                                         </Row>
-                                        {errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit ? (
+                                        {(errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit) && this.state.tujuan_tf !== 'PMA'? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : this.state.tujuan_tf === 'PMA' && this.state.norek.length !== this.state.digit ? (
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Atas Nama</Col>
                                             <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
+                                                disabled={this.state.tujuan_tf === '' || this.state.tujuan_tf === 'PMA' ? true : false}
                                                 type= "text" 
                                                 className="inputRinci"
-                                                value={values.nama_tujuan}
+                                                value={this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : values.nama_tujuan}
                                                 onBlur={handleBlur("nama_tujuan")}
                                                 onChange={handleChange("nama_tujuan")}
                                                 />
                                             </Col>
                                         </Row>
-                                        {errors.nama_tujuan ? (
+                                        {values.nama_tujuan === '' && this.state.tujuan_tf !== 'PMA' ? (
                                             <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
@@ -1152,8 +1225,7 @@ class CartKlaim extends Component {
                                                 onBlur={handleBlur("status_npwp")}
                                                 onChange={handleChange("status_npwp")}
                                                 >
-                                                    <option>{values.status_npwp}</option>
-                                                    <option>-Pilih-</option>
+                                                    <option value=''>Pilih</option>
                                                     <option value="Ya">Ya</option>
                                                     <option value="Tidak">Tidak</option>
                                                 </Input>
@@ -1236,7 +1308,8 @@ class CartKlaim extends Component {
                                                 disabled={this.state.no_coa === '' ? true 
                                                 : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp === '' ) ? true 
                                                 : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
-                                                : values.norek_ajuan.length < this.state.digit ? true 
+                                                // : values.norek_ajuan.length < this.state.digit ? true 
+                                                : this.state.tujuan_tf === '' ? true
                                                 : false } 
                                                 color="primary" 
                                                 onClick={handleSubmit}>
@@ -2201,7 +2274,8 @@ const mapStateToProps = state => ({
     notif: state.notif,
     coa: state.coa,
     klaim: state.klaim,
-    bank: state.bank
+    bank: state.bank,
+    rekening: state.rekening
 })
 
 const mapDispatchToProps = {
@@ -2221,7 +2295,8 @@ const mapDispatchToProps = {
     uploadDocKlaim: klaim.UploadDocCart,
     getBank: bank.getBank,
     submitKlaimFinal: klaim.submitKlaimFinal,
-    getApproval: klaim.getApproval
+    getApproval: klaim.getApproval,
+    getRek: rekening.getRek
     // notifStock: notif.notifStock
 }
 

@@ -2,33 +2,32 @@ import React, { Component } from 'react'
 import {  NavbarBrand, DropdownToggle, DropdownMenu,
     DropdownItem, Table, ButtonDropdown, Input, Button,
     Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
-import style from '../assets/css/input.module.css'
-import {FaSearch, FaBankCircle, FaBars} from 'react-icons/fa'
+import style from '../../assets/css/input.module.css'
+import {FaSearch, FaBars} from 'react-icons/fa'
 import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
-import depo from '../redux/actions/depo'
-import user from '../redux/actions/user'
-import bank from '../redux/actions/bank'
+import depo from '../../redux/actions/depo'
+import user from '../../redux/actions/user'
+import reason from '../../redux/actions/reason'
+import menu from '../../redux/actions/menu'
 import {connect} from 'react-redux'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import auth from '../redux/actions/auth'
+import auth from '../../redux/actions/auth'
 import {default as axios} from 'axios'
-import Sidebar from "../components/Header";
-import MaterialTitlePanel from "../components/material_title_panel";
-import SidebarContent from "../components/sidebar_content";
-import NavBar from '../components/NavBar'
+import Sidebar from "../../components/Header";
+import MaterialTitlePanel from "../../components/material_title_panel";
+import SidebarContent from "../../components/sidebar_content";
+import NavBar from '../../components/NavBar'
 const {REACT_APP_BACKEND_URL} = process.env
 
-const bankSchema = Yup.object().shape({
-    name: Yup.string().required(),
-    digit: Yup.number().required(),
-    kode_bank: Yup.number().required()
+const reasonSchema = Yup.object().shape({
+    desc: Yup.string().required(),
+    route: Yup.string().required(),
 });
 
-const bankEditSchema = Yup.object().shape({
-    name: Yup.string().required(),
-    digit: Yup.number().required(),
-    kode_bank: Yup.number().required()
+const reasonEditSchema = Yup.object().shape({
+    desc: Yup.string().required(),
+    route: Yup.string().required()
 });
 
 const changeSchema = Yup.object().shape({
@@ -36,7 +35,7 @@ const changeSchema = Yup.object().shape({
     new_password: Yup.string().required('must be filled')
 });
 
-class MasterBank extends Component {
+class MasterReason extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -107,7 +106,7 @@ class MasterBank extends Component {
      }
 
     DownloadMaster = () => {
-        const {link} = this.props.bank
+        const {link} = this.props.reason
         axios({
             url: `${link}`,
             method: 'GET',
@@ -167,10 +166,10 @@ class MasterBank extends Component {
         });
     }
 
-    addBank = async (values) => {
+    addReason = async (values) => {
         const token = localStorage.getItem("token")
-        await this.props.addBank(token, values)
-        const {isAdd} = this.props.bank
+        await this.props.addReason(token, values)
+        const {isAdd} = this.props.reason
         if (isAdd) {
             this.setState({confirm: 'add'})
             this.openConfirm()
@@ -179,10 +178,10 @@ class MasterBank extends Component {
         }
     }
 
-    delBank = async () => {
+    delReason = async () => {
         const token = localStorage.getItem("token")
         const {detail} = this.state
-        await this.props.deleteBank(token, detail.id)
+        await this.props.deleteReason(token, detail.id)
         this.openModalEdit()
         this.setState({confirm: 'del'})
         this.openConfirm()
@@ -191,13 +190,13 @@ class MasterBank extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.bank
+        const { page } = this.props.reason
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.bank
+        const { page } = this.props.reason
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.prevLink)
     }
@@ -229,10 +228,10 @@ class MasterBank extends Component {
         await this.props.uploadMaster(token, data)
     }
 
-    editBank = async (values, id) => {
+    editReason = async (values, id) => {
         const token = localStorage.getItem("token")
-        await this.props.updateBank(token, values, id)
-        const {isUpdate} = this.props.bank
+        await this.props.updateReason(token, values, id)
+        const {isUpdate} = this.props.reason
         if (isUpdate) {
             this.setState({confirm: 'edit'})
             this.openConfirm()
@@ -247,7 +246,7 @@ class MasterBank extends Component {
     }
 
     componentDidUpdate() {
-        const {isError, isUpload, isExport, isReset} = this.props.bank
+        const {isError, isUpload, isExport, isReset} = this.props.reason
         if (isError) {
             this.props.resetError()
             this.showAlert()
@@ -272,18 +271,19 @@ class MasterBank extends Component {
 
     async componentDidMount() {
         const token = localStorage.getItem("token")
+        await this.props.getAllMenu(token, 'reject')
         this.getDataCount()
     }
 
     getDataCount = async (value) => {
-        const { page } = this.props.bank
+        const { page } = this.props.reason
         const pages = value === undefined || value.page === undefined ? page.currentPage : value.page
         const token = localStorage.getItem("token")
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
         const filter = value === undefined || value.filter === undefined ? this.state.filter : value.filter
         console.log(this.state.filter)
-        await this.props.getBank(token, limit, search, pages, filter)
+        await this.props.getReason(token, limit, search, pages, filter)
         this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages})
     }
 
@@ -311,7 +311,8 @@ class MasterBank extends Component {
 
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
-        const {dataBank, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.bank
+        const {dataReason, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.reason
+        const dataMenu = this.props.menu.dataAll
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
 
@@ -361,7 +362,7 @@ class MasterBank extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master Bank</div>
+                                    <div className={style.titleDashboard}>Master Alasan</div>
                                 </div>
                                 <div className={style.secHeadDashboard} >
                                     <div>
@@ -378,7 +379,7 @@ class MasterBank extends Component {
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
                                     </div>
-                                    <div className='filterBank'>
+                                    <div className='filterReason'>
                                         {/* <text className='mr-2'>Filter:</text>
                                         <UncontrolledDropdown className={style.drop}>
                                             <DropdownToggle caret color="light">
@@ -405,7 +406,7 @@ class MasterBank extends Component {
                                             >
                                                 {dataRole !== undefined && dataRole.map(item => {
                                                     return (
-                                                        <DropdownItem className='uppercase' onClick={() => {this.setState({filter: item.id, filterName: item.name}); this.changeFilter({name: item.name, level: item.id})}}>{item.name}</DropdownItem>
+                                                        <DropdownItem className='uppercase' onClick={() => {this.setState({filter: item.id, filterName: item.name}); this.changeFilter({desc: item.name, level: item.id})}}>{item.name}</DropdownItem>
                                                     )
                                                 })}
                                             </DropdownMenu>
@@ -415,8 +416,8 @@ class MasterBank extends Component {
                                 <div className='secEmail'>
                                     <div className={style.headEmail}>
                                         <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
-                                        <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button>
+                                        {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
+                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button> */}
                                     </div>
                                     <div className={style.searchEmail}>
                                         <text>Search: </text>
@@ -436,8 +437,8 @@ class MasterBank extends Component {
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>Nama Bank</th>
-                                                <th>Jumlah Digit</th>
+                                                <th>Alasan</th>
+                                                <th>Rute</th>
                                             </tr>
                                         </thead>
                                     </Table>
@@ -455,8 +456,8 @@ class MasterBank extends Component {
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>Nama Bank</th>
-                                                <th>Jumlah Digit</th>
+                                                <th>Alasan</th>
+                                                <th>Rute</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -464,8 +465,8 @@ class MasterBank extends Component {
                                                 return (
                                                 <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
-                                                    <td>{item.name}</td>
-                                                    <td>{item.digit}</td>
+                                                    <td>{item.desc}</td>
+                                                    <td>{item.route}</td>
                                                 </tr>
                                             )})}
                                         </tbody>
@@ -486,66 +487,56 @@ class MasterBank extends Component {
                     </MaterialTitlePanel>
                 </Sidebar>
                 <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
-                    <ModalHeader toggle={this.openModalAdd}>Add Master Bank</ModalHeader>
+                    <ModalHeader toggle={this.openModalAdd}>Add Master Alasan</ModalHeader>
                     <Formik
                     initialValues={{
-                        name: '',
-                        digit: '',
-                        kode_bank: ''
+                        desc: '',
+                        route: '',
                     }}
-                    validationSchema={bankSchema}
-                    onSubmit={(values) => {this.addBank(values)}}
+                    validationSchema={reasonSchema}
+                    onSubmit={(values) => {this.addReason(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama Bank
+                                Alasan
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="name"
-                                value={values.name}
-                                onBlur={handleBlur("name")}
-                                onChange={handleChange("name")}
+                                name="desc"
+                                value={values.desc}
+                                onBlur={handleBlur("desc")}
+                                onChange={handleChange("desc")}
                                 />
-                                {errors.name ? (
-                                    <text className={style.txtError}>{errors.name}</text>
+                                {errors.desc ? (
+                                    <text className={style.txtError}>{errors.desc}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Jumlah Digit
+                                Rute
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="name" 
-                                name="digit"
-                                value={values.digit}
-                                onBlur={handleBlur("digit")}
-                                onChange={handleChange("digit")}
-                                />
-                                {errors.digit ? (
-                                    <text className={style.txtError}>{errors.digit}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Kode Bank
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="kode_bank"
-                                value={values.kode_bank}
-                                onBlur={handleBlur("kode_bank")}
-                                onChange={handleChange("kode_bank")}
-                                />
-                                {errors.kode_bank ? (
-                                    <text className={style.txtError}>{errors.kode_bank}</text>
+                                type="select" 
+                                name="route"
+                                disabled={values.route === "master" ? true : false}
+                                value={values.route}
+                                onChange={handleChange("route")}
+                                onBlur={handleBlur("route")}
+                                >
+                                    <option>-Pilih-</option>
+                                    {dataMenu.length > 0 && dataMenu.map(item => {
+                                        return (
+                                            <option value={item.name + ` (${item.kode_menu})`}>{item.name + ` (${item.kode_menu})`}</option>
+                                        )
+                                    })}
+                                </Input>
+                                {errors.route ? (
+                                    <text className={style.txtError}>{errors.route}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -562,73 +553,63 @@ class MasterBank extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
-                    <ModalHeader toggle={this.openModalEdit}>Edit Master Bank</ModalHeader>
+                    <ModalHeader toggle={this.openModalEdit}>Edit Master Alasan</ModalHeader>
                     <Formik
                     initialValues={{
-                        name: detail.name === null ? '' : detail.name,
-                        digit: detail.digit === null ? '' : detail.digit,
-                        kode_bank: detail.kode_bank === null ? '' : detail.kode_bank,
+                        desc: detail.desc === null ? '' : detail.desc,
+                        route: detail.route === null ? '' : detail.route,
                     }}
-                    validationSchema={bankEditSchema}
-                    onSubmit={(values) => {this.editBank(values, detail.id)}}
+                    validationSchema={reasonEditSchema}
+                    onSubmit={(values) => {this.editReason(values, detail.id)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama Bank
+                                Alasan
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="name"
-                                value={values.name}
-                                onBlur={handleBlur("name")}
-                                onChange={handleChange("name")}
+                                name="desc"
+                                value={values.desc}
+                                onBlur={handleBlur("desc")}
+                                onChange={handleChange("desc")}
                                 />
-                                {errors.name ? (
-                                    <text className={style.txtError}>{errors.name}</text>
+                                {errors.desc ? (
+                                    <text className={style.txtError}>{errors.desc}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Jumlah Digit
+                                Rute
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="name" 
-                                name="digit"
-                                value={values.digit}
-                                onBlur={handleBlur("digit")}
-                                onChange={handleChange("digit")}
-                                />
-                                {errors.digit ? (
-                                    <text className={style.txtError}>{errors.digit}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Kode Bank
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="kode_bank"
-                                value={values.kode_bank}
-                                onBlur={handleBlur("kode_bank")}
-                                onChange={handleChange("kode_bank")}
-                                />
-                                {errors.kode_bank ? (
-                                    <text className={style.txtError}>{errors.kode_bank}</text>
+                                type="select" 
+                                name="route"
+                                disabled={values.route === "master" ? true : false}
+                                value={values.route}
+                                onChange={handleChange("route")}
+                                onBlur={handleBlur("route")}
+                                >
+                                    <option>-Pilih-</option>
+                                    {dataMenu.length > 0 && dataMenu.map(item => {
+                                        return (
+                                            <option value={item.name + ` (${item.kode_menu})`}>{item.name + ` (${item.kode_menu})`}</option>
+                                        )
+                                    })}
+                                </Input>
+                                {errors.route ? (
+                                    <text className={style.txtError}>{errors.route}</text>
                                 ) : null}
                             </div>
                         </div>
                         <hr/>
                         <div className={style.foot}>
                             <div>
-                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Bank</Button>
+                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete</Button>
                             </div>
                             <div>
                                 <Button  onClick={handleSubmit} color="primary">Save</Button>
@@ -639,7 +620,7 @@ class MasterBank extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
-                    <ModalHeader>Upload Master Bank</ModalHeader>
+                    <ModalHeader>Upload Master Alasan</ModalHeader>
                     <ModalBody className={style.modalUpload}>
                         <div className={style.titleModalUpload}>
                             <text>Upload File: </text>
@@ -667,23 +648,23 @@ class MasterBank extends Component {
                         {this.state.confirm === 'edit' ? (
                         <div className={style.cekUpdate}>
                             <AiFillCheckCircle size={80} className={style.green} />
-                            <div className={style.sucUpdate}>Berhasil Memperbarui Bank</div>
+                            <div className={style.sucUpdate}>Berhasil Memperbarui Alasan</div>
                         </div>
                         ) : this.state.confirm === 'add' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menambahkan Bank</div>
+                                <div className={style.sucUpdate}>Berhasil Menambahkan Alasan</div>
                             </div>
                         ) : this.state.confirm === 'del' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menghapus Bank</div>
+                                <div className={style.sucUpdate}>Berhasil Menghapus Alasan</div>
                             </div>
                         ) : this.state.confirm === 'upload' ?(
                             <div>
                                 <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Mengupload Master Bank</div>
+                                <div className={style.sucUpdate}>Berhasil Mengupload Master Alasan</div>
                             </div>
                             </div>
                         ) : this.state.confirm === 'reset' ? (
@@ -698,7 +679,7 @@ class MasterBank extends Component {
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.bank.isLoading ? true: false} size="sm">
+                <Modal isOpen={this.props.reason.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -708,7 +689,7 @@ class MasterBank extends Component {
                         </div>
                         </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.bank.isUpload ? true: false} size="sm">
+                <Modal isOpen={this.props.reason.isUpload ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -785,11 +766,11 @@ class MasterBank extends Component {
                     <div className={style.modalApprove}>
                         <div>
                             <text>
-                                Anda yakin untuk delete bank {detail.name} ?
+                                Anda yakin untuk delete {detail.name} ?
                             </text>
                         </div>
                         <div className={style.btnApprove}>
-                            <Button color="primary" onClick={() => this.delBank()}>Ya</Button>
+                            <Button color="primary" onClick={() => this.delReason()}>Ya</Button>
                             <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                         </div>
                     </div>
@@ -802,21 +783,20 @@ class MasterBank extends Component {
 
 const mapStateToProps = state => ({
     user: state.user,
-    bank: state.bank
+    reason: state.reason,
+    menu: state.menu
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
-    addBank: bank.addBank,
-    updateBank: bank.updateBank,
-    getBank: bank.getAllBank,
-    uploadMaster: bank.uploadMaster,
-    nextPage: bank.nextPage,
-    exportMaster: bank.exportMaster,
-    resetError: bank.resetError,
+    addReason: reason.addReason,
+    updateReason: reason.updateReason,
+    getReason: reason.getAllReason,
+    nextPage: reason.nextPage,
+    resetError: reason.resetError,
     resetPassword: user.resetPassword,
-    deleteBank: bank.deleteBank
+    deleteReason: reason.deleteReason,
+    getAllMenu: menu.getAllMenu
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(MasterBank)
-	
+export default connect(mapStateToProps, mapDispatchToProps)(MasterReason)

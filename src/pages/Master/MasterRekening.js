@@ -2,32 +2,35 @@ import React, { Component } from 'react'
 import {  NavbarBrand, DropdownToggle, DropdownMenu,
     DropdownItem, Table, ButtonDropdown, Input, Button,
     Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
-import style from '../assets/css/input.module.css'
-import {FaSearch, FaBars} from 'react-icons/fa'
+import style from '../../assets/css/input.module.css'
+import {FaSearch, FaBankCircle, FaBars} from 'react-icons/fa'
 import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
-import depo from '../redux/actions/depo'
-import user from '../redux/actions/user'
-import reason from '../redux/actions/reason'
-import menu from '../redux/actions/menu'
+import depo from '../../redux/actions/depo'
+import user from '../../redux/actions/user'
+import rekening from '../../redux/actions/rekening'
 import {connect} from 'react-redux'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import auth from '../redux/actions/auth'
+import auth from '../../redux/actions/auth'
 import {default as axios} from 'axios'
-import Sidebar from "../components/Header";
-import MaterialTitlePanel from "../components/material_title_panel";
-import SidebarContent from "../components/sidebar_content";
-import NavBar from '../components/NavBar'
+import Sidebar from "../../components/Header";
+import MaterialTitlePanel from "../../components/material_title_panel";
+import SidebarContent from "../../components/sidebar_content";
+import NavBar from '../../components/NavBar'
 const {REACT_APP_BACKEND_URL} = process.env
 
-const reasonSchema = Yup.object().shape({
-    desc: Yup.string().required(),
-    route: Yup.string().required(),
+const rekeningSchema = Yup.object().shape({
+    kode_plant: Yup.string().required(),
+    rek_spending: Yup.number().required(),
+    rek_zba: Yup.number().required(),
+    rek_bankcol: Yup.number().required()
 });
 
-const reasonEditSchema = Yup.object().shape({
-    desc: Yup.string().required(),
-    route: Yup.string().required()
+const rekeningEditSchema = Yup.object().shape({
+    kode_plant: Yup.string().required(),
+    rek_spending: Yup.number().required(),
+    rek_zba: Yup.number().required(),
+    rek_bankcol: Yup.number().required()
 });
 
 const changeSchema = Yup.object().shape({
@@ -35,7 +38,7 @@ const changeSchema = Yup.object().shape({
     new_password: Yup.string().required('must be filled')
 });
 
-class MasterReason extends Component {
+class MasterRek extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -106,7 +109,7 @@ class MasterReason extends Component {
      }
 
     DownloadMaster = () => {
-        const {link} = this.props.reason
+        const {link} = this.props.rekening
         axios({
             url: `${link}`,
             method: 'GET',
@@ -115,7 +118,7 @@ class MasterReason extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master bank.xlsx"); //or any other extension
+            link.setAttribute('download', "master rekening.xlsx"); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -153,23 +156,23 @@ class MasterReason extends Component {
 
     DownloadTemplate = () => {
         axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/bank.xlsx`,
+            url: `${REACT_APP_BACKEND_URL}/masters/rekening.xlsx`,
             method: 'GET',
             responseType: 'blob',
         }).then((response) => {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "bank.xlsx");
+            link.setAttribute('download', "rekening.xlsx");
             document.body.appendChild(link);
             link.click();
         });
     }
 
-    addReason = async (values) => {
+    addRek = async (values) => {
         const token = localStorage.getItem("token")
-        await this.props.addReason(token, values)
-        const {isAdd} = this.props.reason
+        await this.props.addRek(token, values)
+        const {isAdd} = this.props.rekening
         if (isAdd) {
             this.setState({confirm: 'add'})
             this.openConfirm()
@@ -178,10 +181,10 @@ class MasterReason extends Component {
         }
     }
 
-    delReason = async () => {
+    delRek = async () => {
         const token = localStorage.getItem("token")
         const {detail} = this.state
-        await this.props.deleteReason(token, detail.id)
+        await this.props.deleteRek(token, detail.id)
         this.openModalEdit()
         this.setState({confirm: 'del'})
         this.openConfirm()
@@ -190,13 +193,13 @@ class MasterReason extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.reason
+        const { page } = this.props.rekening
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.reason
+        const { page } = this.props.rekening
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.prevLink)
     }
@@ -228,10 +231,10 @@ class MasterReason extends Component {
         await this.props.uploadMaster(token, data)
     }
 
-    editReason = async (values, id) => {
+    editRek = async (values, id) => {
         const token = localStorage.getItem("token")
-        await this.props.updateReason(token, values, id)
-        const {isUpdate} = this.props.reason
+        await this.props.updateRek(token, values, id)
+        const {isUpdate} = this.props.rekening
         if (isUpdate) {
             this.setState({confirm: 'edit'})
             this.openConfirm()
@@ -246,7 +249,7 @@ class MasterReason extends Component {
     }
 
     componentDidUpdate() {
-        const {isError, isUpload, isExport, isReset} = this.props.reason
+        const {isError, isUpload, isExport, isReset} = this.props.rekening
         if (isError) {
             this.props.resetError()
             this.showAlert()
@@ -271,19 +274,18 @@ class MasterReason extends Component {
 
     async componentDidMount() {
         const token = localStorage.getItem("token")
-        await this.props.getAllMenu(token, 'reject')
         this.getDataCount()
     }
 
     getDataCount = async (value) => {
-        const { page } = this.props.reason
+        const { page } = this.props.rekening
         const pages = value === undefined || value.page === undefined ? page.currentPage : value.page
         const token = localStorage.getItem("token")
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
         const filter = value === undefined || value.filter === undefined ? this.state.filter : value.filter
         console.log(this.state.filter)
-        await this.props.getReason(token, limit, search, pages, filter)
+        await this.props.getRek(token, limit, search, pages, filter)
         this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages})
     }
 
@@ -311,8 +313,7 @@ class MasterReason extends Component {
 
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
-        const {dataReason, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.reason
-        const dataMenu = this.props.menu.dataAll
+        const {dataRek, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.rekening
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
 
@@ -362,7 +363,7 @@ class MasterReason extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master Alasan</div>
+                                    <div className={style.titleDashboard}>Master Rekening</div>
                                 </div>
                                 <div className={style.secHeadDashboard} >
                                     <div>
@@ -379,7 +380,7 @@ class MasterReason extends Component {
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
                                     </div>
-                                    <div className='filterReason'>
+                                    <div className='filterRek'>
                                         {/* <text className='mr-2'>Filter:</text>
                                         <UncontrolledDropdown className={style.drop}>
                                             <DropdownToggle caret color="light">
@@ -406,7 +407,7 @@ class MasterReason extends Component {
                                             >
                                                 {dataRole !== undefined && dataRole.map(item => {
                                                     return (
-                                                        <DropdownItem className='uppercase' onClick={() => {this.setState({filter: item.id, filterName: item.name}); this.changeFilter({desc: item.name, level: item.id})}}>{item.name}</DropdownItem>
+                                                        <DropdownItem className='uppercase' onClick={() => {this.setState({filter: item.id, filterName: item.name}); this.changeFilter({name: item.name, level: item.id})}}>{item.name}</DropdownItem>
                                                     )
                                                 })}
                                             </DropdownMenu>
@@ -416,8 +417,8 @@ class MasterReason extends Component {
                                 <div className='secEmail'>
                                     <div className={style.headEmail}>
                                         <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
-                                        {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button> */}
+                                        <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
+                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button>
                                     </div>
                                     <div className={style.searchEmail}>
                                         <text>Search: </text>
@@ -437,8 +438,10 @@ class MasterReason extends Component {
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>Alasan</th>
-                                                <th>Rute</th>
+                                                <th>Kode Plant</th>
+                                                <th>No Rek Spending Card</th>
+                                                <th>No Rek ZBA</th>
+                                                <th>No Rek Bank Coll</th>
                                             </tr>
                                         </thead>
                                     </Table>
@@ -456,8 +459,10 @@ class MasterReason extends Component {
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>Alasan</th>
-                                                <th>Rute</th>
+                                                <th>Kode Plant</th>
+                                                <th>No Rek Spending Card</th>
+                                                <th>No Rek ZBA</th>
+                                                <th>No Rek Bank Coll</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -465,8 +470,10 @@ class MasterReason extends Component {
                                                 return (
                                                 <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
-                                                    <td>{item.desc}</td>
-                                                    <td>{item.route}</td>
+                                                    <td>{item.kode_plant}</td>
+                                                    <td>{item.rek_spending}</td>
+                                                    <td>{item.rek_zba}</td>
+                                                    <td>{item.rek_bankcol}</td>
                                                 </tr>
                                             )})}
                                         </tbody>
@@ -487,56 +494,84 @@ class MasterReason extends Component {
                     </MaterialTitlePanel>
                 </Sidebar>
                 <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
-                    <ModalHeader toggle={this.openModalAdd}>Add Master Alasan</ModalHeader>
+                    <ModalHeader toggle={this.openModalAdd}>Add Master Rekening</ModalHeader>
                     <Formik
                     initialValues={{
-                        desc: '',
-                        route: '',
+                        kode_plant: '',
+                        rek_spending: '',
+                        rek_zba: '',
+                        rek_bankcol: ''
                     }}
-                    validationSchema={reasonSchema}
-                    onSubmit={(values) => {this.addReason(values)}}
+                    validationSchema={rekeningSchema}
+                    onSubmit={(values) => {this.addRek(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Alasan
+                                Kode Plant
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="desc"
-                                value={values.desc}
-                                onBlur={handleBlur("desc")}
-                                onChange={handleChange("desc")}
+                                name="kode_plant"
+                                value={values.kode_plant}
+                                onBlur={handleBlur("kode_plant")}
+                                onChange={handleChange("kode_plant")}
                                 />
-                                {errors.desc ? (
-                                    <text className={style.txtError}>{errors.desc}</text>
+                                {errors.kode_plant ? (
+                                    <text className={style.txtError}>{errors.kode_plant}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Rute
+                                NO REK SPENDING CARD
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="select" 
-                                name="route"
-                                disabled={values.route === "master" ? true : false}
-                                value={values.route}
-                                onChange={handleChange("route")}
-                                onBlur={handleBlur("route")}
-                                >
-                                    <option>-Pilih-</option>
-                                    {dataMenu.length > 0 && dataMenu.map(item => {
-                                        return (
-                                            <option value={item.name + ` (${item.kode_menu})`}>{item.name + ` (${item.kode_menu})`}</option>
-                                        )
-                                    })}
-                                </Input>
-                                {errors.route ? (
-                                    <text className={style.txtError}>{errors.route}</text>
+                                type="name" 
+                                name="rek_spending"
+                                value={values.rek_spending}
+                                onBlur={handleBlur("rek_spending")}
+                                onChange={handleChange("rek_spending")}
+                                />
+                                {errors.rek_spending ? (
+                                    <text className={style.txtError}>{errors.rek_spending}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                NO REK ZBA
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rek_zba"
+                                value={values.rek_zba}
+                                onBlur={handleBlur("rek_zba")}
+                                onChange={handleChange("rek_zba")}
+                                />
+                                {errors.rek_zba ? (
+                                    <text className={style.txtError}>{errors.rek_zba}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                NO REK BANK COLL
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rek_bankcol"
+                                value={values.rek_bankcol}
+                                onBlur={handleBlur("rek_bankcol")}
+                                onChange={handleChange("rek_bankcol")}
+                                />
+                                {errors.rek_bankcol ? (
+                                    <text className={style.txtError}>{errors.rek_bankcol}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -553,63 +588,91 @@ class MasterReason extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
-                    <ModalHeader toggle={this.openModalEdit}>Edit Master Alasan</ModalHeader>
+                    <ModalHeader toggle={this.openModalEdit}>Edit Master Rekening</ModalHeader>
                     <Formik
                     initialValues={{
-                        desc: detail.desc === null ? '' : detail.desc,
-                        route: detail.route === null ? '' : detail.route,
+                        kode_plant: detail.kode_plant === null ? '' : detail.kode_plant,
+                        rek_spending: detail.rek_spending === null ? '' : detail.rek_spending,
+                        rek_zba: detail.rek_zba === null ? '' : detail.rek_zba,
+                        rek_bankcol: detail.rek_bankcol === null ? '' : detail.rek_bankcol
                     }}
-                    validationSchema={reasonEditSchema}
-                    onSubmit={(values) => {this.editReason(values, detail.id)}}
+                    validationSchema={rekeningEditSchema}
+                    onSubmit={(values) => {this.editRek(values, detail.id)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Alasan
+                                Kode Plant
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="desc"
-                                value={values.desc}
-                                onBlur={handleBlur("desc")}
-                                onChange={handleChange("desc")}
+                                name="kode_plant"
+                                value={values.kode_plant}
+                                onBlur={handleBlur("kode_plant")}
+                                onChange={handleChange("kode_plant")}
                                 />
-                                {errors.desc ? (
-                                    <text className={style.txtError}>{errors.desc}</text>
+                                {errors.kode_plant ? (
+                                    <text className={style.txtError}>{errors.kode_plant}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Rute
+                                NO REK SPENDING CARD
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="select" 
-                                name="route"
-                                disabled={values.route === "master" ? true : false}
-                                value={values.route}
-                                onChange={handleChange("route")}
-                                onBlur={handleBlur("route")}
-                                >
-                                    <option>-Pilih-</option>
-                                    {dataMenu.length > 0 && dataMenu.map(item => {
-                                        return (
-                                            <option value={item.name + ` (${item.kode_menu})`}>{item.name + ` (${item.kode_menu})`}</option>
-                                        )
-                                    })}
-                                </Input>
-                                {errors.route ? (
-                                    <text className={style.txtError}>{errors.route}</text>
+                                type="name" 
+                                name="rek_spending"
+                                value={values.rek_spending}
+                                onBlur={handleBlur("rek_spending")}
+                                onChange={handleChange("rek_spending")}
+                                />
+                                {errors.rek_spending ? (
+                                    <text className={style.txtError}>{errors.rek_spending}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                NO REK ZBA
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rek_zba"
+                                value={values.rek_zba}
+                                onBlur={handleBlur("rek_zba")}
+                                onChange={handleChange("rek_zba")}
+                                />
+                                {errors.rek_zba ? (
+                                    <text className={style.txtError}>{errors.rek_zba}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                NO REK BANK COLL
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rek_bankcol"
+                                value={values.rek_bankcol}
+                                onBlur={handleBlur("rek_bankcol")}
+                                onChange={handleChange("rek_bankcol")}
+                                />
+                                {errors.rek_bankcol ? (
+                                    <text className={style.txtError}>{errors.rek_bankcol}</text>
                                 ) : null}
                             </div>
                         </div>
                         <hr/>
                         <div className={style.foot}>
                             <div>
-                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete</Button>
+                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Rekening</Button>
                             </div>
                             <div>
                                 <Button  onClick={handleSubmit} color="primary">Save</Button>
@@ -620,7 +683,7 @@ class MasterReason extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
-                    <ModalHeader>Upload Master Alasan</ModalHeader>
+                    <ModalHeader>Upload Master Rekening</ModalHeader>
                     <ModalBody className={style.modalUpload}>
                         <div className={style.titleModalUpload}>
                             <text>Upload File: </text>
@@ -648,23 +711,23 @@ class MasterReason extends Component {
                         {this.state.confirm === 'edit' ? (
                         <div className={style.cekUpdate}>
                             <AiFillCheckCircle size={80} className={style.green} />
-                            <div className={style.sucUpdate}>Berhasil Memperbarui Alasan</div>
+                            <div className={style.sucUpdate}>Berhasil Memperbarui Rekening</div>
                         </div>
                         ) : this.state.confirm === 'add' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menambahkan Alasan</div>
+                                <div className={style.sucUpdate}>Berhasil Menambahkan Rekening</div>
                             </div>
                         ) : this.state.confirm === 'del' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menghapus Alasan</div>
+                                <div className={style.sucUpdate}>Berhasil Menghapus Rekening</div>
                             </div>
                         ) : this.state.confirm === 'upload' ?(
                             <div>
                                 <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Mengupload Master Alasan</div>
+                                <div className={style.sucUpdate}>Berhasil Mengupload Master Rekening</div>
                             </div>
                             </div>
                         ) : this.state.confirm === 'reset' ? (
@@ -679,7 +742,7 @@ class MasterReason extends Component {
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.reason.isLoading ? true: false} size="sm">
+                <Modal isOpen={this.props.rekening.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -689,7 +752,7 @@ class MasterReason extends Component {
                         </div>
                         </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.reason.isUpload ? true: false} size="sm">
+                <Modal isOpen={this.props.rekening.isUpload ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -766,11 +829,11 @@ class MasterReason extends Component {
                     <div className={style.modalApprove}>
                         <div>
                             <text>
-                                Anda yakin untuk delete {detail.name} ?
+                                Anda yakin untuk delete rekening {detail.name} ?
                             </text>
                         </div>
                         <div className={style.btnApprove}>
-                            <Button color="primary" onClick={() => this.delReason()}>Ya</Button>
+                            <Button color="primary" onClick={() => this.delRek()}>Ya</Button>
                             <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                         </div>
                     </div>
@@ -783,20 +846,21 @@ class MasterReason extends Component {
 
 const mapStateToProps = state => ({
     user: state.user,
-    reason: state.reason,
-    menu: state.menu
+    rekening: state.rekening
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
-    addReason: reason.addReason,
-    updateReason: reason.updateReason,
-    getReason: reason.getAllReason,
-    nextPage: reason.nextPage,
-    resetError: reason.resetError,
+    addRek: rekening.addRek,
+    updateRek: rekening.updateRek,
+    getRek: rekening.getAllRek,
+    uploadMaster: rekening.uploadMaster,
+    nextPage: rekening.nextPage,
+    exportMaster: rekening.exportMaster,
+    resetError: rekening.resetError,
     resetPassword: user.resetPassword,
-    deleteReason: reason.deleteReason,
-    getAllMenu: menu.getAllMenu
+    deleteRek: rekening.deleteRek
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(MasterReason)
+export default connect(mapStateToProps, mapDispatchToProps)(MasterRek)
+	

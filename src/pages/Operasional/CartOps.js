@@ -7,31 +7,31 @@ import { Container, Collapse, Nav, Navbar,
     UncontrolledDropdown, DropdownToggle, DropdownMenu, Dropdown,
     DropdownItem, Table, ButtonDropdown, Input, Button, Col,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
-import approve from '../redux/actions/approve'
-import coa from '../redux/actions/coa'
+import approve from '../../redux/actions/approve'
+import coa from '../../redux/actions/coa'
 import {BsCircle} from 'react-icons/bs'
 import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList} from 'react-icons/fa'
-import Sidebar from "../components/Header";
+import Sidebar from "../../components/Header";
 import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
-import MaterialTitlePanel from "../components/material_title_panel"
-import SidebarContent from "../components/sidebar_content"
-import style from '../assets/css/input.module.css'
-import placeholder from  "../assets/img/placeholder.png"
-import user from '../redux/actions/user'
-import ops from '../redux/actions/operasional'
+import MaterialTitlePanel from "../../components/material_title_panel"
+import SidebarContent from "../../components/sidebar_content"
+import style from '../../assets/css/input.module.css'
+import placeholder from  "../../assets/img/placeholder.png"
+import user from '../../redux/actions/user'
+import ops from '../../redux/actions/operasional'
 import {connect} from 'react-redux'
 import moment from 'moment'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import auth from '../redux/actions/auth'
+import auth from '../../redux/actions/auth'
 import Select from 'react-select'
 // import notif from '../redux/actions/notif'
-import Pdf from "../components/Pdf"
-import depo from '../redux/actions/depo'
+import Pdf from "../../components/Pdf"
+import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
-import NavBar from '../components/NavBar'
+import NavBar from '../../components/NavBar'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const stockSchema = Yup.object().shape({

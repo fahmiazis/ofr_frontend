@@ -6,24 +6,24 @@ import { Container, Collapse, Nav, Navbar,
     UncontrolledDropdown, DropdownToggle, DropdownMenu, Dropdown,
     DropdownItem, Table, ButtonDropdown, Input, Button, Row, Col,
     Modal, ModalHeader, ModalBody, ModalFooter, Alert, Spinner} from 'reactstrap'
-import logo from "../assets/img/logo.png"
-import style from '../assets/css/input.module.css'
+import logo from "../../assets/img/logo.png"
+import style from '../../assets/css/input.module.css'
 import {FaSearch, FaUserCircle, FaBars} from 'react-icons/fa'
 import {AiOutlineFileExcel, AiFillCheckCircle} from 'react-icons/ai'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import menu from '../redux/actions/menu'
-import user from '../redux/actions/user'
-import depo from '../redux/actions/depo'
+import menu from '../../redux/actions/menu'
+import user from '../../redux/actions/user'
+import depo from '../../redux/actions/depo'
 import {connect} from 'react-redux'
 import moment from 'moment'
-import auth from '../redux/actions/auth'
-import sign from "../assets/img/sign.png"
+import auth from '../../redux/actions/auth'
+import sign from "../../assets/img/sign.png"
 import {default as axios} from 'axios'
-import Sidebar from "../components/Header";
-import MaterialTitlePanel from "../components/material_title_panel";
-import SidebarContent from "../components/sidebar_content";
-import NavBar from '../components/NavBar'
+import Sidebar from "../../components/Header";
+import MaterialTitlePanel from "../../components/material_title_panel";
+import SidebarContent from "../../components/sidebar_content";
+import NavBar from '../../components/NavBar'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const menuSchema = Yup.object().shape({

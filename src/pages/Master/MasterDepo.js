@@ -5,20 +5,20 @@ import { Container, Collapse, Nav, Navbar,
     UncontrolledDropdown, DropdownToggle, DropdownMenu, Dropdown,
     DropdownItem, Table, ButtonDropdown, Input, Button,
     Modal, ModalHeader, ModalBody, ModalFooter, Alert, Spinner} from 'reactstrap'
-import logo from "../assets/img/logo.png"
-import style from '../assets/css/input.module.css'
+import logo from "../../assets/img/logo.png"
+import style from '../../assets/css/input.module.css'
 import {FaSearch, FaUserCircle, FaBars} from 'react-icons/fa'
 import {AiOutlineFileExcel, AiFillCheckCircle} from 'react-icons/ai'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import depo from '../redux/actions/depo'
+import depo from '../../redux/actions/depo'
 import {connect} from 'react-redux'
-import auth from '../redux/actions/auth'
+import auth from '../../redux/actions/auth'
 import {default as axios} from 'axios'
-import Sidebar from "../components/Header";
-import MaterialTitlePanel from "../components/material_title_panel";
-import SidebarContent from "../components/sidebar_content";
-import NavBar from '../components/NavBar'
+import Sidebar from "../../components/Header";
+import MaterialTitlePanel from "../../components/material_title_panel";
+import SidebarContent from "../../components/sidebar_content";
+import NavBar from '../../components/NavBar'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const depoSchema = Yup.object().shape({
@@ -281,7 +281,7 @@ class MasterDepo extends Component {
                     >
                         <FaBars size={20} className={style.white} />
                     </NavbarBrand>
-                    <Navbar />
+                    <NavBar />
             </div>
         )
 
