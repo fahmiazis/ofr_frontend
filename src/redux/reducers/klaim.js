@@ -32,14 +32,20 @@ const klaimState = {
     docDraft: [],
     isDraft: null,
     isApprove: null,
+    isApplist: null,
     isFinKlaim: null,
     isReject: null,
     appRevisi: null,
     isEdit: null,
     subRevisi: null,
     subVerif: null,
+    subBayar: null,
     newKlaim: [],
-    editVrf: null
+    editVrf: null,
+    isTtdList: null,
+    ttdKlaimList: [],
+    baseTtdList: [],
+    isRejectList: null,
 };
 
 export default (state=klaimState, action) => {
@@ -144,6 +150,32 @@ export default (state=klaimState, action) => {
                     isLoading: false,
                     isError: true,
                     isTtd: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'TTDLIST_KLAIM_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'TTDLIST_KLAIM_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isTtdList: true,
+                    ttdKlaimList: action.payload.data.result,
+                    baseTtdList: action.payload.data.findTtd,
+                    alertMsg: 'get coa Succesfully'
+                };
+            }
+            case 'TTDLIST_KLAIM_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    isTtdList: false,
                     alertMsg: "Unable connect to server"
                 };
             }
@@ -314,6 +346,29 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'APPROVELIST_KLAIM_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'APPROVELIST_KLAIM_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isApplist: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'APPROVELIST_KLAIM_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isApplist: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'APP_REVISI_PENDING': {
                 return {
                     ...state,
@@ -383,6 +438,29 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'SUBMIT_BAYAR_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'SUBMIT_BAYAR_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    subBayar: true,
+                    alertMsg: 'success submit bayar Succesfully',
+                };
+            }
+            case 'SUBMIT_BAYAR_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    subBayar: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'REJECT_KLAIM_PENDING': {
                 return {
                     ...state,
@@ -403,6 +481,30 @@ export default (state=klaimState, action) => {
                     ...state,
                     isLoading: false,
                     isReject: false,
+                    isError: true,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'REJECTLIST_KLAIM_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'REJECTLIST_KLAIM_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isRejectList: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'REJECTLIST_KLAIM_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isRejectList: false,
                     isError: true,
                     alertMsg: "Unable connect to server"
                 };
@@ -490,13 +592,16 @@ export default (state=klaimState, action) => {
                     isUpload: null,
                     isGetKlaim: null,
                     isApprove: null,
+                    isApplist: null,
                     isFinKlaim: null,
                     isReject: null,
+                    isRejectList: null,
                     appRevisi: null,
                     isEdit: null,
                     subRevisi: null,
                     subVerif: null,
-                    editVrf: null
+                    editVrf: null,
+                    subBayar: null
                 }
             }
             default: {

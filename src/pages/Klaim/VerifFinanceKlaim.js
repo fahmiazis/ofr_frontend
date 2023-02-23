@@ -36,7 +36,6 @@ import Tracking from '../../components/Klaim/tracking'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const klaimSchema = Yup.object().shape({
-    ppu: Yup.string().required('must be filled'),
     pa: Yup.string().required('must be filled'),
     nominal: Yup.number().required('must be filled')
 })
@@ -308,18 +307,7 @@ class VerifKlaim extends Component {
 
     componentDidUpdate() {
         const { isApprove, isReject, subVerif } = this.props.klaim
-        if (isApprove === false) {
-            this.setState({confirm: 'rejApprove'})
-            this.openConfirm()
-            this.openModalApprove()
-            this.openModalRinci()
-            this.props.resetKlaim()
-        } else if (isReject === false) {
-            this.setState({confirm: 'rejReject'})
-            this.openConfirm()
-            this.openModalReject()
-            this.props.resetKlaim()
-        } else if (subVerif) {
+        if (subVerif === false) {
             this.setState({confirm: 'rejSubmit'})
             this.openConfirm()
             this.openModalApprove()
@@ -1558,7 +1546,7 @@ class VerifKlaim extends Component {
                                             <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
                                         ) : null }
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nilai Yang Diajukan</Col>
+                                            <Col md={3}>Nilai DN Area</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
@@ -1727,7 +1715,7 @@ class VerifKlaim extends Component {
                                         </Col>
                                     </Row>
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>NOMINAL</Col>
+                                        <Col md={3}>Nominal verifikasi</Col>
                                         <Col md={9} className="colRinci">:  <Input
                                             type= "text" 
                                             className="inputRinci"
@@ -1743,8 +1731,7 @@ class VerifKlaim extends Component {
                                             <Button 
                                                 className="mr-3" 
                                                 size="md" 
-                                                disabled={ values.ppu === '' ? true 
-                                                : values.pa === '' ? true 
+                                                disabled={ values.pa === '' ? true 
                                                 : values.nominal === '' ? true 
                                                 : false } 
                                                 color="primary" 

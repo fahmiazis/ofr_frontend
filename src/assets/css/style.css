@@ -162,6 +162,7 @@ html,body{
     justify-content: space-between;
     text-align: start;
     box-shadow: 0px 6px 40px rgba(173, 173, 173, 0.8);
+    overflow-y: scroll;
 }
 .bodyHome {
     display: flex;

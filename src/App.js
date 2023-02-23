@@ -80,6 +80,9 @@ class App extends Component {
                 <PrivateRoute path='/repklm'>
                     <ReportKlaim />
                 </PrivateRoute>
+                <PrivateRoute path='/listklm'>
+                    <AjuanBayarKlaim />
+                </PrivateRoute>
 
                 {/* Operasional */}
                 <PrivateRoute path='/navops'>

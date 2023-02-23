@@ -35,9 +35,9 @@ export default {
         type: 'SUBMIT_KLAIMFINAL',
         payload: http(token).patch(`/klaim/subfinklaim`, qs.stringify(no))
     }),
-    getKlaim: (token, status, reject, menu, type, category) => ({
+    getKlaim: (token, status, reject, menu, type, category, data) => ({
         type: 'GET_KLAIM',
-        payload: http(token).get(`/klaim/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}`),
+        payload: http(token).get(`/klaim/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}`),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_KLAIM',
@@ -46,6 +46,10 @@ export default {
     getApproval: (token, no) => ({
         type: 'TTD_KLAIM',
         payload: http(token).patch(`/klaim/ttd`, qs.stringify(no))
+    }),
+    getApprovalList: (token, no) => ({
+        type: 'TTDLIST_KLAIM',
+        payload: http(token).patch(`/klaim/ttdlist`, qs.stringify(no))
     }),
     approveKlaim: (token, no) => ({
         type: 'APPROVE_KLAIM',
@@ -74,6 +78,18 @@ export default {
     submitVerif: (token, data) => ({
         type: 'SUBMIT_VERIF',
         payload: http(token).patch(`/klaim/verif`, qs.stringify(data))
+    }),
+    submitAjuanBayar: (token, data) => ({
+        type: 'SUBMIT_BAYAR',
+        payload: http(token).patch(`/klaim/subbayar`, data)
+    }),
+    approveListKlaim: (token, no) => ({
+        type: 'APPROVELIST_KLAIM',
+        payload: http(token).patch(`/klaim/applist`, qs.stringify(no))
+    }),
+    rejectListKlaim: (token, data) => ({
+        type: 'REJECTLIST_KLAIM',
+        payload: http(token).patch(`/klaim/rejectlist`, data)
     }),
     resetKlaim: () => ({
         type: 'RESET_KLAIM'

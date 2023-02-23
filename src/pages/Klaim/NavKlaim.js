@@ -186,6 +186,19 @@ class NavStock extends Component {
                                         </div>
                                     </button>
                                 </>
+                            ) : level === '7' || level === '8' || level === '9' ? (
+                                <>
+                                    <button className="cardNav1" onClick={() => this.goRoute('listklm')}>
+                                        <div className="titCard">
+                                            List Ajuan Bayar
+                                        </div>
+                                    </button>
+                                    {/* <button className="cardNav1" onClick={() => this.goRoute('repklm')}>
+                                        <div className="titCard">
+                                            Report Klaim
+                                        </div>
+                                    </button> */}
+                                </>
                             ) : (
                                 <button className="cardNav1" onClick={() => this.goRoute('klaim')}>
                                     <div className="titCard">

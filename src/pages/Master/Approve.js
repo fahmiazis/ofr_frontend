@@ -299,7 +299,7 @@ class Approve extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master Approve</div>
+                                    <div className={style.titleDashboard}>Master Approval</div>
                                 </div>
                                 {/* <div className={style.secHeadDashboard}>
                                     <div>
@@ -319,7 +319,7 @@ class Approve extends Component {
                                 </div> */}
                                 <div className={style.secEmail}>
                                     <div className={style.headEmail}>
-                                        {/* <Button color="success" size="lg" onClick={() => this.openApproveName()}>Add</Button> */}
+                                        <Button color="success" size="lg" onClick={() => this.openApproveName()}>Add</Button>
                                     </div>
                                     <div className={style.searchEmail}>
                                         {/* <text>Search: </text>
@@ -646,6 +646,7 @@ class Approve extends Component {
                                     <option value="pemeriksa">Pemeriksa</option>
                                     <option value="penyetuju">Penyetuju</option>
                                     <option value="penerima">Penerima</option>
+                                    <option value="mengetahui">Mengetahui</option>
                                 </Input>
                                 {errors.sebagai ? (
                                         <text className={style.txtError}>{errors.sebagai}</text>
