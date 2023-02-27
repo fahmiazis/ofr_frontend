@@ -23,6 +23,11 @@ import NavOps from './pages/Operasional/NavOps'
 import Operasional from './pages/Operasional/Operasional'
 import CartOps from './pages/Operasional/CartOps'
 
+//Operasional
+import NavIkk from './pages/IKK/NavIkk'
+import Ikk from './pages/IKK/Ikk'
+import CartIkk from './pages/IKK/CartIkk'
+
 //Master
 import MasterDepo from './pages/Master/MasterDepo'
 import MasterDokumen from './pages/Master/MasterDokumen'
@@ -93,6 +98,17 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/cartops'>
                     <CartOps />
+                </PrivateRoute>
+
+                {/* IKK */}
+                <PrivateRoute path='/navikk'>
+                    <NavIkk />
+                </PrivateRoute>
+                <PrivateRoute path='/ikk'>
+                    <Ikk />
+                </PrivateRoute>
+                <PrivateRoute path='/cartikk'>
+                    <CartIkk />
                 </PrivateRoute>
 
                 {/* Master */}

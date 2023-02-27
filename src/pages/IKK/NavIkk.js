@@ -24,7 +24,7 @@ const changeSchema = Yup.object().shape({
     new_password: Yup.string().required('must be filled')
 })
 
-class NavKlaim extends Component {
+class NavIkk extends Component {
     state = {
         dataNull: [],
         relog: false
@@ -134,75 +134,62 @@ class NavKlaim extends Component {
                         </div>
                     </div>
                     <div>
-                        <div className="titHome">Klaim menu</div>
+                        <div className="titHome">IKK menu</div>
                         <div className="txtChoose">Please select an option</div>
                         <div className="mainBody">
                             {level === '5' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('klaim')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('ikk')}>
                                         <div className="titCard">
-                                            Pengajuan Klaim
+                                            Pengajuan IKK
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revikk')}>
                                         <div className="titCard">
-                                            Revisi Klaim
+                                            Revisi IKK
                                         </div>
                                     </button>
                                 </>
                             ) : level === '2' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('veriffinklm')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('veriffinikk')}>
                                         <div className="titCard">
                                             Verifikasi Finance
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revikk')}>
                                         <div className="titCard">
-                                            Revisi Klaim
+                                            Revisi IKK
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('listklm')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('listikk')}>
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
                                     </button>
                                     {/* <button className="cardNav1" onClick={() => this.goRoute('repklm')}>
                                         <div className="titCard">
-                                            Report Klaim
+                                            Report IKK
                                         </div>
                                     </button> */}
                                 </>
-                            ) : level === '3' ? (
-                                <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('veriffinklm')}>
-                                        <div className="titCard">
-                                            Verifikasi Klaim
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
-                                        <div className="titCard">
-                                            Revisi Klaim
-                                        </div>
-                                    </button>
-                                </>
                             ) : level === '7' || level === '8' || level === '9' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('listklm')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('listikk')}>
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
                                     </button>
                                     {/* <button className="cardNav1" onClick={() => this.goRoute('repklm')}>
                                         <div className="titCard">
-                                            Report Klaim
+                                            Report IKK
                                         </div>
                                     </button> */}
                                 </>
                             ) : (
-                                <button className="cardNav1" onClick={() => this.goRoute('klaim')}>
+                                <button className="cardNav1" onClick={() => this.goRoute('ikk')}>
                                     <div className="titCard">
-                                        Pengajuan Klaim
+                                        Pengajuan IKK
                                     </div>
                                 </button>
                             )}
@@ -322,4 +309,4 @@ const mapDispatchToProps = {
     // upNotif: notif.upNotif
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(NavKlaim)
+export default connect(mapStateToProps, mapDispatchToProps)(NavIkk)
