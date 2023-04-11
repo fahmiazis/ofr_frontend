@@ -157,21 +157,21 @@ class NavIkk extends Component {
                                             Verifikasi Finance
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revikk')}>
-                                        <div className="titCard">
-                                            Revisi IKK
-                                        </div>
-                                    </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('listikk')}>
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
                                     </button>
-                                    {/* <button className="cardNav1" onClick={() => this.goRoute('repklm')}>
+                                    {/* <button className="cardNav1" onClick={() => this.goRoute('revikk')}>
+                                        <div className="titCard">
+                                            Revisi IKK
+                                        </div>
+                                    </button> */}
+                                    <button className="cardNav1" onClick={() => this.goRoute('repklm')}>
                                         <div className="titCard">
                                             Report IKK
                                         </div>
-                                    </button> */}
+                                    </button>
                                 </>
                             ) : level === '7' || level === '8' || level === '9' ? (
                                 <>

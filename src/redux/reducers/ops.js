@@ -1,11 +1,11 @@
 /* eslint-disable import/no-anonymous-default-export */
-const klaimState = {
+const opsState = {
     isAdd: null,
     isAddDetail: false,
     isUpdate: false,
     isUpload: null,
     isGet: null,
-    isGetIkk: null,
+    isGetOps: null,
     isDelete: null,
     isSubmit: null,
     isLoading: false,
@@ -14,7 +14,7 @@ const klaimState = {
     dataDoc: [],
     dataCart: [],
     dataName: [],
-    detailIkk: [],
+    detailOps: [],
     alertM: '',
     alertUpload: [],
     page: {},
@@ -22,34 +22,33 @@ const klaimState = {
     detCoa: [],
     link: '',
     isGetDoc: null,
-    isDetIkk: null,
-    noikk: '',
-    dataIkk: [],
+    isDetOps: null,
+    noops: '',
+    dataOps: [],
     noDis: [],
     isTtd: null,
-    ttdIkk: [],
+    ttdOps: [],
     baseTtd: [],
     docDraft: [],
     isDraft: null,
     isApprove: null,
     isApplist: null,
-    isFinIkk: null,
+    isFinOps: null,
     isReject: null,
     appRevisi: null,
     isEdit: null,
     subRevisi: null,
     subVerif: null,
     subBayar: null,
-    newIkk: [],
+    newOps: [],
     editVrf: null,
     isTtdList: null,
-    ttdIkkList: [],
+    ttdOpsList: [],
     baseTtdList: [],
     isRejectList: null,
-    depoCart: {}
 };
 
-export default (state=klaimState, action) => {
+export default (state=opsState, action) => {
         switch(action.type){
             case 'GET_CART_PENDING': {
                 return {
@@ -64,7 +63,6 @@ export default (state=klaimState, action) => {
                     isLoading: false,
                     isGet: true,
                     dataCart: action.payload.data.result,
-                    depoCart: action.payload.data.depo,
                     alertMsg: 'get coa Succesfully'
                 };
             }
@@ -77,76 +75,76 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'GET_IKK_PENDING': {
+            case 'GET_OPS_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_IKK_FULFILLED': {
+            case 'GET_OPS_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
-                    isGetIkk: true,
-                    dataIkk: action.payload.data.result,
+                    isGetOps: true,
+                    dataOps: action.payload.data.result,
                     noDis: action.payload.data.noDis,
-                    newIkk: action.payload.data.newIkk,
+                    newOps: action.payload.data.newOps,
                     alertMsg: 'get coa Succesfully'
                 };
             }
-            case 'GET_IKK_REJECTED': {
+            case 'GET_OPS_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
                     isError: true,
-                    isGetIkk: false,
+                    isGetOps: false,
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'DETAIL_IKK_PENDING': {
+            case 'DETAIL_OPS_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'DETAIL_IKK_FULFILLED': {
+            case 'DETAIL_OPS_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
-                    isDetIkk: true,
-                    detailIkk: action.payload.data.result,
+                    isDetOps: true,
+                    detailOps: action.payload.data.result,
                     alertMsg: 'get coa Succesfully'
                 };
             }
-            case 'DETAIL_IKK_REJECTED': {
+            case 'DETAIL_OPS_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
                     isError: true,
-                    isDetIkk: false,
+                    isDetOps: false,
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'TTD_IKK_PENDING': {
+            case 'TTD_OPS_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'TTD_IKK_FULFILLED': {
+            case 'TTD_OPS_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isTtd: true,
-                    ttdIkk: action.payload.data.result,
+                    ttdOps: action.payload.data.result,
                     baseTtd: action.payload.data.findTtd,
                     alertMsg: 'get coa Succesfully'
                 };
             }
-            case 'TTD_IKK_REJECTED': {
+            case 'TTD_OPS_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -155,24 +153,24 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'TTDLIST_IKK_PENDING': {
+            case 'TTDLIST_OPS_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'TTDLIST_IKK_FULFILLED': {
+            case 'TTDLIST_OPS_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isTtdList: true,
-                    ttdIkkList: action.payload.data.result,
+                    ttdOpsList: action.payload.data.result,
                     baseTtdList: action.payload.data.findTtd,
                     alertMsg: 'get coa Succesfully'
                 };
             }
-            case 'TTDLIST_IKK_REJECTED': {
+            case 'TTDLIST_OPS_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -205,14 +203,14 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'EDIT_IKK_PENDING': {
+            case 'EDIT_OPS_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'EDIT_IKK_FULFILLED': {
+            case 'EDIT_OPS_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -220,7 +218,7 @@ export default (state=klaimState, action) => {
                     alertMsg: 'get detail coa Succesfully',
                 };
             }
-            case 'EDIT_IKK_REJECTED': {
+            case 'EDIT_OPS_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -275,63 +273,63 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'SUBMIT_IKK_PENDING': {
+            case 'SUBMIT_OPS_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'SUBMIT_IKK_FULFILLED': {
+            case 'SUBMIT_OPS_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
-                    isIkk: true,
-                    noikk: action.payload.data.noikk,
+                    isOps: true,
+                    noops: action.payload.data.noops,
                     alertMsg: 'get detail coa Succesfully',
                 };
             }
-            case 'SUBMIT_IKK_REJECTED': {
+            case 'SUBMIT_OPS_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
-                    isIkk: false,
+                    isOps: false,
                     isError: true,
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'SUBMIT_IKKFINAL_PENDING': {
+            case 'SUBMIT_OPSFINAL_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'SUBMIT_IKKFINAL_FULFILLED': {
+            case 'SUBMIT_OPSFINAL_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
-                    isFinIkk: true,
+                    isFinOps: true,
                     alertMsg: 'success submet final Succesfully',
                 };
             }
-            case 'SUBMIT_IKKFINAL_REJECTED': {
+            case 'SUBMIT_OPSFINAL_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
-                    isFinIkk: false,
+                    isFinOps: false,
                     isError: true,
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'APPROVE_IKK_PENDING': {
+            case 'APPROVE_OPS_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'APPROVE_IKK_FULFILLED': {
+            case 'APPROVE_OPS_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -339,7 +337,7 @@ export default (state=klaimState, action) => {
                     alertMsg: 'get detail coa Succesfully',
                 };
             }
-            case 'APPROVE_IKK_REJECTED': {
+            case 'APPROVE_OPS_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -348,14 +346,14 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'APPROVELIST_IKK_PENDING': {
+            case 'APPROVELIST_OPS_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'APPROVELIST_IKK_FULFILLED': {
+            case 'APPROVELIST_OPS_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -363,7 +361,7 @@ export default (state=klaimState, action) => {
                     alertMsg: 'get detail coa Succesfully',
                 };
             }
-            case 'APPROVELIST_IKK_REJECTED': {
+            case 'APPROVELIST_OPS_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -463,14 +461,14 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'REJECT_IKK_PENDING': {
+            case 'REJECT_OPS_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'REJECT_IKK_FULFILLED': {
+            case 'REJECT_OPS_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -478,7 +476,7 @@ export default (state=klaimState, action) => {
                     alertMsg: 'get detail coa Succesfully',
                 };
             }
-            case 'REJECT_IKK_REJECTED': {
+            case 'REJECT_OPS_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -487,14 +485,14 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'REJECTLIST_IKK_PENDING': {
+            case 'REJECTLIST_OPS_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'REJECTLIST_IKK_FULFILLED': {
+            case 'REJECTLIST_OPS_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -502,7 +500,7 @@ export default (state=klaimState, action) => {
                     alertMsg: 'get detail coa Succesfully',
                 };
             }
-            case 'REJECTLIST_IKK_REJECTED': {
+            case 'REJECTLIST_OPS_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -585,17 +583,17 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'RESET_IKK': {
+            case 'RESET_OPS': {
                 return {
                     ...state,
                     isAdd: null,
                     isDelete: null,
-                    isIkk: null,
+                    isOps: null,
                     isUpload: null,
-                    isGetIkk: null,
+                    isGetOps: null,
                     isApprove: null,
                     isApplist: null,
-                    isFinIkk: null,
+                    isFinOps: null,
                     isReject: null,
                     isRejectList: null,
                     appRevisi: null,

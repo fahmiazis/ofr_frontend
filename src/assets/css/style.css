@@ -152,6 +152,13 @@ html,body{
 .colred {
     color: #D83022;
 }
+.paguIkk {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center !important;
+    margin-top: 5%;
+}
 .sideBar {
     width: 15%;
     height: 100%;
@@ -293,6 +300,7 @@ html,body{
     align-items: center;
     margin-left: 2%;
     font-size: 125%;
+    color: #a31c2c;
 }
 .cardHome2 {
     width: 25%;
@@ -305,6 +313,7 @@ html,body{
     align-items: center;
     margin-left: 4%;
     font-size: 125%;
+    color: #a31c2c;
 }
 .cardHome:hover {
     background-color: #47C1C4;
@@ -312,11 +321,11 @@ html,body{
 }
 .cardHome1:hover {
     background-color: #47C1C4;
-    color: white;
+    color: white !important;
 }
 .cardHome2:hover {
     background-color: #47C1C4;
-    color: white;
+    color: white !important;
 }
 .picHome {
     width: 60%;
@@ -516,9 +525,12 @@ html,body{
     border: 1px solid black;
     white-space: nowrap;
 }
-.tbklaim > th {
+.tbklaim {
     font-size: small !important;
-    white-space: nowrap;
+    white-space: nowrap !important;
+    text-align: center !important;
+    top: 50% !important;
+    transform: translate(0%, -30%) !important;
 }
 .modalFoot {
     display: flex;
@@ -661,6 +673,15 @@ html,body{
     flex-direction: column;
     border-radius: 10px !important;
     border: 0;
+}
+.divPagu {
+    border-radius: 10px !important;
+    background-color: rgb(240, 173, 78);
+    align-items: center;
+    justify-content: center;
+    height: 50px !important;
+    width: 15% !important;
+    color: white;
 }
 .txtCart {
     margin-left: 5%;
@@ -977,10 +998,25 @@ html,body{
     flex-direction: column;
     justify-content: space-between; */
 }
+.headPreIkk {
+    border: 1px solid black !important; 
+    padding-bottom: 40px !important;
+    padding-top: 40px !important;
+    text-align: center;
+    /* display: flex;
+    flex-direction: column;
+    justify-content: space-between; */
+}
 .footPre {
     /* border: 1px solid black !important; */
     text-transform: uppercase;
     text-align: center;
+}
+.footPreIkk {
+    border: 1px solid black !important;
+    text-transform: uppercase;
+    text-align: center;
+    font-weight: bold;
 }
 /* .divPre {
     border: 1px solid black !important;
@@ -999,6 +1035,10 @@ html,body{
 .buatPre2 {
     /* border: 1px solid black !important; */
     text-align: end;
+}
+.buatPreIkk {
+    border: 1px solid black !important;
+    text-align: center;
 }
 .bodyPer {
     padding-top: 5%;
@@ -1368,4 +1408,35 @@ html,body{
     flex-direction: row;
     margin-bottom: 10px;
     align-items: stretch;
-  }
+}
+.titleIkk {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.numIkk {
+    border: 1px solid black;
+    height: 50% !important;
+}
+.subIkk {
+    text-align: center !important;
+}
+.secIkk {
+    display: flex;
+    flex-direction: row;
+}
+.rowGeneral {
+    display: flex;
+    flex-direction: row;
+}
+.midFIkk {
+    font-size: small !important;
+    border: 1px solid black !important;
+    margin: 0 !important;
+}
+
+.midFIkk > tbody > tr > th {
+    border: 1px solid black !important;
+    font-size: small !important;
+    font-weight: 600 !important;
+}

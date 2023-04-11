@@ -4,20 +4,21 @@ import React, { Component } from 'react'
 import {VscAccount} from 'react-icons/vsc'
 import { Container, Collapse, Nav, Navbar,
     NavbarToggler, NavbarBrand, NavItem, NavLink,
-    Card, CardBody, Table, ButtonDropdown, Input, Button, Col,
+    UncontrolledDropdown, DropdownToggle, DropdownMenu, Dropdown,
+    DropdownItem, Table, ButtonDropdown, Input, Button, Col,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
 import approve from '../../redux/actions/approve'
 import {BsCircle} from 'react-icons/bs'
-import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList, FaFileSignature} from 'react-icons/fa'
-import {MdAssignment} from 'react-icons/md'
-import {FiSend, FiTruck, FiSettings, FiUpload} from 'react-icons/fi'
+import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList} from 'react-icons/fa'
 import Sidebar from "../../components/Header";
 import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
+import placeholder from  "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
+import bank from '../../redux/actions/bank'
 import moment from 'moment'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
@@ -28,31 +29,22 @@ import reason from '../../redux/actions/reason'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
+import Select from 'react-select'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
-import klaim from '../../redux/actions/klaim'
-import Tracking from '../../components/Klaim/tracking'
-import TableRincian from '../../components/Klaim/tableRincian'
+import ikk from '../../redux/actions/ikk'
 import dokumen from '../../redux/actions/dokumen'
 const {REACT_APP_BACKEND_URL} = process.env
 
-const stockSchema = Yup.object().shape({
-    merk: Yup.string().required("must be filled"),
-    satuan: Yup.string().required("must be filled"),
-    unit: Yup.number().required("must be filled"),
-    lokasi: Yup.string().required("must be filled"),
-    keterangan: Yup.string().validateSync("")
-})
-
-const addStockSchema = Yup.object().shape({
-    deskripsi: Yup.string().required("must be filled"),
-    merk: Yup.string().required("must be filled"),
-    satuan: Yup.string().required("must be filled"),
-    unit: Yup.number().required("must be filled"),
-    lokasi: Yup.string().required("must be filled"),
-    grouping: Yup.string().required("must be filled"),
-    keterangan: Yup.string().validateSync("")
+const ikkSchema = Yup.object().shape({
+    keterangan: Yup.string().required("must be filled"),
+    periode_awal: Yup.date().required("must be filled"),
+    periode_akhir: Yup.date().required('must be filled'),
+    nilai_ajuan: Yup.string().required("must be filled"),
+    norek_ajuan: Yup.number().required("must be filled"),
+    nama_tujuan: Yup.string().required("must be filled"),
+    status_npwp: Yup.string().required('must be filled'),
 })
 
 const alasanSchema = Yup.object().shape({
@@ -60,7 +52,7 @@ const alasanSchema = Yup.object().shape({
 });
 
 
-class Klaim extends Component {
+class RevisiIkk extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -112,15 +104,14 @@ class Klaim extends Component {
             dropOp: false,
             noAsset: null,
             filter: 'available',
-            newKlaim: [],
+            newIkk: [],
             totalfpd: 0,
             dataMenu: [],
             listMenu: [],
-            collap: false,
-            tipeCol: '',
-            formDis: false,
-            history: false,
-            upload: false
+            bankList: [],
+            detail: {},
+            bank: '',
+            digit: 0
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -142,11 +133,13 @@ class Klaim extends Component {
             this.setState({errMsg: 'Invalid file type. Only excel, pdf, zip, and rar files are allowed.'})
             this.uploadAlert()
         } else {
-            const {detail} = this.state
+            const { detailIkk } = this.props.ikk
+            const { detail } = this.state
             const token = localStorage.getItem('token')
             const data = new FormData()
             data.append('document', e.target.files[0])
-            this.props.uploadDocumentDis(token, detail.id, data)
+            this.props.uploadDocIkk(token, detailIkk[0].no_transaksi, detail.id, data)
+            // this.props.uploadDocIkk(token, tempno, data)
         }
     }
 
@@ -186,55 +179,34 @@ class Klaim extends Component {
         }
     }
 
-    uploadAlert = () => {
-        this.setState({upload: true, modalUpload: false })
-       
-         setTimeout(() => {
-            this.setState({
-                upload: false
-            })
-         }, 10000)
-    }
-
     getApproveStock = async (value) => { 
         const token = localStorage.getItem('token')
         await this.props.getApproveStock(token, value.no, value.nama)
     }
 
-    rejectKlaim = async (val) => {
+    rejectIkk = async (val) => {
         const {listMut, listReason, listMenu} = this.state
-        const { detailKlaim } = this.props.klaim
+        const { detailIkk } = this.props.ikk
         const token = localStorage.getItem('token')
         const tempno = {
-            no: detailKlaim[0].no_transaksi
+            no: detailIkk[0].no_transaksi
         }
         let temp = ''
         for (let i = 0; i < listReason.length; i++) {
             temp += listReason[i] + '. '
         }
         const data = {
-            no: detailKlaim[0].no_transaksi,
+            no: detailIkk[0].no_transaksi,
             list: listMut,
             alasan: temp + val.alasan,
             menu: listMenu.toString()
         }
-        await this.props.rejectKlaim(token, data)
-        this.getDataKlaim()
+        await this.props.rejectIkk(token, data)
+        this.getDataIkk()
         this.setState({confirm: 'reject'})
         this.openConfirm()
         this.openModalReject()
         this.openModalRinci()
-    }
-
-    showCollap = (val) => {
-        if (val === 'close') {
-            this.setState({collap: false})
-        } else {
-            this.setState({collap: false})
-            setTimeout(() => {
-                this.setState({collap: true, tipeCol: val})
-             }, 500)
-        }
     }
 
     dropApp = () => {
@@ -254,10 +226,10 @@ class Klaim extends Component {
     }
 
     prosesModalFpd = () => {
-        const {detailKlaim} = this.props.klaim
+        const {detailIkk} = this.props.ikk
         let total = 0
-        for (let i = 0; i < detailKlaim.length; i++) {
-            total += parseInt(detailKlaim[i].nilai_ajuan)
+        for (let i = 0; i < detailIkk.length; i++) {
+            total += parseInt(detailIkk[i].nilai_ajuan)
         }
         this.setState({totalfpd: total})
         this.openModalFpd()
@@ -269,6 +241,22 @@ class Klaim extends Component {
 
     openModalApprove = () => {
         this.setState({openApprove: !this.state.openApprove})
+    }
+
+    checkSubmitRev = () => {
+        const { detailIkk } = this.props.ikk
+        const temp = []
+        detailIkk.map(item => {
+            return (
+                item.isreject === 1 && temp.push(item)
+            )
+        })
+        if (temp.length > 0) {
+            this.setState({confirm: 'rejSubmit'})
+            this.openConfirm()
+        } else {
+            this.openModalApprove()
+        }
     }
 
     openPreview = async (val) => {
@@ -318,7 +306,7 @@ class Klaim extends Component {
     deleteStock = async (value) => {
         const token = localStorage.getItem("token")
         await this.props.deleteStock(token, value.id)
-        this.getDataKlaim()
+        this.getDataIkk()
     }
 
     showAlert = () => {
@@ -337,25 +325,27 @@ class Klaim extends Component {
         await this.props.submitAsset(token, detailStock[0].no_stock)
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         // const level = localStorage.getItem('level')
-        this.getDataKlaim()
+        const token = localStorage.getItem("token")
+        await this.props.getBank(token)
+        this.getDataIkk()
     }
 
     componentDidUpdate() {
-        const { isApprove, isReject } = this.props.klaim
+        const { isApprove, isReject } = this.props.ikk
         if (isApprove === false) {
             this.setState({confirm: 'rejApprove'})
             this.openConfirm()
             this.openModalApprove()
             this.openModalRinci()
-            this.props.resetKlaim()
+            this.props.resetIkk()
         } else if (isReject === false) {
             this.setState({confirm: 'rejReject'})
             this.openConfirm()
             this.openModalReject()
             this.openModalRinci()
-            this.props.resetKlaim()
+            this.props.resetIkk()
         }
     }
 
@@ -413,10 +403,27 @@ class Klaim extends Component {
         this.setState({modalEdit: !this.state.modalEdit})
     }
 
-    getDataKlaim = async (value) => {
+    getDataIkk = async (value) => {
+        const token = localStorage.getItem("token")
         const level = localStorage.getItem('level')
+        const menu = level === '5' ? 'Revisi Area' : level === '2' ? "Revisi Finance" : level === '3' && 'Revisi Tax'
+        await this.props.getIkk(token, 'all', 1, menu, 'all', 'revisi')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter(level === '5' ? 'all' : 'available')
+        // this.changeFilter('available')
+    }
+
+    prepareSelect = (val) => {
+        const { dataBank } = this.props.bank
+        const digit = dataBank.find(({name}) => name === val).digit
+        const bank = [
+            {value: digit, label: val}
+        ]
+        dataBank.map(item => {
+            return (
+                bank.push({value: item.digit, label: item.name})
+            )
+        })
+        this.setState({bankList: bank, digit: digit, bank: val})
     }
 
     getDataList = async () => {
@@ -441,20 +448,6 @@ class Klaim extends Component {
 
     openModalDok = () => {
         this.setState({opendok: !this.state.opendok})
-    }
-
-    prosesTracking = async (val) => {
-        const token = localStorage.getItem("token")
-        const tempno = {
-            no: val.no_transaksi
-        }
-        await this.props.getDetail(token, tempno)
-        await this.props.getApproval(token, tempno)
-        this.openModalDis()
-    }
-
-    openModalDis = () => {
-        this.setState({formDis: !this.state.formDis})
     }
 
     getDokumentasi = async (val) => {
@@ -507,34 +500,14 @@ class Klaim extends Component {
         this.setState({submitPre: !this.state.submitPre})
     }
 
-    openHistory = () => {
-        this.setState({history: !this.state.history})
-    }
-
-    changeFilter = async (val) => {
-        const {dataKlaim, noDis} = this.props.klaim
-        const level = localStorage.getItem('level')
-        const token = localStorage.getItem("token")
-        const status = 2
-        const statusAll = 'all'
-        const role = localStorage.getItem('role')
-        if (val === 'available') {
-            const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve')
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'reject') {
-            const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve')
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'revisi') {
-            const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve')
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else {
-            const newKlaim = []
-            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'approve')
-            this.setState({filter: val, newKlaim: newKlaim})
+    changeFilter = (val) => {
+        const {dataIkk, noDis} = this.props.ikk
+        const newIkk = []
+        for (let i = 0; i < noDis.length; i++) {
+            const index = dataIkk.indexOf(dataIkk.find(({no_transaksi}) => no_transaksi === noDis[i]))
+            newIkk.push(dataIkk[index])
         }
+        this.setState({filter: val, newIkk: newIkk})
     }
 
     prosesSubmitPre = async () => {
@@ -543,18 +516,14 @@ class Klaim extends Component {
         this.modalSubmitPre()
     }
 
-    updateTransaksi = async (val) => {
-        
-    }
-
-    approveDataKlaim = async () => {
-        const { detailKlaim } = this.props.klaim
+    approveDataIkk = async () => {
+        const { detailIkk } = this.props.ikk
         const token = localStorage.getItem("token")
         const tempno = {
-            no: detailKlaim[0].no_transaksi
+            no: detailIkk[0].no_transaksi
         }
-        await this.props.approveKlaim(token, tempno)
-        this.getDataKlaim()
+        await this.props.approveIkk(token, tempno)
+        this.getDataIkk()
         this.setState({confirm: 'isApprove'})
         this.openConfirm()
         this.openModalApprove()
@@ -569,21 +538,33 @@ class Klaim extends Component {
         }
     }
 
-    updateAsset = async (value) => {
+    prosesEditIkk = async (val) => {
         const token = localStorage.getItem("token")
-        const { dataRinci } = this.state
-        const { detailAsset } = this.props.asset
+        const {dataRinci} = this.state
         const data = {
-            merk: value.merk,
-            satuan: value.satuan,
-            unit: value.unit,
-            lokasi: value.lokasi,
-            grouping: detailAsset.grouping,
-            keterangan: value.keterangan,
-            status_fisik: detailAsset.fisik,
-            kondisi: detailAsset.kondisi
+            no_coa: dataRinci.no_coa,
+            keterangan: val.keterangan,
+            periode_awal: val.periode_awal,
+            periode_akhir: val.periode_akhir,
+            nilai_ajuan: val.nilai_ajuan,
+            bank_tujuan: this.state.bank,
+            norek_ajuan: val.norek_ajuan,
+            nama_tujuan: val.nama_tujuan,
+            status_npwp: val.status_npwp === 'Tidak' ? 0 : 1,
+            nama_npwp: val.status_npwp === 'Tidak' ? '' : val.nama_npwp,
+            no_npwp: val.status_npwp === 'Tidak' ? '' : val.no_npwp,
+            nama_ktp: val.status_npwp === 'Tidak' ? val.nama_ktp : '',
+            no_ktp: val.status_npwp === 'Tidak' ? val.no_ktp : '',
+            periode: ''
         }
-        await this.props.updateAssetNew(token, dataRinci.id, data)
+        const tempno = {
+            no: dataRinci.no_transaksi,
+            id: dataRinci.id
+        }
+        await this.props.editIkk(token, dataRinci.id, data)
+        await this.props.appRevisi(token, tempno)
+        await this.props.getDetail(token, tempno)
+        this.openModalEdit()
     }
 
     changeView = (val) => {
@@ -591,16 +572,20 @@ class Klaim extends Component {
         if (val === 'list') {
             this.getDataList()
         } else {
-            this.getDataKlaim()
+            this.getDataIkk()
         }
     }
 
-    getAppKlaim = async (val) => {
+    getAppIkk = async (val) => {
         const token = localStorage.getItem("token")
         const tempno = {
             no: val.no_transaksi
         }
         await this.props.getApproval(token, tempno)
+    }
+
+    selectBank = (e) => {
+        this.setState({bank: e.label, digit: e.value})
     }
 
     selectStatus = async (fisik, kondisi) => {
@@ -647,9 +632,9 @@ class Klaim extends Component {
         const token = localStorage.getItem("token")
         const tempno = {
             no: val.no_transaksi,
-            name: 'Draft Pengajuan Klaim'
+            name: 'Draft Pengajuan Ikk'
         }
-        await this.props.getDocKlaim(token, tempno)
+        await this.props.getDocIkk(token, tempno)
         this.openModalDoc()
     }
 
@@ -670,9 +655,8 @@ class Klaim extends Component {
     }
 
     getRincian = async (val) => {
-        const token = localStorage.getItem("token")
-        this.setState({dataRinci: val})
-        await this.props.getDetailAsset(token, val.no_asset)
+        this.setState({dataRinci: val, bank: val.bank_tujuan})
+        this.prepareSelect(val.bank_tujuan)
         this.openModalEdit()
     }
 
@@ -747,11 +731,11 @@ class Klaim extends Component {
 
     chekApp = (val) => {
         const { listMut } = this.state
-        const {detailKlaim} = this.props.klaim
+        const {detailIkk} = this.props.ikk
         if (val === 'all') {
             const data = []
-            for (let i = 0; i < detailKlaim.length; i++) {
-                data.push(detailKlaim[i].id)
+            for (let i = 0; i < detailIkk.length; i++) {
+                data.push(detailIkk[i].id)
             }
             this.setState({listMut: data})
         } else {
@@ -785,7 +769,7 @@ class Klaim extends Component {
         const dataMenu = this.props.menu.dataAll
         const data = []
         dataMenu.map(item => {
-            return (item.kode_menu === 'Klaim' && data.push(item))
+            return (item.kode_menu === 'Ikk' && data.push(item))
         })
         this.setState({dataMenu: dataMenu})
         this.openModalReject()
@@ -802,6 +786,20 @@ class Klaim extends Component {
         this.setState({modalStock: !this.state.modalStock})
     }
 
+    prosesSubmitRevisi = async () => {
+        const {detailIkk} = this.props.ikk
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: detailIkk[0].no_transaksi
+        }
+        await this.props.submitRevisi(token, tempno)
+        this.openModalRinci()
+        this.openModalApprove()
+        this.getDataIkk()
+        this.setState({confirm: 'submit'})
+        this.openConfirm()
+    }
+
     dropDown = () => {
         this.setState({drop: !this.state.drop})
     }
@@ -812,7 +810,7 @@ class Klaim extends Component {
         const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim } = this.props.klaim
+        const { noDis, detailIkk, ttdIkk, newIkk, dataDoc } = this.props.ikk
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -852,30 +850,20 @@ class Klaim extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Pengajuan Klaim</div>
+                                <div className={style.titleDashboard}>Revisi Ikk</div>
                             </div>
                             <div className={style.secEmail3}>
-                                {/* {(level === '5' || level === '6') && (
-                                    <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Add</Button>
-                                )} */}
                             </div>
                             <div className={[style.secEmail4]}>
-                                {(level === '5' || level === '6') && (
-                                    <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Create</Button>
-                                )}
-                                {(level === '5' || level === '6') ? (
-                                    <div></div>
-                                ) : (
-                                    <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="reject">Reject</option>
-                                            <option value="available">Available Approve</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                        </Input>
-                                    </div>
-                                )}
+                                {/* <div className={style.searchEmail2}>
+                                    <text>Filter:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value="all">All</option>
+                                        <option value="reject">Reject</option>
+                                        <option value="available">Available Approve</option>
+                                        <option value="revisi">Available Reapprove (Revisi)</option>
+                                    </Input>
+                                </div> */}
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 
@@ -886,38 +874,8 @@ class Klaim extends Component {
                                     >
                                     </Input>
                                 </div>
-                                {/* <div className={style.headEmail2}>
-                                    {this.state.view === 'list' ? (
-                                        <>
-                                        <Button color="primary" className="transBtn" onClick={() => this.changeView('card')}><FaTh size={35} className="mr-2"/> Gallery View</Button>
-                                        </>
-                                    ) : (
-                                        <Button color="primary" className="transBtn" onClick={() => this.changeView('list')}><FaList size={30} className="mr-2"/> List View</Button>
-                                    )}
-                                </div> */}
-                                {/* {this.state.view === 'list' ? (
-                                    <div>
-                                        <Button className='marDown' color='primary' onClick={() => this.getDokumentasi({no: 'all'})} >Download All</Button>
-                                        <ReactHtmlToExcel
-                                            id="test-table-xls-button"
-                                            className="btn btn-success marDown ml-2"
-                                            table="table-klaim"
-                                            filename="Pengajuan Klaim"
-                                            sheet="sheet"
-                                            buttonText="Download"
-                                        />
-                                    </div>
-                                ) : level !== '5' && level !== '9' && (
-                                    <div className='mt-4'>
-                                        <Input type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="available">Available To Approve</option>
-                                            <option value="available">Reject</option>
-                                            <option value="not available">All</option>
-                                        </Input>
-                                    </div>
-                                )} */}
                             </div>
-                            {level === '5' || level === '6' ? (
+                            {level === '5' ? (
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
@@ -931,14 +889,15 @@ class Klaim extends Component {
                                                 <th>KETERANGAN TAMBAHAN</th>
                                                 <th>PERIODE</th>
                                                 <th>STATUS</th>
+                                                <th>ALASAN</th>
                                                 <th>OPSI</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newKlaim.map(item => {
+                                            {newIkk.map(item => {
                                                 return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{newKlaim.indexOf(item) + 1}</th>
+                                                    <tr>
+                                                        <th>{newIkk.indexOf(item) + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.cost_center}</th>
                                                         <th>{item.area}</th>
@@ -946,10 +905,10 @@ class Klaim extends Component {
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
+                                                        <th>{item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 2 ? 'Proses Approval' : ''}</th>
+                                                        <th>{item.reason}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
-                                                            <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
                                                 )
@@ -961,45 +920,46 @@ class Klaim extends Component {
                                 noDis.length === 0 ? (
                                     <div></div>
                                 ) : (
-                                <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>NO.AJUAN</th>
-                                                <th>COST CENTRE</th>
-                                                <th>AREA</th>
-                                                <th>NO.COA</th>
-                                                <th>NAMA COA</th>
-                                                <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
-                                                <th>STATUS</th>
-                                                <th>OPSI</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {newKlaim.map(item => {
-                                                return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{newKlaim.indexOf(item) + 1}</th>
-                                                        <th>{item.no_transaksi}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.area}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
-                                                        <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
-                                                            <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
-                                                        </th>
-                                                    </tr>
-                                                )
-                                            })}
-                                        </tbody>
-                                    </Table>
-                                </div>
+                                    <div className={style.tableDashboard}>
+                                        <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>NO.AJUAN</th>
+                                                    <th>COST CENTRE</th>
+                                                    <th>AREA</th>
+                                                    <th>NO.COA</th>
+                                                    <th>NAMA COA</th>
+                                                    <th>KETERANGAN TAMBAHAN</th>
+                                                    <th>PERIODE</th>
+                                                    <th>STATUS</th>
+                                                    <th>ALASAN</th>
+                                                    <th>OPSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {newIkk.map(item => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{newIkk.indexOf(item) + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                            <th>{item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 2 ? 'Proses Approval' : ''}</th>
+                                                            <th>{item.reason}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </Table>
+                                    </div>
                                 )
                             )}
                             <div>
@@ -1027,227 +987,15 @@ class Klaim extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal isOpen={this.state.modalAdd} toggle={this.openModalAdd} size="lg">
-                    <ModalHeader>
-                        Tambah Data Asset
-                    </ModalHeader>
-                    {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
-                        <div>{alertM}</div>
-                    </Alert> */}
+                <Modal isOpen={this.props.ikk.isLoading ? true : false} size="sm">
                     <ModalBody>
-                        <div className="mainRinci2">
-                            {/* <div className="leftRinci2 mb-5">
-                                <div className="titRinci">{dataRinci.nama_asset}</div>
-                                <img src={detailAsset.pict === undefined || detailAsset.pict.length === 0 ? placeholder : `${REACT_APP_BACKEND_URL}/${detailAsset.pict[detailAsset.pict.length - 1].path}`} className="imgRinci" />
-                                <Input type="file" className='mt-2' onChange={this.uploadPicture}>Upload Picture</Input>
-                            </div> */}
-                            <Formik
-                            initialValues = {{
-                                deskripsi: '',
-                                merk: '',
-                                satuan: '',
-                                unit: 1,
-                                lokasi: '',
-                                grouping: '',
-                                keterangan: '',
-                            }}
-                            validationSchema = {addStockSchema}
-                            onSubmit={(values) => {this.addStock(values)}}
-                            >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
-                                <div className="rightRinci2">
-                                    <div>
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Deskripsi</Col>
-                                            <Col md={9} className="colRinci">:  <Input 
-                                                type='text'
-                                                className="inputRinci" 
-                                                value={values.deskripsi}
-                                                onBlur={handleBlur("deskripsi")}
-                                                onChange={handleChange("deskripsi")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.deskripsi ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Merk</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.merk}
-                                                onBlur={handleBlur("merk")}
-                                                onChange={handleChange("merk")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.merk ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Satuan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "select" 
-                                                className="inputRinci"
-                                                value={values.satuan}
-                                                onBlur={handleBlur("satuan")}
-                                                onChange={handleChange("satuan")}
-                                                >
-                                                    <option>{values.satuan}</option>
-                                                    <option>-Pilih Satuan-</option>
-                                                    <option value="UNIT">UNIT</option>
-                                                    <option value="PAKET">PAKET</option>
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {errors.satuan ? (
-                                            <text className={style.txtError}>{errors.satuan}</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Unit</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.unit}
-                                                onBlur={handleBlur("unit")}
-                                                onChange={handleChange("unit")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.unit ? (
-                                            <text className={style.txtError}>{errors.unit}</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Lokasi</Col>
-                                            <Col md={9} className="colRinci">:
-                                            <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.lokasi}
-                                                onBlur={handleBlur("lokasi")}
-                                                onChange={handleChange("lokasi")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.lokasi ? (
-                                            <text className={style.txtError}>{errors.lokasi}</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Status Fisik</Col>
-                                            <Col md={9} className="colRinci">:  <Input 
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type="select"
-                                                className="inputRinci" 
-                                                value={this.state.fisik} 
-                                                onBlur={handleBlur("status_fisik")}
-                                                onChange={e => { handleChange("status_fisik"); this.selectStatus(e.target.value, this.state.kondisi)} }
-                                                >
-                                                    {/* <option>{values.status_fisik}</option> */}
-                                                    <option>-Pilih Status Fisik-</option>
-                                                    <option value="ada">Ada</option>
-                                                    {/* <option value="tidak ada">Tidak Ada</option> */}
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {this.state.fisik === '' ? (
-                                            <text className={style.txtError}>Must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Kondisi</Col>
-                                            <Col md={9} className="colRinci">:  <Input 
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type="select"
-                                                className="inputRinci" 
-                                                value={this.state.kondisi} 
-                                                onBlur={handleBlur("kondisi")}
-                                                onChange={e => { handleChange("kondisi"); this.selectStatus(this.state.fisik, e.target.value)} }
-                                                >
-                                                    {/* <option>{values.kondisi}</option> */}
-                                                    <option>-Pilih Kondisi-</option>
-                                                    <option value="baik">Baik</option>
-                                                    {/* <option value="rusak">Rusak</option>
-                                                    <option value="">-</option> */}
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {this.state.kondisi === '' ? (
-                                            <text className={style.txtError}>Must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Status Aset</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "select" 
-                                                className="inputRinci"
-                                                value={values.grouping}
-                                                onBlur={handleBlur("grouping")}
-                                                onChange={handleChange("grouping")}
-                                                // onClick={() => this.listStatus(detailAsset.no_asset)}
-                                                >
-                                                    <option>{values.grouping}</option>
-                                                    {/* <option>-Pilih Status Aset-</option> */}
-                                                    {/* {dataStatus.length > 0 && dataStatus.map(item => {
-                                                        return (
-                                                            <option value={item.status}>{item.status}</option>
-                                                        )
-                                                    })} */}
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {errors.grouping ? (
-                                            <text className={style.txtError}>Must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Keterangan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.keterangan}
-                                                onBlur={handleBlur("keterangan")}
-                                                onChange={handleChange("keterangan")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.keterangan ? (
-                                            <text className={style.txtError}>{errors.keterangan}</text>
-                                        ) : null}
-                                    </div>
-                                    <ModalFooter>
-                                        <Button className="btnFootRinci1 mr-3" size="md" disabled={level === '5' || level === '6' ? false : true} color="primary" onClick={handleSubmit}>Save</Button>
-                                        <Button className="btnFootRinci1" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
-                                    </ModalFooter>
-                                </div>
-                            )}
-                            </Formik>
+                    <div>
+                        <div className={style.cekUpdate}>
+                            <Spinner />
+                            <div sucUpdate>Waiting....</div>
                         </div>
+                    </div>
                     </ModalBody>
-                </Modal>
-                <Modal isOpen={this.state.modalUpload} toggle={this.openModalUpload} size="lg">
-                    <ModalHeader>
-                        Upload gambar asset
-                    </ModalHeader>
-                    <ModalBody>
-                        <div className="mainRinci2">
-                            <div className="leftRinci2 mb-5">
-                                <div className="titRinci">{dataRinci.nama_asset}</div>
-                                {/* <img src={detRinci.img === undefined || detRinci.img.length === 0 ? placeholder : `${REACT_APP_BACKEND_URL}/${detRinci.img[detRinci.img.length - 1].path}`} className="imgRinci" /> */}
-                                <Input type="file" className='mt-2' onChange={this.uploadGambar}>Upload Picture</Input>
-                            </div>
-                        </div>
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button color='primary' onClick={this.openModalUpload}>Done</Button>
-                    </ModalFooter>
-                </Modal>
-                <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
-                    <ModalHeader>
-                        Rincian
-                    </ModalHeader>
                 </Modal>
                 <Modal isOpen={this.state.modalStock} toggle={this.openModalStock} size="lg">
                     <ModalHeader>
@@ -1261,30 +1009,385 @@ class Klaim extends Component {
                             {/* <div className="ptStock">pt. pinus merah abadi</div> */}
                             <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailKlaim.length > 0 ? detailKlaim[0].area : ''} className="ml-3"  /></Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailIkk.length > 0 ? detailIkk[0].area : ''} className="ml-3"  /></Col>
                             </Row>
                             <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>no ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailKlaim.length > 0 ? detailKlaim[0].no_transaksi : ''} className="ml-3" /></Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailIkk.length > 0 ? detailIkk[0].no_transaksi : ''} className="ml-3" /></Col>
                             </Row>
                             <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailKlaim.length > 0 ? moment(detailKlaim[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailIkk.length > 0 ? moment(detailIkk[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
                             </Row>
                         </div>
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab}>
                                 <thead>
                                     <tr className='tbklaim'>
-                                        <th>
-                                            <input  
-                                            className='mr-2'
-                                            type='checkbox'
-                                            checked={listMut.length === 0 ? false : listMut.length === detailKlaim.length ? true : false}
-                                            onChange={() => listMut.length === detailKlaim.length ? this.chekRej('all') : this.chekApp('all')}
-                                            />
-                                            Select
-                                        </th>
+                                        <th>NO</th>
+                                        <th>Status</th>
+                                        <th>COST CENTRE</th>
+                                        <th>NO COA</th>
+                                        <th>NAMA COA</th>
+                                        <th>KETERANGAN TAMBAHAN</th>
+                                        <th>PERIODE</th>
+                                        <th>NILAI YANG DIAJUKAN</th>
+                                        <th>BANK</th>
+                                        <th>NOMOR REKENING</th>
+                                        <th>ATAS NAMA</th>
+                                        <th>MEMILIKI NPWP</th>
+                                        <th>NAMA SESUAI NPWP</th>
+                                        <th>NOMOR NPWP</th>
+                                        <th>PPU</th>
+                                        <th>PA</th>
+                                        <th>NOMINAL</th>
+                                        <th>NILAI YANG DIBAYARKAN</th>
+                                        <th>TANGGAL TRANSFER</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {detailIkk.length !== 0 && detailIkk.map(item => {
+                                        return (
+                                            <tr>
+                                                <th scope="row">{detailIkk.indexOf(item) + 1}</th>
+                                                <th>
+                                                    {item.isreject === 1 || item.isreject === 0 ? 
+                                                    <>
+                                                        {item.isreject === 1 ? 'Perlu Diperbaiki' : 'Telah diperbaiki'}
+                                                        <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Update</Button>
+                                                    </>
+                                                    :'-'}
+                                                </th>
+                                                <th>{item.cost_center}</th>
+                                                <th>{item.no_coa}</th>
+                                                <th>{item.nama_coa}</th>
+                                                <th>{item.keterangan}</th>
+                                                <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
+                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.bank_tujuan}</th>
+                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.nama_tujuan}</th>
+                                                <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                            </tr>
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
+                        </div>
+                    </ModalBody>
+                    <div className="modalFoot ml-3">
+                        <div className="btnFoot">
+                            <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
+                            <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>FAA</Button>
+                            <Button color="primary"  onClick={() => this.openProsesModalDoc(detailIkk[0])}>Dokumen</Button>
+                        </div>
+                        <div className="btnFoot">
+                            {/* <Button className="mr-2" disabled={this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
+                                Reject
+                            </Button> */}
+                            <Button color="success" disabled={this.state.filter !== 'available' ? true : false} onClick={this.checkSubmitRev}>
+                                Submit Revisi
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+                <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
+                    <ModalHeader>
+                        Update Data Ikk
+                    </ModalHeader>
+                    <ModalBody>
+                        <div className="mainRinci2">
+                            <Formik
+                            initialValues = {{
+                                keterangan: dataRinci.keterangan,
+                                periode_awal: dataRinci.periode_awal,
+                                periode_akhir: dataRinci.periode_akhir,
+                                nilai_ajuan: dataRinci.nilai_ajuan,
+                                norek_ajuan: dataRinci.norek_ajuan,
+                                nama_tujuan: dataRinci.nama_tujuan,
+                                status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : 'Ya',
+                                nama_npwp: dataRinci.nama_npwp === null ? '' : dataRinci.nama_npwp,
+                                no_npwp: dataRinci.no_npwp === null ? '' : dataRinci.no_npwp,
+                                no_ktp: dataRinci.no_ktp === null ? '' : dataRinci.no_ktp,
+                                nama_ktp: dataRinci.nama_ktp === null ? '' : dataRinci.nama_ktp
+                            }}
+                            validationSchema = {ikkSchema}
+                            onSubmit={(values) => {this.prosesEditIkk(values)}}
+                            >
+                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                                <div className="rightRinci2">
+                                    <div>
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>No COA</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={dataRinci.no_coa}
+                                                onBlur={handleBlur("no_coa")}
+                                                onChange={handleChange("no_coa")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.no_coa === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama COA</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={dataRinci.nama_coa}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.no_coa === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Keterangan</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.keterangan}
+                                                onBlur={handleBlur("keterangan")}
+                                                onChange={handleChange("keterangan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.keterangan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Periode</Col>
+                                            <Col md={9} className="colRinci">: 
+                                                <Input
+                                                type= "date"
+                                                disabled
+                                                className="inputRinci"
+                                                value={values.periode_awal}
+                                                onBlur={handleBlur("periode_awal")}
+                                                onChange={handleChange("periode_awal")}
+                                                />
+                                                <text className='mr-1 ml-1'>To</text>
+                                                <Input
+                                                type= "date" 
+                                                disabled
+                                                className="inputRinci"
+                                                value={values.periode_akhir}
+                                                onBlur={handleBlur("periode_akhir")}
+                                                onChange={handleChange("periode_akhir")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.periode_awal || errors.periode_akhir ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : values.periode_awal > values.periode_akhir ? (
+                                            <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
+                                        ) : null }
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nilai Yang Diajukan</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.nilai_ajuan}
+                                                onBlur={handleBlur("nilai_ajuan")}
+                                                onChange={handleChange("nilai_ajuan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.nilai_ajuan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Bank</Col>
+                                            <Col md={9} className="colRinci">: 
+                                                <Select
+                                                    className="inputRinci2"
+                                                    options={this.state.bankList}
+                                                    onChange={this.selectBank}
+                                                    defaultValue={this.state.bankList[0]}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.bank === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor Rekening</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                disabled={this.state.digit === 0 ? true : false}
+                                                minLength={this.state.digit}
+                                                maxLength={this.state.digit}
+                                                value={values.norek_ajuan}
+                                                onBlur={handleBlur("norek_ajuan")}
+                                                onChange={handleChange("norek_ajuan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit ? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Atas Nama</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.nama_tujuan}
+                                                onBlur={handleBlur("nama_tujuan")}
+                                                onChange={handleChange("nama_tujuan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.nama_tujuan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Memiliki NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "select" 
+                                                className="inputRinci"
+                                                value={values.status_npwp}
+                                                onBlur={handleBlur("status_npwp")}
+                                                onChange={handleChange("status_npwp")}
+                                                >
+                                                    <option>{values.status_npwp}</option>
+                                                    <option>-Pilih-</option>
+                                                    <option value="Ya">Ya</option>
+                                                    <option value="Tidak">Tidak</option>
+                                                </Input>
+                                            </Col>
+                                        </Row>
+                                        {errors.status_npwp ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama Sesuai NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Ya' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Ya' ? values.nama_npwp : ''}
+                                                onBlur={handleBlur("nama_npwp")}
+                                                onChange={handleChange("nama_npwp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Ya' && values.nama_npwp === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Ya' ? false : true}
+                                                type= "text" 
+                                                minLength={15}
+                                                maxLength={15}
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Ya' ? values.no_npwp : ''}
+                                                onBlur={handleBlur("no_npwp")}
+                                                onChange={handleChange("no_npwp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
+                                            <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama Sesuai KTP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Tidak' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Tidak' ? values.nama_ktp : ''}
+                                                onBlur={handleBlur("nama_ktp")}
+                                                onChange={handleChange("nama_ktp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Tidak' && values.nama_ktp === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor KTP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Tidak' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                minLength={16}
+                                                maxLength={16}
+                                                value={values.status_npwp === 'Tidak' ? values.no_ktp : ''}
+                                                onBlur={handleBlur("no_ktp")}
+                                                onChange={handleChange("no_ktp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Tidak' && values.no_ktp.length < 16 ? (
+                                            <text className={style.txtError}>must be filled with 16 digits characters</text>
+                                        ) : null}
+                                    </div>
+                                    <div className="modalFoot mt-3">
+                                        <div></div>
+                                        <div className='btnfoot'>
+                                            <Button 
+                                                className="mr-3" 
+                                                size="md" 
+                                                disabled={this.state.no_coa === '' ? true 
+                                                : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp === '' ) ? true 
+                                                : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
+                                                : values.norek_ajuan.length < this.state.digit ? true 
+                                                : false } 
+                                                color="primary" 
+                                                onClick={handleSubmit}>
+                                                Save
+                                            </Button>
+                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            </Formik>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal className='modalrinci' isOpen={this.state.modalFaa} toggle={this.openModalFaa} size="xl">
+                    <ModalHeader>
+                        FORM AJUAN AREA
+                    </ModalHeader>
+                    <ModalBody>
+                        <div>
+                            {/* <div className="stockTitle">form ajuan area (claim)</div> */}
+                            {/* <div className="ptStock">pt. pinus merah abadi</div> */}
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailIkk.length > 0 ? detailIkk[0].area : ''} className="ml-3"  /></Col>
+                            </Row>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>no ajuan</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailIkk.length > 0 ? detailIkk[0].no_transaksi : ''} className="ml-3" /></Col>
+                            </Row>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailIkk.length > 0 ? moment(detailIkk[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
+                            </Row>
+                        </div>
+                        <div className={style.tableDashboard}>
+                            <Table bordered responsive hover className={style.tab}>
+                                <thead>
+                                    <tr className='tbklaim'>
                                         <th>NO</th>
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>
@@ -1303,21 +1406,13 @@ class Klaim extends Component {
                                         <th>NOMINAL</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>TANGGAL TRANSFER</th>
-                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {detailKlaim.length !== 0 && detailKlaim.map(item => {
+                                    {detailIkk.length !== 0 && detailIkk.map(item => {
                                         return (
                                             <tr>
-                                                <th>
-                                                    <input 
-                                                    type='checkbox'
-                                                    checked={listMut.find(element => element === item.id) !== undefined ? true : false}
-                                                    onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
-                                                    />
-                                                </th>
-                                                <th scope="row">{detailKlaim.indexOf(item) + 1}</th>
+                                                <th scope="row">{detailIkk.indexOf(item) + 1}</th>
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
@@ -1330,63 +1425,17 @@ class Klaim extends Component {
                                                 <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                <th>{item.ppu}</th>
-                                                <th>{item.pa}</th>
-                                                <th>{item.nominal}</th>
-                                                <th>{item.nilai_bayar}</th>
-                                                <th>{item.tanggal_transfer}</th>
-                                                <th>{item.isreject === 1 ? 'reject' : '-'}</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                                <th>-</th>
                                             </tr>
-                                            )
-                                        })}
+                                        )
+                                    })}
                                 </tbody>
                             </Table>
                         </div>
-                    </ModalBody>
-                    <div className="modalFoot ml-3">
-                        <div className="btnFoot">
-                            <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
-                            <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>FAA</Button>
-                            <Button color="primary"  onClick={() => this.openProsesModalDoc(detailKlaim[0])}>Dokumen</Button>
-                        </div>
-                        <div className="btnFoot">
-                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
-                                <div></div>
-                            ) : (
-                                <>
-                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
-                                        Reject
-                                    </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
-                                        Approve
-                                    </Button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </Modal>
-                <Modal className='modalrinci' isOpen={this.state.modalFaa} toggle={this.openModalFaa} size="xl">
-                    <ModalHeader>
-                        FORM AJUAN AREA
-                    </ModalHeader>
-                    <ModalBody>
-                        <div>
-                            {/* <div className="stockTitle">form ajuan area (claim)</div> */}
-                            {/* <div className="ptStock">pt. pinus merah abadi</div> */}
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailKlaim.length > 0 ? detailKlaim[0].area : ''} className="ml-3"  /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>no ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailKlaim.length > 0 ? detailKlaim[0].no_transaksi : ''} className="ml-3" /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailKlaim.length > 0 ? moment(detailKlaim[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
-                            </Row>
-                        </div>
-                        <TableRincian />
                         <Table borderless responsive className="tabPreview mt-4">
                            <thead>
                                <tr>
@@ -1402,7 +1451,7 @@ class Klaim extends Component {
                                        <Table bordered responsive className="divPre">
                                             <thead>
                                                 <tr>
-                                                    {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
+                                                    {ttdIkk.pembuat !== undefined && ttdIkk.pembuat.map(item => {
                                                         return (
                                                             <th className="headPre">
                                                                 <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
@@ -1414,7 +1463,7 @@ class Klaim extends Component {
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
+                                                {ttdIkk.pembuat !== undefined && ttdIkk.pembuat.map(item => {
                                                     return (
                                                         <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
                                                     )
@@ -1427,12 +1476,12 @@ class Klaim extends Component {
                                        <Table bordered responsive className="divPre">
                                             <thead>
                                                 <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
+                                                    {ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.length === 0 ? (
                                                         <th className="headPre">
                                                             <div className="mb-2">-</div>
                                                             <div>-</div>
                                                         </th>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
+                                                    ) : ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.map(item => {
                                                         return (
                                                             <th className="headPre">
                                                                 <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
@@ -1444,9 +1493,9 @@ class Klaim extends Component {
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
+                                                    {ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.length === 0 ? (
                                                         <td className="footPre">-</td>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
+                                                    ) : ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.map(item => {
                                                         return (
                                                             <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
                                                         )
@@ -1459,7 +1508,7 @@ class Klaim extends Component {
                                        <Table bordered responsive className="divPre">
                                             <thead>
                                                 <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
+                                                    {ttdIkk.penyetuju !== undefined && ttdIkk.penyetuju.map(item => {
                                                         return (
                                                             <th className="headPre">
                                                                 <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
@@ -1471,7 +1520,7 @@ class Klaim extends Component {
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
+                                                    {ttdIkk.penyetuju !== undefined && ttdIkk.penyetuju.map(item => {
                                                         return (
                                                             <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
                                                         )
@@ -1484,7 +1533,7 @@ class Klaim extends Component {
                                        <Table bordered responsive className="divPre">
                                             <thead>
                                                 <tr>
-                                                    {ttdKlaim.mengetahui !== undefined && ttdKlaim.mengetahui.map(item => {
+                                                    {ttdIkk.mengetahui !== undefined && ttdIkk.mengetahui.map(item => {
                                                         return (
                                                             <th className="headPre">
                                                                 <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
@@ -1496,7 +1545,7 @@ class Klaim extends Component {
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    {ttdKlaim.mengetahui !== undefined && ttdKlaim.mengetahui.map(item => {
+                                                    {ttdIkk.mengetahui !== undefined && ttdIkk.mengetahui.map(item => {
                                                         return (
                                                             <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
                                                         )
@@ -1527,8 +1576,8 @@ class Klaim extends Component {
                     <ModalBody>
                         <div>
                             <div className="fpdTit">FORM PERMINTAAN DANA</div>
-                            <div className='fpdTit'>cabang/depo : {detailKlaim.length > 0 ? detailKlaim[0].area : ''}</div>
-                            <div className='fpdTit'>no : {detailKlaim.length > 0 ? detailKlaim[0].no_transaksi : ''}</div>
+                            <div className='fpdTit'>cabang/depo : {detailIkk.length > 0 ? detailIkk[0].area : ''}</div>
+                            <div className='fpdTit'>no : {detailIkk.length > 0 ? detailIkk[0].no_transaksi : ''}</div>
                         </div>
                         <div className={style.tableDashboard}>
                             <Row>
@@ -1542,11 +1591,11 @@ class Klaim extends Component {
                                     <div className='liner'>rupiah</div>
                                 </Col>
                             </Row>
-                            {detailKlaim.length !== 0 && detailKlaim.map(item => {
+                            {detailIkk.length !== 0 && detailIkk.map(item => {
                                 return (
                                     <Row className='mt-4'>
                                         <Col md={1} className='upper'>
-                                            <div className='line'>{detailKlaim.indexOf(item) + 1}</div>
+                                            <div className='line'>{detailIkk.indexOf(item) + 1}</div>
                                         </Col>
                                         <Col md={8} className='upper'>
                                             <div className='line2'>{item.keterangan}</div>
@@ -1571,7 +1620,7 @@ class Klaim extends Component {
                                 </Col>
                             </Row>
                         </div>
-                        <div className='bold'>{detailKlaim.length > 0 ? detailKlaim[0].area : ''}, {moment(detailKlaim.length > 0 ? moment(detailKlaim[0].updatedAt).format('DD MMMM YYYY') : '').format('DD MMMM YYYY')}</div>
+                        <div className='bold'>{detailIkk.length > 0 ? detailIkk[0].area : ''}, {moment(detailIkk.length > 0 ? moment(detailIkk[0].updatedAt).format('DD MMMM YYYY') : '').format('DD MMMM YYYY')}</div>
                         <Table borderless responsive className="tabPreview mt-4">
                            <thead>
                                <tr>
@@ -1586,7 +1635,7 @@ class Klaim extends Component {
                                        <Table bordered responsive className="divPre">
                                             <thead>
                                                 <tr>
-                                                    {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
+                                                    {ttdIkk.pembuat !== undefined && ttdIkk.pembuat.map(item => {
                                                         return (
                                                             <th className="headPre">
                                                                 <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
@@ -1598,7 +1647,7 @@ class Klaim extends Component {
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
+                                                {ttdIkk.pembuat !== undefined && ttdIkk.pembuat.map(item => {
                                                     return (
                                                         <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
                                                     )
@@ -1611,12 +1660,12 @@ class Klaim extends Component {
                                        <Table bordered responsive className="divPre">
                                             <thead>
                                                 <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
+                                                    {ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.length === 0 ? (
                                                         <th className="headPre">
                                                             <div className="mb-2">-</div>
                                                             <div>-</div>
                                                         </th>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
+                                                    ) : ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.map(item => {
                                                         return (
                                                             <th className="headPre">
                                                                 <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
@@ -1628,9 +1677,9 @@ class Klaim extends Component {
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
+                                                    {ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.length === 0 ? (
                                                         <td className="footPre">-</td>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
+                                                    ) : ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.map(item => {
                                                         return (
                                                             <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
                                                         )
@@ -1643,7 +1692,7 @@ class Klaim extends Component {
                                        <Table bordered responsive className="divPre">
                                             <thead>
                                                 <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
+                                                    {ttdIkk.penyetuju !== undefined && ttdIkk.penyetuju.map(item => {
                                                         return (
                                                             <th className="headPre">
                                                                 <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
@@ -1655,7 +1704,7 @@ class Klaim extends Component {
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
+                                                    {ttdIkk.penyetuju !== undefined && ttdIkk.penyetuju.map(item => {
                                                         return (
                                                             <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
                                                         )
@@ -1689,7 +1738,7 @@ class Klaim extends Component {
                     alasan: "",
                     }}
                     validationSchema={alasanSchema}
-                    onSubmit={(values) => {this.rejectKlaim(values)}}
+                    onSubmit={(values) => {this.rejectIkk(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
@@ -1739,7 +1788,7 @@ class Klaim extends Component {
                                     )
                                 })}
                                 <div className={style.btnApprove}>
-                                    <Button color="primary" disabled={(values.alasan === '.' || values.alasan === '') && (listReason.length === 0 || listMenu.length === 0) ? true : false} onClick={handleSubmit}>Submit</Button>
+                                    <Button color="primary" disabled={(values.alasan === '.' || values.alasan === '') && listReason.length === 0 ? true : false} onClick={handleSubmit}>Submit</Button>
                                     <Button className='ml-2' color="secondary" onClick={this.openModalReject}>Close</Button>
                                 </div>
                             </div>
@@ -1747,29 +1796,19 @@ class Klaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading || this.props.menu.isLoading || this.props.reason.isLoading} size="sm">
-                        <ModalBody>
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <Spinner />
-                                <div sucUpdate>Waiting....</div>
-                            </div>
-                        </div>
-                        </ModalBody>
-                </Modal>
-                <Modal isOpen={this.state.openApprove && level !== '5'} toggle={this.openModalApprove} centered={true}>
+                <Modal isOpen={this.state.openApprove} toggle={this.openModalApprove} centered={true}>
                     <ModalBody>
                         <div className={style.modalApprove}>
                             <div>
                                 <text>
-                                    Anda yakin untuk approve     
+                                    Anda yakin untuk submit revisi     
                                     <text className={style.verif}> </text>
                                     pada tanggal
-                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                    <text className={style.verif}> {moment().format('LL')}</text> ?
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveDataKlaim()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prosesSubmitRevisi()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1783,7 +1822,7 @@ class Klaim extends Component {
                                     Anda yakin untuk submit     
                                     <text className={style.verif}> </text>
                                     pada tanggal
-                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                    <text className={style.verif}> {moment().format('LL')}</text> ?
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
@@ -1816,11 +1855,11 @@ class Klaim extends Component {
                             <div className={[style.sucUpdate, style.green]}>Gagal Approve</div>
                         </div>
                         </div>
-                    ) : this.state.confirm === 'rejReject' ?(
+                    ) : this.state.confirm === 'rejSubmit' ?(
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal Reject</div>
+                                <div className={[style.sucUpdate, style.green]}>Gagal submit revisi, pastikan semua data reject telah diupdate</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'isApprove' ? (
@@ -1834,7 +1873,7 @@ class Klaim extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Submit Revisi</div>
                             </div>
                         </div>
                     ) : (
@@ -1862,8 +1901,8 @@ class Klaim extends Component {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
-                                        <Col md={12} lg={12} className='mb-2' >
-                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
+                                        <Col md={12} lg={12} >
+                                            <div className="btnDocIo mb-2" >{x.desc}</div>
                                             {x.status === 0 ? (
                                                 <AiOutlineClose size={20} />
                                             ) : x.status === 3 ? (
@@ -1872,27 +1911,34 @@ class Klaim extends Component {
                                                 <BsCircle size={20} />
                                             )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
-                                            {/* <div className="colDoc">
-                                                <input
-                                                className="ml-4"
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                                <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
-                                            </div> */}
+                                            {level === '5' && (
+                                                <div className="colDoc">
+                                                    <input
+                                                    type="file"
+                                                    className='ml-4'
+                                                    onClick={() => this.setState({detail: x})}
+                                                    onChange={this.onChangeUpload}
+                                                    />
+                                                    <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                                </div>
+                                            )}
+                                            
                                         </Col>
                                     ) : (
-                                        <Col md={6} lg={6} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
-                                            <div className="colDoc">
-                                                <input
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                            </div>
-                                            <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                        <Col md={12} lg={12} className="colDoc">
+                                            <text className="btnDocIo" >{x.desc}</text>
+                                            {level === '5' && (
+                                                <>
+                                                    <div className="colDoc">
+                                                        <input
+                                                        type="file"
+                                                        onClick={() => this.setState({detail: x})}
+                                                        onChange={this.onChangeUpload}
+                                                        />
+                                                    </div>
+                                                    <text className="txtError">Maximum file upload is 20 Mb</text>
+                                                </>
+                                            )}
                                         </Col>
                                     )}
                                 </Row>
@@ -1935,33 +1981,6 @@ class Klaim extends Component {
                     </div>
                 </ModalBody>
             </Modal>
-            <Modal isOpen={this.state.formDis} toggle={() => {this.openModalDis()}} size="xl">
-                <ModalBody>
-                    <Tracking />
-                </ModalBody>
-                <hr />
-                <div className="modalFoot ml-3">
-                    <div></div>
-                    <div className="btnFoot">
-                        <Button color="primary" onClick={() => {this.openModalDis()}}>
-                            Close
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
-            <Modal isOpen={this.state.history} toggle={this.openHistory}>
-                <ModalBody>
-                    <div className='mb-4'>History Transaksi</div>
-                    <div className='history'>
-                        {detailKlaim.length > 0 && detailKlaim[0].history.split(',').map(item => {
-                            return (
-                                item !== null && item !== 'null' && 
-                                <Button className='mb-2' color='info'>{item}</Button>
-                            )
-                        })}
-                    </div>
-                </ModalBody>
-            </Modal>
             </>
         )
     }
@@ -1971,10 +1990,10 @@ const mapStateToProps = state => ({
     approve: state.approve,
     depo: state.depo,
     user: state.user,
-    notif: state.notif,
-    klaim: state.klaim,
+    ikk: state.ikk,
     menu: state.menu,
     reason: state.reason,
+    bank: state.bank,
     dokumen: state.dokumen
 })
 
@@ -1984,17 +2003,22 @@ const mapDispatchToProps = {
     getDetailDepo: depo.getDetailDepo,
     getDepo: depo.getDepo,
     getRole: user.getRole,
-    getKlaim: klaim.getKlaim,
-    getDetail: klaim.getDetail,
-    getApproval: klaim.getApproval,
-    getDocKlaim: klaim.getDocCart,
-    approveKlaim: klaim.approveKlaim,
+    getIkk: ikk.getIkk,
+    getDetail: ikk.getDetail,
+    getApproval: ikk.getApproval,
+    getDocIkk: ikk.getDocCart,
+    approveIkk: ikk.approveIkk,
     getAllMenu: menu.getAllMenu,
     getReason: reason.getReason,
-    rejectKlaim: klaim.rejectKlaim,
-    resetKlaim: klaim.resetKlaim,
+    rejectIkk: ikk.rejectIkk,
+    resetIkk: ikk.resetIkk,
+    uploadDocIkk: ikk.uploadDocCart,
+    editIkk: ikk.editIkk,
+    appRevisi: ikk.appRevisi,
+    getBank: bank.getBank,
+    submitRevisi: ikk.submitRevisi,
     showDokumen: dokumen.showDokumen
     // notifStock: notif.notifStock
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(Klaim)
+export default connect(mapStateToProps, mapDispatchToProps)(RevisiIkk)

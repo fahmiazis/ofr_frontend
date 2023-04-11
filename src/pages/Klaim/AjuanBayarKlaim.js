@@ -35,6 +35,7 @@ import Tracking from '../../components/Klaim/tracking'
 import TableRincian from '../../components/Klaim/tableRincian'
 import FAA from '../../components/Klaim/FAA'
 import FPD from '../../components/Klaim/FPD'
+import dokumen from '../../redux/actions/dokumen'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const klaimSchema = Yup.object().shape({
@@ -358,7 +359,7 @@ class AjuanBayarKlaim extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `${fileName.nama_dokumen}.${cek[1]}`); //or any other extension
+            link.setAttribute('download', `${fileName.history}.${cek[1]}`); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -707,7 +708,7 @@ class AjuanBayarKlaim extends Component {
         const token = localStorage.getItem('token')
         await this.props.showDokumen(token, value.id)
         this.setState({date: value.updatedAt, idDoc: value.id, fileName: value})
-        const {isShow} = this.props.pengadaan
+        const {isShow} = this.props.dokumen
         if (isShow) {
             this.openModalPdf()
         }
@@ -2210,7 +2211,8 @@ const mapStateToProps = state => ({
     notif: state.notif,
     klaim: state.klaim,
     menu: state.menu,
-    reason: state.reason
+    reason: state.reason,
+    dokumen: state.dokumen
 })
 
 const mapDispatchToProps = {
@@ -2232,7 +2234,8 @@ const mapDispatchToProps = {
     submitAjuanBayar: klaim.submitAjuanBayar,
     getApprovalList: klaim.getApprovalList,
     approveListKlaim: klaim.approveListKlaim,
-    rejectListKlaim: klaim.rejectListKlaim
+    rejectListKlaim: klaim.rejectListKlaim,
+    showDokumen: dokumen.showDokumen
     // notifStock: notif.notifStock
 }
 

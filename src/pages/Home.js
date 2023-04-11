@@ -16,7 +16,10 @@ import logo from "../assets/img/logo.png"
 import '../assets/css/style.css'
 import style from '../assets/css/input.module.css'
 import moment from 'moment'
-import {BsFillCircleFill, BsBell} from 'react-icons/bs'
+import {BsFillCircleFill, BsBell, BsGearWideConnected} from 'react-icons/bs'
+import {GiNotebook} from 'react-icons/gi'
+import {GrMoney} from 'react-icons/gr'
+import {MdBalance} from 'react-icons/md'
 import { FaFileSignature } from 'react-icons/fa'
 import { FiLogOut } from 'react-icons/fi'
 import Bell from '../components/Bell'
@@ -200,19 +203,19 @@ class Home extends Component {
                         <div className="txtChoose">Please select an option</div>
                         <div className="mainBody">
                             <button className="cardHome1" onClick={() => this.goRoute('navklaim')}>
-                                <img src={placeholder} className="picHome" />
+                                <GiNotebook size={250} className="picHome" />
                                 <div className="titCard">
                                     Pengajuan Klaim
                                 </div>
                             </button>
                             <button className="cardHome2" onClick={() => this.goRoute('navops')}>
-                                <img src={placeholder} className="picHome" />
+                                <BsGearWideConnected size={250} className="picHome" />
                                 <div className="titCard">
                                     Pengajuan Operasional
                                 </div>
                             </button>
                             <button className="cardHome2" onClick={() => this.goRoute('navikk')}>
-                                <img src={placeholder} className="picHome" />
+                                <MdBalance color='danger' size={250} className="picHome" />
                                 <div className="titCard mt-4">
                                     Ikhtisar Kas Kecil
                                 </div>

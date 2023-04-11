@@ -137,30 +137,74 @@ class NavStock extends Component {
                         <div className="titHome">Operasional menu</div>
                         <div className="txtChoose">Please select an option</div>
                         <div className="mainBody">
-                            <button className="cardNav1" onClick={() => this.goRoute('ops')}>
-                                <div className="titCard">
-                                    Pengajuan Operasional
-                                </div>
-                            </button>
-                            {level === '5' ? (
+                        {level === '5' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('editops')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('ops')}>
+                                        <div className="titCard">
+                                            Pengajuan Operasional
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revops')}>
                                         <div className="titCard">
                                             Revisi Operasional
                                         </div>
                                     </button>
                                 </>
+                            ) : level === '2' ? (
+                                <>
+                                    <button className="cardNav1" onClick={() => this.goRoute('veriffintax')}>
+                                        <div className="titCard">
+                                            Verifikasi Finance
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revops')}>
+                                        <div className="titCard">
+                                            Revisi Operasional
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('listops')}>
+                                        <div className="titCard">
+                                            List Ajuan Bayar
+                                        </div>
+                                    </button>
+                                    {/* <button className="cardNav1" onClick={() => this.goRoute('repops')}>
+                                        <div className="titCard">
+                                            Report Operasional
+                                        </div>
+                                    </button> */}
+                                </>
+                            ) : level === '4' ? (
+                                <>
+                                    <button className="cardNav1" onClick={() => this.goRoute('veriffintax')}>
+                                        <div className="titCard">
+                                            Verifikasi Tax
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revops')}>
+                                        <div className="titCard">
+                                            Revisi Operasional
+                                        </div>
+                                    </button>
+                                </>
+                            ) : level === '7' || level === '8' || level === '9' ? (
+                                <>
+                                    <button className="cardNav1" onClick={() => this.goRoute('listops')}>
+                                        <div className="titCard">
+                                            List Ajuan Bayar
+                                        </div>
+                                    </button>
+                                    {/* <button className="cardNav1" onClick={() => this.goRoute('repops')}>
+                                        <div className="titCard">
+                                            Report Operasional
+                                        </div>
+                                    </button> */}
+                                </>
                             ) : (
-                                <div></div>
-                            )}
-                            {level === '2' || level === '1' ? (
-                                <button className="cardNav1" onClick={() => this.goRoute('repops')}>
+                                <button className="cardNav1" onClick={() => this.goRoute('ops')}>
                                     <div className="titCard">
-                                        Report Operasional
+                                        Pengajuan Operasional
                                     </div>
                                 </button>
-                            ) : (
-                                <div></div>
                             )}
                         </div>
                     </div>

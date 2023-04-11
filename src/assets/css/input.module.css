@@ -337,6 +337,26 @@ html,body{
   color: black;
   white-space: nowrap;
 }
+.tabikk {
+  margin-bottom: 0 !important;
+}
+.tabikk > tbody > tr > th{
+  border: 1px solid black;
+  color: black;
+  font-size: small;
+}
+.tabikk > tbody > tr > td{
+  border: 1px solid black;
+  font-size: small;
+  color: black;
+}
+.tabikk > thead > tr > th{
+  border: 1px solid black;
+  text-align: center;
+  /* background-color: #76923B; */
+  color: black;
+  white-space: nowrap;
+}
 .btnProses {
   margin-right: 20px;
 }
@@ -509,6 +529,11 @@ html,body{
   flex-direction: row;
   align-items: center !important;
   margin-top: 5%;
+}
+.secPaguIkk {
+  display: flex;
+  flex-direction: row;
+  align-items: center !important;
 }
 .infoPageEmail {
   display: flex;

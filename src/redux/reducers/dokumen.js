@@ -16,11 +16,37 @@ const dokumenState = {
     alertUpload: [],
     page: {},
     isExport: false,
-    link: ''
+    link: '',
+    isShow: null,
+    dataShow: '',
 };
 
 export default (state=dokumenState, action) => {
         switch(action.type){
+            case 'SHOW_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'SHOW_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isShow: true,
+                    dataShow: action.payload.config.url,
+                    alertMsg: 'show document succesfully',
+                };
+            }
+            case 'SHOW_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isShow: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'EXPORT_MASTER_DOKUMEN_PENDING': {
                 return {
                     ...state,

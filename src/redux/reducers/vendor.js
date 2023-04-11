@@ -1,5 +1,5 @@
 /* eslint-disable import/no-anonymous-default-export */
-const coaState = {
+const vendorState = {
     isAdd: false,
     isAddDetail: false,
     isUpdate: false,
@@ -8,21 +8,21 @@ const coaState = {
     isLoading: false,
     isError: false,
     alertMsg: '',
-    dataCoa: [],
+    dataVendor: [],
     dataName: [],
     alertM: '',
     alertUpload: [],
     page: {},
     isExport: false,
-    detCoa: {},
+    detVendor: {},
     link: '',
     dataAll: [],
     isAll: false,
     isUpload: false,
-    allCoa: []
+    allVendor: []
 };
 
-export default (state=coaState, action) => {
+export default (state=vendorState, action) => {
         switch(action.type){
             case 'GET_ALL_PENDING': {
                 return {
@@ -37,7 +37,7 @@ export default (state=coaState, action) => {
                     isLoading: false,
                     isAll: true,
                     dataAll: action.payload.data.result.rows,
-                    alertMsg: 'get coa Succesfully',
+                    alertMsg: 'get vendor Succesfully',
                     page: action.payload.data.pageInfo
                 };
             }
@@ -46,27 +46,27 @@ export default (state=coaState, action) => {
                     ...state,
                     isLoading: false,
                     isError: true,
-                    alertMsg: "Failed get data coa"
+                    alertMsg: "Failed get data vendor"
                 };
             }
-            case 'GET_COA_PENDING': {
+            case 'GET_VENDOR_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_COA_FULFILLED': {
+            case 'GET_VENDOR_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    dataCoa: action.payload.data.result,
-                    allCoa: action.payload.data.length,
-                    alertMsg: 'get coa Succesfully'
+                    dataVendor: action.payload.data.result,
+                    allVendor: action.payload.data.length,
+                    alertMsg: 'get vendor Succesfully'
                 };
             }
-            case 'GET_COA_REJECTED': {
+            case 'GET_VENDOR_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -74,23 +74,23 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'DETAIL_COA_PENDING': {
+            case 'DETAIL_VENDOR_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'DETAIL_COA_FULFILLED': {
+            case 'DETAIL_VENDOR_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    detCoa: action.payload.data.result,
-                    alertMsg: 'get detail coa Succesfully',
+                    detVendor: action.payload.data.result,
+                    alertMsg: 'get detail vendor Succesfully',
                 };
             }
-            case 'DETAIL_COA_REJECTED': {
+            case 'DETAIL_VENDOR_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -98,14 +98,14 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'NEXT_DATA_COA_PENDING': {
+            case 'NEXT_DATA_VENDOR_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'NEXT_DATA_COA_FULFILLED': {
+            case 'NEXT_DATA_VENDOR_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -115,7 +115,7 @@ export default (state=coaState, action) => {
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'NEXT_DATA_COA_REJECTED': {
+            case 'NEXT_DATA_VENDOR_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -124,14 +124,14 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'UPDATE_COA_PENDING': {
+            case 'UPDATE_VENDOR_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting'
                 };
             }
-            case 'UPDATE_COA_FULFILLED': {
+            case 'UPDATE_VENDOR_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -139,7 +139,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'update user Succesfully'
                 };
             }
-            case 'UPDATE_COA_REJECTED': {
+            case 'UPDATE_VENDOR_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -148,14 +148,14 @@ export default (state=coaState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'ADD_COA_PENDING': {
+            case 'ADD_VENDOR_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'ADD_COA_FULFILLED': {
+            case 'ADD_VENDOR_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -164,7 +164,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'add user Succesfully'
                 };
             }
-            case 'ADD_COA_REJECTED': {
+            case 'ADD_VENDOR_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -173,14 +173,14 @@ export default (state=coaState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'UPLOAD_COA_PENDING': {
+            case 'UPLOAD_VENDOR_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting....'
                 };
             }
-            case 'UPLOAD_COA_FULFILLED': {
+            case 'UPLOAD_VENDOR_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -188,7 +188,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'upload master Succesfully'
                 };
             }
-            case 'UPLOAD_COA_REJECTED': {
+            case 'UPLOAD_VENDOR_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -197,14 +197,14 @@ export default (state=coaState, action) => {
                     alertUpload: action.payload.response.data.result
                 };
             }
-            case 'EXPORT_MASTER_COA_PENDING': {
+            case 'EXPORT_MASTER_VENDOR_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'EXPORT_MASTER_COA_FULFILLED': {
+            case 'EXPORT_MASTER_VENDOR_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -213,7 +213,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'success export data'
                 };
             }
-            case 'EXPORT_MASTER_COA_REJECTED': {
+            case 'EXPORT_MASTER_VENDOR_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -221,7 +221,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'Failed export data'
                 };
             }
-            case 'RESET_COA': {
+            case 'RESET_VENDOR': {
                 return {
                     ...state,
                     isError: false,

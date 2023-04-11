@@ -15,9 +15,9 @@ export default {
         type: 'GET_MENU',
         payload: http(token).get(`/menu/get`)
     }),
-    getAllMenu: (token, name) => ({
+    getAllMenu: (token, type, name) => ({
         type: 'GET_ALL_MENU',
-        payload: http(token).get(`/menu/all/${name}`)
+        payload: http(token).get(`/menu/all/${type}?name=${name}`)
     }),
     getDetailMenu: (token, nama) => ({
         type: 'GET_DETAIL_MENU',

@@ -1,5 +1,5 @@
 /* eslint-disable import/no-anonymous-default-export */
-const coaState = {
+const rekState = {
     isAdd: false,
     isAddDetail: false,
     isUpdate: false,
@@ -8,65 +8,63 @@ const coaState = {
     isLoading: false,
     isError: false,
     alertMsg: '',
-    dataCoa: [],
+    dataTarif: [],
     dataName: [],
     alertM: '',
     alertUpload: [],
     page: {},
     isExport: false,
-    detCoa: {},
+    detTarif: {},
     link: '',
     dataAll: [],
     isAll: false,
-    isUpload: false,
-    allCoa: []
+    isUpload: false
 };
 
-export default (state=coaState, action) => {
+export default (state=rekState, action) => {
         switch(action.type){
-            case 'GET_ALL_PENDING': {
+            case 'GET_ALL_TARIF_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_ALL_FULFILLED': {
+            case 'GET_ALL_TARIF_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isAll: true,
                     dataAll: action.payload.data.result.rows,
-                    alertMsg: 'get coa Succesfully',
+                    alertMsg: 'get bank Succesfully',
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'GET_ALL_REJECTED': {
+            case 'GET_ALL_TARIF_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
                     isError: true,
-                    alertMsg: "Failed get data coa"
+                    alertMsg: "Failed get data bank"
                 };
             }
-            case 'GET_COA_PENDING': {
+            case 'GET_TARIF_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_COA_FULFILLED': {
+            case 'GET_TARIF_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    dataCoa: action.payload.data.result,
-                    allCoa: action.payload.data.length,
-                    alertMsg: 'get coa Succesfully'
+                    dataTarif: action.payload.data.result,
+                    alertMsg: 'get bank Succesfully'
                 };
             }
-            case 'GET_COA_REJECTED': {
+            case 'GET_TARIF_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -74,23 +72,23 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'DETAIL_COA_PENDING': {
+            case 'DETAIL_TARIF_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'DETAIL_COA_FULFILLED': {
+            case 'DETAIL_TARIF_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    detCoa: action.payload.data.result,
-                    alertMsg: 'get detail coa Succesfully',
+                    detTarif: action.payload.data.result,
+                    alertMsg: 'get detail bank Succesfully',
                 };
             }
-            case 'DETAIL_COA_REJECTED': {
+            case 'DETAIL_TARIF_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -98,14 +96,14 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'NEXT_DATA_COA_PENDING': {
+            case 'NEXT_DATA_TARIF_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'NEXT_DATA_COA_FULFILLED': {
+            case 'NEXT_DATA_TARIF_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -115,7 +113,7 @@ export default (state=coaState, action) => {
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'NEXT_DATA_COA_REJECTED': {
+            case 'NEXT_DATA_TARIF_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -124,14 +122,14 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'UPDATE_COA_PENDING': {
+            case 'UPDATE_TARIF_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting'
                 };
             }
-            case 'UPDATE_COA_FULFILLED': {
+            case 'UPDATE_TARIF_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -139,7 +137,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'update user Succesfully'
                 };
             }
-            case 'UPDATE_COA_REJECTED': {
+            case 'UPDATE_TARIF_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -148,14 +146,14 @@ export default (state=coaState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'ADD_COA_PENDING': {
+            case 'ADD_TARIF_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'ADD_COA_FULFILLED': {
+            case 'ADD_TARIF_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -164,7 +162,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'add user Succesfully'
                 };
             }
-            case 'ADD_COA_REJECTED': {
+            case 'ADD_TARIF_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -173,14 +171,14 @@ export default (state=coaState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'UPLOAD_COA_PENDING': {
+            case 'UPLOAD_TARIF_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting....'
                 };
             }
-            case 'UPLOAD_COA_FULFILLED': {
+            case 'UPLOAD_TARIF_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -188,7 +186,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'upload master Succesfully'
                 };
             }
-            case 'UPLOAD_COA_REJECTED': {
+            case 'UPLOAD_TARIF_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -197,14 +195,14 @@ export default (state=coaState, action) => {
                     alertUpload: action.payload.response.data.result
                 };
             }
-            case 'EXPORT_MASTER_COA_PENDING': {
+            case 'EXPORT_MASTER_TARIF_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'EXPORT_MASTER_COA_FULFILLED': {
+            case 'EXPORT_MASTER_TARIF_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -213,7 +211,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'success export data'
                 };
             }
-            case 'EXPORT_MASTER_COA_REJECTED': {
+            case 'EXPORT_MASTER_TARIF_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -221,7 +219,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'Failed export data'
                 };
             }
-            case 'RESET_COA': {
+            case 'RESET_TARIF': {
                 return {
                     ...state,
                     isError: false,

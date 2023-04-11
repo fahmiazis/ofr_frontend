@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import Home from './pages/Home'
 import Notif from './pages/Notif'
 import Dashboard from './pages/Dashboard'
+
 //Klaim
 import NavKlaim from './pages/Klaim/NavKlaim'
 import Klaim from './pages/Klaim/Klaim'
@@ -19,14 +20,19 @@ import ReportKlaim from './pages/Klaim/ReportKlaim'
 import AjuanBayarKlaim from './pages/Klaim/AjuanBayarKlaim'
 
 //Operasional
-import NavOps from './pages/Operasional/NavOps'
-import Operasional from './pages/Operasional/Operasional'
-import CartOps from './pages/Operasional/CartOps'
+import NavOps from './pages/Ops/NavOps'
+import Operasional from './pages/Ops/Operasional'
+import CartOps from './pages/Ops/CartOps'
+import VerifFinanceTax from './pages/Ops/VerifFinanceTax'
+import AjuanBayarOps from './pages/Ops/AjuanBayarOps'
 
-//Operasional
+//Ikk
 import NavIkk from './pages/IKK/NavIkk'
 import Ikk from './pages/IKK/Ikk'
 import CartIkk from './pages/IKK/CartIkk'
+import RevisiIkk from './pages/IKK/RevisiIkk'
+import VerifFinanceIkk from './pages/IKK/VerifFinanceIkk'
+import AjuanBayarIkk from './pages/IKK/AjuanBayarIkk'
 
 //Master
 import MasterDepo from './pages/Master/MasterDepo'
@@ -38,6 +44,10 @@ import Approve from './pages/Master/Approve'
 import MasterMenu from './pages/Master/MasterMenu'
 import MasterReason from './pages/Master/MasterReason'
 import MasterRekening from './pages/Master/MasterRekening'
+import MasterTarif from './pages/Master/MasterTarif'
+import MasterPagu from './pages/Master/MasterPagu'
+import MasterEmail from './pages/Master/MasterEmail'
+import MasterVendor from './pages/Master/MasterVendor'
 
 //For Tes
 import Tes from './pages/Tes'
@@ -99,6 +109,12 @@ class App extends Component {
                 <PrivateRoute path='/cartops'>
                     <CartOps />
                 </PrivateRoute>
+                <PrivateRoute path='/veriffintax'>
+                    <VerifFinanceTax />
+                </PrivateRoute>
+                <PrivateRoute path='/listops'>
+                    <AjuanBayarOps />
+                </PrivateRoute>
 
                 {/* IKK */}
                 <PrivateRoute path='/navikk'>
@@ -109,6 +125,15 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/cartikk'>
                     <CartIkk />
+                </PrivateRoute>
+                <PrivateRoute path='/revikk'>
+                    <RevisiIkk />
+                </PrivateRoute>
+                <PrivateRoute path='/veriffinikk'>
+                    <VerifFinanceIkk />
+                </PrivateRoute>
+                <PrivateRoute path='/listikk'>
+                    <AjuanBayarIkk />
                 </PrivateRoute>
 
                 {/* Master */}
@@ -139,7 +164,18 @@ class App extends Component {
                 <PrivateRoute path='/rekening'>
                     <MasterRekening />
                 </PrivateRoute>
-
+                <PrivateRoute path='/tarif'>
+                    <MasterTarif />
+                </PrivateRoute>
+                <PrivateRoute path='/pagu'>
+                    <MasterPagu />
+                </PrivateRoute>
+                <PrivateRoute path='/email'>
+                    <MasterEmail />
+                </PrivateRoute>
+                <PrivateRoute path='/vendor'>
+                    <MasterVendor />
+                </PrivateRoute>
             </Switch>
         </BrowserRouter>
         )

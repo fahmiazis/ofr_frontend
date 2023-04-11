@@ -8,30 +8,30 @@ const coaState = {
     isLoading: false,
     isError: false,
     alertMsg: '',
-    dataCoa: [],
+    dataPagu: {},
     dataName: [],
     alertM: '',
     alertUpload: [],
     page: {},
     isExport: false,
-    detCoa: {},
+    detPagu: {},
     link: '',
     dataAll: [],
     isAll: false,
     isUpload: false,
-    allCoa: []
+    allPagu: []
 };
 
 export default (state=coaState, action) => {
         switch(action.type){
-            case 'GET_ALL_PENDING': {
+            case 'GET_ALL_PAGU_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_ALL_FULFILLED': {
+            case 'GET_ALL_PAGU_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -41,7 +41,7 @@ export default (state=coaState, action) => {
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'GET_ALL_REJECTED': {
+            case 'GET_ALL_PAGU_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -49,24 +49,23 @@ export default (state=coaState, action) => {
                     alertMsg: "Failed get data coa"
                 };
             }
-            case 'GET_COA_PENDING': {
+            case 'GET_PAGU_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_COA_FULFILLED': {
+            case 'GET_PAGU_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    dataCoa: action.payload.data.result,
-                    allCoa: action.payload.data.length,
+                    dataPagu: action.payload.data.result,
                     alertMsg: 'get coa Succesfully'
                 };
             }
-            case 'GET_COA_REJECTED': {
+            case 'GET_PAGU_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -74,23 +73,23 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'DETAIL_COA_PENDING': {
+            case 'DETAIL_PAGU_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'DETAIL_COA_FULFILLED': {
+            case 'DETAIL_PAGU_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    detCoa: action.payload.data.result,
+                    detPagu: action.payload.data.result,
                     alertMsg: 'get detail coa Succesfully',
                 };
             }
-            case 'DETAIL_COA_REJECTED': {
+            case 'DETAIL_PAGU_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -98,14 +97,14 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'NEXT_DATA_COA_PENDING': {
+            case 'NEXT_DATA_PAGU_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'NEXT_DATA_COA_FULFILLED': {
+            case 'NEXT_DATA_PAGU_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -115,7 +114,7 @@ export default (state=coaState, action) => {
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'NEXT_DATA_COA_REJECTED': {
+            case 'NEXT_DATA_PAGU_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -124,14 +123,14 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'UPDATE_COA_PENDING': {
+            case 'UPDATE_PAGU_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting'
                 };
             }
-            case 'UPDATE_COA_FULFILLED': {
+            case 'UPDATE_PAGU_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -139,7 +138,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'update user Succesfully'
                 };
             }
-            case 'UPDATE_COA_REJECTED': {
+            case 'UPDATE_PAGU_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -148,14 +147,14 @@ export default (state=coaState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'ADD_COA_PENDING': {
+            case 'ADD_PAGU_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'ADD_COA_FULFILLED': {
+            case 'ADD_PAGU_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -164,7 +163,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'add user Succesfully'
                 };
             }
-            case 'ADD_COA_REJECTED': {
+            case 'ADD_PAGU_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -173,14 +172,14 @@ export default (state=coaState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'UPLOAD_COA_PENDING': {
+            case 'UPLOAD_PAGU_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting....'
                 };
             }
-            case 'UPLOAD_COA_FULFILLED': {
+            case 'UPLOAD_PAGU_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -188,7 +187,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'upload master Succesfully'
                 };
             }
-            case 'UPLOAD_COA_REJECTED': {
+            case 'UPLOAD_PAGU_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -197,14 +196,14 @@ export default (state=coaState, action) => {
                     alertUpload: action.payload.response.data.result
                 };
             }
-            case 'EXPORT_MASTER_COA_PENDING': {
+            case 'EXPORT_MASTER_PAGU_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'EXPORT_MASTER_COA_FULFILLED': {
+            case 'EXPORT_MASTER_PAGU_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -213,7 +212,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'success export data'
                 };
             }
-            case 'EXPORT_MASTER_COA_REJECTED': {
+            case 'EXPORT_MASTER_PAGU_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -221,7 +220,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'Failed export data'
                 };
             }
-            case 'RESET_COA': {
+            case 'RESET_PAGU': {
                 return {
                     ...state,
                     isError: false,

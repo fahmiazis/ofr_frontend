@@ -2,7 +2,7 @@ import React, { Component, useState } from 'react'
 import logo from '../assets/img/logo.png'
 import { Collapse } from 'reactstrap';
 import {AiFillHome} from 'react-icons/ai'
-import { FaDatabase, FaHome, FaFileArchive, FaCartPlus, FaRecycle, FaTasks, FaHandshake} from 'react-icons/fa'
+import { FaDatabase, FaTicketAlt, FaHome, FaFileArchive, FaCartPlus, FaRecycle, FaTasks, FaHandshake} from 'react-icons/fa'
 import { RiArrowLeftRightFill, RiMoneyDollarCircleFill } from 'react-icons/ri'
 import { HiOutlineDocumentText } from 'react-icons/hi'
 import {RiBankCardFill} from 'react-icons/ri'
@@ -11,7 +11,7 @@ import { SiReason } from 'react-icons/si'
 import { BsClipboardData, BsHouseDoor, BsFileCheck } from 'react-icons/bs'
 import { GiFamilyTree } from 'react-icons/gi'
 import { MdKeyboardArrowLeft, MdKeyboardArrowDown } from 'react-icons/md'
-import { AiFillSetting, AiOutlineClockCircle, AiOutlineUnlock, AiOutlineMenu, AiFillDashboard } from 'react-icons/ai'
+import { AiFillSetting, AiOutlineClockCircle, AiOutlineMail, AiOutlineMenu, AiFillDashboard } from 'react-icons/ai'
 import { GrDocumentVerified } from 'react-icons/gr'
 import { useHistory } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
@@ -95,6 +95,10 @@ function Sidebar(props) {
                     <RiBankCardFill size={20} className="mr-2"/>
                     Master Rekening
                 </button>
+                <button onClick={() => goHome('tarif')} className={stile.btnSide}>
+                    <FaTicketAlt size={20} className="mr-2"/>
+                    Master Tarif
+                </button>
                 <button onClick={() => goHome('menu')} className={stile.btnSide}>
                     <AiOutlineMenu size={20} className="mr-2"/>
                     Master Menu
@@ -110,6 +114,18 @@ function Sidebar(props) {
                 <button onClick={() => goHome('coa')} className={stile.btnSide}>
                     <BsClipboardData size={20} className="mr-2"/>
                     Master COA
+                </button>
+                <button onClick={() => goHome('vendor')} className={stile.btnSide}>
+                    <BsClipboardData size={20} className="mr-2"/>
+                    Master Vendor
+                </button>
+                <button onClick={() => goHome('pagu')} className={stile.btnSide}>
+                    <RiBankCardFill size={20} className="mr-2"/>
+                    Master Pagu
+                </button>
+                <button onClick={() => goHome('email')} className={stile.btnSide}>
+                    <AiOutlineMail size={20} className="mr-2"/>
+                    Master Email
                 </button>
                 </Collapse>
                 {/* <button className="menuSides" onClick={goReport}>

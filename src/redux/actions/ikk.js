@@ -3,9 +3,9 @@ import http from '../../helpers/http'
 import qs from 'qs'
 
 export default {
-    addCart: (token, data) => ({
+    addCart: (token, data, id) => ({
         type: 'ADD_CART',
-        payload: http(token).post(`/ikk/add`, qs.stringify(data))
+        payload: http(token).post(`/ikk/add/${id}`, qs.stringify(data))
     }),
     deleteCart: (token, id) => ({
         type: 'DELETE_CART',
@@ -23,17 +23,17 @@ export default {
         type: 'GET_DOCDRAFT',
         payload: http(token).patch(`/ikk/docdraft/${name}`),
     }),
-    UploadDocCart: (token, no, id, data) => ({
+    uploadDocCart: (token, no, id, data) => ({
         type: 'UPLOAD_DOC',
         payload: http(token).post(`/ikk/updoc?no=${no}&id=${id}`, data)
     }),
-    submitIkk: (token) => ({
+    submitIkk: (token, data) => ({
         type: 'SUBMIT_IKK',
-        payload: http(token).patch(`/ikk/submit`)
+        payload: http(token).patch(`/ikk/submit`, data)
     }),
     submitIkkFinal: (token, no) => ({
         type: 'SUBMIT_IKKFINAL',
-        payload: http(token).patch(`/ikk/subfinklaim`, qs.stringify(no))
+        payload: http(token).patch(`/ikk/subfinikk`, qs.stringify(no))
     }),
     getIkk: (token, status, reject, menu, type, category, data) => ({
         type: 'GET_IKK',

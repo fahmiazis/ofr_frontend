@@ -3,6 +3,10 @@ import http from '../../helpers/http'
 import qs from 'qs'
 
 export default {
+    showDokumen: (token, id, no) => ({
+        type: 'SHOW',
+        payload: http(token).get(`/show/doc/${id}?no=${no}`)
+    }),
     addDokumen: (token, data) => ({
         type: 'ADD_DOKUMEN',
         payload: http(token).post(`/document/add`, qs.stringify(data))

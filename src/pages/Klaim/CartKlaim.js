@@ -34,6 +34,7 @@ import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
+import dokumen from '../../redux/actions/dokumen'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const addSchema = Yup.object().shape({
@@ -399,7 +400,7 @@ class CartKlaim extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `${fileName.nama_dokumen}.${cek[1]}`); //or any other extension
+            link.setAttribute('download', `${fileName.history}.${cek[1]}`); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -633,6 +634,7 @@ class CartKlaim extends Component {
             status_npwp: val.status_npwp === 'Tidak' ? 0 : 1,
             nama_npwp: val.status_npwp === 'Tidak' ? '' : val.nama_npwp,
             no_npwp: val.status_npwp === 'Tidak' ? '' : val.no_npwp,
+            nama_ktp: val.status_npwp === 'Tidak' ? val.nama_ktp : '',
             no_ktp: val.status_npwp === 'Tidak' ? val.no_ktp : '',
             periode: ''
         }
@@ -738,7 +740,7 @@ class CartKlaim extends Component {
         const token = localStorage.getItem('token')
         await this.props.showDokumen(token, value.id)
         this.setState({date: value.updatedAt, idDoc: value.id, fileName: value})
-        const {isShow} = this.props.pengadaan
+        const {isShow} = this.props.dokumen
         if (isShow) {
             this.openModalPdf()
         }
@@ -2275,7 +2277,8 @@ const mapStateToProps = state => ({
     coa: state.coa,
     klaim: state.klaim,
     bank: state.bank,
-    rekening: state.rekening
+    rekening: state.rekening,
+    dokumen: state.dokumen
 })
 
 const mapDispatchToProps = {
@@ -2296,7 +2299,8 @@ const mapDispatchToProps = {
     getBank: bank.getBank,
     submitKlaimFinal: klaim.submitKlaimFinal,
     getApproval: klaim.getApproval,
-    getRek: rekening.getRek
+    getRek: rekening.getRek,
+    showDokumen: dokumen.showDokumen
     // notifStock: notif.notifStock
 }
 
