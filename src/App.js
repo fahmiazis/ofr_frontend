@@ -25,6 +25,8 @@ import Operasional from './pages/Ops/Operasional'
 import CartOps from './pages/Ops/CartOps'
 import VerifFinanceTax from './pages/Ops/VerifFinanceTax'
 import AjuanBayarOps from './pages/Ops/AjuanBayarOps'
+import ReportOps from './pages/Ops/ReportOps'
+import RevisiOps from './pages/Ops/RevisiOps'
 
 //Ikk
 import NavIkk from './pages/IKK/NavIkk'
@@ -33,6 +35,7 @@ import CartIkk from './pages/IKK/CartIkk'
 import RevisiIkk from './pages/IKK/RevisiIkk'
 import VerifFinanceIkk from './pages/IKK/VerifFinanceIkk'
 import AjuanBayarIkk from './pages/IKK/AjuanBayarIkk'
+import ReportIkk from './pages/IKK/ReportIkk'
 
 //Master
 import MasterDepo from './pages/Master/MasterDepo'
@@ -48,6 +51,7 @@ import MasterTarif from './pages/Master/MasterTarif'
 import MasterPagu from './pages/Master/MasterPagu'
 import MasterEmail from './pages/Master/MasterEmail'
 import MasterVendor from './pages/Master/MasterVendor'
+import MasterFaktur from './pages/Master/MasterFaktur'
 
 //For Tes
 import Tes from './pages/Tes'
@@ -115,6 +119,12 @@ class App extends Component {
                 <PrivateRoute path='/listops'>
                     <AjuanBayarOps />
                 </PrivateRoute>
+                <PrivateRoute path='/revops'>
+                    <RevisiOps/>
+                </PrivateRoute>
+                <PrivateRoute path='/repops'>
+                    <ReportOps/>
+                </PrivateRoute>
 
                 {/* IKK */}
                 <PrivateRoute path='/navikk'>
@@ -134,6 +144,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/listikk'>
                     <AjuanBayarIkk />
+                </PrivateRoute>
+                <PrivateRoute path='/repikk'>
+                    <ReportIkk/>
                 </PrivateRoute>
 
                 {/* Master */}
@@ -175,6 +188,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/vendor'>
                     <MasterVendor />
+                </PrivateRoute>
+                <PrivateRoute path='/faktur'>
+                    <MasterFaktur />
                 </PrivateRoute>
             </Switch>
         </BrowserRouter>

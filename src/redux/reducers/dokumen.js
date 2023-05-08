@@ -19,6 +19,8 @@ const dokumenState = {
     link: '',
     isShow: null,
     dataShow: '',
+    isApprove: null,
+    isReject: null
 };
 
 export default (state=dokumenState, action) => {
@@ -44,6 +46,52 @@ export default (state=dokumenState, action) => {
                     ...state,
                     isLoading: false,
                     isShow: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'APPROVE_DOKUMEN_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'APPROVE_DOKUMEN_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isApprove: true,
+                    alertMsg: 'approve document succesfully',
+                };
+            }
+            case 'APPROVE_DOKUMEN_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isApprove: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'REJECT_DOKUMEN_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'REJECT_DOKUMEN_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isReject: true,
+                    alertMsg: 'reject document succesfully',
+                };
+            }
+            case 'REJECT_DOKUMEN_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isReject: false,
                     alertMsg: "Unable connect to server"
                 };
             }
@@ -235,12 +283,14 @@ export default (state=dokumenState, action) => {
                     alertUpload: action.payload.response.data.result
                 };
             }
-            case 'RESET': {
+            case 'RESET_DOKUMEN': {
                 return {
                     ...state,
                     isError: false,
                     isUpload: false,
-                    isExport: false
+                    isExport: false,
+                    isApprove: null,
+                    isReject: null
                 }
             }
             default: {

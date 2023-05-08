@@ -157,21 +157,21 @@ class NavStock extends Component {
                                             Verifikasi Finance
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revops')}>
-                                        <div className="titCard">
-                                            Revisi Operasional
-                                        </div>
-                                    </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('listops')}>
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
                                     </button>
-                                    {/* <button className="cardNav1" onClick={() => this.goRoute('repops')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('repops')}>
                                         <div className="titCard">
                                             Report Operasional
                                         </div>
-                                    </button> */}
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revops')}>
+                                        <div className="titCard">
+                                            Revisi Operasional
+                                        </div>
+                                    </button>
                                 </>
                             ) : level === '4' ? (
                                 <>
@@ -193,11 +193,11 @@ class NavStock extends Component {
                                             List Ajuan Bayar
                                         </div>
                                     </button>
-                                    {/* <button className="cardNav1" onClick={() => this.goRoute('repops')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('repops')}>
                                         <div className="titCard">
                                             Report Operasional
                                         </div>
-                                    </button> */}
+                                    </button>
                                 </>
                             ) : (
                                 <button className="cardNav1" onClick={() => this.goRoute('ops')}>

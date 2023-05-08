@@ -46,6 +46,8 @@ const klaimState = {
     ttdKlaimList: [],
     baseTtdList: [],
     isRejectList: null,
+    isGetReport: null,
+    dataReport: []
 };
 
 export default (state=klaimState, action) => {
@@ -99,6 +101,31 @@ export default (state=klaimState, action) => {
                     isLoading: false,
                     isError: true,
                     isGetKlaim: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'REPORT_KLAIM_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'REPORT_KLAIM_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetReport: true,
+                    dataReport: action.payload.data.result,
+                    alertMsg: 'get coa Succesfully'
+                };
+            }
+            case 'REPORT_KLAIM_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    isGetReport: false,
                     alertMsg: "Unable connect to server"
                 };
             }
@@ -601,7 +628,8 @@ export default (state=klaimState, action) => {
                     subRevisi: null,
                     subVerif: null,
                     editVrf: null,
-                    subBayar: null
+                    subBayar: null,
+                    isGetReport: null
                 }
             }
             default: {

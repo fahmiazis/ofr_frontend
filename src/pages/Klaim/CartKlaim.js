@@ -340,7 +340,7 @@ class CartKlaim extends Component {
         const verifDoc = []
         const tempDoc = []
         for (let i = 0; i < dataDoc.length; i++) {
-            if (dataDoc[i].stat_upload === 1 && dataDoc[i].status === '1') {
+            if (dataDoc[i].stat_upload === 1 && dataDoc[i].path !== null) {
                 verifDoc.push(dataDoc[i])
                 tempDoc.push(dataDoc[i])
             } else if (dataDoc[i].stat_upload === 1) {
@@ -1012,7 +1012,7 @@ class CartKlaim extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal isOpen={this.state.modalAdd} toggle={this.openModalAdd} size="lg">
+                <Modal isOpen={this.state.modalAdd} size="lg">
                     <ModalHeader>
                         Tambah Ajuan Klaim
                     </ModalHeader>

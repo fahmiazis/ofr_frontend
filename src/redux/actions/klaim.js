@@ -91,6 +91,10 @@ export default {
         type: 'REJECTLIST_KLAIM',
         payload: http(token).patch(`/klaim/rejectlist`, data)
     }),
+    getReport: (token, status, reject, menu) => ({
+        type: 'REPORT_KLAIM',
+        payload: http(token).get(`/klaim/report?status=${status}&reject=${reject}&menu=${menu}`),
+    }),
     resetKlaim: () => ({
         type: 'RESET_KLAIM'
     })

@@ -24,6 +24,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
+import email from '../../redux/actions/email'
 // import notif from '../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
@@ -35,6 +36,7 @@ import ops from '../../redux/actions/ops'
 import Tracking from '../../components/Ops/tracking'
 import TableRincian from '../../components/Ops/tableRincian'
 import dokumen from '../../redux/actions/dokumen'
+import Email from '../../components/Ops/Email'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -120,7 +122,9 @@ class Ops extends Component {
             tipeCol: '',
             formDis: false,
             history: false,
-            upload: false
+            upload: false,
+            openDraft: false,
+            message: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -344,18 +348,21 @@ class Ops extends Component {
 
     componentDidUpdate() {
         const { isApprove, isReject } = this.props.ops
+        const { isSend } = this.props.email
         if (isApprove === false) {
             this.setState({confirm: 'rejApprove'})
             this.openConfirm()
             this.openModalApprove()
-            this.openModalRinci()
             this.props.resetOps()
         } else if (isReject === false) {
             this.setState({confirm: 'rejReject'})
             this.openConfirm()
             this.openModalReject()
-            this.openModalRinci()
             this.props.resetOps()
+        } else if (isSend === false) {
+            this.setState({confirm: 'rejSend'})
+            this.openConfirm()
+            this.props.resetEmail()
         }
     }
 
@@ -550,15 +557,69 @@ class Ops extends Component {
     approveDataOps = async () => {
         const { detailOps } = this.props.ops
         const token = localStorage.getItem("token")
+        const level = localStorage.getItem("level")
         const tempno = {
             no: detailOps[0].no_transaksi
         }
         await this.props.approveOps(token, tempno)
+        if (level === '12') {
+            this.getDataOps()
+            this.setState({confirm: 'isApprove'})
+            this.openConfirm()
+            this.openModalApprove()
+            this.openModalRinci()
+        } else {
+            this.dataSendEmail()
+        }
+    }
+
+    dataSendEmail = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailOps } = this.props.ops
+        const { draftEmail } = this.props.email
+        const { message } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            no: detailOps[0].no_transaksi,
+            tipe: 'ops',
+        }
+        await this.props.sendEmail(token, tempno)
         this.getDataOps()
         this.setState({confirm: 'isApprove'})
         this.openConfirm()
+        this.openDraftEmail()
         this.openModalApprove()
         this.openModalRinci()
+    }
+
+    prepSendEmail = async () => {
+        const { detailOps } = this.props.ops
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            kode: detailOps[0].kode_plant,
+            tipe: 'approve',
+            menu: 'Pengajuan Operasional (Operasional)'
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.openDraftEmail()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val})
+        console.log(val)
     }
 
     onSearch = async (e) => {
@@ -1749,7 +1810,7 @@ class Ops extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.props.menu.isLoading || this.props.reason.isLoading} size="sm">
+                <Modal isOpen={this.props.ops.isLoading || this.props.menu.isLoading || this.props.reason.isLoading || this.props.email.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1771,7 +1832,12 @@ class Ops extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveDataOps()}>Ya</Button>
+                                {level === '12' ? (
+                                    <Button color="primary" onClick={() => this.approveDataOps()}>Ya</Button>
+                                ) : (
+                                    <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
+                                )}
+                                {/* <Button color="primary" onClick={() => this.approveDataOps()}>Ya</Button> */}
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1829,7 +1895,14 @@ class Ops extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve dan Kirim Email</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'rejSend' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve dan Gagal Kirim Email</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'submit' ? (
@@ -1964,6 +2037,26 @@ class Ops extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal toggle={this.openDraftEmail} isOpen={this.state.openDraft} size='xl'>
+                <ModalHeader>Email Pemberitahuan</ModalHeader>
+                <ModalBody>
+                    <Email handleData={this.getMessage}/>
+                    <div className={style.foot}>
+                        <div></div>
+                        <div>
+                            <Button
+                                disabled={this.state.message === '' ? true : false} 
+                                className="mr-2"
+                                onClick={() => this.approveDataOps()} 
+                                color="primary"
+                            >
+                                Approve & Send Email
+                            </Button>
+                            <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
             </>
         )
     }
@@ -1977,7 +2070,8 @@ const mapStateToProps = state => ({
     ops: state.ops,
     menu: state.menu,
     reason: state.reason,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    email: state.email,
 })
 
 const mapDispatchToProps = {
@@ -1993,9 +2087,12 @@ const mapDispatchToProps = {
     approveOps: ops.approveOps,
     getAllMenu: menu.getAllMenu,
     getReason: reason.getReason,
-    // rejectOps: ops.rejectOps,
+    rejectOps: ops.rejectOps,
     resetOps: ops.resetOps,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    resetEmail: email.resetError,
+    getDraftEmail: email.getDraftEmail,
+    sendEmail: email.sendEmail,
     // notifStock: notif.notifStock
 }
 

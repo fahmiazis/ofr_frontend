@@ -248,6 +248,11 @@ html,body{
   width: 100% !important;
   margin-left: 11%;
 }
+.filter2 {
+  border: 1px solid #9b9b9b;
+  width: 100% !important;
+  /* margin-left: 11%; */
+}
 .secSearch {
   display: flex;
   align-items: center;

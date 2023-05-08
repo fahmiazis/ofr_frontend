@@ -46,6 +46,8 @@ const opsState = {
     ttdOpsList: [],
     baseTtdList: [],
     isRejectList: null,
+    isGetReport: null,
+    dataReport: []
 };
 
 export default (state=opsState, action) => {
@@ -99,6 +101,31 @@ export default (state=opsState, action) => {
                     isLoading: false,
                     isError: true,
                     isGetOps: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'REPORT_OPS_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'REPORT_OPS_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetReport: true,
+                    dataReport: action.payload.data.result,
+                    alertMsg: 'get coa Succesfully'
+                };
+            }
+            case 'REPORT_OPS_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    isGetReport: false,
                     alertMsg: "Unable connect to server"
                 };
             }
@@ -601,7 +628,8 @@ export default (state=opsState, action) => {
                     subRevisi: null,
                     subVerif: null,
                     editVrf: null,
-                    subBayar: null
+                    subBayar: null,
+                    isGetReport: null
                 }
             }
             default: {

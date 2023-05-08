@@ -39,7 +39,15 @@ export default {
         type: 'NEXT_DATA_DOKUMEN',
         payload: http(token).get(`${link}`)
     }),
+    approveDokumen: (token, id) => ({
+        type: 'APPROVE_DOKUMEN',
+        payload: http(token).patch(`/document/approve/${id}`),
+    }),
+    rejectDokumen: (token, id) => ({
+        type: 'REJECT_DOKUMEN',
+        payload: http(token).patch(`/document/reject/${id}`),
+    }),
     resetError: () => ({
-        type: 'RESET'
+        type: 'RESET_DOKUMEN'
     })
 }

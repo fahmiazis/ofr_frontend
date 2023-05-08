@@ -794,6 +794,10 @@ class Klaim extends Component {
         this.openModalReject()
     }
 
+    goRoute = (route) => {
+        this.props.history.push(`/${route}`)
+    }
+
     getRinciStock = async (val) => {
         const token = localStorage.getItem("token")
         this.setState({dataRinci: val, dataId: val.id})
@@ -857,167 +861,305 @@ class Klaim extends Component {
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Dashboard</div>
                             </div>
-                            <div className={style.secEmail3}>
-                                {(level === '5' || level === '6') && (
-                                    <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Add</Button>
-                                )}
-                            </div>
-                            <div className={[style.secEmail4]}>
-                                <div className={style.searchEmail2}>
-                                    <text>Filter:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="all">All</option>
-                                        <option value="reject">Reject</option>
-                                        <option value="available">Available Approve</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                    </Input>
-                                </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Search: </text>
-                                    <Input 
-                                    className={style.search}
-                                    onChange={this.onSearch}
-                                    value={this.state.search}
-                                    onKeyPress={this.onSearch}
-                                    >
-                                    </Input>
-                                </div>
-                                {/* <div className={style.headEmail2}>
-                                    {this.state.view === 'list' ? (
-                                        <>
-                                        <Button color="primary" className="transBtn" onClick={() => this.changeView('card')}><FaTh size={35} className="mr-2"/> Gallery View</Button>
-                                        </>
-                                    ) : (
-                                        <Button color="primary" className="transBtn" onClick={() => this.changeView('list')}><FaList size={30} className="mr-2"/> List View</Button>
-                                    )}
-                                </div> */}
-                                {/* {this.state.view === 'list' ? (
-                                    <div>
-                                        <Button className='marDown' color='primary' onClick={() => this.getDokumentasi({no: 'all'})} >Download All</Button>
-                                        <ReactHtmlToExcel
-                                            id="test-table-xls-button"
-                                            className="btn btn-success marDown ml-2"
-                                            table="table-klaim"
-                                            filename="Pengajuan Klaim"
-                                            sheet="sheet"
-                                            buttonText="Download"
-                                        />
-                                    </div>
-                                ) : level !== '5' && level !== '9' && (
-                                    <div className='mt-4'>
-                                        <Input type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="available">Available To Approve</option>
-                                            <option value="available">Reject</option>
-                                            <option value="not available">All</option>
+                            <div className='boxDash'>
+                                <div className='subtitle'>Klaim</div>
+                                <div className={[style.secEmail4]}>
+                                    <div className={style.searchEmail2}>
+                                        <text>Filter:  </text>
+                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                         </Input>
                                     </div>
-                                )} */}
-                            </div>
-                            {level === '5' || level === '6' ? (
-                                <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>NO.AJUAN</th>
-                                                <th>COST CENTRE</th>
-                                                <th>AREA</th>
-                                                <th>NO.COA</th>
-                                                <th>NAMA COA</th>
-                                                <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
-                                                <th>STATUS</th>
-                                                <th>OPSI</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {newKlaim.map(item => {
-                                                return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{newKlaim.indexOf(item) + 1}</th>
-                                                        <th>{item.no_transaksi}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.area}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
-                                                        <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
-                                                            <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
-                                                        </th>
-                                                    </tr>
-                                                )
-                                            })}
-                                        </tbody>
-                                    </Table>
+                                    <Button color='primary' onClick={() => this.goRoute('klaim')}>More Data</Button>
                                 </div>
-                            ) : (
-                                noDis.length === 0 ? (
-                                    <div></div>
-                                ) : (
-                                <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>NO.AJUAN</th>
-                                                <th>COST CENTRE</th>
-                                                <th>AREA</th>
-                                                <th>NO.COA</th>
-                                                <th>NAMA COA</th>
-                                                <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
-                                                <th>STATUS</th>
-                                                <th>OPSI</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {newKlaim.map(item => {
-                                                return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{newKlaim.indexOf(item) + 1}</th>
-                                                        <th>{item.no_transaksi}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.area}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
-                                                        <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
-                                                            <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
-                                                        </th>
-                                                    </tr>
-                                                )
-                                            })}
-                                        </tbody>
-                                    </Table>
-                                </div>
-                                )
-                            )}
-                            <div>
-                                <div className={style.infoPageEmail1}>
-                                    <text>Showing 1 of 1 pages</text>
-                                    <div className={style.pageButton}>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.prevLink === null ? true : false} 
-                                            onClick={this.prev}>Prev
-                                        </button>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.nextLink === null ? true : false} 
-                                            onClick={this.next}>Next
-                                        </button>
+                                {level === '5' || level === '6' ? (
+                                    <div className={style.tableDashboard}>
+                                        <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>NO.AJUAN</th>
+                                                    <th>COST CENTRE</th>
+                                                    <th>AREA</th>
+                                                    <th>NO.COA</th>
+                                                    <th>NAMA COA</th>
+                                                    <th>KETERANGAN TAMBAHAN</th>
+                                                    <th>PERIODE</th>
+                                                    <th>STATUS</th>
+                                                    <th>OPSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {newKlaim.map(item => {
+                                                    return (
+                                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>{newKlaim.indexOf(item) + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                                <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </Table>
                                     </div>
+                                ) : (
+                                    noDis.length === 0 ? (
+                                        <div></div>
+                                    ) : (
+                                    <div className={style.tableDashboard}>
+                                        <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>NO.AJUAN</th>
+                                                    <th>COST CENTRE</th>
+                                                    <th>AREA</th>
+                                                    <th>NO.COA</th>
+                                                    <th>NAMA COA</th>
+                                                    <th>KETERANGAN TAMBAHAN</th>
+                                                    <th>PERIODE</th>
+                                                    <th>STATUS</th>
+                                                    <th>OPSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {newKlaim.map(item => {
+                                                    return (
+                                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>{newKlaim.indexOf(item) + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                                <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                    )
+                                )}
+                            </div>
+                            <div className='boxDash'>
+                                <div className='subtitle'>Operasional</div>
+                                <div className={[style.secEmail4]}>
+                                    <div className={style.searchEmail2}>
+                                        <text>Filter:  </text>
+                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        </Input>
+                                    </div>
+                                    <Button color='primary' onClick={() => this.goRoute('ops')}>More Data</Button>
                                 </div>
+                                {level === '5' || level === '6' ? (
+                                    <div className={style.tableDashboard}>
+                                        <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>NO.AJUAN</th>
+                                                    <th>COST CENTRE</th>
+                                                    <th>AREA</th>
+                                                    <th>NO.COA</th>
+                                                    <th>NAMA COA</th>
+                                                    <th>KETERANGAN TAMBAHAN</th>
+                                                    <th>PERIODE</th>
+                                                    <th>STATUS</th>
+                                                    <th>OPSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {newKlaim.map(item => {
+                                                    return (
+                                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>{newKlaim.indexOf(item) + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                                <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                ) : (
+                                    noDis.length === 0 ? (
+                                        <div></div>
+                                    ) : (
+                                    <div className={style.tableDashboard}>
+                                        <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>NO.AJUAN</th>
+                                                    <th>COST CENTRE</th>
+                                                    <th>AREA</th>
+                                                    <th>NO.COA</th>
+                                                    <th>NAMA COA</th>
+                                                    <th>KETERANGAN TAMBAHAN</th>
+                                                    <th>PERIODE</th>
+                                                    <th>STATUS</th>
+                                                    <th>OPSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {newKlaim.map(item => {
+                                                    return (
+                                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>{newKlaim.indexOf(item) + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                                <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                    )
+                                )}
+                            </div>
+                            <div className='boxDash'>
+                                <div className='subtitle'>Ikhtisar Kas Kecil</div>
+                                <div className={[style.secEmail4]}>
+                                    <div className={style.searchEmail2}>
+                                        <text>Filter:  </text>
+                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        </Input>
+                                    </div>
+                                    <Button color='primary' onClick={() => this.goRoute('ikk')}>More Data</Button>
+                                </div>
+                                {level === '5' || level === '6' ? (
+                                    <div className={style.tableDashboard}>
+                                        <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>NO.AJUAN</th>
+                                                    <th>COST CENTRE</th>
+                                                    <th>AREA</th>
+                                                    <th>NO.COA</th>
+                                                    <th>NAMA COA</th>
+                                                    <th>KETERANGAN TAMBAHAN</th>
+                                                    <th>PERIODE</th>
+                                                    <th>STATUS</th>
+                                                    <th>OPSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {newKlaim.map(item => {
+                                                    return (
+                                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>{newKlaim.indexOf(item) + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                                <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                ) : (
+                                    noDis.length === 0 ? (
+                                        <div></div>
+                                    ) : (
+                                    <div className={style.tableDashboard}>
+                                        <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>NO.AJUAN</th>
+                                                    <th>COST CENTRE</th>
+                                                    <th>AREA</th>
+                                                    <th>NO.COA</th>
+                                                    <th>NAMA COA</th>
+                                                    <th>KETERANGAN TAMBAHAN</th>
+                                                    <th>PERIODE</th>
+                                                    <th>STATUS</th>
+                                                    <th>OPSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {newKlaim.map(item => {
+                                                    return (
+                                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>{newKlaim.indexOf(item) + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                                <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                    )
+                                )}
                             </div>
                         </div>
                     </div>

@@ -156,6 +156,10 @@ const SidebarContent = props => {
             <BsClipboardData size={20} className="mr-2"/>
             Master Vendor
           </button>
+          <button onClick={() => goHome('faktur')} className={stile.btnSide}>
+            <BsClipboardData size={20} className="mr-2"/>
+            Master Faktur
+          </button>
           <button onClick={() => goHome('pagu')} className={stile.btnSide}>
             <RiBankCardFill size={20} className="mr-2"/>
             Master Pagu

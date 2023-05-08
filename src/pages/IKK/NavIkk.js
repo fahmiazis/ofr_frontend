@@ -167,7 +167,7 @@ class NavIkk extends Component {
                                             Revisi IKK
                                         </div>
                                     </button> */}
-                                    <button className="cardNav1" onClick={() => this.goRoute('repklm')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('repikk')}>
                                         <div className="titCard">
                                             Report IKK
                                         </div>
@@ -180,11 +180,11 @@ class NavIkk extends Component {
                                             List Ajuan Bayar
                                         </div>
                                     </button>
-                                    {/* <button className="cardNav1" onClick={() => this.goRoute('repklm')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('repikk')}>
                                         <div className="titCard">
                                             Report IKK
                                         </div>
-                                    </button> */}
+                                    </button>
                                 </>
                             ) : (
                                 <button className="cardNav1" onClick={() => this.goRoute('ikk')}>

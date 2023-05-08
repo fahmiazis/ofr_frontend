@@ -24,6 +24,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
+import email from '../../redux/actions/email'
 // import notif from '../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
@@ -33,6 +34,7 @@ import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
 import klaim from '../../redux/actions/klaim'
 import Tracking from '../../components/Klaim/tracking'
+import Email from '../../components/Klaim/Email'
 import TableRincian from '../../components/Klaim/tableRincian'
 import dokumen from '../../redux/actions/dokumen'
 const {REACT_APP_BACKEND_URL} = process.env
@@ -120,7 +122,11 @@ class Klaim extends Component {
             tipeCol: '',
             formDis: false,
             history: false,
-            upload: false
+            upload: false,
+            openDraft: false,
+            message: '',
+            openAppDoc: false,
+            openRejDoc: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -344,18 +350,21 @@ class Klaim extends Component {
 
     componentDidUpdate() {
         const { isApprove, isReject } = this.props.klaim
+        const { isSend } = this.props.email
         if (isApprove === false) {
             this.setState({confirm: 'rejApprove'})
             this.openConfirm()
             this.openModalApprove()
-            this.openModalRinci()
             this.props.resetKlaim()
         } else if (isReject === false) {
             this.setState({confirm: 'rejReject'})
             this.openConfirm()
             this.openModalReject()
-            this.openModalRinci()
             this.props.resetKlaim()
+        } else if (isSend === false) {
+            this.setState({confirm: 'rejSend'})
+            this.openConfirm()
+            this.props.resetEmail()
         }
     }
 
@@ -433,9 +442,14 @@ class Klaim extends Component {
         const tempno = {
             no: val.no_transaksi
         }
+        const data = {
+            no: val.no_transaksi,
+            name: 'Draft Pengajuan Klaim'
+        }
         this.setState({listMut: []})
         await this.props.getDetail(token, tempno)
         await this.props.getApproval(token, tempno)
+        await this.props.getDocKlaim(token, data)
         this.openModalRinci()
     }
 
@@ -550,15 +564,94 @@ class Klaim extends Component {
     approveDataKlaim = async () => {
         const { detailKlaim } = this.props.klaim
         const token = localStorage.getItem("token")
+        const level = localStorage.getItem("level")
         const tempno = {
             no: detailKlaim[0].no_transaksi
         }
         await this.props.approveKlaim(token, tempno)
+        if (level === '12') {
+            this.getDataKlaim()
+            this.setState({confirm: 'isApprove'})
+            this.openConfirm()
+            this.openModalApprove()
+            this.openModalRinci()
+        } else {
+            this.dataSendEmail()
+        }
+    }
+
+    cekDataDoc = () => {
+        const { dataDoc } = this.props.klaim
+        const level = localStorage.getItem("level")
+        const tempdoc = []
+        for (let i = 0; i < dataDoc.length; i++) {
+            const arr = dataDoc[i]
+            const stat = arr.status
+            const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+            const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+            if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
+                tempdoc.push(arr)
+                console.log('masuk if')
+            } else {
+                console.log('masuk else')
+                console.log(cekLevel)
+            }
+        }
+        if (tempdoc.length === dataDoc.length) {
+            this.openModalApprove()
+        } else {
+            this.setState({confirm: 'appNotifDoc'})
+            this.openConfirm()
+        }
+    }
+
+    dataSendEmail = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailKlaim } = this.props.klaim
+        const { draftEmail } = this.props.email
+        const { message } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            no: detailKlaim[0].no_transaksi,
+            tipe: 'klaim',
+        }
+        await this.props.sendEmail(token, tempno)
         this.getDataKlaim()
         this.setState({confirm: 'isApprove'})
         this.openConfirm()
+        this.openDraftEmail()
         this.openModalApprove()
         this.openModalRinci()
+    }
+
+    prepSendEmail = async () => {
+        const { detailKlaim } = this.props.klaim
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            kode: detailKlaim[0].kode_plant,
+            tipe: 'approve',
+            menu: 'Pengajuan Klaim (Klaim)'
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.openDraftEmail()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val})
+        console.log(val)
     }
 
     onSearch = async (e) => {
@@ -603,32 +696,6 @@ class Klaim extends Component {
         await this.props.getApproval(token, tempno)
     }
 
-    selectStatus = async (fisik, kondisi) => {
-        this.setState({fisik: fisik, kondisi: kondisi})
-        const token = localStorage.getItem("token")
-        if (fisik === '' && kondisi === '') {
-            console.log(fisik, kondisi)
-        } else {
-            await this.props.getStatus(token, fisik, kondisi, 'false')
-        }
-    }
-
-    listStatus = async (val) => {
-        const token = localStorage.getItem("token")
-        await this.props.getDetailAsset(token, val)
-        const { detailAsset } = this.props.asset
-        if (detailAsset !== undefined) {
-            this.setState({stat: detailAsset.grouping})
-            if (detailAsset.kondisi === null && detailAsset.status_fisik === null) {
-                await this.props.getStatus(token, '', '', 'true')
-                this.modalStatus()
-            } else {
-                await this.props.getStatus(token, detailAsset.status_fisik === null ? '' : detailAsset.status_fisik, detailAsset.kondisi === null ? '' : detailAsset.kondisi, 'true')
-                this.modalStatus()
-            }
-        }
-    }
-
     showDokumen = async (value) => {
         const token = localStorage.getItem('token')
         await this.props.showDokumen(token, value.id)
@@ -659,6 +726,45 @@ class Klaim extends Component {
         if (val === 'DIPINJAM SEMENTARA') {
             await this.props.cekDokumen(token, detailAsset.no_asset)
         }
+    }
+
+    approveDoc = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc} = this.state
+        const { detailKlaim } = this.props.klaim
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            name: 'Draft Pengajuan Klaim'
+        }
+        await this.props.approveDokumen(token, idDoc)
+        await this.props.getDocKlaim(token, tempno)
+        this.setState({confirm: 'isAppDoc'})
+        this.openConfirm()
+        this.openModalAppDoc()
+        
+    }
+
+    openModalAppDoc = () => {
+        this.setState({openAppDoc: !this.state.openAppDoc})
+    }
+
+    rejectDoc = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc} = this.state
+        const { detailKlaim } = this.props.klaim
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            name: 'Draft Pengajuan Klaim'
+        }
+        await this.props.rejectDokumen(token, idDoc)
+        await this.props.getDocKlaim(token, tempno)
+        this.setState({confirm: 'isRejDoc'})
+        this.openConfirm()
+        this.openModalRejDoc()
+    }
+
+    openModalRejDoc = () => {
+        this.setState({openRejDoc: !this.state.openRejDoc})
     }
 
     openModalDoc = () => {
@@ -946,7 +1052,7 @@ class Klaim extends Component {
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
+                                                        <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
@@ -989,7 +1095,7 @@ class Klaim extends Component {
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
+                                                        <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
@@ -1357,7 +1463,7 @@ class Klaim extends Component {
                                     <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
+                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
                                         Approve
                                     </Button>
                                 </>
@@ -1747,7 +1853,7 @@ class Klaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading || this.props.menu.isLoading || this.props.reason.isLoading} size="sm">
+                <Modal isOpen={this.props.klaim.isLoading || this.props.menu.isLoading || this.props.reason.isLoading || this.props.email.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1769,7 +1875,12 @@ class Klaim extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveDataKlaim()}>Ya</Button>
+                                {level === '12' ? (
+                                    <Button color="primary" onClick={() => this.approveDataKlaim()}>Ya</Button>
+                                ) : (
+                                    <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
+                                )}
+                                {/* <Button color="primary" onClick={() => this.approveDataKlaim()}>Ya</Button> */}
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1789,6 +1900,42 @@ class Klaim extends Component {
                             <div className={style.btnApprove}>
                                 <Button color="primary" onClick={() => this.submitAset()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalSub}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.openAppDoc} toggle={this.openModalAppDoc} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk approve     
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.approveDoc()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalAppDoc}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.openRejDoc} toggle={this.openModalRejDoc} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk reject     
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.rejectDoc()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalRejDoc}>Tidak</Button>
                             </div>
                         </div>
                     </ModalBody>
@@ -1827,7 +1974,14 @@ class Klaim extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve dan Kirim Email</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'rejSend' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve dan Gagal Kirim Email</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'submit' ? (
@@ -1837,7 +1991,28 @@ class Klaim extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
                             </div>
                         </div>
-                    ) : (
+                    ) : this.state.confirm === 'appNotifDoc' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                            <AiOutlineClose size={80} className={style.red} />
+                            <div className={[style.sucUpdate, style.green]}>Gagal Approve, Pastikan Dokumen Lampiran Telah Diapprove</div>
+                        </div>
+                        </div>
+                    ) : this.state.confirm === 'isAppDoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'isRejDoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
+                            </div>
+                        </div>
+                    ): (
                         <div></div>
                     )}
                 </ModalBody>
@@ -1864,13 +2039,13 @@ class Klaim extends Component {
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
                                             <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
-                                            {x.status === 0 ? (
-                                                <AiOutlineClose size={20} />
-                                            ) : x.status === 3 ? (
-                                                <AiOutlineCheck size={20} />
-                                            ) : (
-                                                <BsCircle size={20} />
-                                            )}
+                                                {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
+                                                : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
+                                                : (
+                                                    <BsCircle size={20} />
+                                                )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
                                             {/* <div className="colDoc">
                                                 <input
@@ -1928,10 +2103,18 @@ class Klaim extends Component {
                     </div>
                     <hr/>
                     <div className={style.foot}>
-                        <div>
-                            <Button color="success" onClick={() => this.downloadData()}>Download</Button>
+                        {this.state.filter === 'available' ? (
+                            <div>
+                                <Button color="success" onClick={() => this.openModalAppDoc()}>Approve</Button>
+                                <Button className='ml-1' color="danger" onClick={() => this.openModalRejDoc()}>Reject</Button>
+                            </div>
+                        ) : (
+                            <div></div>
+                        )}
+                        <div className='rowGeneral'>
+                            <Button color="primary" className='mr-1' onClick={() => this.downloadData()}>Download</Button>
+                            <Button color="secondary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                         </div>
-                        <Button color="primary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                     </div>
                 </ModalBody>
             </Modal>
@@ -1962,6 +2145,26 @@ class Klaim extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal toggle={this.openDraftEmail} isOpen={this.state.openDraft} size='xl'>
+                <ModalHeader>Email Pemberitahuan</ModalHeader>
+                <ModalBody>
+                    <Email handleData={this.getMessage}/>
+                    <div className={style.foot}>
+                        <div></div>
+                        <div>
+                            <Button
+                                disabled={this.state.message === '' ? true : false} 
+                                className="mr-2"
+                                onClick={() => this.approveDataKlaim()} 
+                                color="primary"
+                            >
+                                Approve & Send Email
+                            </Button>
+                            <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
             </>
         )
     }
@@ -1975,7 +2178,8 @@ const mapStateToProps = state => ({
     klaim: state.klaim,
     menu: state.menu,
     reason: state.reason,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    email: state.email
 })
 
 const mapDispatchToProps = {
@@ -1993,7 +2197,12 @@ const mapDispatchToProps = {
     getReason: reason.getReason,
     rejectKlaim: klaim.rejectKlaim,
     resetKlaim: klaim.resetKlaim,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    resetEmail: email.resetError,
+    getDraftEmail: email.getDraftEmail,
+    sendEmail: email.sendEmail,
+    approveDokumen: dokumen.approveDokumen,
+    rejectDokumen: dokumen.rejectDokumen
     // notifStock: notif.notifStock
 }
 

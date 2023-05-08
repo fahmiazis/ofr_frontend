@@ -91,6 +91,10 @@ export default {
         type: 'REJECTLIST_IKK',
         payload: http(token).patch(`/ikk/rejectlist`, data)
     }),
+    getReport: (token, status, reject, menu) => ({
+        type: 'REPORT_IKK',
+        payload: http(token).get(`/ikk/report?status=${status}&reject=${reject}&menu=${menu}`),
+    }),
     resetIkk: () => ({
         type: 'RESET_IKK'
     })

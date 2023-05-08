@@ -91,6 +91,10 @@ export default {
         type: 'REJECTLIST_OPS',
         payload: http(token).patch(`/ops/rejectlist`, data)
     }),
+    getReport: (token, status, reject, menu) => ({
+        type: 'REPORT_OPS',
+        payload: http(token).get(`/ops/report?status=${status}&reject=${reject}&menu=${menu}`),
+    }),
     resetOps: () => ({
         type: 'RESET_OPS'
     })
