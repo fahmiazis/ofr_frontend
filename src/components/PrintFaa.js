@@ -1,90 +1,45 @@
 import React, { Component } from 'react'
-import style from '../../assets/css/input.module.css'
-import {connect} from 'react-redux'
 import {  Table, ButtonDropdown, Input, Button, Col,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
+import TableRincian from './tableRincian'
 import moment from 'moment'
+import {connect} from 'react-redux'
 
-class FPD extends Component {
-
-    state = {
-        totalfpd: 0
-    }
-
-    componentDidMount() {
-        const {detailOps} = this.props.ops
-        let total = 0
-        for (let i = 0; i < detailOps.length; i++) {
-            total += parseInt(detailOps[i].nilai_ajuan)
-        }
-        this.setState({totalfpd: total})
-    }
-
+class FAA extends Component {
   render() {
     const {detailOps, ttdOps} = this.props.ops
-    const totalfpd = this.props.totalfpd || this.state.totalfpd
     return (
-      <>
-        <div className='tbRinci'>
+        <>
             <div>
-                <div className="fpdTit">FORM PERMINTAAN DANA</div>
-                <div className='fpdTit'>cabang/depo : {detailOps.length > 0 ? detailOps[0].area : ''}</div>
-                <div className='fpdTit'>no : {detailOps.length > 0 ? detailOps[0].no_transaksi : ''}</div>
-            </div>
-            <div className={style.tableDashboard}>
-                <Row>
-                    <Col md={2} className='upper'>
-                        <div className='liner2'>no</div>
-                    </Col>
-                    <Col md={8} className='upper'>
-                        <div className='line'>keperluan / <br />keterangan</div>
-                    </Col>
-                    <Col md={2} className='upper'>
-                        <div className='liner'>rupiah</div>
-                    </Col>
+                {/* <div className="stockTitle">form ajuan area (claim)</div> */}
+                {/* <div className="ptStock">pt. pinus merah abadi</div> */}
+                <Row className="ptStock inputStock">
+                    <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
+                    <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailOps.length > 0 ? detailOps[0].area : ''} className="ml-3"  /></Col>
                 </Row>
-                {detailOps.length !== 0 && detailOps.map(item => {
-                    return (
-                        <Row className='mt-4'>
-                            <Col md={2} className='upper'>
-                                <div className='line'>{detailOps.indexOf(item) + 1}</div>
-                            </Col>
-                            <Col md={8} className='upper'>
-                                <div className='line2'>{item.keterangan}</div>
-                                <div className='line mt-1'>NO REK {item.bank_tujuan} {item.norek_ajuan}</div>
-                            </Col>
-                            <Col md={2} className='upper'>
-                                <div className='line'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>
-                            </Col>
-                        </Row>
-                    )
-                })}
-                <Row className='mt-4'>
-                    <Col md={2} className='upper'>
-                    </Col>
-                    <Col md={8} className='upper'>
-                        <div className='line'>Total</div>
-                    </Col>
-                    <Col md={2} className='upper'>
-                        <div className='line'>
-                            {totalfpd.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                        </div>
-                    </Col>
+                <Row className="ptStock inputStock">
+                    <Col md={3} xl={3} sm={3}>no ajuan</Col>
+                    <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailOps.length > 0 ? detailOps[0].no_transaksi : ''} className="ml-3" /></Col>
+                </Row>
+                <Row className="ptStock inputStock">
+                    <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
+                    <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailOps.length > 0 ? moment(detailOps[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
                 </Row>
             </div>
-            <div className='bold'>{detailOps.length > 0 ? detailOps[0].area : ''}, {moment(detailOps.length > 0 ? moment(detailOps[0].updatedAt).format('DD MMMM YYYY') : '').format('DD MMMM YYYY')}</div>
+            <TableRincian />
             <Table borderless responsive className="tabPreview mt-4">
-                <thead>
-                    <tr>
-                        <th className="buatPre">Dibuat oleh,</th>
-                        <th className="buatPre">Diperiksa oleh,</th>
-                        <th className="buatPre">Disetujui oleh,</th>
-                    </tr>
-                </thead>
-                <tbody className="tbodyPre">
-                    <tr>
-                        <td className="restTable">
-                            <Table bordered responsive className="divPre">
+            <thead>
+                <tr>
+                    <th className="buatPre">Dibuat oleh,</th>
+                    <th className="buatPre">Diperiksa oleh,</th>
+                    <th className="buatPre">Disetujui oleh,</th>
+                    <th className="buatPre">Diketahui oleh,</th>
+                </tr>
+            </thead>
+            <tbody className="tbodyPre">
+                <tr>
+                    <td className="restTable">
+                        <Table bordered responsive className="divPre">
                                 <thead>
                                     <tr>
                                         {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
@@ -106,10 +61,10 @@ class FPD extends Component {
                                     })}
                                     </tr>
                                 </tbody>
-                            </Table>
-                        </td>
-                        <td className="restTable">
-                            <Table bordered responsive className="divPre">
+                        </Table>
+                    </td>
+                    <td className="restTable">
+                        <Table bordered responsive className="divPre">
                                 <thead>
                                     <tr>
                                         {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
@@ -138,10 +93,10 @@ class FPD extends Component {
                                         })}
                                     </tr>
                                 </tbody>
-                            </Table>
-                        </td>
-                        <td className="restTable">
-                            <Table bordered responsive className="divPre">
+                        </Table>
+                    </td>
+                    <td className="restTable">
+                        <Table bordered responsive className="divPre">
                                 <thead>
                                     <tr>
                                         {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
@@ -163,16 +118,41 @@ class FPD extends Component {
                                         })}
                                     </tr>
                                 </tbody>
-                            </Table>
-                        </td>
-                    </tr>
-                </tbody>
-            </Table>
-        </div>
-      </>
+                        </Table>
+                    </td>
+                    <td className="restTable">
+                        <Table bordered responsive className="divPre">
+                                <thead>
+                                    <tr>
+                                        {ttdOps.mengetahui !== undefined && ttdOps.mengetahui.map(item => {
+                                            return (
+                                                <th className="headPre">
+                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                    <div>{item.nama === null ? "-" : item.nama}</div>
+                                                </th>
+                                            )
+                                        })}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        {ttdOps.mengetahui !== undefined && ttdOps.mengetahui.map(item => {
+                                            return (
+                                                <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                            )
+                                        })}
+                                    </tr>
+                                </tbody>
+                        </Table>
+                    </td>
+                </tr>
+            </tbody>
+        </Table>
+   </>
     )
   }
 }
+
 const mapStateToProps = state => ({
     approve: state.approve,
     depo: state.depo,
@@ -183,4 +163,4 @@ const mapStateToProps = state => ({
     reason: state.reason
 })
 
-export default connect(mapStateToProps)(FPD)
+export default connect(mapStateToProps)(FAA)

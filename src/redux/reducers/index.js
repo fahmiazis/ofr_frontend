@@ -17,6 +17,7 @@ import pagu from './pagu'
 import email from './email'
 import vendor from './vendor'
 import faktur from './faktur'
+import kpp from './kpp'
 //transaksi
 import klaim from './klaim'
 import ikk from './ikk'
@@ -40,5 +41,6 @@ export default combineReducers({
   pagu,
   email,
   vendor,
-  faktur
+  faktur,
+  kpp
 })

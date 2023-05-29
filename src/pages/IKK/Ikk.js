@@ -131,7 +131,11 @@ class IKK extends Component {
             openDraft: false,
             message: '',
             openAppDoc: false,
-            openRejDoc: false
+            openRejDoc: false,
+            time: '',
+            time1: '',
+            time2: '',
+            subject: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -347,7 +351,13 @@ class IKK extends Component {
 
     componentDidMount() {
         // const level = localStorage.getItem('level')
-        this.getDataIkk()
+        const {item, type} = (this.props.location && this.props.location.state) || {}
+        if (type === 'approve') {
+            this.getDataIkk()
+            this.prosesDetail(item)
+        } else {
+            this.getDataIkk()
+        }
     }
 
     componentDidUpdate() {
@@ -418,6 +428,10 @@ class IKK extends Component {
         } else {
             this.setState({dropOp: !this.state.dropOp})   
         }
+    }
+
+    printData = (val) => {
+        this.props.history.push(`/${val}`)
     }
 
     openModalEdit = () => {
@@ -533,28 +547,55 @@ class IKK extends Component {
         const token = localStorage.getItem("token")
         const status = 2
         const statusAll = 'all'
+        const {time1, time2} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newIkk = []
-            await this.props.getIkk(token, status, 'all', 'all', val, 'approve')
+            await this.props.getIkk(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newIkk: newIkk})
         } else if (val === 'reject') {
             const newIkk = []
-            await this.props.getIkk(token, status, 'all', 'all', val, 'approve')
+            await this.props.getIkk(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newIkk: newIkk})
         } else if (val === 'revisi') {
             const newIkk = []
-            await this.props.getIkk(token, status, 'all', 'all', val, 'approve')
+            await this.props.getIkk(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newIkk: newIkk})
         } else if (level === '5') {
             const newIkk = []
-            await this.props.getIkk(token, status, 'all', 'all', val, 'approve')
+            await this.props.getIkk(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newIkk: newIkk})
         } else {
             const newIkk = []
-            await this.props.getIkk(token, statusAll, 'all', 'all', val, 'approve')
+            await this.props.getIkk(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newIkk: newIkk})
         }
+    }
+
+    changeTime = async (val) => {
+        const token = localStorage.getItem("token")
+        this.setState({time: val})
+        if (val === 'all') {
+            this.setState({time1: '', time2: ''})
+            setTimeout(() => {
+                this.getDataTime()
+             }, 500)
+        }
+    }
+
+    selectTime = (val) => {
+        this.setState({[val.type]: val.val})
+    }
+
+    getDataTime = async () => {
+        const {time1, time2, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = filter === 'all' ? 'all' : 2
+        await this.props.getIkk(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2)
     }
 
     prosesSubmitPre = async () => {
@@ -575,15 +616,15 @@ class IKK extends Component {
             no: detailIkk[0].no_transaksi
         }
         await this.props.approveIkk(token, tempno)
-        if (level === '11') {
-            this.getDataIkk()
-            this.setState({confirm: 'isApprove'})
-            this.openConfirm()
-            this.openModalApprove()
-            this.openModalRinci()
-        } else {
-            this.dataSendEmail()
-        }
+        // if (level === '11') {
+        //     // this.getDataIkk()
+        //     // this.setState({confirm: 'isApprove'})
+        //     // this.openConfirm()
+        //     // this.openModalApprove()
+        //     // this.openModalRinci()
+        // } else {
+        this.dataSendEmail()
+        // }
     }
 
     cekDataDoc = () => {
@@ -615,7 +656,7 @@ class IKK extends Component {
         const token = localStorage.getItem("token")
         const { detailIkk } = this.props.ikk
         const { draftEmail } = this.props.email
-        const { message } = this.state
+        const { message, subject } = this.state
         const cc = draftEmail.cc
         const tempcc = []
         for (let i = 0; i < cc.length; i++) {
@@ -626,6 +667,7 @@ class IKK extends Component {
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
+            subject: subject,
             no: detailIkk[0].no_transaksi,
             tipe: 'ikk',
         }
@@ -641,10 +683,19 @@ class IKK extends Component {
     prepSendEmail = async () => {
         const { detailIkk } = this.props.ikk
         const token = localStorage.getItem("token")
+        const app = detailIkk[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = tempApp.length === app.length-1 ? 'full approve' : 'approve'
         const tempno = {
             no: detailIkk[0].no_transaksi,
             kode: detailIkk[0].kode_plant,
-            tipe: 'approve',
+            jenis: 'ikk',
+            tipe: tipe,
             menu: 'Pengajuan Ikk (IKK)'
         }
         await this.props.getDraftEmail(token, tempno)
@@ -902,7 +953,8 @@ class IKK extends Component {
     }
 
     getMessage = (val) => {
-        this.setState({message: val})
+        this.setState({message: val.message, subject: val.subject})
+        console.log(val)
     }
 
     prepareReject = async () => {
@@ -988,6 +1040,44 @@ class IKK extends Component {
                                 )} */}
                             </div>
                             <div className={[style.secEmail4]}>
+                                <div className='rowCenter'>
+                                    <div className='rowCenter'>
+                                        <text className='mr-4'>Time:</text>
+                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
+                                    </div>
+                                    {this.state.time === 'pilih' ?  (
+                                        <>
+                                            <div className='rowCenter'>
+                                                <text className='bold'>:</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                />
+                                                <text className='mr-1 ml-1'>To</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                color='primary' 
+                                                onClick={this.getDataTime} 
+                                                className='ml-1'>
+                                                    Go
+                                                </Button>
+                                            </div>
+                                        </>
+                                    ) : null}
+                                </div>
+                                <div className={style.searchEmail2}>
+                                </div>
+                            </div>
+                            <div className={[style.secEmail4]}>
                                 {(level === '5' || level === '6') && (
                                     <Button onClick={() => this.goRoute('cartikk')} color="info" size="lg">Create</Button>
                                 )}
@@ -995,7 +1085,7 @@ class IKK extends Component {
                                     <div></div>
                                 ) : (
                                     <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
+                                        <text>Status:</text>
                                         <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                             <option value="all">All</option>
                                             <option value="reject">Reject</option>
@@ -1014,27 +1104,6 @@ class IKK extends Component {
                                     >
                                     </Input>
                                 </div>
-                                {/* {this.state.view === 'list' ? (
-                                    <div>
-                                        <Button className='marDown' color='primary' onClick={() => this.getDokumentasi({no: 'all'})} >Download All</Button>
-                                        <ReactHtmlToExcel
-                                            id="test-table-xls-button"
-                                            className="btn btn-success marDown ml-2"
-                                            table="table-ikk"
-                                            filename="Pengajuan Ikk"
-                                            sheet="sheet"
-                                            buttonText="Download"
-                                        />
-                                    </div>
-                                ) : level !== '5' && level !== '9' && (
-                                    <div className='mt-4'>
-                                        <Input type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="available">Available To Approve</option>
-                                            <option value="available">Reject</option>
-                                            <option value="not available">All</option>
-                                        </Input>
-                                    </div>
-                                )} */}
                             </div>
                             {level === '5' || level === '6' ? (
                                 <div className={style.tableDashboard}>
@@ -1068,7 +1137,7 @@ class IKK extends Component {
                                                         {/* <th>-</th> */}
                                                         <th>{item.history.split(',').reverse()[0]}</th>
                                                         <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Detail</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
@@ -1076,31 +1145,13 @@ class IKK extends Component {
                                             })}
                                         </tbody>
                                     </Table>
-                                </div>
-                            ) : (
-                                noDis.length === 0 ? (
-                                    <div className={style.tableDashboard}>
-                                        <Table bordered responsive hover className={style.tab} id="table-ikk">
-                                            <thead>
-                                                <tr>
-                                                    <th>No</th>
-                                                    <th>NO.AJUAN</th>
-                                                    <th>COST CENTRE</th>
-                                                    <th>AREA</th>
-                                                    <th>NO.COA</th>
-                                                    <th>JENIS TRANSAKSI</th>
-                                                    <th>KETERANGAN TAMBAHAN</th>
-                                                    <th>PERIODE</th>
-                                                    <th>STATUS</th>
-                                                    <th>OPSI</th>
-                                                </tr>
-                                            </thead>
-                                        </Table>
+                                    {newIkk.length === 0 && (
                                         <div className={style.spin}>
                                             <text className='textInfo'>Data ajuan tidak ditemukan</text>
                                         </div>
-                                    </div>
-                                ) : (
+                                    )}
+                                </div>
+                            ) : (
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-ikk">
                                         <thead>
@@ -1112,7 +1163,7 @@ class IKK extends Component {
                                                 <th>NO.COA</th>
                                                 <th>JENIS TRANSAKSI</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
+                                                <th>TGL AJUAN</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
                                             </tr>
@@ -1128,7 +1179,7 @@ class IKK extends Component {
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.sub_coa}</th>
                                                         <th>{item.uraian}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                        <th>{moment(item.start_ikk).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -1139,8 +1190,12 @@ class IKK extends Component {
                                             })}
                                         </tbody>
                                     </Table>
+                                    {newIkk.length === 0 && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
+                                        </div>
+                                    )}
                                 </div>
-                                )
                             )}
                             <div>
                                 <div className={style.infoPageEmail1}>
@@ -1307,7 +1362,7 @@ class IKK extends Component {
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('ikkfaa')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -1325,7 +1380,7 @@ class IKK extends Component {
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('ikkfpd')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -1422,11 +1477,12 @@ class IKK extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                {level === '11' ? (
+                                {/* {level === '11' ? (
                                     <Button color="primary" onClick={() => this.approveDataIkk()}>Ya</Button>
                                 ) : (
                                     <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
-                                )}
+                                )} */}
+                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>

@@ -35,9 +35,9 @@ export default {
         type: 'SUBMIT_KLAIMFINAL',
         payload: http(token).patch(`/klaim/subfinklaim`, qs.stringify(no))
     }),
-    getKlaim: (token, status, reject, menu, type, category, data) => ({
+    getKlaim: (token, status, reject, menu, type, category, data, time1, time2) => ({
         type: 'GET_KLAIM',
-        payload: http(token).get(`/klaim/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}`),
+        payload: http(token).get(`/klaim/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}`),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_KLAIM',
@@ -91,9 +91,9 @@ export default {
         type: 'REJECTLIST_KLAIM',
         payload: http(token).patch(`/klaim/rejectlist`, data)
     }),
-    getReport: (token, status, reject, menu) => ({
+    getReport: (token, status, reject, menu, time1, time2) => ({
         type: 'REPORT_KLAIM',
-        payload: http(token).get(`/klaim/report?status=${status}&reject=${reject}&menu=${menu}`),
+        payload: http(token).get(`/klaim/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}`),
     }),
     resetKlaim: () => ({
         type: 'RESET_KLAIM'

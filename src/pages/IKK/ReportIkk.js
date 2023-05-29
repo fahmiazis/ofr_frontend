@@ -500,24 +500,51 @@ class ReportIkk extends Component {
 
     changeFilter = async (val) => {
         const token = localStorage.getItem("token")
-        const status = 6
+        const status = 7
+        const {time1, time2} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         if (val === 'available') {
-            const newIkk = []
-            await this.props.getReport(token, status, 'all', 'all')
-            this.setState({filter: val, newIkk: newIkk})
+            const newKlaim = []
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+            this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'reject') {
-            const newIkk = []
-            await this.props.getReport(token, status, 'all', 'all')
-            this.setState({filter: val, newIkk: newIkk})
+            const newKlaim = []
+            await this.props.getReport(token, 6, 'all', 'all', cekTime1, cekTime2)
+            this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'revisi') {
-            const newIkk = []
-            await this.props.getReport(token, status, 'all', 'all')
-            this.setState({filter: val, newIkk: newIkk})
+            const newKlaim = []
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+            this.setState({filter: val, newKlaim: newKlaim})
         } else {
-            const newIkk = []
-            await this.props.getReport(token, status, 'all', 'all')
-            this.setState({filter: val, newIkk: newIkk})
+            const newKlaim = []
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+            this.setState({filter: val, newKlaim: newKlaim})
         }
+    }
+
+    changeTime = async (val) => {
+        this.setState({time: val})
+        if (val === 'all') {
+            this.setState({time1: '', time2: ''})
+            setTimeout(() => {
+                this.getDataTime()
+             }, 500)
+        }
+    }
+
+    selectTime = (val) => {
+        this.setState({[val.type]: val.val})
+    }
+
+    getDataTime = async () => {
+        const {time1, time2, filter, time} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        console.log(cekTime1)
+        const token = localStorage.getItem("token")
+        const status = filter === 'reject' ? 6 : 7
+        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
     }
 
     prosesSubmitPre = async () => {
@@ -831,7 +858,7 @@ class ReportIkk extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Report Ikk</div>
+                                <div className={style.titleDashboard}>Report Ikhtisar Kas Kecil</div>
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.headEmail2}>
@@ -844,28 +871,43 @@ class ReportIkk extends Component {
                                         buttonText="Download"
                                     />
                                 </div>
-                                <div></div>
+                                <div className={style.searchEmail2}>
+                                    <text>Status:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value="reject">Reject</option>
+                                        <option value="all">Siap Bayar</option>
+                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                    </Input>
+                                </div>
                             </div>
                             <div className={[style.secEmail4]}>
                                 <div className={style.headEmail2}>
-                                    <Input className={style.filter2} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                    <Input className={style.filter2} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
                                         <option value="all">All</option>
                                         <option value="pilih">Periode</option>
                                     </Input>
-                                    {this.state.filter === 'pilih' ?  (
+                                    {this.state.time === 'pilih' ?  (
                                         <>
                                             <div className='rowCenter'>
                                                 <text className='bold'>:</text>
                                                 <Input
                                                     type= "date" 
                                                     className="inputRinci"
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
                                                 />
                                                 <text className='mr-1 ml-1'>To</text>
                                                 <Input
                                                     type= "date" 
                                                     className="inputRinci"
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
                                                 />
-                                                <Button color='primary' className='ml-1'>Go</Button>
+                                                <Button
+                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                color='primary' 
+                                                onClick={this.getDataTime} 
+                                                className='ml-1'>
+                                                    Go
+                                                </Button>
                                             </div>
                                         </>
                                     ) : null}
@@ -881,37 +923,7 @@ class ReportIkk extends Component {
                                     </Input>
                                 </div>
                             </div>
-                                <div className='mb-4 mt-2' />
-                                {dataReport.length === 0 ? (
-                                    <Table bordered responsive hover className={style.tab}>
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>PIC</th>
-                                                <th>NAMA</th>
-                                                <th>AREA</th>
-                                                <th>NOMOR FPD</th>
-                                                <th>COST CENTRE</th>
-                                                <th>NO COA</th>
-                                                <th>NAMA COA</th>
-                                                <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE (DDMMYY)</th>
-                                                <th>NILAI YANG DIAJUKAN</th>
-                                                <th>BANK</th>
-                                                <th>NOMOR REKENING</th>
-                                                <th>ATAS NAMA</th>
-                                                <th>MEMILIKI NPWP</th>
-                                                <th>NAMA SESUAI NPWP</th>
-                                                <th>NOMOR NPWP</th>
-                                                <th>PPU</th>
-                                                <th>PA</th>
-                                                <th>NILAI YANG DIBAYARKAN</th>
-                                                <th>TANGGAL TRANSFER</th>
-                                                <th>KETERANGAN</th>
-                                            </tr>
-                                        </thead>
-                                    </Table>
-                                ) : (
+                            <div className='mb-4 mt-2' />
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-ikk">
                                         <thead>
@@ -925,6 +937,7 @@ class ReportIkk extends Component {
                                                 <th>NO COA</th>
                                                 <th>NAMA COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
+                                                <th>TGL AJUAN</th>
                                                 <th>PERIODE (DDMMYY)</th>
                                                 <th>NILAI YANG DIAJUKAN</th>
                                                 <th>BANK</th>
@@ -956,6 +969,7 @@ class ReportIkk extends Component {
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.uraian}</th>
+                                                        <th>{moment(item.start_ikk).format('DD MMMM YYYY')}</th>
                                                         <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
                                                         <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                         <th>{item.bank_tujuan}</th>
@@ -975,10 +989,33 @@ class ReportIkk extends Component {
                                                     </tr>
                                                 )
                                             })}
+                                            {dataReport.length > 0 && (
+                                                <tr>
+                                                    <th className='total' colSpan={11}>Total</th>
+                                                    <th>
+                                                        {dataReport.reduce((accumulator, object) => {
+                                                            return accumulator + parseInt(object.nilai_ajuan);
+                                                        }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                                    </th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                </tr>
+                                            )}
                                         </tbody>
                                     </Table>
                                 </div>
-                                )}
                             <div>
                                 <div className={style.infoPageEmail1}>
                                     <text>Showing 1 of 1 pages</text>

@@ -38,6 +38,8 @@ import NavBar from '../../components/NavBar'
 import dokumen from '../../redux/actions/dokumen'
 import vendor from '../../redux/actions/vendor'
 import faktur from '../../redux/actions/faktur'
+import email from '../../redux/actions/email'
+import Email from '../../components/Ikk/Email'
 const {REACT_APP_BACKEND_URL} = process.env
 const nonObject = 'Non Object PPh'
 
@@ -142,7 +144,11 @@ class CartIkk extends Component {
             noNpwp: '',
             noNik: '',
             nama: '',
-            alamat: ''
+            alamat: '',
+            tgl_faktur: '',
+            openDraft: false,
+            subject: '',
+            message: '',
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -363,13 +369,37 @@ class CartIkk extends Component {
         this.getDataCart()
     }
 
-    closeTransaksi = async () => {
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val.message, subject: val.subject})
+        console.log(val)
+    }
+
+    prepSendEmail = async () => {
+        const {dataCart, noikk} = this.props.ikk
         const token = localStorage.getItem("token")
-        const { dataDoc } = this.props.ikk
-        const { noikk } = this.props.ikk
+        const tipe = 'approve'
         const tempno = {
+            no: noikk,
+            kode: dataCart[0].kode_plant,
+            jenis: 'ikk',
+            tipe: tipe,
+            menu: 'Pengajuan Ikk (IKK)'
+        }
+        const data = {
             no: noikk
         }
+        await this.props.getApproval(token, data)
+        await this.props.getDetail(token, data)
+        await this.props.getDraftEmail(token, tempno)
+        this.openDraftEmail()
+    }
+
+    cekDok = async () => {
+        const { dataDoc } = this.props.ikk
         const verifDoc = []
         const tempDoc = []
         for (let i = 0; i < dataDoc.length; i++) {
@@ -381,15 +411,41 @@ class CartIkk extends Component {
             }
         }
         if (verifDoc.length === tempDoc.length) {
-            await this.props.submitIkkFinal(token, tempno)
-            await this.props.getCart(token)
-            await this.props.getApproval(token, tempno)
-            this.openModalDoc()
-            this.modalSubmitPre()
-            this.openConfirm(this.setState({confirm: 'submit'}))
+            this.prepSendEmail()
         } else {
             this.openConfirm(this.setState({confirm: 'verifdoc'}))
         }
+    }
+
+    closeTransaksi = async () => {
+        const token = localStorage.getItem("token")
+        const { noikk } = this.props.ikk
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            no: noikk
+        }
+        const data = {
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: noikk,
+            tipe: 'ikk',
+        }
+        await this.props.sendEmail(token, data)
+        await this.props.submitIkkFinal(token, tempno)
+        await this.props.getCart(token)
+        this.openModalDoc()
+        this.modalSubmitPre()
+        this.openDraftEmail()
+        this.openConfirm(this.setState({confirm: 'submit'}))
     }
 
     componentDidUpdate() {
@@ -695,13 +751,36 @@ class CartIkk extends Component {
         await this.props.getRek(token)
         await this.props.getDetailDepo(token)
         const { dataRek } = this.props.rekening
+        const spending = dataRek[0].rek_spending
+        const zba = dataRek[0].rek_zba
+        const bankcol = dataRek[0].rek_bankcol
         const temp = [
-            {value: '', label: '-Pilih-'},
-            {label: dataRek[0].rek_spending, value: 'Rekening Spending Card'},
-            {label: dataRek[0].rek_zba, value: 'Rekening ZBA'},
-            {label: dataRek[0].rek_bankcol, value: 'Rekening Bank Coll'}
+            {label: '-Pilih-', value: ''},
+            spending !== '0' ? {label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card'} : {value: '', label: ''},
+            zba !== '0' ? {label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA'} : {value: '', label: ''},
+            bankcol !== '0' ? {label: `${bankcol}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
         ]
-        this.setState({rekList: temp})
+        this.setState({
+            rekList: temp, 
+            jenisVendor: '',
+            status_npwp: '',
+            nominal: 0,
+            nilai_ajuan: 0,
+            nilai_buku: 0,
+            nilai_utang: 0,
+            nilai_vendor: 0,
+            tipeVendor: '',
+            nilai_dpp: 0,
+            nilai_ppn: 0,
+            tipePpn: '',
+            dataList: {},
+            dataSelFaktur: { no_faktur: '' },
+            noNpwp: '',
+            noNik: '',
+            nama: '',
+            alamat: '',
+            tgl_faktur: ''
+        })
         this.openModalAdd()
     }
 
@@ -779,8 +858,12 @@ class CartIkk extends Component {
                     {value: '', label: '-Pilih-'}
                 ]
                 dataFaktur.map(item => {
+                    const date1 = new Date(item.tgl_faktur)
+                    const date2 = new Date()
+                    const diffTime = Math.abs(date2 - date1)
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
                     return (
-                        temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
+                        diffDays < 90 && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
                     )
                 })
                 this.setState({dataList: data, nama: data.nama, alamat: data.alamat, fakturList: temp, noNpwp: data.no_npwp, noNik: data.no_ktp})
@@ -846,7 +929,7 @@ class CartIkk extends Component {
     }
 
     selectRek = (e) => {
-        this.setState({norek: e.label, tiperek: e.value})
+        this.setState({norek: e.label.split('~')[0], tiperek: e.value})
     }
 
     selectTujuan = (val) => {
@@ -887,7 +970,7 @@ class CartIkk extends Component {
             console.log()
         } else {
             const nilai_ajuan = parseFloat(data.jumlah_dpp) + parseFloat(data.jumlah_ppn)
-            this.setState({dataSelFaktur: data, nilai_ajuan: nilai_ajuan, nilai_dpp: data.jumlah_dpp, nilai_ppn: data.jumlah_ppn})
+            this.setState({dataSelFaktur: data, nilai_ajuan: nilai_ajuan, nilai_dpp: data.jumlah_dpp, nilai_ppn: data.jumlah_ppn, tgl_faktur: data.tgl_faktur})
             setTimeout(() => {
                 this.formulaTax()
              }, 500)
@@ -1066,6 +1149,7 @@ class CartIkk extends Component {
         const {dataCart, dataDoc, depoCart} = this.props.ikk
         const {dataPagu} = this.props.pagu
         const { detailDepo, dataDepo } = this.props.depo
+        const {listGl} = this.props.coa
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1325,7 +1409,12 @@ class CartIkk extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Memiliki NPWP</Col>
                                             <Col md={9} className="colRinci">:  <Input
-                                                disabled={this.state.jenisVendor === 'Badan' ? true : false}
+                                                disabled={
+                                                    this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
+                                                    : this.state.jenisVendor === nonObject ? true
+                                                    : this.state.jenisVendor === 'Badan' ? true 
+                                                    : false
+                                                }
                                                 type= "select" 
                                                 className="inputRinci"
                                                 value={this.state.status_npwp}
@@ -1337,9 +1426,9 @@ class CartIkk extends Component {
                                                 </Input>
                                             </Col>
                                         </Row>
-                                        {this.state.status_npwp === '' ? (
+                                        {/* {this.state.status_npwp === '' ? (
                                             <text className={style.txtError}>must be filled</text>
-                                        ) : null}
+                                        ) : null} */}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nomor NPWP</Col>
                                             <Col md={9} className="colRinci">:  
@@ -1358,8 +1447,8 @@ class CartIkk extends Component {
                                                     className="inputRinci2"
                                                     options={this.state.listNpwp}
                                                     onChange={this.selectNikNpwp}
-                                                    onInputChange={e => this.inputNpwp(e)}
-                                                    isSearchable
+                                                    // onInputChange={e => this.inputNpwp(e)}
+                                                    // isSearchable
                                                     value={this.state.status_npwp === 'Ya' ? {value: this.state.noNpwp, label: this.state.noNpwp} : { value: '', label: '' }}
                                                 />
                                             </Col>
@@ -1400,8 +1489,8 @@ class CartIkk extends Component {
                                                     className="inputRinci2"
                                                     options={this.state.listNik}
                                                     onChange={this.selectNikNpwp}
-                                                    onInputChange={e => this.inputNik(e)}
-                                                    isSearchable
+                                                    // onInputChange={e => this.inputNik(e)}
+                                                    // isSearchable
                                                     value={this.state.status_npwp === 'Tidak' ? {value: this.state.noNik, label: this.state.noNik} : { value: '', label: '' }}
                                                 />
                                             </Col>
@@ -1428,6 +1517,11 @@ class CartIkk extends Component {
                                             <Col md={3}>Nama Vendor/NPWP/KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 type= "text" 
+                                                disabled={
+                                                    this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
+                                                    : this.state.jenisVendor === nonObject ? true
+                                                    : false
+                                                }
                                                 className="inputRinci"
                                                 value={this.state.nama}
                                                 // onBlur={handleBlur("nama_vendor")}
@@ -1435,13 +1529,18 @@ class CartIkk extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {errors.nama_vendor ? (
+                                        {/* {errors.nama_vendor ? (
                                             <text className={style.txtError}>must be filled</text>
-                                        ) : null}
+                                        ) : null} */}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Alamat Vendor</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 type= "text" 
+                                                disabled={
+                                                    this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
+                                                    : this.state.jenisVendor === nonObject ? true
+                                                    : false
+                                                }
                                                 className="inputRinci"
                                                 value={this.state.alamat}
                                                 // onBlur={handleBlur("alamat_vendor")}
@@ -1449,9 +1548,9 @@ class CartIkk extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {errors.alamat_vendor ? (
+                                        {/* {errors.alamat_vendor ? (
                                             <text className={style.txtError}>must be filled</text>
-                                        ) : null}
+                                        ) : null} */}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Transaksi Ber PPN</Col>
                                             <Col md={9} className="colRinci">:  <Input
@@ -1480,8 +1579,8 @@ class CartIkk extends Component {
                                                     isDisabled={this.state.tipePpn === "Ya" ? false : true}
                                                     options={this.state.fakturList}
                                                     onChange={this.selectFaktur}
-                                                    onInputChange={e => this.inputFaktur(e)}
-                                                    isSearchable
+                                                    // onInputChange={e => this.inputFaktur(e)}
+                                                    // isSearchable
                                                     value={{value: this.state.dataSelFaktur.no_faktur, label: this.state.dataSelFaktur.no_faktur}}
                                                 />
                                                 {/* <Input
@@ -1497,6 +1596,23 @@ class CartIkk extends Component {
                                         {errors.no_faktur ? (
                                             <text className={style.txtError}>must be filled</text>
                                         ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Tgl Faktur</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                disabled={
+                                                    this.state.fakturList.length > 0 ? true
+                                                    // : this.state.tipePpn === "Ya" ? false 
+                                                    : true
+                                                }
+                                                className="inputRinci"
+                                                value={moment(this.state.tgl_faktur).format('DD MMMM YYYY')}
+                                                // value={values.dpp}
+                                                // onBlur={handleBlur("dpp")}
+                                                // onChange={handleChange("dpp")}
+                                                />
+                                            </Col>
+                                        </Row>
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>DPP</Col>
                                             <Col md={9} className="colRinci">:  <Input
@@ -1986,7 +2102,7 @@ class CartIkk extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ikk.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.ikk.isLoading || this.props.email.isLoading || this.props.faktur.isLoading || this.props.vendor.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2074,14 +2190,14 @@ class CartIkk extends Component {
                                 <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
                                 <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={dataCart.length > 0 ? dataCart[0].area : ''} className="ml-3"  /></Col>
                             </Row>
-                            <Row className="ptStock inputStock">
+                            {/* <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>no ajuan</Col>
                                 <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={''} className="ml-3" /></Col>
                             </Row>
                             <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
                                 <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={''} /></Col>
-                            </Row>
+                            </Row> */}
                         </div>
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab}>
@@ -2147,8 +2263,8 @@ class CartIkk extends Component {
                     </Alert> */}
                     <div className="modalFoot ml-3">
                         <div className="btnFoot">
-                            <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
-                            <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>Form IKK</Button>
+                            {/* <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
+                            <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>Form IKK</Button> */}
                         </div>
                         <div className="btnFoot">
                             <Button className="mr-2" color="success" onClick={this.openModalConfirm}>
@@ -2389,6 +2505,25 @@ class CartIkk extends Component {
                     )}
                 </ModalBody>
             </Modal>
+            <Modal isOpen={this.state.openDraft} size='xl'>
+                <ModalHeader>Email Pemberitahuan</ModalHeader>
+                <ModalBody>
+                    <Email handleData={this.getMessage}/>
+                    <div className={style.foot}>
+                        <div></div>
+                        <div>
+                            <Button
+                                disabled={this.state.message === '' ? true : false} 
+                                className="mr-2"
+                                onClick={() => this.closeTransaksi()} 
+                                color="primary"
+                            >
+                                Approve & Send Email
+                            </Button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
             <Modal isOpen={this.state.alert} size="sm">
                 <ModalBody>
                     <div>
@@ -2453,23 +2588,9 @@ class CartIkk extends Component {
                     </Container>
                 </ModalBody>
                 <ModalFooter>
-                    <Button className="mr-2" disabled={dataDoc.length > 0 ? false : true} color="primary" onClick={this.closeTransaksi}>
+                    <Button className="mr-2" disabled={dataDoc.length > 0 ? false : true} color="primary" onClick={this.cekDok}>
                         Done
                     </Button>
-                    {/* {this.state.stat === 'DIPINJAM SEMENTARA' && (dataDoc.length === 0 || dataDoc.find(({status}) => status === 1) === undefined) ? (
-                        <Button color="primary" disabled onClick={this.updateStatus}>
-                            Save 
-                        </Button>
-                    ) : this.state.stat === 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.updateStatus}>
-                            Save 
-                        </Button>
-                    )}
-                    {this.state.stat !== 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.openModalDoc}>
-                            Save 
-                        </Button>
-                    )} */}
                 </ModalFooter>
             </Modal>
             <Modal isOpen={this.state.openPdf} size="xl" toggle={this.openModalPdf} centered={true}>
@@ -2505,6 +2626,7 @@ const mapStateToProps = state => ({
     dokumen: state.dokumen,
     vendor: state.vendor,
     faktur: state.faktur,
+    email: state.email
 })
 
 const mapDispatchToProps = {
@@ -2529,7 +2651,11 @@ const mapDispatchToProps = {
     getPagu: pagu.getPagu,
     showDokumen: dokumen.showDokumen,
     getVendor: vendor.getVendor,
-    getFaktur: faktur.getFaktur
+    getFaktur: faktur.getFaktur,
+    resetEmail: email.resetError,
+    getDraftEmail: email.getDraftEmail,
+    sendEmail: email.sendEmail,
+    getDetail: ikk.getDetail,
     // notifStock: notif.notifStock
 }
 

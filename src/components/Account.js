@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { Input, Button, UncontrolledDropdown, DropdownToggle,
-    DropdownMenu, DropdownItem, Modal, ModalHeader, ModalBody } from 'reactstrap'
+    DropdownMenu, DropdownItem, Modal, ModalHeader, ModalBody, Spinner } from 'reactstrap'
 import {FaBars, FaFileSignature, FaUserCircle} from 'react-icons/fa'
 import { FiLogOut } from 'react-icons/fi'
 import auth from '../redux/actions/auth'
@@ -11,7 +11,9 @@ import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai
 import * as Yup from 'yup'
 // import notif from '../redux/actions/notif'
 import {VscAccount} from 'react-icons/vsc'
+import { useHistory } from 'react-router-dom'
 import style from '../assets/css/input.module.css'
+const {REACT_APP_BACKEND_URL} = process.env
 
 const changeSchema = Yup.object().shape({
     current_password: Yup.string().required('must be filled'),
@@ -19,15 +21,25 @@ const changeSchema = Yup.object().shape({
     new_password: Yup.string().required('must be filled')
 });
 
+const userSchema = Yup.object().shape({
+    username: Yup.string().required('must be filled'),
+    fullname: Yup.string().required('must be filled'),
+    email: Yup.string().email().required('must be filled')
+});
+
 class Account extends Component {
 
     state = {
         modalEdit: false,
+        modalProf: false,
         relog: false,
         alert: false,
         setting: false,
         modalConfirm: false,
-        confirm: ''
+        confirm: '',
+        username: '',
+        fullname: '',
+        email: ''
     }
 
     editUser = async (val) => {
@@ -39,8 +51,69 @@ class Account extends Component {
         await this.props.changePassword(token, data)
      }
 
-     openModalEdit = () => {
+     inputText = (val) => {
+        const data = {
+            [val.name]: val.value
+        }
+        this.setState(data)
+     }
+
+     editProfile = async (val) => {
+        const token = localStorage.getItem("token")
+        const id = localStorage.getItem("id")
+        const data = {
+            username: val.username,
+            fullname: val.fullname,
+            email: val.email
+        }
+        await this.props.updateUser(token, id, data)
+        const {isUpdate} = this.props.user
+        if (isUpdate) {
+            this.setState({confirm: 'edit'})
+            this.openConfirm()
+            this.getProfile()
+        }
+    }
+
+    uploadGambar = async e => {
+        const {size, type} = e.target.files[0]
+        this.setState({fileUpload: e.target.files[0]})
+        if (size >= 20000000) {
+            this.setState({errMsg: "Maximum upload size 20 MB"})
+            this.uploadAlert()
+        } else if (type !== 'image/jpeg' && type !== 'image/png') {
+            this.setState({errMsg: 'Invalid file type. Only image files are allowed.'})
+            this.uploadAlert()
+        } else {
+            const id = localStorage.getItem("id")
+            const token = localStorage.getItem('token')
+            const data = new FormData()
+            data.append('document', e.target.files[0])
+            await this.props.uploadImage(token, id, data)
+            this.setState({confirm: 'edit'})
+            this.openConfirm()
+            this.getProfile()
+        }
+    }
+
+    openModalEdit = () => {
         this.setState({modalEdit: !this.state.modalEdit})
+    }
+
+    openProfile = () => {
+        this.setState({modalProf: !this.state.modalProf})
+    }
+
+    async componentDidMount() {
+        this.getProfile()
+    }
+
+    getProfile = async () => {
+        const token = localStorage.getItem("token")
+        const id = localStorage.getItem("id")
+        await this.props.getDetail(token, id)
+        const {detailUser} = this.props.user
+        this.setState({username: detailUser.username, fullname: detailUser.fullname, email: detailUser.email})
     }
 
     componentDidUpdate () {
@@ -62,17 +135,25 @@ class Account extends Component {
   render() {
     const level = localStorage.getItem('level')
     const names = localStorage.getItem('fullname')
+    const {detailUser} = this.props.user
     const color = this.props.color
     return (
         <>
             <UncontrolledDropdown>
                 <DropdownToggle nav className='accName'>
-                    <VscAccount size={30} className={color === undefined ? 'mr-2 white' : `mr-2 ${color}`} />
+                    {detailUser.image === null ? (
+                        <VscAccount size={30} className={color === undefined ? 'mr-2 white' : `mr-2 ${color}`} />
+                    ) : (
+                        <img className="pictTask mr-2" src={`${REACT_APP_BACKEND_URL}/${detailUser.image}`} alt="profile1" />
+                    )}
                     <div className={color === undefined ? 'mr-2 white' : `mr-2 ${color}`}>
-                        {level === '1' ? 'Super Admin' : names}
+                        {level === '1' ? 'Super Admin' : detailUser.fullname}
                     </div>
                 </DropdownToggle>
                 <DropdownMenu right>
+                    <DropdownItem onClick={this.openProfile}>
+                        My Profile
+                    </DropdownItem>
                     <DropdownItem onClick={this.openModalEdit}>
                         Change Password
                     </DropdownItem>
@@ -162,6 +243,114 @@ class Account extends Component {
                 )}
             </Formik>
         </Modal>
+        <Modal toggle={this.openProfile} isOpen={this.state.modalProf} size='xl'>
+            <ModalBody>
+                <div className="h4">
+                    My Profile<span className="h6 text-secondary"><br /> Manage your profile information</span>
+                </div>
+                <hr />
+                <Formik 
+                    initialValues={{
+                        username: this.state.username,
+                        fullname: this.state.fullname,
+                        email: this.state.email
+                    }}
+                    validationSchema={userSchema}
+                    onSubmit={(values) => {this.editProfile(values)}}
+                >
+                    {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                    <div className="row">
+                        <div className="col-md-9">
+                            <div className='row'>
+                                <div className="col-md-2 text-secondary">
+                                    <div className="sam d-flex justify-content-end">User Name</div>
+                                </div>
+                                <div className="for col-md-10">
+                                    <Input 
+                                        type="name" 
+                                        className="form-control" 
+                                        name='username'
+                                        id="inputEmail3"
+                                        // value={this.state.username}
+                                        // onChange={e => this.inputText(e.target)}
+                                        value={values.username}
+                                        onChange={handleChange("username")}
+                                        onBlur={handleBlur("username")}
+                                        disabled
+                                        placeholder="User Name" 
+                                    />
+                                    {errors.username ? (
+                                        <text className={style.txtError}>{errors.username}</text>
+                                    ) : null}
+                                </div>
+                            </div>
+                            <div className='row'>
+                                <div className="col-md-2 text-secondary">
+                                    <div className="sam d-flex justify-content-end">Full Name</div>
+                                </div>
+                                <div className="for col-md-10">
+                                    <Input 
+                                        type="name" 
+                                        className="form-control" 
+                                        name='fullname'
+                                        id="inputEmail3"
+                                        value={values.fullname}
+                                        onChange={handleChange("fullname")}
+                                        onBlur={handleBlur("fullname")}
+                                        placeholder="Full Name" 
+                                    />
+                                    {errors.fullname ? (
+                                        <text className={style.txtError}>{errors.fullname}</text>
+                                    ) : null}
+                                </div>
+                            </div>
+                            <div className="row">
+                                <div className="col-md-2 text-secondary">
+                                    <div className="sam d-flex justify-content-end">Email</div>
+                                </div>
+                                <div className="for col-md-10">
+                                    <Input 
+                                        type="email" 
+                                        className="form-control" 
+                                        name='email'
+                                        id="inputEmail3"
+                                        value={values.email}
+                                        onChange={handleChange("email")}
+                                        onBlur={handleBlur("email")}
+                                        placeholder="Email" 
+                                    />
+                                    {errors.email ? (
+                                        <text className={style.txtError}>{errors.email}</text>
+                                    ) : null}
+                                </div>
+                            </div>
+                            <div className="row">
+                                <div className="col-md-2 text-secondary">
+                                </div>
+                                <div className="for col-md-10">
+                                    <button className="save btn btn-danger" onClick={handleSubmit}>Save</button>  
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-md-3">
+                            <div className="colCenter">
+                                {detailUser.image === null ? (
+                                    <VscAccount size={120} className={'black mb-4'} />
+                                ) : (
+                                    <img className="pictProf mb-4" src={`${REACT_APP_BACKEND_URL}/${detailUser.image}`} alt="profile1" />
+                                )}
+                                <Input type="file" onChange={this.uploadGambar}
+                                    className="bol btn btn-outline-secondary btn-block text-secondary"
+                                >
+                                    Select image
+                                </Input>
+                            </div>
+                        </div>
+                    </div>
+                    )}
+                </Formik>
+            </ModalBody>
+        </Modal>
         <Modal isOpen={this.state.relog}>
             <ModalBody>
                 <div className={style.modalApprove}>
@@ -183,9 +372,48 @@ class Account extends Component {
                             <div className={[style.sucUpdate, style.green]}>Gagal merubah password, pastikan current password yang anda masukan benar</div>
                         </div>
                     </div>
-                ) : (
+                ) : this.state.confirm === 'edit' ? (
+                    <div className={style.cekUpdate}>
+                        <AiFillCheckCircle size={80} className={style.green} />
+                        <div className={style.sucUpdate}>Berhasil Memperbarui Data</div>
+                    </div>
+                    ) : this.state.confirm === 'add' ? (
+                        <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                            <div className={style.sucUpdate}>Berhasil Menambahkan Data</div>
+                        </div>
+                    ) : this.state.confirm === 'del' ? (
+                        <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                            <div className={style.sucUpdate}>Berhasil Menghapus Data</div>
+                        </div>
+                    ) : this.state.confirm === 'upload' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                            <div className={style.sucUpdate}>Berhasil Mengupload Master Data</div>
+                        </div>
+                        </div>
+                    ) : this.state.confirm === 'reset' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                            <div className={style.sucUpdate}>Berhasil Mereset Password</div>
+                        </div>
+                        </div>
+                    ) : (
                     <div></div>
                 )}
+            </ModalBody>
+        </Modal>
+        <Modal isOpen={this.props.user.isLoading ? true: false} size="sm">
+            <ModalBody>
+            <div>
+                <div className={style.cekUpdate}>
+                    <Spinner />
+                    <div sucUpdate>Waiting....</div>
+                </div>
+            </div>
             </ModalBody>
         </Modal>
     </>
@@ -205,7 +433,9 @@ const mapDispatchToProps = {
     logout: auth.logout,
     // getNotif: notif.getNotif,
     changePassword: user.changePassword,
+    getDetail: user.getDetailUser,
     goRoute: auth.goRoute,
+    uploadImage: user.uploadImage
     // upNotif: notif.upNotif
 }
 

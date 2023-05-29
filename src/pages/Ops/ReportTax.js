@@ -501,29 +501,25 @@ class ReportOps extends Component {
         this.setState({history: !this.state.history})
     }
 
+    changeStatKlaim = async (val) => {
+        const {filter} = this.state
+        const level = localStorage.getItem('level')
+        const token = localStorage.getItem("token")
+        const tipe = val === '3' || val === '4' ? 'verif' : val === '6' ? 'ajuan bayar' : 'approve'
+        const status = val
+        await this.props.getReport(token, status, 'all', 'all', filter, tipe)
+        this.setState({statKlaim: val})
+    }
+
     changeFilter = async (val) => {
         const token = localStorage.getItem("token")
         const status = 7
         const {time1, time2} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
-        if (val === 'available') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'reject') {
-            const newKlaim = []
-            await this.props.getReport(token, 6, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'revisi') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        }
+        const newKlaim = []
+        await this.props.getReport(token, status, 'all', 'all',  cekTime1, cekTime2)
+        this.setState({filter: val, newKlaim: newKlaim})
     }
 
     changeTime = async (val) => {
@@ -861,7 +857,7 @@ class ReportOps extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Report Operasional</div>
+                                <div className={style.titleDashboard}>Report Tax (Operasional)</div>
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.headEmail2}>
@@ -874,19 +870,13 @@ class ReportOps extends Component {
                                         buttonText="Download"
                                     />
                                 </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Status:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="reject">Reject</option>
-                                        <option value="all">Siap Bayar</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                    </Input>
-                                </div>
+                                <div></div>
                             </div>
+
                             <div className={[style.secEmail4]}>
                                 <div className={style.headEmail2}>
                                     <Input className={style.filter2} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                        <option value="all">All</option>
+                                        <option value="all">Time (All)</option>
                                         <option value="pilih">Periode</option>
                                     </Input>
                                     {this.state.time === 'pilih' ?  (
@@ -916,6 +906,27 @@ class ReportOps extends Component {
                                     ) : null}
                                 </div>
                                 <div className={style.searchEmail2}>
+                                    <text>Filter:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value="reject">Reject</option>
+                                        <option value="all">All</option>
+                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                    </Input>
+                                </div>
+                            </div>
+                            
+                            <div className={[style.secEmail4]}>
+                                <div className={style.searchEmail2}>
+                                    <text>Status:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.statKlaim} onChange={e => this.changeStatKlaim(e.target.value)}>
+                                        <option value='all'>All</option>
+                                        <option value={2} >Pengajuan Area</option>
+                                        <option value={3} >Verifikasi Finance</option>
+                                        <option value={4} >Verifikasi Tax</option>
+                                        <option value={7} >Transaksi Selesai</option>
+                                    </Input>
+                                </div>
+                                <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 
                                     className={style.search}
@@ -926,46 +937,47 @@ class ReportOps extends Component {
                                     </Input>
                                 </div>
                             </div>
+                            	
                             <div className='mb-4 mt-2' />
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-ops">
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>PIC</th>
-                                                <th>NAMA</th>
-                                                <th>AREA</th>
-                                                <th>NOMOR FPD</th>
-                                                <th>COST CENTRE</th>
-                                                <th>NO COA</th>
-                                                <th>NAMA COA</th>
-                                                <th>KETERANGAN TAMBAHAN</th>
-                                                <th>TGL AJUAN</th>
-                                                <th>PERIODE (DDMMYY)</th>
-                                                <th>NILAI YANG DIAJUKAN</th>
-                                                <th>BANK</th>
-                                                <th>NOMOR REKENING</th>
-                                                <th>ATAS NAMA</th>
-                                                <th>MEMILIKI NPWP</th>
-                                                <th>NAMA SESUAI NPWP</th>
-                                                <th>NOMOR NPWP</th>
-                                                <th>NAMA SESUAI KTP</th>
+                                                {/* <th>PIC</th> */}
+                                                <th>Nomor Pengajuan Operasional</th>
+                                                <th>Tax Payable Document Number</th>
+                                                <th>Posting Date</th>
+                                                <th>Profit Center</th>
+                                                <th>Tax Office Code</th>
+                                                <th>Invoice Number</th>
+                                                <th>Invoice Date</th>
+                                                <th>Tax Invoice Number</th>
+                                                <th>Tax Invoice Date</th>
+                                                <th>Document Number Exp</th>
+                                                <th>GL Expense</th>
+                                                <th>Expense Desc.</th>
+                                                <th>Vendor Name</th>
+                                                <th>Tax Period</th>
+                                                <th>Fiscal Year</th>
+                                                <th>WHT Date</th>
+                                                <th>NPWP (Y/N)</th>
+                                                <th>NPWP Number</th>
                                                 <th>NIK</th>
-                                                <th>DPP</th>
-                                                <th>PPN</th>
-                                                <th>PPh</th>
-                                                <th>NILAI YANG DIBAYARKAN</th>
-                                                <th>TANGGAL TRANSFER</th>
-                                                <th>KETERANGAN</th>
+                                                <th>Jenis PPh</th>
+                                                <th>Tax Object Description</th>
+                                                <th>Gross Expense</th>
+                                                <th>Tax Base</th>
+                                                <th>PPh Amount</th>
                                                 <th>STATUS</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {dataReport.map(item => {
+                                            {dataReport.length > 0 && dataReport.map(item => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>{dataReport.indexOf(item) + 1}</th>
-                                                        <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                                        {/* <th>{item.appList.length > 0 && item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th> */}
                                                         <th>{item.area}</th>
                                                         <th>{item.depo.channel}</th>
                                                         <th>{item.no_transaksi}</th>
@@ -994,30 +1006,6 @@ class ReportOps extends Component {
                                                     </tr>
                                                 )
                                             })}
-                                            {dataReport.length > 0 && (
-                                                <tr>
-                                                    <th className='total' colSpan={11}>Total</th>
-                                                    <th>
-                                                        {dataReport.reduce((accumulator, object) => {
-                                                            return accumulator + parseInt(object.nilai_ajuan);
-                                                        }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                                                    </th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                </tr>
-                                            )}
                                         </tbody>
                                     </Table>
                                 </div>

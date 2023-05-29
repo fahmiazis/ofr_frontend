@@ -19,7 +19,8 @@ const coaState = {
     dataAll: [],
     isAll: false,
     isUpload: false,
-    allCoa: []
+    allCoa: [],
+    listGl: []
 };
 
 export default (state=coaState, action) => {
@@ -63,6 +64,7 @@ export default (state=coaState, action) => {
                     isGet: true,
                     dataCoa: action.payload.data.result,
                     allCoa: action.payload.data.length,
+                    listGl: action.payload.data.listGl,
                     alertMsg: 'get coa Succesfully'
                 };
             }

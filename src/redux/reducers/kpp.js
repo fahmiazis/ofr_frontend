@@ -1,5 +1,5 @@
 /* eslint-disable import/no-anonymous-default-export */
-const emailState = {
+const kppState = {
     isAdd: false,
     isAddDetail: false,
     isUpdate: false,
@@ -8,137 +8,63 @@ const emailState = {
     isLoading: false,
     isError: false,
     alertMsg: '',
-    dataEmail: [],
+    dataKpp: [],
     dataName: [],
     alertM: '',
     alertUpload: [],
     page: {},
     isExport: false,
-    detEmail: {},
+    detKpp: {},
     link: '',
     dataAll: [],
     isAll: false,
-    isUpload: false,
-    draftEmail: {},
-    isDraft: null,
-    isSend: null
+    isUpload: false
 };
 
-export default (state=emailState, action) => {
+export default (state=kppState, action) => {
         switch(action.type){
-            case 'GET_ALL_EMAIL_PENDING': {
+            case 'GET_ALL_KPP_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_ALL_EMAIL_FULFILLED': {
+            case 'GET_ALL_KPP_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isAll: true,
-                    dataAll: action.payload.data.result,
-                    alertMsg: 'get email Succesfully'
+                    dataAll: action.payload.data.result.rows,
+                    alertMsg: 'get bank Succesfully',
+                    page: action.payload.data.pageInfo
                 };
             }
-            case 'GET_ALL_EMAIL_REJECTED': {
+            case 'GET_ALL_KPP_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
                     isError: true,
-                    alertMsg: "Failed get data email"
+                    alertMsg: "Failed get data bank"
                 };
             }
-            case 'GET_EMAIL_PENDING': {
+            case 'GET_KPP_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_EMAIL_FULFILLED': {
+            case 'GET_KPP_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    dataEmail: action.payload.data.result.rows,
-                    page: action.payload.data.pageInfo,
-                    alertMsg: 'get email Succesfully'
+                    dataKpp: action.payload.data.result,
+                    alertMsg: 'get bank Succesfully'
                 };
             }
-            case 'GET_EMAIL_REJECTED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isError: true,
-                    alertMsg: "Unable connect to server"
-                };
-            }
-            case 'DRAFT_EMAIL_PENDING': {
-                return {
-                    ...state,
-                    isLoading: true,
-                    alertMsg: 'Waiting ...'
-                };
-            }
-            case 'DRAFT_EMAIL_FULFILLED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    draftEmail: action.payload.data,
-                    isDraft: true,
-                    alertMsg: 'get email Succesfully'
-                };
-            }
-            case 'DRAFT_EMAIL_REJECTED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isDraft: false,
-                    alertMsg: "Unable connect to server"
-                };
-            }
-            case 'SEND_EMAIL_PENDING': {
-                return {
-                    ...state,
-                    isLoading: true,
-                    alertMsg: 'Waiting ...'
-                };
-            }
-            case 'SEND_EMAIL_FULFILLED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isSend: true,
-                    alertMsg: 'send email Succesfully'
-                };
-            }
-            case 'SEND_EMAIL_REJECTED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isSend: false,
-                    alertMsg: "Unable connect to server"
-                };
-            }
-            case 'DETAIL_EMAIL_PENDING': {
-                return {
-                    ...state,
-                    isLoading: true,
-                    alertMsg: 'Waiting ...'
-                };
-            }
-            case 'DETAIL_EMAIL_FULFILLED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isGet: true,
-                    detEmail: action.payload.data.result,
-                    alertMsg: 'get detail email Succesfully',
-                };
-            }
-            case 'DETAIL_EMAIL_REJECTED': {
+            case 'GET_KPP_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -146,40 +72,64 @@ export default (state=emailState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'NEXT_DATA_EMAIL_PENDING': {
+            case 'DETAIL_KPP_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'NEXT_DATA_EMAIL_FULFILLED': {
+            case 'DETAIL_KPP_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    dataEmail: action.payload.data.result.rows,
+                    detKpp: action.payload.data.result,
+                    alertMsg: 'get detail bank Succesfully',
+                };
+            }
+            case 'DETAIL_KPP_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'NEXT_DATA_KPP_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'NEXT_DATA_KPP_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isAll: true,
+                    dataAll: action.payload.data.result.rows,
                     alertMsg: 'next data Succesfully',
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'NEXT_DATA_EMAIL_REJECTED': {
+            case 'NEXT_DATA_KPP_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
-                    isGet: false,
+                    isAll: false,
                     isError: true,
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'UPDATE_EMAIL_PENDING': {
+            case 'UPDATE_KPP_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting'
                 };
             }
-            case 'UPDATE_EMAIL_FULFILLED': {
+            case 'UPDATE_KPP_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -187,7 +137,7 @@ export default (state=emailState, action) => {
                     alertMsg: 'update user Succesfully'
                 };
             }
-            case 'UPDATE_EMAIL_REJECTED': {
+            case 'UPDATE_KPP_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -196,14 +146,14 @@ export default (state=emailState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'ADD_EMAIL_PENDING': {
+            case 'ADD_KPP_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'ADD_EMAIL_FULFILLED': {
+            case 'ADD_KPP_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -212,7 +162,7 @@ export default (state=emailState, action) => {
                     alertMsg: 'add user Succesfully'
                 };
             }
-            case 'ADD_EMAIL_REJECTED': {
+            case 'ADD_KPP_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -221,7 +171,55 @@ export default (state=emailState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'RESET_EMAIL': {
+            case 'UPLOAD_KPP_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting....'
+                };
+            }
+            case 'UPLOAD_KPP_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpload: true,
+                    alertMsg: 'upload master Succesfully'
+                };
+            }
+            case 'UPLOAD_KPP_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    alertMsg: action.payload.response.data.message,
+                    alertUpload: action.payload.response.data.result
+                };
+            }
+            case 'EXPORT_MASTER_KPP_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'EXPORT_MASTER_KPP_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isExport: true,
+                    link: action.payload.data.link,
+                    alertMsg: 'success export data'
+                };
+            }
+            case 'EXPORT_MASTER_KPP_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    alertMsg: 'Failed export data'
+                };
+            }
+            case 'RESET_KPP': {
                 return {
                     ...state,
                     isError: false,
@@ -231,9 +229,7 @@ export default (state=emailState, action) => {
                     isGet: false,
                     isExport: false,
                     isLoading: false,
-                    isUpload: false,
-                    isDraft: null,
-                    isSend: null
+                    isUpload: false
                 }
             }
             default: {

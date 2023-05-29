@@ -19,6 +19,10 @@ export default {
         type: 'UPLOAD_MASTER',
         payload: http(token).post(`/user/master`, data)
     }),
+    uploadImage: (token, id, data) => ({
+        type: 'UPLOAD_IMAGE',
+        payload: http(token).post(`/user/upimage/${id}`, data)
+    }),
     exportMaster: (token) => ({
         type: 'EXPORT_MASTER_USER',
         payload: http(token).get(`/user/export`)

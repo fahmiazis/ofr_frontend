@@ -12,6 +12,7 @@ import {connect} from 'react-redux'
 import {FiSend, FiTruck, FiSettings, FiUpload} from 'react-icons/fi'
 import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
 import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList, FaFileSignature} from 'react-icons/fa'
+import {RiDraftFill} from 'react-icons/ri'
 import {MdAssignment} from 'react-icons/md'
 import moment from 'moment'
 
@@ -100,11 +101,23 @@ class Tracking extends Component {
                 </div>
                 <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 4 ? "step completed" : 'step'}>
                     <div class="step-icon-wrap">
-                        <button class="step-icon" onClick={() => this.showCollap('List Ajuan Bayar')}><MdAssignment size={40} className="center" /></button>
+                        <button class="step-icon" onClick={() => this.showCollap('Verifikasi Tax')}><FiSettings size={40} className="center" /></button>
                     </div>
-                    <h4 class="step-title">List Ajuan Bayar</h4>
+                    <h4 class="step-title">Verifikasi Tax</h4>
                 </div>
-                <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi === 5 ? "step completed" : 'step'}>
+                <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 5 ? "step completed" : 'step'}>
+                    <div class="step-icon-wrap">
+                        <button class="step-icon" onClick={() => this.showCollap('Draft List Ajuan Bayar')}><RiDraftFill size={40} className="center" /></button>
+                    </div>
+                    <h4 class="step-title">Draft List Ajuan Bayar</h4>
+                </div>
+                <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 6 ? "step completed" : 'step'}>
+                    <div class="step-icon-wrap">
+                        <button class="step-icon" onClick={() => this.showCollap('Approval List Ajuan Bayar')}><MdAssignment size={40} className="center" /></button>
+                    </div>
+                    <h4 class="step-title">Approval List Ajuan Bayar</h4>
+                </div>
+                <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi >= 7 ? "step completed" : 'step'}>
                     <div class="step-icon-wrap">
                         <button class="step-icon"><AiOutlineCheck size={40} className="center" /></button>
                     </div>
@@ -195,7 +208,7 @@ class Tracking extends Component {
                                             <div class="step-icon-wrap">
                                             <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
                                             </div>
-                                            <h4 class="step-title">Check Dokumen</h4>
+                                            <h4 class="step-title">Check Data Ajuan</h4>
                                         </div>
                                         <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 3 ? "step completed" : 'step'}>
                                             <div class="step-icon-wrap">
@@ -204,19 +217,13 @@ class Tracking extends Component {
                                             <h4 class="step-title">Selesai</h4>
                                         </div>
                                     </div>
-                                ) : this.state.tipeCol === 'List Ajuan Bayar' && (
+                                ) : this.state.tipeCol === 'Verifikasi Tax' ? (
                                     <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                        <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                            <div class="step-icon-wrap">
-                                            <button class="step-icon" ><FiSettings size={30} className="center2" /></button>
-                                            </div>
-                                            <h4 class="step-title">Proses Kelengkapan Data</h4>
-                                        </div>
                                         <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 4 ? "step completed" : 'step'}>
                                             <div class="step-icon-wrap">
                                             <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
                                             </div>
-                                            <h4 class="step-title">Check Dokumen</h4>
+                                            <h4 class="step-title">Check Data Ajuan</h4>
                                         </div>
                                         <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 4 ? "step completed" : 'step'}>
                                             <div class="step-icon-wrap">
@@ -224,6 +231,34 @@ class Tracking extends Component {
                                             </div>
                                             <h4 class="step-title">Selesai</h4>
                                         </div>
+                                    </div>
+                                ) : this.state.tipeCol === 'Draft List Ajuan Bayar' ? (
+                                    <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
+                                        <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 5 ? "step completed" : 'step'}>
+                                            <div class="step-icon-wrap">
+                                            <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
+                                            </div>
+                                            <h4 class="step-title">Seleksi Data Ajuan</h4>
+                                        </div>
+                                        <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 5 ? "step completed" : 'step'}>
+                                            <div class="step-icon-wrap">
+                                            <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
+                                            </div>
+                                            <h4 class="step-title">Selesai</h4>
+                                        </div>
+                                    </div>
+                                ) : this.state.tipeCol === 'Approval List Ajuan Bayar' && (
+                                    <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
+                                        {detailIkk[0] !== undefined && detailIkk[0].appList.length && detailIkk[0].appList.slice(0).reverse().map(item => {
+                                            return (
+                                                <div class={item.status === '1' ? 'step completed' : item.status === '0' ? 'step reject' : 'step'}>
+                                                    <div class="step-icon-wrap">
+                                                    <button class="step-icon"><FaFileSignature size={30} className="center2" /></button>
+                                                    </div>
+                                                    <h4 class="step-title">{item.jabatan}</h4>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 )}
                             </div>

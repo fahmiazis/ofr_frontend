@@ -246,11 +246,16 @@ html,body{
 .filter {
   border: 1px solid #9b9b9b;
   width: 100% !important;
-  margin-left: 11%;
+  margin-left: 5%;
 }
 .filter2 {
   border: 1px solid #9b9b9b;
   width: 100% !important;
+  /* margin-left: 11%; */
+}
+.filter3 {
+  border: 1px solid #9b9b9b;
+  /* width: 100% !important; */
   /* margin-left: 11%; */
 }
 .secSearch {

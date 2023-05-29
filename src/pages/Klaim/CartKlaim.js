@@ -35,6 +35,8 @@ import {default as axios} from 'axios'
 import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
 import dokumen from '../../redux/actions/dokumen'
+import email from '../../redux/actions/email'
+import Email from '../../components/Klaim/Email'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const addSchema = Yup.object().shape({
@@ -113,7 +115,10 @@ class CartKlaim extends Component {
             rekList: [],
             norek: '',
             tiperek: '',
-            tujuan_tf: ''
+            tujuan_tf: '',
+            openDraft: false,
+            subject: '',
+            message: '',
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -330,13 +335,37 @@ class CartKlaim extends Component {
         }
     }
 
-    closeTransaksi = async () => {
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val.message, subject: val.subject})
+        console.log(val)
+    }
+
+    prepSendEmail = async () => {
+        const {dataCart, noklaim} = this.props.klaim
         const token = localStorage.getItem("token")
-        const { dataDoc } = this.props.klaim
-        const { noklaim } = this.props.klaim
+        const tipe = 'approve'
         const tempno = {
+            no: noklaim,
+            kode: dataCart[0].kode_plant,
+            jenis: 'klm',
+            tipe: tipe,
+            menu: 'Pengajuan Klaim (Klaim)'
+        }
+        const data = {
             no: noklaim
         }
+        await this.props.getApproval(token, data)
+        await this.props.getDetail(token, data)
+        await this.props.getDraftEmail(token, tempno)
+        this.openDraftEmail()
+    }
+
+    cekDok = async () => {
+        const { dataDoc } = this.props.klaim
         const verifDoc = []
         const tempDoc = []
         for (let i = 0; i < dataDoc.length; i++) {
@@ -348,15 +377,41 @@ class CartKlaim extends Component {
             }
         }
         if (verifDoc.length === tempDoc.length) {
-            await this.props.submitKlaimFinal(token, tempno)
-            await this.props.getCart(token)
-            await this.props.getApproval(token, tempno)
-            this.openModalDoc()
-            this.modalSubmitPre()
-            this.openConfirm(this.setState({confirm: 'submit'}))
+            this.prepSendEmail()
         } else {
             this.openConfirm(this.setState({confirm: 'verifdoc'}))
         }
+    }
+
+    closeTransaksi = async () => {
+        const token = localStorage.getItem("token")
+        const { noklaim } = this.props.klaim
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const data = {
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: noklaim,
+            tipe: 'klaim',
+        }
+        const tempno = {
+            no: noklaim
+        }
+        await this.props.sendEmail(token, data)
+        await this.props.submitKlaimFinal(token, tempno)
+        await this.props.getCart(token)
+        this.openModalDoc()
+        this.modalSubmitPre()
+        this.openDraftEmail()
+        this.openConfirm(this.setState({confirm: 'submit'}))
     }
 
     componentDidUpdate() {
@@ -726,11 +781,14 @@ class CartKlaim extends Component {
         await this.props.getRek(token)
         await this.props.getDetailDepo(token)
         const { dataRek } = this.props.rekening
+        const spending = dataRek[0].rek_spending
+        const zba = dataRek[0].rek_zba
+        const bankcol = dataRek[0].rek_bankcol
         const temp = [
-            {value: '', label: '-Pilih-'},
-            {label: dataRek[0].rek_spending, value: 'Rekening Spending Card'},
-            {label: dataRek[0].rek_zba, value: 'Rekening ZBA'},
-            {label: dataRek[0].rek_bankcol, value: 'Rekening Bank Coll'}
+            {label: '-Pilih-', value: ''},
+            spending !== '0' ? {label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card'} : {value: '', label: ''},
+            zba !== '0' ? {label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA'} : {value: '', label: ''},
+            bankcol !== '0' ? {label: `${bankcol}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
         ]
         this.setState({rekList: temp})
         this.openModalAdd()
@@ -790,7 +848,7 @@ class CartKlaim extends Component {
     }
 
     selectRek = (e) => {
-        this.setState({norek: e.label, tiperek: e.value})
+        this.setState({norek: e.label.split('~')[0], tiperek: e.value})
     }
 
     selectTujuan = (val) => {
@@ -1598,7 +1656,7 @@ class CartKlaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.klaim.isLoading || this.props.email.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1686,14 +1744,14 @@ class CartKlaim extends Component {
                                 <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
                                 <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={dataCart.length > 0 ? dataCart[0].area : ''} className="ml-3"  /></Col>
                             </Row>
-                            <Row className="ptStock inputStock">
+                            {/* <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>no ajuan</Col>
                                 <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={''} className="ml-3" /></Col>
                             </Row>
                             <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
                                 <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={''} /></Col>
-                            </Row>
+                            </Row> */}
                         </div>
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab}>
@@ -1755,8 +1813,8 @@ class CartKlaim extends Component {
                     </Alert> */}
                     <div className="modalFoot ml-3">
                         <div className="btnFoot">
-                            <Button className="mr-2" color="info"  onClick={() => this.openModalFpd()}>FPD</Button>
-                            <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>FAA</Button>
+                            {/* <Button className="mr-2" color="info"  onClick={() => this.openModalFpd()}>FPD</Button>
+                            <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>FAA</Button> */}
                         </div>
                         <div className="btnFoot">
                             <Button className="mr-2" color="success" onClick={this.openModalConfirm}>
@@ -1848,90 +1906,6 @@ class CartKlaim extends Component {
                                </tr>
                            </thead>
                            <tbody className="tbodyPre">
-                               {/* <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {stockApp.pembuat !== undefined && stockApp.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-2">{item.nama === null ? "-" : item.status === 0 ? 'Reject' : moment(item.updatedAt).format('LL')}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {stockApp.pembuat !== undefined && stockApp.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {stockApp.pemeriksa !== undefined && stockApp.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : stockApp.pemeriksa !== undefined && stockApp.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-2">{item.nama === null ? "-" : item.status === 0 ? 'Reject' : moment(item.updatedAt).format('LL')}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {stockApp.pemeriksa !== undefined && stockApp.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : stockApp.pemeriksa !== undefined && stockApp.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {stockApp.penyetuju !== undefined && stockApp.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-2">{item.nama === null ? "-" : item.status === 0 ? 'Reject' : moment(item.updatedAt).format('LL')}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {stockApp.penyetuju !== undefined && stockApp.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr> */}
                            </tbody>
                        </Table>
                     </ModalBody>
@@ -2007,90 +1981,6 @@ class CartKlaim extends Component {
                                </tr>
                            </thead>
                            <tbody className="tbodyPre">
-                               {/* <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {stockApp.pembuat !== undefined && stockApp.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-2">{item.nama === null ? "-" : item.status === 0 ? 'Reject' : moment(item.updatedAt).format('LL')}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {stockApp.pembuat !== undefined && stockApp.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {stockApp.pemeriksa !== undefined && stockApp.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : stockApp.pemeriksa !== undefined && stockApp.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-2">{item.nama === null ? "-" : item.status === 0 ? 'Reject' : moment(item.updatedAt).format('LL')}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {stockApp.pemeriksa !== undefined && stockApp.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : stockApp.pemeriksa !== undefined && stockApp.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {stockApp.penyetuju !== undefined && stockApp.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-2">{item.nama === null ? "-" : item.status === 0 ? 'Reject' : moment(item.updatedAt).format('LL')}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {stockApp.penyetuju !== undefined && stockApp.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr> */}
                            </tbody>
                        </Table>
                     </ModalBody>
@@ -2107,6 +1997,25 @@ class CartKlaim extends Component {
                             </Button>
                         </div>
                     </div>
+                </Modal>
+                <Modal isOpen={this.state.openDraft} size='xl'>
+                    <ModalHeader>Email Pemberitahuan</ModalHeader>
+                    <ModalBody>
+                        <Email handleData={this.getMessage}/>
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button
+                                    disabled={this.state.message === '' ? true : false} 
+                                    className="mr-2"
+                                    onClick={() => this.closeTransaksi()} 
+                                    color="primary"
+                                >
+                                    Approve & Send Email
+                                </Button>
+                            </div>
+                        </div>
+                    </ModalBody>
                 </Modal>
                 <Modal isOpen={this.state.modalConfirm} toggle={this.openConfirm}>
                 <ModalBody>
@@ -2230,7 +2139,7 @@ class CartKlaim extends Component {
                     </Container>
                 </ModalBody>
                 <ModalFooter>
-                    <Button className="mr-2" disabled={dataDoc.length > 0 ? false : true} color="primary" onClick={this.closeTransaksi}>
+                    <Button className="mr-2" disabled={dataDoc.length > 0 ? false : true} color="primary" onClick={this.cekDok}>
                         Done
                     </Button>
                     {/* {this.state.stat === 'DIPINJAM SEMENTARA' && (dataDoc.length === 0 || dataDoc.find(({status}) => status === 1) === undefined) ? (
@@ -2278,7 +2187,8 @@ const mapStateToProps = state => ({
     klaim: state.klaim,
     bank: state.bank,
     rekening: state.rekening,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    email: state.email
 })
 
 const mapDispatchToProps = {
@@ -2300,7 +2210,11 @@ const mapDispatchToProps = {
     submitKlaimFinal: klaim.submitKlaimFinal,
     getApproval: klaim.getApproval,
     getRek: rekening.getRek,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    resetEmail: email.resetError,
+    getDraftEmail: email.getDraftEmail,
+    sendEmail: email.sendEmail,
+    getDetail: klaim.getDetail,
     // notifStock: notif.notifStock
 }
 

@@ -104,7 +104,19 @@ class Tracking extends Component {
                     </div>
                     <h4 class="step-title">Verifikasi Tax</h4>
                 </div>
-                <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi === 5 ? "step completed" : 'step'}>
+                <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 5 ? "step completed" : 'step'}>
+                    <div class="step-icon-wrap">
+                        <button class="step-icon" onClick={() => this.showCollap('Verifikasi Tax')}><FiSettings size={40} className="center" /></button>
+                    </div>
+                    <h4 class="step-title">Draft List Ajuan Bayar</h4>
+                </div>
+                <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 6 ? "step completed" : 'step'}>
+                    <div class="step-icon-wrap">
+                        <button class="step-icon" onClick={() => this.showCollap('Approval List Ajuan Bayar')}><MdAssignment size={40} className="center" /></button>
+                    </div>
+                    <h4 class="step-title">Approval List Ajuan Bayar</h4>
+                </div>
+                <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi >= 7 ? "step completed" : 'step'}>
                     <div class="step-icon-wrap">
                         <button class="step-icon"><AiOutlineCheck size={40} className="center" /></button>
                     </div>
@@ -204,19 +216,13 @@ class Tracking extends Component {
                                             <h4 class="step-title">Selesai</h4>
                                         </div>
                                     </div>
-                                ) : this.state.tipeCol === 'Verifikasi Tax' && (
+                                ) : this.state.tipeCol === 'Verifikasi Tax' ? (
                                     <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                        <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                            <div class="step-icon-wrap">
-                                            <button class="step-icon" ><FiSettings size={30} className="center2" /></button>
-                                            </div>
-                                            <h4 class="step-title">Proses Kelengkapan Data</h4>
-                                        </div>
                                         <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
                                             <div class="step-icon-wrap">
                                             <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
                                             </div>
-                                            <h4 class="step-title">Check Dokumen</h4>
+                                            <h4 class="step-title">Check Data Ajuan</h4>
                                         </div>
                                         <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
                                             <div class="step-icon-wrap">
@@ -224,6 +230,34 @@ class Tracking extends Component {
                                             </div>
                                             <h4 class="step-title">Selesai</h4>
                                         </div>
+                                    </div>
+                                ) : this.state.tipeCol === 'Draft List Ajuan Bayar' ? (
+                                    <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
+                                        <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 5 ? "step completed" : 'step'}>
+                                            <div class="step-icon-wrap">
+                                            <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
+                                            </div>
+                                            <h4 class="step-title">Seleksi Data Ajuan</h4>
+                                        </div>
+                                        <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 5 ? "step completed" : 'step'}>
+                                            <div class="step-icon-wrap">
+                                            <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
+                                            </div>
+                                            <h4 class="step-title">Selesai</h4>
+                                        </div>
+                                    </div>
+                                ) : this.state.tipeCol === 'Approval List Ajuan Bayar' && (
+                                    <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
+                                        {detailOps[0].appList !== undefined && detailOps[0].appList.length && detailOps[0].appList.slice(0).reverse().map(item => {
+                                            return (
+                                                <div class={item.status === '1' ? 'step completed' : item.status === '0' ? 'step reject' : 'step'}>
+                                                    <div class="step-icon-wrap">
+                                                    <button class="step-icon"><FaFileSignature size={30} className="center2" /></button>
+                                                    </div>
+                                                    <h4 class="step-title">{item.jabatan}</h4>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 )}
                             </div>

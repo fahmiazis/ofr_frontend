@@ -365,7 +365,7 @@ html,body{
 .accName {
     display: flex !important;
     flex-direction: row !important;
-    align-items: stretch !important;
+    align-items: center !important;
 }
 .chek {
     width: 10%;
@@ -540,8 +540,12 @@ html,body{
     font-size: small !important;
     white-space: nowrap !important;
     text-align: center !important;
-    top: 50% !important;
-    transform: translate(0%, -30%) !important;
+    /* top: 50% !important;
+    transform: translate(0%, -30%) !important; */
+    background-color: #76923B !important;
+}
+.tbRinci {
+    margin: 30px;
 }
 .modalFoot {
     display: flex;
@@ -758,6 +762,13 @@ html,body{
 }
 .totalSum {
     color: #9b9b9b;
+}
+.total {
+    align-items: center;
+    text-align: center;
+    font-size: large !important;
+    letter-spacing: 2px;
+    text-transform: uppercase;
 }
 .angkaSum {
     font-weight: bold;
@@ -1354,6 +1365,14 @@ html,body{
 .bg-faded, .bg-secondary {
     background-color: #f5f5f5 !important;
 }
+.icon {
+    color: black;
+    align-items: center;
+    display: flex;
+    width: 70%;
+    flex-direction: row;
+    color: #D83022;
+  }
 .center {
     display: flex;
     align-self: center;
@@ -1469,4 +1488,324 @@ html,body{
     border: 1px solid black !important;
     font-size: small !important;
     font-weight: 600 !important;
+}
+
+a{
+    color: #DB3022;
+}
+a:hover{
+    color: #af2418;
+}
+.btn-primary{
+    background-color: #DB3022;
+    color: #ffffff;
+    border-color: #DB3022;
+}
+.daftar .btn-primary{
+    background-color: #456BF3;
+    color: #ffffff;
+    border-color: #456BF3;
+}
+.btn-secondary{
+    background-color: #ffffff;
+    color: #9b9b9b;
+    border-color: #9b9b9b;
+}
+.auth .btn-primary{
+    border-radius: 25px;
+    height: 48px;
+}
+.switch .btn{
+    width: 123px;
+    height: 48px;
+}
+.btn-primary:hover, .btn-secondary:hover{
+    background-color: #af2418;
+    border-color: #af2418;
+}
+.header .logo{
+    margin-bottom: 40px;
+}
+.header .message{
+    margin-bottom: 50px;
+}
+.switch{
+    margin-bottom: 40px;
+}
+.auth-input{
+    width: 400px;
+}
+.jar{
+    margin: 5% 0;
+}
+.navbar{
+    padding: 0 100px;
+    box-shadow: 0px 6px 40px rgba(173, 173, 173, 0.25);
+}
+.navbar .btn{
+    border-radius: 25px;
+    width: 100px;
+    height: 36px;
+}
+.navbar .btn{
+    margin-right: 10px;
+}
+.search{
+    width:507px;
+    height: 40px;
+    position: relative;
+    border: 1px solid #8e8e93;
+    border-radius: 23px;
+    padding:0 20px;
+    outline: none;
+}
+.input img{
+    position: relative;
+    right: 550px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.atas{
+    margin-top: 50px;
+    margin-right: 20px;
+}
+.item-grid .item{
+    margin: 5px 0;
+}
+.cir{
+    height: 10px;
+    width: 10px;
+    border-radius: 50px 50px;
+    color: #9b9b9b;
+    margin-right: 2px;
+}
+.jarak{
+    margin-bottom: 50px;
+}
+.left{
+    position: absolute;
+    left: 11%;
+    top: 30%;
+    transform: translateY(-50%);
+}
+.right{
+    position: absolute;
+    right: 13%;
+    top: 30%;
+    transform: translateY(-50%);
+}
+.rightb{
+    position: absolute;
+    right: 8%;
+    top: 95%;
+    transform: translateY(-25%);
+}
+.badge-pill{
+    height: 36px;
+    width: 36px;
+    outline: none;
+}
+.judul{
+    margin-top: 50px;
+}
+.cart .card{
+    margin: 2% 0;
+}
+.select{
+    padding: 20px;
+}
+.select .del{
+    right: 20px;
+}
+.total{
+    padding: 30px;
+}
+.total .sub .dol{
+    right: 20px;
+}
+.total .sub{
+    margin: 8% 0;
+}
+.total .seb{
+    margin: 2% 0;
+}
+.total .seb .dol{
+    right: 20px;
+}
+.total .title{
+    margin-bottom: 5%;
+}
+.det .jaket{
+    margin-left: 20px;
+}
+.det .btn{
+    right: 30%;
+    top: 50%;
+    transform: translateY(-30%);
+}
+.det .btn .num{
+    margin: 0 10%;
+}
+.det .dol{
+    right: 15px;
+    top:50%;
+    transform: translateY(-50%);
+}
+.det{
+    padding: 20px;
+}
+.det .title{
+    top: 30%;
+    left: 20%;
+}
+.det .sub{
+    top: 50%;
+    left: 20%;
+}
+.total .buy{
+    border-radius: 25px;
+}
+.bread{
+    margin-bottom: 50px;
+}
+.rel1{
+    margin-bottom: 4%;
+}
+.rel{
+    border-radius: 5px;
+    margin:0 1%;
+}
+.rate{
+    margin: 0 1%;
+}
+.price{
+    margin:5% 0;
+}
+.detail{
+    padding-left: 3%;
+}
+.detail .lour{
+    margin: 0 ;
+    width: 36px;
+    height: 36px;
+}
+.color{
+    margin-bottom: 5%;
+}
+.size .min{
+    background-color: #D4D4D4;
+    outline-style: none;
+}
+.size .sekat{
+    margin: 0 5%;
+}
+.siju{
+    margin-bottom: 5%;
+}
+.fo .fot{
+    border-radius: 25px;
+}
+.never .item{
+    margin: 0 1%;
+}
+.never .atas{
+    margin-bottom: 2%;
+}
+.pa{
+    margin-bottom: 5%;
+}
+.th .info{
+    margin-bottom: 3%;
+}
+.th .cond{
+    margin-bottom: 3%;
+}
+.th .desc{
+    margin-bottom: 3%;
+}
+.th .pro{
+    margin-bottom: 5%;
+}
+.cho{
+    margin-top: 3%;
+    border-radius: 25px;
+}
+.na{
+    margin-bottom: 2%;
+}
+.in{
+    margin-bottom: 30%;
+}
+.in .me{
+    margin-left: 5%;
+}
+.in .me .na{
+    margin-bottom: 5%;
+}
+.sa{
+    margin-bottom: 10%;
+}
+.so{
+    margin-left: 7%;
+}
+.sam{
+    margin-bottom: 35%;
+}
+.for{
+    margin-bottom: 5%;
+}
+.fore{
+    margin-bottom: 7%;
+}
+.fore .ping{
+    margin-left: 15%;
+}
+.fore .apin{
+    margin-left: 3%;
+}
+.fore .pin{
+    margin-left: 3%;
+    margin-right: 1%;
+}
+.bol{
+    border-radius: 25px;
+}
+.save{
+    border-radius: 25px;
+    width: 20%;
+}
+.judulktk{
+    margin-top: 50px;
+} 
+.ktk{
+    border: 1px solid #D4D4D4;
+    height: 540px;
+    padding: 3%;
+}
+.colCenter {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    justify-items: center;
+    align-items: center;
+}
+.pictProf {
+    border: 1px solid #9b9b9b;
+    width: 120px;
+    height: 120px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+    object-fit: contain;
+    background-color: white;
+}
+.pictTask {
+    border: 1px solid #9b9b9b;
+    width: 40px;
+    height: 40px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+    object-fit: contain;
+    background-color: white;
 }

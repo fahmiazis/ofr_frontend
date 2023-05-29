@@ -34,6 +34,8 @@ import NavBar from '../../components/NavBar'
 import ops from '../../redux/actions/ops'
 import Tracking from '../../components/Ops/tracking'
 import dokumen from '../../redux/actions/dokumen'
+import FAA from '../../components/Ops/FAA'
+import FPD from '../../components/Ops/FPD'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
@@ -105,7 +107,9 @@ class VerifOps extends Component {
             listMenu: [],
             formDis: false,
             history: false,
-            upload: false
+            upload: false,
+            openAppDoc: false,
+            openRejDoc: false,
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -522,23 +526,29 @@ class VerifOps extends Component {
         const tempno = {
             no: detailOps[0].no_transaksi
         }
-        if (level === '3') {
-            const cek = []
-            detailOps.map(item => {
-                return ((item.dpp !== null && item.ppn !== null && item.nilai_utang !== null) && cek.push(item))
-            })
-            if (cek.length === detailOps.length) {
-                await this.props.submitVerif(token, tempno)
-                this.getDataOps()
-                this.setState({confirm: 'submit'})
-                this.openConfirm()
-                this.openModalApprove()
-                this.openModalRinci()
-            } else {
-                this.setState({confirm: 'rejSubmit'})
-                this.openConfirm()
-                this.openModalApprove()
-            }
+        if (level === '4') {
+            await this.props.submitVerif(token, tempno)
+            this.getDataOps()
+            this.setState({confirm: 'submit'})
+            this.openConfirm()
+            this.openModalApprove()
+            this.openModalRinci()
+            // const cek = []
+            // detailOps.map(item => {
+            //     return ((item.dpp !== null && item.ppn !== null && item.nilai_utang !== null) && cek.push(item))
+            // })
+            // if (cek.length === detailOps.length) {
+            //     await this.props.submitVerif(token, tempno)
+            //     this.getDataOps()
+            //     this.setState({confirm: 'submit'})
+            //     this.openConfirm()
+            //     this.openModalApprove()
+            //     this.openModalRinci()
+            // } else {
+            //     this.setState({confirm: 'rejSubmit'})
+            //     this.openConfirm()
+            //     this.openModalApprove()
+            // }
         } else {
             await this.props.submitVerif(token, tempno)
             this.getDataOps()
@@ -641,20 +651,80 @@ class VerifOps extends Component {
         this.openModalDoc()
     }
 
-    cekStatus = async (val) => {
-        const token = localStorage.getItem("token")
-        const { detailAsset } = this.props.asset
-        if (val === 'DIPINJAM SEMENTARA') {
-            await this.props.cekDokumen(token, detailAsset.no_asset)
-        }
-    }
-
     openModalDoc = () => {
         this.setState({modalDoc: !this.state.modalDoc})
     }
 
+    approveDoc = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc} = this.state
+        const { detailOps } = this.props.ops
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
+        await this.props.approveDokumen(token, idDoc)
+        await this.props.getDocOps(token, tempno)
+        this.setState({confirm: 'isAppDoc'})
+        this.openConfirm()
+        this.openModalAppDoc()
+        
+    }
+
+    openModalAppDoc = () => {
+        this.setState({openAppDoc: !this.state.openAppDoc})
+    }
+
+    rejectDoc = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc} = this.state
+        const { detailOps } = this.props.ops
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
+        await this.props.rejectDokumen(token, idDoc)
+        await this.props.getDocOps(token, tempno)
+        this.setState({confirm: 'isRejDoc'})
+        this.openConfirm()
+        this.openModalRejDoc()
+    }
+
+    openModalRejDoc = () => {
+        this.setState({openRejDoc: !this.state.openRejDoc})
+    }
+
     openModalAdd = () => {
         this.setState({modalAdd: !this.state.modalAdd})
+    }
+
+    cekDataDoc = () => {
+        const { dataDoc } = this.props.ops
+        const level = localStorage.getItem("level")
+        if (level === '4') {
+            this.openModalApprove()
+        } else {
+            const tempdoc = []
+            for (let i = 0; i < dataDoc.length; i++) {
+                const arr = dataDoc[i]
+                const stat = arr.status
+                const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+                const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+                if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
+                    tempdoc.push(arr)
+                    console.log('masuk if')
+                } else {
+                    console.log('masuk else')
+                    console.log(cekLevel)
+                }
+            }
+            if (tempdoc.length === dataDoc.length) {
+                this.openModalApprove()
+            } else {
+                this.setState({confirm: 'appNotifDoc'})
+                this.openConfirm()
+            }
+        }
     }
 
     getRincian = async (val) => {
@@ -848,7 +918,7 @@ class VerifOps extends Component {
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                         <option value="all">All</option>
                                         <option value="reject">Reject</option>
-                                        <option value="available">Available Approve</option>
+                                        <option value="available">Available Submit</option>
                                         {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                     </Input>
                                 </div>
@@ -862,40 +932,7 @@ class VerifOps extends Component {
                                     >
                                     </Input>
                                 </div>
-                                {/* <div className={style.headEmail2}>
-                                    {this.state.view === 'list' ? (
-                                        <>
-                                        <Button color="primary" className="transBtn" onClick={() => this.changeView('card')}><FaTh size={35} className="mr-2"/> Gallery View</Button>
-                                        </>
-                                    ) : (
-                                        <Button color="primary" className="transBtn" onClick={() => this.changeView('list')}><FaList size={30} className="mr-2"/> List View</Button>
-                                    )}
-                                </div> */}
-                                {/* {this.state.view === 'list' ? (
-                                    <div>
-                                        <Button className='marDown' color='primary' onClick={() => this.getDokumentasi({no: 'all'})} >Download All</Button>
-                                        <ReactHtmlToExcel
-                                            id="test-table-xls-button"
-                                            className="btn btn-success marDown ml-2"
-                                            table="table-ops"
-                                            filename="Pengajuan Ops"
-                                            sheet="sheet"
-                                            buttonText="Download"
-                                        />
-                                    </div>
-                                ) : level !== '5' && level !== '9' && (
-                                    <div className='mt-4'>
-                                        <Input type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="available">Available To Approve</option>
-                                            <option value="available">Reject</option>
-                                            <option value="not available">All</option>
-                                        </Input>
-                                    </div>
-                                )} */}
                             </div>
-                                {noDis.length === 0 ? (
-                                    <div></div>
-                                ) : (
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-ops">
                                         <thead>
@@ -907,7 +944,7 @@ class VerifOps extends Component {
                                                 <th>NO.COA</th>
                                                 <th>NAMA COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
+                                                <th>TGL AJUAN</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
                                             </tr>
@@ -923,7 +960,7 @@ class VerifOps extends Component {
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                        <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -934,8 +971,12 @@ class VerifOps extends Component {
                                             })}
                                         </tbody>
                                     </Table>
+                                    {newOps.length === 0 && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
+                                        </div>
+                                    )}
                                 </div>
-                                )}
                             <div>
                                 <div className={style.infoPageEmail1}>
                                     <text>Showing 1 of 1 pages</text>
@@ -1072,7 +1113,7 @@ class VerifOps extends Component {
                                     <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
+                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
                                         Submit
                                     </Button>
                                 </>
@@ -1085,195 +1126,7 @@ class VerifOps extends Component {
                         FORM AJUAN AREA
                     </ModalHeader>
                     <ModalBody>
-                        <div>
-                            {/* <div className="stockTitle">form ajuan area (claim)</div> */}
-                            {/* <div className="ptStock">pt. pinus merah abadi</div> */}
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailOps.length > 0 ? detailOps[0].area : ''} className="ml-3"  /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>no ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailOps.length > 0 ? detailOps[0].no_transaksi : ''} className="ml-3" /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailOps.length > 0 ? moment(detailOps[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
-                            </Row>
-                        </div>
-                        <div className={style.tableDashboard}>
-                            <Table bordered responsive hover className={style.tab}>
-                                <thead>
-                                    <tr className='tbops'>
-                                        <th>NO</th>
-                                        <th>COST CENTRE</th>
-                                        <th>NO COA</th>
-                                        <th>NAMA COA</th>
-                                        <th>KETERANGAN TAMBAHAN</th>
-                                        <th>PERIODE</th>
-                                        <th>NILAI YANG DIAJUKAN</th>
-                                        <th>BANK</th>
-                                        <th>NOMOR REKENING</th>
-                                        <th>ATAS NAMA</th>
-                                        <th>MEMILIKI NPWP</th>
-                                        <th>NAMA SESUAI NPWP</th>
-                                        <th>NOMOR NPWP</th>
-                                        <th>PPU</th>
-                                        <th>PA</th>
-                                        <th>NOMINAL</th>
-                                        <th>NILAI YANG DIBAYARKAN</th>
-                                        <th>TANGGAL TRANSFER</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {detailOps.length !== 0 && detailOps.map(item => {
-                                        return (
-                                            <tr>
-                                                <th scope="row">{detailOps.indexOf(item) + 1}</th>
-                                                <th>{item.cost_center}</th>
-                                                <th>{item.no_coa}</th>
-                                                <th>{item.nama_coa}</th>
-                                                <th>{item.keterangan}</th>
-                                                <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
-                                                <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </Table>
-                        </div>
-                        <Table borderless responsive className="tabPreview mt-4">
-                           <thead>
-                               <tr>
-                                   <th className="buatPre">Dibuat oleh,</th>
-                                   <th className="buatPre">Diperiksa oleh,</th>
-                                   <th className="buatPre">Disetujui oleh,</th>
-                                   <th className="buatPre">Diketahui oleh,</th>
-                               </tr>
-                           </thead>
-                           <tbody className="tbodyPre">
-                               <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.mengetahui !== undefined && ttdOps.mengetahui.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.mengetahui !== undefined && ttdOps.mengetahui.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr>
-                           </tbody>
-                       </Table>
+                        <FAA />
                     </ModalBody>
                     <hr />
                     <div className="modalFoot ml-3">
@@ -1291,148 +1144,7 @@ class VerifOps extends Component {
                 </Modal>
                 <Modal isOpen={this.state.modalFpd} toggle={this.openModalFpd} size="lg">
                     <ModalBody>
-                        <div>
-                            <div className="fpdTit">FORM PERMINTAAN DANA</div>
-                            <div className='fpdTit'>cabang/depo : {detailOps.length > 0 ? detailOps[0].area : ''}</div>
-                            <div className='fpdTit'>no : {detailOps.length > 0 ? detailOps[0].no_transaksi : ''}</div>
-                        </div>
-                        <div className={style.tableDashboard}>
-                            <Row>
-                                <Col md={1} className='upper'>
-                                    <div className='liner2'>no</div>
-                                </Col>
-                                <Col md={8} className='upper'>
-                                    <div className='line'>keperluan / <br />keterangan</div>
-                                </Col>
-                                <Col md={3} className='upper'>
-                                    <div className='liner'>rupiah</div>
-                                </Col>
-                            </Row>
-                            {detailOps.length !== 0 && detailOps.map(item => {
-                                return (
-                                    <Row className='mt-4'>
-                                        <Col md={1} className='upper'>
-                                            <div className='line'>{detailOps.indexOf(item) + 1}</div>
-                                        </Col>
-                                        <Col md={8} className='upper'>
-                                            <div className='line2'>{item.keterangan}</div>
-                                            <div className='line mt-1'>NO REK {item.bank_tujuan} {item.norek_ajuan}</div>
-                                        </Col>
-                                        <Col md={3} className='upper'>
-                                            <div className='line'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>
-                                        </Col>
-                                    </Row>
-                                )
-                            })}
-                            <Row className='mt-4'>
-                                <Col md={1} className='upper'>
-                                </Col>
-                                <Col md={8} className='upper'>
-                                    <div className='line'>Total</div>
-                                </Col>
-                                <Col md={3} className='upper'>
-                                    <div className='line'>
-                                        {this.state.totalfpd.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                                    </div>
-                                </Col>
-                            </Row>
-                        </div>
-                        <div className='bold'>{detailOps.length > 0 ? detailOps[0].area : ''}, {moment(detailOps.length > 0 ? moment(detailOps[0].updatedAt).format('DD MMMM YYYY') : '').format('DD MMMM YYYY')}</div>
-                        <Table borderless responsive className="tabPreview mt-4">
-                           <thead>
-                               <tr>
-                                   <th className="buatPre">Dibuat oleh,</th>
-                                   <th className="buatPre">Diperiksa oleh,</th>
-                                   <th className="buatPre">Disetujui oleh,</th>
-                               </tr>
-                           </thead>
-                           <tbody className="tbodyPre">
-                               <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr>
-                           </tbody>
-                       </Table>
+                        <FPD totalfpd={this.state.totalfpd} />
                     </ModalBody>
                     <hr />
                     <div className="modalFoot ml-3">
@@ -1918,6 +1630,27 @@ class VerifOps extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai dpp, ppn, dan nilai pph telah diisi</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'appNotifDoc' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                            <AiOutlineClose size={80} className={style.red} />
+                            <div className={[style.sucUpdate, style.green]}>Gagal Approve, Pastikan Dokumen Lampiran Telah Diapprove</div>
+                        </div>
+                        </div>
+                    ) : this.state.confirm === 'isAppDoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'isRejDoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
+                            </div>
+                        </div>
                     ) : (
                         <div></div>
                     )}
@@ -1938,20 +1671,20 @@ class VerifOps extends Component {
                    Kelengkapan Dokumen
                 </ModalHeader>
                 <ModalBody>
-                <Container>
+                    <Container>
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
                                             <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
-                                            {x.status === 0 ? (
-                                                <AiOutlineClose size={20} />
-                                            ) : x.status === 3 ? (
-                                                <AiOutlineCheck size={20} />
-                                            ) : (
-                                                <BsCircle size={20} />
-                                            )}
+                                                {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
+                                                : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
+                                                : (
+                                                    <BsCircle size={20} />
+                                                )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
                                             {/* <div className="colDoc">
                                                 <input
@@ -2009,10 +1742,18 @@ class VerifOps extends Component {
                     </div>
                     <hr/>
                     <div className={style.foot}>
-                        <div>
-                            <Button color="success" onClick={() => this.downloadData()}>Download</Button>
+                        {this.state.filter === 'available' ? (
+                            <div>
+                                <Button color="success" onClick={() => this.openModalAppDoc()}>Approve</Button>
+                                <Button className='ml-1' color="danger" onClick={() => this.openModalRejDoc()}>Reject</Button>
+                            </div>
+                        ) : (
+                            <div></div>
+                        )}
+                        <div className='rowGeneral'>
+                            <Button color="primary" className='mr-1' onClick={() => this.downloadData()}>Download</Button>
+                            <Button color="secondary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                         </div>
-                        <Button color="primary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                     </div>
                 </ModalBody>
             </Modal>
@@ -2040,6 +1781,42 @@ class VerifOps extends Component {
                                 <Button className='mb-2' color='info'>{item}</Button>
                             )
                         })}
+                    </div>
+                </ModalBody>
+            </Modal>
+            <Modal isOpen={this.state.openAppDoc} toggle={this.openModalAppDoc} centered={true}>
+                <ModalBody>
+                    <div className={style.modalApprove}>
+                        <div>
+                            <text>
+                                Anda yakin untuk approve     
+                                <text className={style.verif}> </text>
+                                pada tanggal
+                                <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                            </text>
+                        </div>
+                        <div className={style.btnApprove}>
+                            <Button color="primary" onClick={() => this.approveDoc()}>Ya</Button>
+                            <Button color="secondary" onClick={this.openModalAppDoc}>Tidak</Button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
+            <Modal isOpen={this.state.openRejDoc} toggle={this.openModalRejDoc} centered={true}>
+                <ModalBody>
+                    <div className={style.modalApprove}>
+                        <div>
+                            <text>
+                                Anda yakin untuk reject     
+                                <text className={style.verif}> </text>
+                                pada tanggal
+                                <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                            </text>
+                        </div>
+                        <div className={style.btnApprove}>
+                            <Button color="primary" onClick={() => this.rejectDoc()}>Ya</Button>
+                            <Button color="secondary" onClick={this.openModalRejDoc}>Tidak</Button>
+                        </div>
                     </div>
                 </ModalBody>
             </Modal>
@@ -2076,7 +1853,9 @@ const mapDispatchToProps = {
     resetOps: ops.resetOps,
     submitVerif: ops.submitVerif,
     editVerif: ops.editVerif,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    approveDokumen: dokumen.approveDokumen,
+    rejectDokumen: dokumen.rejectDokumen
     // notifStock: notif.notifStock
 }
 

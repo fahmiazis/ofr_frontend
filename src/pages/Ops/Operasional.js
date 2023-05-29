@@ -37,7 +37,9 @@ import Tracking from '../../components/Ops/tracking'
 import TableRincian from '../../components/Ops/tableRincian'
 import dokumen from '../../redux/actions/dokumen'
 import Email from '../../components/Ops/Email'
-const {REACT_APP_BACKEND_URL} = process.env
+import FAA from '../../components/Ops/FAA'
+import FPD from '../../components/Ops/FPD'
+const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
 
 const stockSchema = Yup.object().shape({
     merk: Yup.string().required("must be filled"),
@@ -124,7 +126,13 @@ class Ops extends Component {
             history: false,
             upload: false,
             openDraft: false,
-            message: ''
+            message: '',
+            openAppDoc: false,
+            openRejDoc: false,
+            time: '',
+            time1: '',
+            time2: '',
+            subject: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -343,7 +351,13 @@ class Ops extends Component {
 
     componentDidMount() {
         // const level = localStorage.getItem('level')
-        this.getDataOps()
+        const {item, type} = (this.props.location && this.props.location.state) || {}
+        if (type === 'approve') {
+            this.getDataOps()
+            this.prosesDetail(item)
+        } else {
+            this.getDataOps()
+        }
     }
 
     componentDidUpdate() {
@@ -440,14 +454,23 @@ class Ops extends Component {
         const tempno = {
             no: val.no_transaksi
         }
+        const data = {
+            no: val.no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
         this.setState({listMut: []})
         await this.props.getDetail(token, tempno)
         await this.props.getApproval(token, tempno)
+        await this.props.getDocOps(token, data)
         this.openModalRinci()
     }
 
     openModalDok = () => {
         this.setState({opendok: !this.state.opendok})
+    }
+
+    printData = (val) => {
+        this.props.history.push(`/${val}`)
     }
 
     prosesTracking = async (val) => {
@@ -524,23 +547,75 @@ class Ops extends Component {
         const token = localStorage.getItem("token")
         const status = 2
         const statusAll = 'all'
+        const {time1, time2} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'approve')
+            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'approve')
+            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'approve')
+            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, 'approve')
+            await this.props.getOps(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
+        }
+    }
+
+    changeTime = async (val) => {
+        const token = localStorage.getItem("token")
+        this.setState({time: val})
+        if (val === 'all') {
+            this.setState({time1: '', time2: ''})
+            setTimeout(() => {
+                this.getDataTime()
+             }, 500)
+        }
+    }
+
+    selectTime = (val) => {
+        this.setState({[val.type]: val.val})
+    }
+
+    getDataTime = async () => {
+        const {time1, time2, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = filter === 'all' ? 'all' : 2
+        await this.props.getOps(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2)
+    }
+    
+    cekDataDoc = () => {
+        const { dataDoc } = this.props.ops
+        const level = localStorage.getItem("level")
+        const tempdoc = []
+        for (let i = 0; i < dataDoc.length; i++) {
+            const arr = dataDoc[i]
+            const stat = arr.status
+            const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+            const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+            if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
+                tempdoc.push(arr)
+                console.log('masuk if')
+            } else {
+                console.log('masuk else')
+                console.log(cekLevel)
+            }
+        }
+        if (tempdoc.length === dataDoc.length) {
+            this.openModalApprove()
+        } else {
+            this.setState({confirm: 'appNotifDoc'})
+            this.openConfirm()
         }
     }
 
@@ -562,22 +637,22 @@ class Ops extends Component {
             no: detailOps[0].no_transaksi
         }
         await this.props.approveOps(token, tempno)
-        if (level === '12') {
-            this.getDataOps()
-            this.setState({confirm: 'isApprove'})
-            this.openConfirm()
-            this.openModalApprove()
-            this.openModalRinci()
-        } else {
-            this.dataSendEmail()
-        }
+        // if (level === '12') {
+        //     this.getDataOps()
+        //     this.setState({confirm: 'isApprove'})
+        //     this.openConfirm()
+        //     this.openModalApprove()
+        //     this.openModalRinci()
+        // } else {
+        this.dataSendEmail()
+        // }
     }
 
     dataSendEmail = async (val) => {
         const token = localStorage.getItem("token")
         const { detailOps } = this.props.ops
         const { draftEmail } = this.props.email
-        const { message } = this.state
+        const { message, subject } = this.state
         const cc = draftEmail.cc
         const tempcc = []
         for (let i = 0; i < cc.length; i++) {
@@ -588,6 +663,7 @@ class Ops extends Component {
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
+            subject: subject,
             no: detailOps[0].no_transaksi,
             tipe: 'ops',
         }
@@ -603,10 +679,19 @@ class Ops extends Component {
     prepSendEmail = async () => {
         const { detailOps } = this.props.ops
         const token = localStorage.getItem("token")
+        const app = detailOps[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = tempApp.length === app.length-1 ? 'full approve' : 'approve'
         const tempno = {
             no: detailOps[0].no_transaksi,
             kode: detailOps[0].kode_plant,
-            tipe: 'approve',
+            jenis: 'ops',
+            tipe: tipe,
             menu: 'Pengajuan Operasional (Operasional)'
         }
         await this.props.getDraftEmail(token, tempno)
@@ -618,8 +703,7 @@ class Ops extends Component {
     }
 
     getMessage = (val) => {
-        this.setState({message: val})
-        console.log(val)
+        this.setState({message: val.message, subject: val.subject})
     }
 
     onSearch = async (e) => {
@@ -714,16 +798,47 @@ class Ops extends Component {
         this.openModalDoc()
     }
 
-    cekStatus = async (val) => {
-        const token = localStorage.getItem("token")
-        const { detailAsset } = this.props.asset
-        if (val === 'DIPINJAM SEMENTARA') {
-            await this.props.cekDokumen(token, detailAsset.no_asset)
-        }
-    }
-
     openModalDoc = () => {
         this.setState({modalDoc: !this.state.modalDoc})
+    }
+
+    approveDoc = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc} = this.state
+        const { detailOps } = this.props.ops
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
+        await this.props.approveDokumen(token, idDoc)
+        await this.props.getDocOps(token, tempno)
+        this.setState({confirm: 'isAppDoc'})
+        this.openConfirm()
+        this.openModalAppDoc()
+        
+    }
+
+    openModalAppDoc = () => {
+        this.setState({openAppDoc: !this.state.openAppDoc})
+    }
+
+    rejectDoc = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc} = this.state
+        const { detailOps } = this.props.ops
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
+        await this.props.rejectDokumen(token, idDoc)
+        await this.props.getDocOps(token, tempno)
+        this.setState({confirm: 'isRejDoc'})
+        this.openConfirm()
+        this.openModalRejDoc()
+    }
+
+    openModalRejDoc = () => {
+        this.setState({openRejDoc: !this.state.openRejDoc})
     }
 
     openModalAdd = () => {
@@ -921,6 +1036,44 @@ class Ops extends Component {
                                 )} */}
                             </div>
                             <div className={[style.secEmail4]}>
+                                <div className='rowCenter'>
+                                    <div className='rowCenter'>
+                                        <text className='mr-4'>Time:</text>
+                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
+                                    </div>
+                                    {this.state.time === 'pilih' ?  (
+                                        <>
+                                            <div className='rowCenter'>
+                                                <text className='bold'>:</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                />
+                                                <text className='mr-1 ml-1'>To</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                color='primary' 
+                                                onClick={this.getDataTime} 
+                                                className='ml-1'>
+                                                    Go
+                                                </Button>
+                                            </div>
+                                        </>
+                                    ) : null}
+                                </div>
+                                <div className={style.searchEmail2}>
+                                </div>
+                            </div>
+                            <div className={[style.secEmail4]}>
                                 {(level === '5' || level === '6') && (
                                     <Button onClick={() => this.goRoute('cartops')} color="info" size="lg">Create</Button>
                                 )}
@@ -990,7 +1143,7 @@ class Ops extends Component {
                                                 <th>NO.COA</th>
                                                 <th>NAMA COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
+                                                <th>TGL AJUAN</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
                                             </tr>
@@ -1006,10 +1159,10 @@ class Ops extends Component {
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                        <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Detail</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
@@ -1017,11 +1170,13 @@ class Ops extends Component {
                                             })}
                                         </tbody>
                                     </Table>
+                                    {newOps.length === 0 && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
-                                noDis.length === 0 ? (
-                                    <div></div>
-                                ) : (
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-ops">
                                         <thead>
@@ -1033,7 +1188,7 @@ class Ops extends Component {
                                                 <th>NO.COA</th>
                                                 <th>NAMA COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
+                                                <th>TGL AJUAN</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
                                             </tr>
@@ -1049,7 +1204,7 @@ class Ops extends Component {
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                        <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -1060,8 +1215,12 @@ class Ops extends Component {
                                             })}
                                         </tbody>
                                     </Table>
+                                    {newOps.length === 0 && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
+                                        </div>
+                                    )}
                                 </div>
-                                )
                             )}
                             <div>
                                 <div className={style.infoPageEmail1}>
@@ -1088,206 +1247,6 @@ class Ops extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal isOpen={this.state.modalAdd} toggle={this.openModalAdd} size="lg">
-                    <ModalHeader>
-                        Tambah Data Asset
-                    </ModalHeader>
-                    {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
-                        <div>{alertM}</div>
-                    </Alert> */}
-                    <ModalBody>
-                        <div className="mainRinci2">
-                            {/* <div className="leftRinci2 mb-5">
-                                <div className="titRinci">{dataRinci.nama_asset}</div>
-                                <img src={detailAsset.pict === undefined || detailAsset.pict.length === 0 ? placeholder : `${REACT_APP_BACKEND_URL}/${detailAsset.pict[detailAsset.pict.length - 1].path}`} className="imgRinci" />
-                                <Input type="file" className='mt-2' onChange={this.uploadPicture}>Upload Picture</Input>
-                            </div> */}
-                            <Formik
-                            initialValues = {{
-                                deskripsi: '',
-                                merk: '',
-                                satuan: '',
-                                unit: 1,
-                                lokasi: '',
-                                grouping: '',
-                                keterangan: '',
-                            }}
-                            validationSchema = {addStockSchema}
-                            onSubmit={(values) => {this.addStock(values)}}
-                            >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
-                                <div className="rightRinci2">
-                                    <div>
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Deskripsi</Col>
-                                            <Col md={9} className="colRinci">:  <Input 
-                                                type='text'
-                                                className="inputRinci" 
-                                                value={values.deskripsi}
-                                                onBlur={handleBlur("deskripsi")}
-                                                onChange={handleChange("deskripsi")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.deskripsi ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Merk</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.merk}
-                                                onBlur={handleBlur("merk")}
-                                                onChange={handleChange("merk")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.merk ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Satuan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "select" 
-                                                className="inputRinci"
-                                                value={values.satuan}
-                                                onBlur={handleBlur("satuan")}
-                                                onChange={handleChange("satuan")}
-                                                >
-                                                    <option>{values.satuan}</option>
-                                                    <option>-Pilih Satuan-</option>
-                                                    <option value="UNIT">UNIT</option>
-                                                    <option value="PAKET">PAKET</option>
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {errors.satuan ? (
-                                            <text className={style.txtError}>{errors.satuan}</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Unit</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.unit}
-                                                onBlur={handleBlur("unit")}
-                                                onChange={handleChange("unit")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.unit ? (
-                                            <text className={style.txtError}>{errors.unit}</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Lokasi</Col>
-                                            <Col md={9} className="colRinci">:
-                                            <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.lokasi}
-                                                onBlur={handleBlur("lokasi")}
-                                                onChange={handleChange("lokasi")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.lokasi ? (
-                                            <text className={style.txtError}>{errors.lokasi}</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Status Fisik</Col>
-                                            <Col md={9} className="colRinci">:  <Input 
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type="select"
-                                                className="inputRinci" 
-                                                value={this.state.fisik} 
-                                                onBlur={handleBlur("status_fisik")}
-                                                onChange={e => { handleChange("status_fisik"); this.selectStatus(e.target.value, this.state.kondisi)} }
-                                                >
-                                                    {/* <option>{values.status_fisik}</option> */}
-                                                    <option>-Pilih Status Fisik-</option>
-                                                    <option value="ada">Ada</option>
-                                                    {/* <option value="tidak ada">Tidak Ada</option> */}
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {this.state.fisik === '' ? (
-                                            <text className={style.txtError}>Must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Kondisi</Col>
-                                            <Col md={9} className="colRinci">:  <Input 
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type="select"
-                                                className="inputRinci" 
-                                                value={this.state.kondisi} 
-                                                onBlur={handleBlur("kondisi")}
-                                                onChange={e => { handleChange("kondisi"); this.selectStatus(this.state.fisik, e.target.value)} }
-                                                >
-                                                    {/* <option>{values.kondisi}</option> */}
-                                                    <option>-Pilih Kondisi-</option>
-                                                    <option value="baik">Baik</option>
-                                                    {/* <option value="rusak">Rusak</option>
-                                                    <option value="">-</option> */}
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {this.state.kondisi === '' ? (
-                                            <text className={style.txtError}>Must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Status Aset</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "select" 
-                                                className="inputRinci"
-                                                value={values.grouping}
-                                                onBlur={handleBlur("grouping")}
-                                                onChange={handleChange("grouping")}
-                                                // onClick={() => this.listStatus(detailAsset.no_asset)}
-                                                >
-                                                    <option>{values.grouping}</option>
-                                                    {/* <option>-Pilih Status Aset-</option> */}
-                                                    {/* {dataStatus.length > 0 && dataStatus.map(item => {
-                                                        return (
-                                                            <option value={item.status}>{item.status}</option>
-                                                        )
-                                                    })} */}
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {errors.grouping ? (
-                                            <text className={style.txtError}>Must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Keterangan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.keterangan}
-                                                onBlur={handleBlur("keterangan")}
-                                                onChange={handleChange("keterangan")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.keterangan ? (
-                                            <text className={style.txtError}>{errors.keterangan}</text>
-                                        ) : null}
-                                    </div>
-                                    <ModalFooter>
-                                        <Button className="btnFootRinci1 mr-3" size="md" disabled={level === '5' || level === '6' ? false : true} color="primary" onClick={handleSubmit}>Save</Button>
-                                        <Button className="btnFootRinci1" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
-                                    </ModalFooter>
-                                </div>
-                            )}
-                            </Formik>
-                        </div>
-                    </ModalBody>
-                </Modal>
                 <Modal isOpen={this.state.modalUpload} toggle={this.openModalUpload} size="lg">
                     <ModalHeader>
                         Upload gambar asset
@@ -1420,7 +1379,7 @@ class Ops extends Component {
                                     <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
+                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
                                         Approve
                                     </Button>
                                 </>
@@ -1433,150 +1392,13 @@ class Ops extends Component {
                         FORM AJUAN AREA
                     </ModalHeader>
                     <ModalBody>
-                        <div>
-                            {/* <div className="stockTitle">form ajuan area (claim)</div> */}
-                            {/* <div className="ptStock">pt. pinus merah abadi</div> */}
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailOps.length > 0 ? detailOps[0].area : ''} className="ml-3"  /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>no ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailOps.length > 0 ? detailOps[0].no_transaksi : ''} className="ml-3" /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailOps.length > 0 ? moment(detailOps[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
-                            </Row>
-                        </div>
-                        <TableRincian />
-                        <Table borderless responsive className="tabPreview mt-4">
-                           <thead>
-                               <tr>
-                                   <th className="buatPre">Dibuat oleh,</th>
-                                   <th className="buatPre">Diperiksa oleh,</th>
-                                   <th className="buatPre">Disetujui oleh,</th>
-                                   <th className="buatPre">Diketahui oleh,</th>
-                               </tr>
-                           </thead>
-                           <tbody className="tbodyPre">
-                               <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.mengetahui !== undefined && ttdOps.mengetahui.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.mengetahui !== undefined && ttdOps.mengetahui.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr>
-                           </tbody>
-                       </Table>
+                        <FAA />
                     </ModalBody>
                     <hr />
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('opsfaa')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -1586,157 +1408,15 @@ class Ops extends Component {
                         </div>
                     </div>
                 </Modal>
-                <Modal isOpen={this.state.modalFpd} toggle={this.openModalFpd} size="lg">
+                <Modal isOpen={this.state.modalFpd} toggle={this.openModalFpd} size="lg" >
                     <ModalBody>
-                        <div>
-                            <div className="fpdTit">FORM PERMINTAAN DANA</div>
-                            <div className='fpdTit'>cabang/depo : {detailOps.length > 0 ? detailOps[0].area : ''}</div>
-                            <div className='fpdTit'>no : {detailOps.length > 0 ? detailOps[0].no_transaksi : ''}</div>
-                        </div>
-                        <div className={style.tableDashboard}>
-                            <Row>
-                                <Col md={1} className='upper'>
-                                    <div className='liner2'>no</div>
-                                </Col>
-                                <Col md={8} className='upper'>
-                                    <div className='line'>keperluan / <br />keterangan</div>
-                                </Col>
-                                <Col md={3} className='upper'>
-                                    <div className='liner'>rupiah</div>
-                                </Col>
-                            </Row>
-                            {detailOps.length !== 0 && detailOps.map(item => {
-                                return (
-                                    <Row className='mt-4'>
-                                        <Col md={1} className='upper'>
-                                            <div className='line'>{detailOps.indexOf(item) + 1}</div>
-                                        </Col>
-                                        <Col md={8} className='upper'>
-                                            <div className='line2'>{item.keterangan}</div>
-                                            <div className='line mt-1'>NO REK {item.bank_tujuan} {item.norek_ajuan}</div>
-                                        </Col>
-                                        <Col md={3} className='upper'>
-                                            <div className='line'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>
-                                        </Col>
-                                    </Row>
-                                )
-                            })}
-                            <Row className='mt-4'>
-                                <Col md={1} className='upper'>
-                                </Col>
-                                <Col md={8} className='upper'>
-                                    <div className='line'>Total</div>
-                                </Col>
-                                <Col md={3} className='upper'>
-                                    <div className='line'>
-                                        {this.state.totalfpd.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                                    </div>
-                                </Col>
-                            </Row>
-                        </div>
-                        <div className='bold'>{detailOps.length > 0 ? detailOps[0].area : ''}, {moment(detailOps.length > 0 ? moment(detailOps[0].updatedAt).format('DD MMMM YYYY') : '').format('DD MMMM YYYY')}</div>
-                        <Table borderless responsive className="tabPreview mt-4">
-                           <thead>
-                               <tr>
-                                   <th className="buatPre">Dibuat oleh,</th>
-                                   <th className="buatPre">Diperiksa oleh,</th>
-                                   <th className="buatPre">Disetujui oleh,</th>
-                               </tr>
-                           </thead>
-                           <tbody className="tbodyPre">
-                               <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr>
-                           </tbody>
-                       </Table>
+                        <FPD totalfpd={this.state.totalfpd} />
                     </ModalBody>
                     <hr />
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
-                                {/* <TableStock /> */}
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('opsfpd')}>
                                 Download
                             </Button>
                             <Button color="success" onClick={this.openModalFpd}>
@@ -1832,12 +1512,12 @@ class Ops extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                {level === '12' ? (
+                                {/* {level === '12' ? (
                                     <Button color="primary" onClick={() => this.approveDataOps()}>Ya</Button>
                                 ) : (
                                     <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
-                                )}
-                                {/* <Button color="primary" onClick={() => this.approveDataOps()}>Ya</Button> */}
+                                )} */}
+                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1905,11 +1585,32 @@ class Ops extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Approve dan Gagal Kirim Email</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'appNotifDoc' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                            <AiOutlineClose size={80} className={style.red} />
+                            <div className={[style.sucUpdate, style.green]}>Gagal Approve, Pastikan Dokumen Lampiran Telah Diapprove</div>
+                        </div>
+                        </div>
                     ) : this.state.confirm === 'submit' ? (
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'isAppDoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'isRejDoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
                             </div>
                         </div>
                     ) : (
@@ -1932,20 +1633,20 @@ class Ops extends Component {
                    Kelengkapan Dokumen
                 </ModalHeader>
                 <ModalBody>
-                <Container>
+                    <Container>
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
                                             <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
-                                            {x.status === 0 ? (
-                                                <AiOutlineClose size={20} />
-                                            ) : x.status === 3 ? (
-                                                <AiOutlineCheck size={20} />
-                                            ) : (
-                                                <BsCircle size={20} />
-                                            )}
+                                                {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
+                                                : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
+                                                : (
+                                                    <BsCircle size={20} />
+                                                )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
                                             {/* <div className="colDoc">
                                                 <input
@@ -2003,10 +1704,18 @@ class Ops extends Component {
                     </div>
                     <hr/>
                     <div className={style.foot}>
-                        <div>
-                            <Button color="success" onClick={() => this.downloadData()}>Download</Button>
+                        {this.state.filter === 'available' ? (
+                            <div>
+                                <Button color="success" onClick={() => this.openModalAppDoc()}>Approve</Button>
+                                <Button className='ml-1' color="danger" onClick={() => this.openModalRejDoc()}>Reject</Button>
+                            </div>
+                        ) : (
+                            <div></div>
+                        )}
+                        <div className='rowGeneral'>
+                            <Button color="primary" className='mr-1' onClick={() => this.downloadData()}>Download</Button>
+                            <Button color="secondary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                         </div>
-                        <Button color="primary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                     </div>
                 </ModalBody>
             </Modal>
@@ -2057,6 +1766,42 @@ class Ops extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal isOpen={this.state.openAppDoc} toggle={this.openModalAppDoc} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk approve     
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.approveDoc()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalAppDoc}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.openRejDoc} toggle={this.openModalRejDoc} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk reject     
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.rejectDoc()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalRejDoc}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     }
@@ -2093,6 +1838,8 @@ const mapDispatchToProps = {
     resetEmail: email.resetError,
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
+    approveDokumen: dokumen.approveDokumen,
+    rejectDokumen: dokumen.rejectDokumen
     // notifStock: notif.notifStock
 }
 

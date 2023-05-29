@@ -186,6 +186,19 @@ class NavIkk extends Component {
                                         </div>
                                     </button>
                                 </>
+                            ) : level === '4' ? (
+                                <>
+                                    <button className="cardNav1" onClick={() => this.goRoute('veriffinikk')}>
+                                        <div className="titCard">
+                                            Verifikasi Tax
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('reptaxikk')}>
+                                        <div className="titCard">
+                                            Report Tax (IKK)
+                                        </div>
+                                    </button>
+                                </>
                             ) : (
                                 <button className="cardNav1" onClick={() => this.goRoute('ikk')}>
                                     <div className="titCard">

@@ -403,10 +403,44 @@ class VerifKlaim extends Component {
         const tempno = {
             no: val.no_transaksi
         }
+        const data = {
+            no: val.no_transaksi,
+            name: 'Draft Pengajuan Klaim'
+        }
         this.setState({listMut: []})
         await this.props.getDetail(token, tempno)
         await this.props.getApproval(token, tempno)
+        await this.props.getDocKlaim(token, data)
         this.openModalRinci()
+    }
+
+    cekDataDoc = () => {
+        const { dataDoc } = this.props.klaim
+        const level = localStorage.getItem("level")
+        // if (level === '3') {
+        //     this.openModalApprove()
+        // } else {
+        const tempdoc = []
+        for (let i = 0; i < dataDoc.length; i++) {
+            const arr = dataDoc[i]
+            const stat = arr.status
+            const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+            const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+            if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
+                tempdoc.push(arr)
+                console.log('masuk if')
+            } else {
+                console.log('masuk else')
+                console.log(cekLevel)
+            }
+        }
+        if (tempdoc.length === dataDoc.length) {
+            this.openModalApprove()
+        } else {
+            this.setState({confirm: 'appNotifDoc'})
+            this.openConfirm()
+        }
+        // }
     }
 
     openModalDok = () => {
@@ -640,16 +674,47 @@ class VerifKlaim extends Component {
         this.openModalDoc()
     }
 
-    cekStatus = async (val) => {
-        const token = localStorage.getItem("token")
-        const { detailAsset } = this.props.asset
-        if (val === 'DIPINJAM SEMENTARA') {
-            await this.props.cekDokumen(token, detailAsset.no_asset)
-        }
-    }
-
     openModalDoc = () => {
         this.setState({modalDoc: !this.state.modalDoc})
+    }
+
+    approveDoc = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc} = this.state
+        const { detailKlaim } = this.props.klaim
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            name: 'Draft Pengajuan Klaim'
+        }
+        await this.props.approveDokumen(token, idDoc)
+        await this.props.getDocKlaim(token, tempno)
+        this.setState({confirm: 'isAppDoc'})
+        this.openConfirm()
+        this.openModalAppDoc()
+        
+    }
+
+    openModalAppDoc = () => {
+        this.setState({openAppDoc: !this.state.openAppDoc})
+    }
+
+    rejectDoc = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc} = this.state
+        const { detailKlaim } = this.props.klaim
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            name: 'Draft Pengajuan Klaim'
+        }
+        await this.props.rejectDokumen(token, idDoc)
+        await this.props.getDocKlaim(token, tempno)
+        this.setState({confirm: 'isRejDoc'})
+        this.openConfirm()
+        this.openModalRejDoc()
+    }
+
+    openModalRejDoc = () => {
+        this.setState({openRejDoc: !this.state.openRejDoc})
     }
 
     openModalAdd = () => {
@@ -847,7 +912,7 @@ class VerifKlaim extends Component {
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                         <option value="all">All</option>
                                         <option value="reject">Reject</option>
-                                        <option value="available">Available Approve</option>
+                                        <option value="available">Available Submit</option>
                                         {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                     </Input>
                                 </div>
@@ -861,40 +926,7 @@ class VerifKlaim extends Component {
                                     >
                                     </Input>
                                 </div>
-                                {/* <div className={style.headEmail2}>
-                                    {this.state.view === 'list' ? (
-                                        <>
-                                        <Button color="primary" className="transBtn" onClick={() => this.changeView('card')}><FaTh size={35} className="mr-2"/> Gallery View</Button>
-                                        </>
-                                    ) : (
-                                        <Button color="primary" className="transBtn" onClick={() => this.changeView('list')}><FaList size={30} className="mr-2"/> List View</Button>
-                                    )}
-                                </div> */}
-                                {/* {this.state.view === 'list' ? (
-                                    <div>
-                                        <Button className='marDown' color='primary' onClick={() => this.getDokumentasi({no: 'all'})} >Download All</Button>
-                                        <ReactHtmlToExcel
-                                            id="test-table-xls-button"
-                                            className="btn btn-success marDown ml-2"
-                                            table="table-klaim"
-                                            filename="Pengajuan Klaim"
-                                            sheet="sheet"
-                                            buttonText="Download"
-                                        />
-                                    </div>
-                                ) : level !== '5' && level !== '9' && (
-                                    <div className='mt-4'>
-                                        <Input type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="available">Available To Approve</option>
-                                            <option value="available">Reject</option>
-                                            <option value="not available">All</option>
-                                        </Input>
-                                    </div>
-                                )} */}
                             </div>
-                                {noDis.length === 0 ? (
-                                    <div></div>
-                                ) : (
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
@@ -922,7 +954,7 @@ class VerifKlaim extends Component {
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                        <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -933,8 +965,12 @@ class VerifKlaim extends Component {
                                             })}
                                         </tbody>
                                     </Table>
+                                    {newKlaim.length === 0 && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
+                                        </div>
+                                    )}
                                 </div>
-                                )}
                             <div>
                                 <div className={style.infoPageEmail1}>
                                     <text>Showing 1 of 1 pages</text>
@@ -1071,7 +1107,7 @@ class VerifKlaim extends Component {
                                     <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
+                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
                                         Submit
                                     </Button>
                                 </>
@@ -1917,6 +1953,27 @@ class VerifKlaim extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, dan nominal telah diisi</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'appNotifDoc' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                            <AiOutlineClose size={80} className={style.red} />
+                            <div className={[style.sucUpdate, style.green]}>Gagal Approve, Pastikan Dokumen Lampiran Telah Diapprove</div>
+                        </div>
+                        </div>
+                    ) : this.state.confirm === 'isAppDoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'isRejDoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
+                            </div>
+                        </div>
                     ) : (
                         <div></div>
                     )}
@@ -1937,20 +1994,20 @@ class VerifKlaim extends Component {
                    Kelengkapan Dokumen
                 </ModalHeader>
                 <ModalBody>
-                <Container>
+                    <Container>
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
                                             <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
-                                            {x.status === 0 ? (
-                                                <AiOutlineClose size={20} />
-                                            ) : x.status === 3 ? (
-                                                <AiOutlineCheck size={20} />
-                                            ) : (
-                                                <BsCircle size={20} />
-                                            )}
+                                                {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
+                                                : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
+                                                : (
+                                                    <BsCircle size={20} />
+                                                )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
                                             {/* <div className="colDoc">
                                                 <input
@@ -2008,10 +2065,18 @@ class VerifKlaim extends Component {
                     </div>
                     <hr/>
                     <div className={style.foot}>
-                        <div>
-                            <Button color="success" onClick={() => this.downloadData()}>Download</Button>
+                        {this.state.filter === 'available' ? (
+                            <div>
+                                <Button color="success" onClick={() => this.openModalAppDoc()}>Approve</Button>
+                                <Button className='ml-1' color="danger" onClick={() => this.openModalRejDoc()}>Reject</Button>
+                            </div>
+                        ) : (
+                            <div></div>
+                        )}
+                        <div className='rowGeneral'>
+                            <Button color="primary" className='mr-1' onClick={() => this.downloadData()}>Download</Button>
+                            <Button color="secondary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                         </div>
-                        <Button color="primary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                     </div>
                 </ModalBody>
             </Modal>
@@ -2039,6 +2104,42 @@ class VerifKlaim extends Component {
                                 <Button className='mb-2' color='info'>{item}</Button>
                             )
                         })}
+                    </div>
+                </ModalBody>
+            </Modal>
+            <Modal isOpen={this.state.openAppDoc} toggle={this.openModalAppDoc} centered={true}>
+                <ModalBody>
+                    <div className={style.modalApprove}>
+                        <div>
+                            <text>
+                                Anda yakin untuk approve     
+                                <text className={style.verif}> </text>
+                                pada tanggal
+                                <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                            </text>
+                        </div>
+                        <div className={style.btnApprove}>
+                            <Button color="primary" onClick={() => this.approveDoc()}>Ya</Button>
+                            <Button color="secondary" onClick={this.openModalAppDoc}>Tidak</Button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
+            <Modal isOpen={this.state.openRejDoc} toggle={this.openModalRejDoc} centered={true}>
+                <ModalBody>
+                    <div className={style.modalApprove}>
+                        <div>
+                            <text>
+                                Anda yakin untuk reject     
+                                <text className={style.verif}> </text>
+                                pada tanggal
+                                <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                            </text>
+                        </div>
+                        <div className={style.btnApprove}>
+                            <Button color="primary" onClick={() => this.rejectDoc()}>Ya</Button>
+                            <Button color="secondary" onClick={this.openModalRejDoc}>Tidak</Button>
+                        </div>
                     </div>
                 </ModalBody>
             </Modal>
@@ -2075,7 +2176,9 @@ const mapDispatchToProps = {
     resetKlaim: klaim.resetKlaim,
     submitVerif: klaim.submitVerif,
     editVerif: klaim.editVerif,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    approveDokumen: dokumen.approveDokumen,
+    rejectDokumen: dokumen.rejectDokumen
     // notifStock: notif.notifStock
 }
 

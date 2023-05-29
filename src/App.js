@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import Home from './pages/Home'
 import Notif from './pages/Notif'
 import Dashboard from './pages/Dashboard'
+import Profile from './pages/Profile'
 
 //Klaim
 import NavKlaim from './pages/Klaim/NavKlaim'
@@ -18,6 +19,8 @@ import VerifFinanceKlaim from './pages/Klaim/VerifFinanceKlaim'
 import RevisiKlaim from './pages/Klaim/RevisiKlaim'
 import ReportKlaim from './pages/Klaim/ReportKlaim'
 import AjuanBayarKlaim from './pages/Klaim/AjuanBayarKlaim'
+import KlaimFaa from './components/Klaim/FAA'
+import KlaimFpd from './components/Klaim/FPD'
 
 //Operasional
 import NavOps from './pages/Ops/NavOps'
@@ -27,6 +30,9 @@ import VerifFinanceTax from './pages/Ops/VerifFinanceTax'
 import AjuanBayarOps from './pages/Ops/AjuanBayarOps'
 import ReportOps from './pages/Ops/ReportOps'
 import RevisiOps from './pages/Ops/RevisiOps'
+import OpsFaa from './components/Ops/FAA'
+import OpsFpd from './components/Ops/FPD'
+import ReportTaxOps from './pages/Ops/ReportTax'
 
 //Ikk
 import NavIkk from './pages/IKK/NavIkk'
@@ -36,6 +42,9 @@ import RevisiIkk from './pages/IKK/RevisiIkk'
 import VerifFinanceIkk from './pages/IKK/VerifFinanceIkk'
 import AjuanBayarIkk from './pages/IKK/AjuanBayarIkk'
 import ReportIkk from './pages/IKK/ReportIkk'
+import IkkFaa from './components/Ikk/formikk'
+import IkkFpd from './components/Ikk/FPD'
+import ReportTaxIkk from './pages/IKK/ReportTax'
 
 //Master
 import MasterDepo from './pages/Master/MasterDepo'
@@ -52,6 +61,7 @@ import MasterPagu from './pages/Master/MasterPagu'
 import MasterEmail from './pages/Master/MasterEmail'
 import MasterVendor from './pages/Master/MasterVendor'
 import MasterFaktur from './pages/Master/MasterFaktur'
+import MasterKpp from './pages/Master/MasterKpp'
 
 //For Tes
 import Tes from './pages/Tes'
@@ -75,6 +85,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/dashboard'>
                     <Dashboard />
+                </PrivateRoute>
+                <PrivateRoute path='/profile'>
+                    <Profile />
                 </PrivateRoute>
                 <PrivateRoute path='/notif'>
                     <Notif />
@@ -102,6 +115,12 @@ class App extends Component {
                 <PrivateRoute path='/listklm'>
                     <AjuanBayarKlaim />
                 </PrivateRoute>
+                <PrivateRoute path='/klmfaa'>
+                    <KlaimFaa/>
+                </PrivateRoute>
+                <PrivateRoute path='/klmfpd'>
+                    <KlaimFpd/>
+                </PrivateRoute>
 
                 {/* Operasional */}
                 <PrivateRoute path='/navops'>
@@ -125,6 +144,15 @@ class App extends Component {
                 <PrivateRoute path='/repops'>
                     <ReportOps/>
                 </PrivateRoute>
+                <PrivateRoute path='/reptaxops'>
+                    <ReportTaxOps/>
+                </PrivateRoute>
+                <PrivateRoute path='/opsfaa'>
+                    <OpsFaa/>
+                </PrivateRoute>
+                <PrivateRoute path='/opsfpd'>
+                    <OpsFpd/>
+                </PrivateRoute>
 
                 {/* IKK */}
                 <PrivateRoute path='/navikk'>
@@ -147,6 +175,15 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/repikk'>
                     <ReportIkk/>
+                </PrivateRoute>
+                <PrivateRoute path='/reptaxikk'>
+                    <ReportTaxIkk/>
+                </PrivateRoute>
+                <PrivateRoute path='/ikkfaa'>
+                    <IkkFaa/>
+                </PrivateRoute>
+                <PrivateRoute path='/ikkfpd'>
+                    <IkkFpd/>
                 </PrivateRoute>
 
                 {/* Master */}
@@ -191,6 +228,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/faktur'>
                     <MasterFaktur />
+                </PrivateRoute>
+                <PrivateRoute path='/kpp'>
+                    <MasterKpp />
                 </PrivateRoute>
             </Switch>
         </BrowserRouter>

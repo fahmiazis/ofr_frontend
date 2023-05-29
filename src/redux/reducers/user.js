@@ -2,7 +2,7 @@
 const userState = {
     isAdd: false,
     isUpload: false,
-    isUpdate: false,
+    isUpdate: null,
     isGet: false,
     isGetRole: false,
     isDetail: false,
@@ -20,7 +20,8 @@ const userState = {
     isExport: false,
     link: '',
     isChange: null,
-    isReset: false
+    isReset: false,
+    isUpimage: null
 };
 
 export default (state=userState, action) => {
@@ -73,6 +74,30 @@ export default (state=userState, action) => {
                     isLoading: false,
                     isAdd: false,
                     isError: true,
+                    alertMsg: action.payload.response.data.message,
+                    alertM: action.payload.response.data.error
+                };
+            }
+            case 'UPLOAD_IMAGE_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPLOAD_IMAGE_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpimage: true,
+                    alertMsg: 'add user Succesfully'
+                };
+            }
+            case 'UPLOAD_IMAGE_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpimage: false,
                     alertMsg: action.payload.response.data.message,
                     alertM: action.payload.response.data.error
                 };
@@ -290,9 +315,10 @@ export default (state=userState, action) => {
                     isError: false,
                     isUpload: false,
                     isExport: false,
-                    isUpdate: false,
+                    isUpdate: null,
                     isChange: null,
-                    isReset: false
+                    isReset: false,
+                    isUpimage: null
                 }
             }
             // case 'USERS_LOADED': {

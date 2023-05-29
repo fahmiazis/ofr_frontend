@@ -185,6 +185,11 @@ class NavStock extends Component {
                                             Revisi Operasional
                                         </div>
                                     </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('reptaxops')}>
+                                        <div className="titCard">
+                                            Report Tax (Operasional)
+                                        </div>
+                                    </button>
                                 </>
                             ) : level === '7' || level === '8' || level === '9' ? (
                                 <>

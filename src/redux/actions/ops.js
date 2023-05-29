@@ -27,17 +27,17 @@ export default {
         type: 'UPLOAD_DOC',
         payload: http(token).post(`/ops/updoc?no=${no}&id=${id}`, data)
     }),
-    submitOps: (token) => ({
+    submitOps: (token, data) => ({
         type: 'SUBMIT_OPS',
-        payload: http(token).patch(`/ops/submit`)
+        payload: http(token).patch(`/ops/submit`, data)
     }),
     submitOpsFinal: (token, no) => ({
         type: 'SUBMIT_OPSFINAL',
         payload: http(token).patch(`/ops/subfinops`, qs.stringify(no))
     }),
-    getOps: (token, status, reject, menu, type, category, data) => ({
+    getOps: (token, status, reject, menu, type, category, data, time1, time2) => ({
         type: 'GET_OPS',
-        payload: http(token).get(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}`),
+        payload: http(token).get(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}`),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_OPS',
@@ -91,9 +91,9 @@ export default {
         type: 'REJECTLIST_OPS',
         payload: http(token).patch(`/ops/rejectlist`, data)
     }),
-    getReport: (token, status, reject, menu) => ({
+    getReport: (token, status, reject, menu, time1, time2) => ({
         type: 'REPORT_OPS',
-        payload: http(token).get(`/ops/report?status=${status}&reject=${reject}&menu=${menu}`),
+        payload: http(token).get(`/ops/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}`),
     }),
     resetOps: () => ({
         type: 'RESET_OPS'

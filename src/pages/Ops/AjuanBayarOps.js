@@ -1028,94 +1028,95 @@ class AjuanBayarOps extends Component {
                                     </Input>
                                 </div>
                             </div>
-                                {noDis.length === 0 ? (
-                                    <div></div>
-                                ) : (
-                                    <div className={style.tableDashboard}>
-                                        {level !== '2' ? (
-                                            <Table bordered responsive hover className={style.tab} id="table-ops">
-                                                <thead>
-                                                    <tr>
-                                                        <th>No</th>
-                                                        <th>NO.Transaksi Ajuan Bayar</th>
-                                                        <th>Tanggal Submit Ajuan Bayar</th>
-                                                        <th>STATUS</th>
-                                                        <th>OPSI</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {newOps.map(item => {
-                                                        return (
-                                                            <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                                <th>{newOps.indexOf(item) + 1}</th>
-                                                                <th>{item.no_pembayaran}</th>
-                                                                <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
-                                                                <th>{item.history.split(',').reverse()[0]}</th>
-                                                                <th>
-                                                                    <Button size='sm' onClick={() => this.prosesDetail(item, 'ajuan bayar')} className='mb-1 mr-1' color='success'>Proses</Button>
-                                                                </th>
-                                                            </tr>
-                                                        )
-                                                    })}
-                                                </tbody>
-                                            </Table>
-                                        ) : (
-                                            <Table bordered responsive hover className={style.tab} id="table-ops">
-                                                <thead>
-                                                    <tr>
+                            <div className={style.tableDashboard}>
+                                {level !== '2' ? (
+                                    <Table bordered responsive hover className={style.tab} id="table-ops">
+                                        <thead>
+                                            <tr>
+                                                <th>No</th>
+                                                <th>NO.Transaksi Ajuan Bayar</th>
+                                                <th>Tanggal Submit Ajuan Bayar</th>
+                                                <th>STATUS</th>
+                                                <th>OPSI</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {newOps.map(item => {
+                                                return (
+                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                        <th>{newOps.indexOf(item) + 1}</th>
+                                                        <th>{item.no_pembayaran}</th>
+                                                        <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                                        <th>{item.history.split(',').reverse()[0]}</th>
                                                         <th>
-                                                            <input  
-                                                            className='mr-2'
-                                                            type='checkbox'
-                                                            checked={listOps.length === 0 ? false : listOps.length === newOps.length ? true : false}
-                                                            onChange={() => listOps.length === newOps.length ? this.chekRejList('all') : this.chekAppList('all')}
-                                                            />
-                                                            Select
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item, 'ajuan bayar')} className='mb-1 mr-1' color='success'>Proses</Button>
                                                         </th>
-                                                        <th>No</th>
-                                                        <th>NO.AJUAN</th>
-                                                        <th>COST CENTRE</th>
-                                                        <th>AREA</th>
-                                                        <th>NO.COA</th>
-                                                        <th>NAMA COA</th>
-                                                        <th>KETERANGAN TAMBAHAN</th>
-                                                        <th>PERIODE</th>
-                                                        <th>STATUS</th>
-                                                        <th>OPSI</th>
                                                     </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {newOps.map(item => {
-                                                        return (
-                                                            <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                                <th>
-                                                                    <input 
-                                                                    type='checkbox'
-                                                                    checked={listOps.find(element => element === item.no_transaksi) !== undefined ? true : false}
-                                                                    onChange={listOps.find(element => element === item.no_transaksi) === undefined ? () => this.chekAppList(item.no_transaksi) : () => this.chekRejList(item.no_transaksi)}
-                                                                    />
-                                                                </th>
-                                                                <th>{newOps.indexOf(item) + 1}</th>
-                                                                <th>{item.no_transaksi}</th>
-                                                                <th>{item.cost_center}</th>
-                                                                <th>{item.area}</th>
-                                                                <th>{item.no_coa}</th>
-                                                                <th>{item.nama_coa}</th>
-                                                                <th>{item.keterangan}</th>
-                                                                <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
-                                                                <th>{item.history.split(',').reverse()[0]}</th>
-                                                                <th>
-                                                                    <Button size='sm' onClick={() => this.prosesDetail(item, 'detail')} className='mb-1 mr-1' color='success'>Detail</Button>
-                                                                    <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
-                                                                </th>
-                                                            </tr>
-                                                        )
-                                                    })}
-                                                </tbody>
-                                            </Table>
-                                        )}
+                                                )
+                                            })}
+                                        </tbody>
+                                    </Table>
+                                ) : (
+                                    <Table bordered responsive hover className={style.tab} id="table-ops">
+                                        <thead>
+                                            <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listOps.length === 0 ? false : listOps.length === newOps.length ? true : false}
+                                                    onChange={() => listOps.length === newOps.length ? this.chekRejList('all') : this.chekAppList('all')}
+                                                    />
+                                                    Select
+                                                </th>
+                                                <th>No</th>
+                                                <th>NO.AJUAN</th>
+                                                <th>COST CENTRE</th>
+                                                <th>AREA</th>
+                                                <th>NO.COA</th>
+                                                <th>NAMA COA</th>
+                                                <th>KETERANGAN TAMBAHAN</th>
+                                                <th>TGL AJUAN</th>
+                                                <th>STATUS</th>
+                                                <th>OPSI</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {newOps.map(item => {
+                                                return (
+                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                        <th>
+                                                            <input 
+                                                            type='checkbox'
+                                                            checked={listOps.find(element => element === item.no_transaksi) !== undefined ? true : false}
+                                                            onChange={listOps.find(element => element === item.no_transaksi) === undefined ? () => this.chekAppList(item.no_transaksi) : () => this.chekRejList(item.no_transaksi)}
+                                                            />
+                                                        </th>
+                                                        <th>{newOps.indexOf(item) + 1}</th>
+                                                        <th>{item.no_transaksi}</th>
+                                                        <th>{item.cost_center}</th>
+                                                        <th>{item.area}</th>
+                                                        <th>{item.no_coa}</th>
+                                                        <th>{item.nama_coa}</th>
+                                                        <th>{item.keterangan}</th>
+                                                        <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
+                                                        <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
+                                                        <th>
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item, 'detail')} className='mb-1 mr-1' color='success'>Detail</Button>
+                                                            <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                        </th>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </Table>
+                                )}
+                                {newOps.length === 0 && (
+                                    <div className={style.spin}>
+                                        <text className='textInfo'>Data ajuan tidak ditemukan</text>
                                     </div>
                                 )}
+                            </div>
                             <div>
                                 <div className={style.infoPageEmail1}>
                                     <text>Showing 1 of 1 pages</text>

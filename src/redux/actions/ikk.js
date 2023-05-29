@@ -35,9 +35,9 @@ export default {
         type: 'SUBMIT_IKKFINAL',
         payload: http(token).patch(`/ikk/subfinikk`, qs.stringify(no))
     }),
-    getIkk: (token, status, reject, menu, type, category, data) => ({
+    getIkk: (token, status, reject, menu, type, category, data, time1, time2) => ({
         type: 'GET_IKK',
-        payload: http(token).get(`/ikk/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}`),
+        payload: http(token).get(`/ikk/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}`),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_IKK',
@@ -91,9 +91,9 @@ export default {
         type: 'REJECTLIST_IKK',
         payload: http(token).patch(`/ikk/rejectlist`, data)
     }),
-    getReport: (token, status, reject, menu) => ({
+    getReport: (token, status, reject, menu, time1, time2) => ({
         type: 'REPORT_IKK',
-        payload: http(token).get(`/ikk/report?status=${status}&reject=${reject}&menu=${menu}`),
+        payload: http(token).get(`/ikk/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}`),
     }),
     resetIkk: () => ({
         type: 'RESET_IKK'

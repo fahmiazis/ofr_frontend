@@ -7,7 +7,7 @@ import {FaSearch, FaBankCircle, FaBars} from 'react-icons/fa'
 import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
 import depo from '../../redux/actions/depo'
 import user from '../../redux/actions/user'
-import tarif from '../../redux/actions/tarif'
+import kpp from '../../redux/actions/kpp'
 import {connect} from 'react-redux'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
@@ -19,30 +19,18 @@ import SidebarContent from "../../components/sidebar_content";
 import NavBar from '../../components/NavBar'
 const {REACT_APP_BACKEND_URL} = process.env
 
-const tarifSchema = Yup.object().shape({
+const kppSchema = Yup.object().shape({
+    profit_center: Yup.string().required(),
+    area: Yup.string().required(),
     system: Yup.string().required(),
-    gl_account: Yup.number().required(),
-    gl_name: Yup.string().required(),
-    jenis_transaksi: Yup.string().required(),
-    type_transaksi: Yup.string().required(),
-    jenis_pph: Yup.string().required(),
-    status_npwp: Yup.string().required(),
-    tarif_pph: Yup.string().required(),
-    dpp_nongrossup: Yup.string().required(),
-    dpp_grossup: Yup.string().required()
+    npwp: Yup.string().required()
 });
 
-const tarifEditSchema = Yup.object().shape({
+const kppEditSchema = Yup.object().shape({
+    profit_center: Yup.string().required(),
+    area: Yup.string().required(),
     system: Yup.string().required(),
-    gl_account: Yup.number().required(),
-    gl_name: Yup.string().required(),
-    jenis_transaksi: Yup.string().required(),
-    type_transaksi: Yup.string().required(),
-    jenis_pph: Yup.string().required(),
-    status_npwp: Yup.string().required(),
-    tarif_pph: Yup.string().required(),
-    dpp_nongrossup: Yup.string().required(),
-    dpp_grossup: Yup.string().required()
+    npwp: Yup.string().required()
 });
 
 const changeSchema = Yup.object().shape({
@@ -50,7 +38,7 @@ const changeSchema = Yup.object().shape({
     new_password: Yup.string().required('must be filled')
 });
 
-class MasterTarif extends Component {
+class MasterKpp extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -121,7 +109,7 @@ class MasterTarif extends Component {
      }
 
     DownloadMaster = () => {
-        const {link} = this.props.tarif
+        const {link} = this.props.kpp
         axios({
             url: `${link}`,
             method: 'GET',
@@ -130,7 +118,7 @@ class MasterTarif extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master tarif.xlsx"); //or any other extension
+            link.setAttribute('download', "master kpp.xlsx"); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -168,23 +156,23 @@ class MasterTarif extends Component {
 
     DownloadTemplate = () => {
         axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/tarif.xlsx`,
+            url: `${REACT_APP_BACKEND_URL}/masters/kpp.xlsx`,
             method: 'GET',
             responseType: 'blob',
         }).then((response) => {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "tarif.xlsx");
+            link.setAttribute('download', "kpp.xlsx");
             document.body.appendChild(link);
             link.click();
         });
     }
 
-    addTarif = async (values) => {
+    addKpp = async (values) => {
         const token = localStorage.getItem("token")
-        await this.props.addTarif(token, values)
-        const {isAdd} = this.props.tarif
+        await this.props.addKpp(token, values)
+        const {isAdd} = this.props.kpp
         if (isAdd) {
             this.setState({confirm: 'add'})
             this.openConfirm()
@@ -193,10 +181,10 @@ class MasterTarif extends Component {
         }
     }
 
-    delTarif = async () => {
+    delKpp = async () => {
         const token = localStorage.getItem("token")
         const {detail} = this.state
-        await this.props.deleteTarif(token, detail.id)
+        await this.props.deleteKpp(token, detail.id)
         this.openModalEdit()
         this.setState({confirm: 'del'})
         this.openConfirm()
@@ -205,13 +193,13 @@ class MasterTarif extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.tarif
+        const { page } = this.props.kpp
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.tarif
+        const { page } = this.props.kpp
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.prevLink)
     }
@@ -243,10 +231,10 @@ class MasterTarif extends Component {
         await this.props.uploadMaster(token, data)
     }
 
-    editTarif = async (values, id) => {
+    editKpp = async (values, id) => {
         const token = localStorage.getItem("token")
-        await this.props.updateTarif(token, values, id)
-        const {isUpdate} = this.props.tarif
+        await this.props.updateKpp(token, values, id)
+        const {isUpdate} = this.props.kpp
         if (isUpdate) {
             this.setState({confirm: 'edit'})
             this.openConfirm()
@@ -261,7 +249,7 @@ class MasterTarif extends Component {
     }
 
     componentDidUpdate() {
-        const {isError, isUpload, isExport, isReset} = this.props.tarif
+        const {isError, isUpload, isExport, isReset} = this.props.kpp
         if (isError) {
             this.props.resetError()
             this.showAlert()
@@ -290,14 +278,14 @@ class MasterTarif extends Component {
     }
 
     getDataCount = async (value) => {
-        const { page } = this.props.tarif
+        const { page } = this.props.kpp
         const pages = value === undefined || value.page === undefined ? page.currentPage : value.page
         const token = localStorage.getItem("token")
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
         const filter = value === undefined || value.filter === undefined ? this.state.filter : value.filter
         console.log(this.state.filter)
-        await this.props.getTarif(token, limit, search, pages, filter)
+        await this.props.getKpp(token, limit, search, pages, filter)
         this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages})
     }
 
@@ -325,7 +313,7 @@ class MasterTarif extends Component {
 
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
-        const {dataTarif, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.tarif
+        const {dataKpp, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.kpp
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
 
@@ -375,7 +363,7 @@ class MasterTarif extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master VerifTax</div>
+                                    <div className={style.titleDashboard}>Master KPP</div>
                                 </div>
                                 <div className={style.secHeadDashboard} >
                                     <div>
@@ -392,7 +380,38 @@ class MasterTarif extends Component {
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
                                     </div>
-                                    <div className='filterTarif'>
+                                    <div className='filterKpp'>
+                                        {/* <text className='mr-2'>Filter:</text>
+                                        <UncontrolledDropdown className={style.drop}>
+                                            <DropdownToggle caret color="light">
+                                                {this.state.filterName}
+                                            </DropdownToggle>
+                                            <DropdownMenu 
+                                                right
+                                                modifiers={{
+                                                setMaxHeight: {
+                                                    enabled: true,
+                                                    order: 890,
+                                                    fn: (data) => {
+                                                    return {
+                                                        ...data,
+                                                        styles: {
+                                                        ...data.styles,
+                                                        overflow: 'auto',
+                                                        maxHeight: '400px',
+                                                        },
+                                                    };
+                                                    },
+                                                },
+                                            }}
+                                            >
+                                                {dataRole !== undefined && dataRole.map(item => {
+                                                    return (
+                                                        <DropdownItem className='uppercase' onClick={() => {this.setState({filter: item.id, filterName: item.name}); this.changeFilter({name: item.name, level: item.id})}}>{item.name}</DropdownItem>
+                                                    )
+                                                })}
+                                            </DropdownMenu>
+                                        </UncontrolledDropdown> */}
                                     </div>
                                 </div>
                                 <div className='secEmail'>
@@ -419,16 +438,10 @@ class MasterTarif extends Component {
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>SAP/REDPINE</th>
-                                                <th>GL Account</th>
-                                                <th>GL Name</th>
-                                                <th>Jenis Transaksi</th>
-                                                <th>OP/BADAN</th>
-                                                <th>Jenis PPh</th>
-                                                <th>NPWP/NIK</th>
-                                                <th>Tarif PPh</th>
-                                                <th>Tarif DPP Non Grossup</th>
-                                                <th>Tarif DPP Grossup</th>
+                                                <th>Profit Center</th>
+                                                <th>Nama Area</th>
+                                                <th>System</th>
+                                                <th>NPWP</th>
                                             </tr>
                                         </thead>
                                     </Table>
@@ -446,16 +459,10 @@ class MasterTarif extends Component {
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>SAP/REDPINE</th>
-                                                <th>GL Account</th>
-                                                <th>GL Name</th>
-                                                <th>Jenis Transaksi</th>
-                                                <th>OP/BADAN</th>
-                                                <th>Jenis PPh</th>
-                                                <th>NPWP/NIK</th>
-                                                <th>Tarif PPh</th>
-                                                <th>Tarif DPP Non Grossup</th>
-                                                <th>Tarif DPP Grossup</th>
+                                                <th>Profit Center</th>
+                                                <th>Nama Area</th>
+                                                <th>System</th>
+                                                <th>NPWP</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -463,16 +470,10 @@ class MasterTarif extends Component {
                                                 return (
                                                 <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
+                                                    <td>{item.profit_center}</td>
+                                                    <td>{item.area}</td>
                                                     <td>{item.system}</td>
-                                                    <td>{item.gl_account}</td>
-                                                    <td>{item.gl_name}</td>
-                                                    <td>{item.jenis_transaksi}</td>
-                                                    <td>{item.type_transaksi}</td>
-                                                    <td>{item.jenis_pph}</td>
-                                                    <td>{item.status_npwp}</td>
-                                                    <td>{item.tarif_pph}</td>
-                                                    <td>{item.dpp_nongrossup}</td>
-                                                    <td>{item.dpp_grossup}</td>
+                                                    <td>{item.npwp}</td>
                                                 </tr>
                                             )})}
                                         </tbody>
@@ -493,42 +494,65 @@ class MasterTarif extends Component {
                     </MaterialTitlePanel>
                 </Sidebar>
                 <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
-                    <ModalHeader toggle={this.openModalAdd}>Add Master VerifTax</ModalHeader>
+                    <ModalHeader toggle={this.openModalAdd}>Add Master Kpp</ModalHeader>
                     <Formik
                     initialValues={{
+                        profit_center: '',
+                        area: '',
                         system: '',
-                        gl_account: '',
-                        gl_name: '',
-                        jenis_transaksi: '',
-                        type_transaksi: '',
-                        jenis_pph: '',
-                        status_npwp: '',
-                        status_ident: '',
-                        tarif_pph: '',
-                        dpp_nongrossup: '',
-                        dpp_grossup: ''
+                        npwp: ''
                     }}
-                    validationSchema={tarifSchema}
-                    onSubmit={(values) => {this.addTarif(values)}}
+                    validationSchema={kppSchema}
+                    onSubmit={(values) => {this.addKpp(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Profit Center
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="profit_center"
+                                value={values.profit_center}
+                                onBlur={handleBlur("profit_center")}
+                                onChange={handleChange("profit_center")}
+                                />
+                                {errors.profit_center ? (
+                                    <text className={style.txtError}>{errors.profit_center}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Nama Area
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="area"
+                                value={values.area}
+                                onBlur={handleBlur("area")}
+                                onChange={handleChange("area")}
+                                />
+                                {errors.area ? (
+                                    <text className={style.txtError}>{errors.area}</text>
+                                ) : null}
+                            </div>
+                        </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
                                 System
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="select" 
+                                type="name" 
                                 name="system"
                                 value={values.system}
                                 onBlur={handleBlur("system")}
                                 onChange={handleChange("system")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="SAP">SAP</option>
-                                    <option value="REDPINE">REDPINE</option>
-                                </Input>
+                                />
                                 {errors.system ? (
                                     <text className={style.txtError}>{errors.system}</text>
                                 ) : null}
@@ -536,185 +560,18 @@ class MasterTarif extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                GL Account
+                                NPWP
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="gl_account"
-                                value={values.gl_account}
-                                onBlur={handleBlur("gl_account")}
-                                onChange={handleChange("gl_account")}
+                                name="npwp"
+                                value={values.npwp}
+                                onBlur={handleBlur("npwp")}
+                                onChange={handleChange("npwp")}
                                 />
-                                {errors.gl_account ? (
-                                    <text className={style.txtError}>{errors.gl_account}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                GL Name
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="gl_name"
-                                value={values.gl_name}
-                                onBlur={handleBlur("gl_name")}
-                                onChange={handleChange("gl_name")}
-                                />
-                                {errors.gl_name ? (
-                                    <text className={style.txtError}>{errors.gl_name}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Jenis Transaksi
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="jenis_transaksi"
-                                value={values.jenis_transaksi}
-                                onBlur={handleBlur("jenis_transaksi")}
-                                onChange={handleChange("jenis_transaksi")}
-                                />
-                                {errors.jenis_transaksi ? (
-                                    <text className={style.txtError}>{errors.jenis_transaksi}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Type Transaksi
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="type_transaksi"
-                                value={values.type_transaksi}
-                                onBlur={handleBlur("type_transaksi")}
-                                onChange={handleChange("type_transaksi")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="Badan">Badan</option>
-                                    <option value="Orang Pribadi">Orang Pribadi</option>
-                                    <option value="Non Object PPh">Non Object PPh</option>
-                                </Input>
-                                {errors.type_transaksi ? (
-                                    <text className={style.txtError}>{errors.type_transaksi}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Jenis PPh
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="jenis_pph"
-                                value={values.jenis_pph}
-                                onBlur={handleBlur("jenis_pph")}
-                                onChange={handleChange("jenis_pph")}
-                                />
-                                {errors.jenis_pph ? (
-                                    <text className={style.txtError}>{errors.jenis_pph}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Status NPWP/NIK
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="status_npwp"
-                                value={values.status_npwp}
-                                onBlur={handleBlur("status_npwp")}
-                                onChange={handleChange("status_npwp")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="NPWP">NPWP</option>
-                                    <option value="NIK">NIK</option>
-                                    <option value="No Need NPWP/NIK">No Need NPWP/NIK</option>
-                                </Input>
-                                {errors.status_npwp ? (
-                                    <text className={style.txtError}>{errors.status_npwp}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif PPh
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="tarif_pph"
-                                value={values.tarif_pph}
-                                onBlur={handleBlur("tarif_pph")}
-                                onChange={handleChange("tarif_pph")}
-                                />
-                                {errors.tarif_pph ? (
-                                    <text className={style.txtError}>{errors.tarif_pph}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif DPP Non Grossup
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="dpp_nongrossup"
-                                value={values.dpp_nongrossup}
-                                onBlur={handleBlur("dpp_nongrossup")}
-                                onChange={handleChange("dpp_nongrossup")}
-                                />
-                                {errors.dpp_nongrossup ? (
-                                    <text className={style.txtError}>{errors.dpp_nongrossup}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif DPP Grossup
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="dpp_grossup"
-                                value={values.dpp_grossup}
-                                onBlur={handleBlur("dpp_grossup")}
-                                onChange={handleChange("dpp_grossup")}
-                                />
-                                {errors.dpp_grossup ? (
-                                    <text className={style.txtError}>{errors.dpp_grossup}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Status Identitas
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="status_ident"
-                                value={values.status_ident}
-                                onBlur={handleBlur("status_ident")}
-                                onChange={handleChange("status_ident")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value={'Ya'}>Wajib Isi</option>
-                                    <option value="Tidak">Tidak Wajib Isi</option>
-                                </Input>
-                                {errors.status_ident ? (
-                                    <text className={style.txtError}>{errors.status_ident}</text>
+                                {errors.npwp ? (
+                                    <text className={style.txtError}>{errors.npwp}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -731,42 +588,65 @@ class MasterTarif extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
-                    <ModalHeader toggle={this.openModalEdit}>Edit Master VerifTax</ModalHeader>
+                    <ModalHeader toggle={this.openModalEdit}>Edit Master Kpp</ModalHeader>
                     <Formik
                     initialValues={{
+                        profit_center: detail.profit_center === null ? '' : detail.profit_center,
+                        area: detail.area === null ? '' : detail.area,
                         system: detail.system === null ? '' : detail.system,
-                        gl_account: detail.gl_account === null ? '' : detail.gl_account,
-                        gl_name: detail.gl_name === null ? '' : detail.gl_name,
-                        jenis_transaksi: detail.jenis_transaksi === null ? '' : detail.jenis_transaksi,
-                        type_transaksi: detail.type_transaksi === null ? '' : detail.type_transaksi,
-                        jenis_pph: detail.jenis_pph === null ? '' : detail.jenis_pph,
-                        status_npwp: detail.status_npwp === null ? '' : detail.status_npwp,
-                        status_ident: detail.status_ident === null && detail.jenis_pph === 'Non PPh' ? 'Tidak' : 'Ya',
-                        tarif_pph: detail.tarif_pph === null ? '' : detail.tarif_pph,
-                        dpp_nongrossup: detail.dpp_nongrossup === null ? '' : detail.dpp_nongrossup,
-                        dpp_grossup: detail.dpp_grossup === null ? '' : detail.dpp_grossup
+                        npwp: detail.npwp === null ? '' : detail.npwp
                     }}
-                    validationSchema={tarifEditSchema}
-                    onSubmit={(values) => {this.editTarif(values, detail.id)}}
+                    validationSchema={kppEditSchema}
+                    onSubmit={(values) => {this.editKpp(values, detail.id)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Profit Center
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="profit_center"
+                                value={values.profit_center}
+                                onBlur={handleBlur("profit_center")}
+                                onChange={handleChange("profit_center")}
+                                />
+                                {errors.profit_center ? (
+                                    <text className={style.txtError}>{errors.profit_center}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Nama Area
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="area"
+                                value={values.area}
+                                onBlur={handleBlur("area")}
+                                onChange={handleChange("area")}
+                                />
+                                {errors.area ? (
+                                    <text className={style.txtError}>{errors.area}</text>
+                                ) : null}
+                            </div>
+                        </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
                                 System
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="select" 
+                                type="name" 
                                 name="system"
                                 value={values.system}
                                 onBlur={handleBlur("system")}
                                 onChange={handleChange("system")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="SAP">SAP</option>
-                                    <option value="REDPINE">REDPINE</option>
-                                </Input>
+                                />
                                 {errors.system ? (
                                     <text className={style.txtError}>{errors.system}</text>
                                 ) : null}
@@ -774,192 +654,25 @@ class MasterTarif extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                GL Account
+                                NPWP
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="gl_account"
-                                value={values.gl_account}
-                                onBlur={handleBlur("gl_account")}
-                                onChange={handleChange("gl_account")}
+                                name="npwp"
+                                value={values.npwp}
+                                onBlur={handleBlur("npwp")}
+                                onChange={handleChange("npwp")}
                                 />
-                                {errors.gl_account ? (
-                                    <text className={style.txtError}>{errors.gl_account}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                GL Name
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="gl_name"
-                                value={values.gl_name}
-                                onBlur={handleBlur("gl_name")}
-                                onChange={handleChange("gl_name")}
-                                />
-                                {errors.gl_name ? (
-                                    <text className={style.txtError}>{errors.gl_name}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Jenis Transaksi
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="jenis_transaksi"
-                                value={values.jenis_transaksi}
-                                onBlur={handleBlur("jenis_transaksi")}
-                                onChange={handleChange("jenis_transaksi")}
-                                />
-                                {errors.jenis_transaksi ? (
-                                    <text className={style.txtError}>{errors.jenis_transaksi}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Type Transaksi
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="select" 
-                                name="type_transaksi"
-                                value={values.type_transaksi}
-                                onBlur={handleBlur("type_transaksi")}
-                                onChange={handleChange("type_transaksi")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="Badan">Badan</option>
-                                    <option value="Orang Pribadi">Orang Pribadi</option>
-                                    <option value="Non Object PPh">Non Object PPh</option>
-                                </Input>
-                                {errors.type_transaksi ? (
-                                    <text className={style.txtError}>{errors.type_transaksi}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Jenis PPh
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="jenis_pph"
-                                value={values.jenis_pph}
-                                onBlur={handleBlur("jenis_pph")}
-                                onChange={handleChange("jenis_pph")}
-                                />
-                                {errors.jenis_pph ? (
-                                    <text className={style.txtError}>{errors.jenis_pph}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Status NPWP/NIK
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="select" 
-                                name="status_npwp"
-                                value={values.status_npwp}
-                                onBlur={handleBlur("status_npwp")}
-                                onChange={handleChange("status_npwp")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="NPWP">NPWP</option>
-                                    <option value="NIK">NIK</option>
-                                    <option value="No Need NPWP/NIK">No Need NPWP/NIK</option>
-                                </Input>
-                                {errors.status_npwp ? (
-                                    <text className={style.txtError}>{errors.status_npwp}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif PPh
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="tarif_pph"
-                                value={values.tarif_pph}
-                                onBlur={handleBlur("tarif_pph")}
-                                onChange={handleChange("tarif_pph")}
-                                />
-                                {errors.tarif_pph ? (
-                                    <text className={style.txtError}>{errors.tarif_pph}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif DPP Non Grossup
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="dpp_nongrossup"
-                                value={values.dpp_nongrossup}
-                                onBlur={handleBlur("dpp_nongrossup")}
-                                onChange={handleChange("dpp_nongrossup")}
-                                />
-                                {errors.dpp_nongrossup ? (
-                                    <text className={style.txtError}>{errors.dpp_nongrossup}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif DPP Grossup
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="dpp_grossup"
-                                value={values.dpp_grossup}
-                                onBlur={handleBlur("dpp_grossup")}
-                                onChange={handleChange("dpp_grossup")}
-                                />
-                                {errors.dpp_grossup ? (
-                                    <text className={style.txtError}>{errors.dpp_grossup}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Status Identitas
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="select" 
-                                name="status_ident"
-                                value={values.status_ident}
-                                onBlur={handleBlur("status_ident")}
-                                onChange={handleChange("status_ident")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value={'Ya'}>Wajib Isi</option>
-                                    <option value="Tidak">Tidak Wajib Isi</option>
-                                </Input>
-                                {errors.status_ident ? (
-                                    <text className={style.txtError}>{errors.status_ident}</text>
+                                {errors.npwp ? (
+                                    <text className={style.txtError}>{errors.npwp}</text>
                                 ) : null}
                             </div>
                         </div>
                         <hr/>
                         <div className={style.foot}>
                             <div>
-                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Tarif</Button>
+                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Kpp</Button>
                             </div>
                             <div>
                                 <Button  onClick={handleSubmit} color="primary">Save</Button>
@@ -970,7 +683,7 @@ class MasterTarif extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
-                    <ModalHeader>Upload Master VerifTax</ModalHeader>
+                    <ModalHeader>Upload Master Kpp</ModalHeader>
                     <ModalBody className={style.modalUpload}>
                         <div className={style.titleModalUpload}>
                             <text>Upload File: </text>
@@ -998,23 +711,23 @@ class MasterTarif extends Component {
                         {this.state.confirm === 'edit' ? (
                         <div className={style.cekUpdate}>
                             <AiFillCheckCircle size={80} className={style.green} />
-                            <div className={style.sucUpdate}>Berhasil Memperbarui Tarif</div>
+                            <div className={style.sucUpdate}>Berhasil Memperbarui Kpp</div>
                         </div>
                         ) : this.state.confirm === 'add' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menambahkan Tarif</div>
+                                <div className={style.sucUpdate}>Berhasil Menambahkan Kpp</div>
                             </div>
                         ) : this.state.confirm === 'del' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menghapus Tarif</div>
+                                <div className={style.sucUpdate}>Berhasil Menghapus Kpp</div>
                             </div>
                         ) : this.state.confirm === 'upload' ?(
                             <div>
                                 <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Mengupload Master VerifTax</div>
+                                <div className={style.sucUpdate}>Berhasil Mengupload Master Kpp</div>
                             </div>
                             </div>
                         ) : this.state.confirm === 'reset' ? (
@@ -1029,7 +742,7 @@ class MasterTarif extends Component {
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.tarif.isLoading ? true: false} size="sm">
+                <Modal isOpen={this.props.kpp.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1039,7 +752,7 @@ class MasterTarif extends Component {
                         </div>
                         </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.tarif.isUpload ? true: false} size="sm">
+                <Modal isOpen={this.props.kpp.isUpload ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1116,11 +829,11 @@ class MasterTarif extends Component {
                     <div className={style.modalApprove}>
                         <div>
                             <text>
-                                Anda yakin untuk delete tarif {detail.name} ?
+                                Anda yakin untuk delete kpp {detail.name} ?
                             </text>
                         </div>
                         <div className={style.btnApprove}>
-                            <Button color="primary" onClick={() => this.delTarif()}>Ya</Button>
+                            <Button color="primary" onClick={() => this.delKpp()}>Ya</Button>
                             <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                         </div>
                     </div>
@@ -1133,21 +846,21 @@ class MasterTarif extends Component {
 
 const mapStateToProps = state => ({
     user: state.user,
-    tarif: state.tarif
+    kpp: state.kpp
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
-    addTarif: tarif.addTarif,
-    updateTarif: tarif.updateTarif,
-    getTarif: tarif.getAllTarif,
-    uploadMaster: tarif.uploadMaster,
-    nextPage: tarif.nextPage,
-    exportMaster: tarif.exportMaster,
-    resetError: tarif.resetError,
+    addKpp: kpp.addKpp,
+    updateKpp: kpp.updateKpp,
+    getKpp: kpp.getAllKpp,
+    uploadMaster: kpp.uploadMaster,
+    nextPage: kpp.nextPage,
+    exportMaster: kpp.exportMaster,
+    resetError: kpp.resetError,
     resetPassword: user.resetPassword,
-    deleteTarif: tarif.deleteTarif
+    deleteKpp: kpp.deleteKpp
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(MasterTarif)
+export default connect(mapStateToProps, mapDispatchToProps)(MasterKpp)
 	

@@ -8,19 +8,29 @@ import {Formik} from 'formik'
 class TableRincian extends Component {
 
     state = {
-        message: ''
+        message: '',
+        subject: ''
     }
 
-    onEnterMess = (val) => {
-        this.setState({message: val})
-        this.props.handleData(val)
+    onEnter = (val) => {
+        const data = {
+            [val.name]: val.value
+        }
+        this.setState(data)
+        setTimeout(() => {
+            const {message, subject} = this.state
+            this.props.handleData({message: message, subject: subject})
+         }, 500)
     }
 
     componentDidMount() {
         const { draftEmail } = this.props.email
-        const message = draftEmail.result === undefined ? '' : draftEmail.result.message
-        this.setState({message: message})
-        this.props.handleData(message)
+        const {detailIkk} = this.props.ikk
+        const cek = draftEmail.result
+        const message = cek === undefined ? '' : cek.message
+        const subject = cek === undefined ? '' : `${cek.type} ${cek.menu} NO ${detailIkk[0].no_transaksi}`
+        this.setState({message: message, subject: subject})
+        this.props.handleData({message: message, subject: subject})
     }
 
   render() {
@@ -76,6 +86,24 @@ class TableRincian extends Component {
             </div>
             <div className={style.addModalDepo}>
                 <text className="col-md-3">
+                    Subject
+                </text>
+                <div className="col-md-9">
+                    <Input 
+                    type='textarea'
+                    name="subject"
+                    value={this.state.subject}
+                    onChange={e => this.onEnter(e.target)}
+                    // onBlur={handleBlur("subject")}
+                    // onChange={handleChange("subject")}
+                    />
+                    {errors.subject ? (
+                        <text className={style.txtError}>{errors.subject}</text>
+                    ) : null}
+                </div>
+            </div>
+            <div className={style.addModalDepo}>
+                <text className="col-md-3">
                     Message
                 </text>
                 <div className="col-md-9">
@@ -83,7 +111,7 @@ class TableRincian extends Component {
                     type='textarea'
                     name="message"
                     value={this.state.message}
-                    onChange={e => this.onEnterMess(e.target.value)}
+                    onChange={e => this.onEnter(e.target)}
                     // onBlur={handleBlur("message")}
                     // onChange={handleChange("message")}
                     />
@@ -101,7 +129,7 @@ class TableRincian extends Component {
                             <th>NO COA</th>
                             <th>NAMA COA</th>
                             <th>KETERANGAN TAMBAHAN</th>
-                            <th>PERIODE</th>
+                            <th>TGL AJUAN</th>
                             <th>NILAI YANG DIAJUKAN</th>
                             <th>BANK</th>
                             <th>NOMOR REKENING</th>
@@ -123,7 +151,7 @@ class TableRincian extends Component {
                                     <th>{item.no_coa}</th>
                                     <th>{item.nama_coa}</th>
                                     <th>{item.uraian}</th>
-                                    <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
+                                    <th>{moment(item.start_ikk).format('DD/MMMM/YYYY')}</th>
                                     <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                     <th>{item.bank_tujuan}</th>
                                     <th>{item.norek_ajuan}</th>

@@ -104,7 +104,19 @@ class Tracking extends Component {
                     </div>
                     <h4 class="step-title">Verifikasi Klaim</h4>
                 </div>
-                <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi === 5 ? "step completed" : 'step'}>
+                <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 5 ? "step completed" : 'step'}>
+                    <div class="step-icon-wrap">
+                        <button class="step-icon" onClick={() => this.showCollap('Draft List Ajuan Bayar')}><FiSettings size={40} className="center" /></button>
+                    </div>
+                    <h4 class="step-title">Draft List Ajuan Bayar</h4>
+                </div>
+                <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 6 ? "step completed" : 'step'}>
+                    <div class="step-icon-wrap">
+                        <button class="step-icon" onClick={() => this.showCollap('Approval List Ajuan Bayar')}><MdAssignment size={40} className="center" /></button>
+                    </div>
+                    <h4 class="step-title">Approval List Ajuan Bayar</h4>
+                </div>
+                <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi >= 7 ? "step completed" : 'step'}>
                     <div class="step-icon-wrap">
                         <button class="step-icon"><AiOutlineCheck size={40} className="center" /></button>
                     </div>
@@ -195,7 +207,7 @@ class Tracking extends Component {
                                             <div class="step-icon-wrap">
                                             <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
                                             </div>
-                                            <h4 class="step-title">Check Dokumen</h4>
+                                            <h4 class="step-title">Check Data Ajuan</h4>
                                         </div>
                                         <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 3 ? "step completed" : 'step'}>
                                             <div class="step-icon-wrap">
@@ -204,7 +216,7 @@ class Tracking extends Component {
                                             <h4 class="step-title">Selesai</h4>
                                         </div>
                                     </div>
-                                ) : this.state.tipeCol === 'Verifikasi Klaim' && (
+                                ) : this.state.tipeCol === 'Verifikasi Klaim' ? (
                                     <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
                                         <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 4 ? "step completed" : 'step'}>
                                             <div class="step-icon-wrap">
@@ -216,7 +228,7 @@ class Tracking extends Component {
                                             <div class="step-icon-wrap">
                                             <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
                                             </div>
-                                            <h4 class="step-title">Check Dokumen</h4>
+                                            <h4 class="step-title">Check Data Ajuan</h4>
                                         </div>
                                         <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 4 ? "step completed" : 'step'}>
                                             <div class="step-icon-wrap">
@@ -224,6 +236,34 @@ class Tracking extends Component {
                                             </div>
                                             <h4 class="step-title">Selesai</h4>
                                         </div>
+                                    </div>
+                                ) : this.state.tipeCol === 'Draft List Ajuan Bayar' ? (
+                                    <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
+                                        <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 5 ? "step completed" : 'step'}>
+                                            <div class="step-icon-wrap">
+                                            <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
+                                            </div>
+                                            <h4 class="step-title">Seleksi Data Ajuan</h4>
+                                        </div>
+                                        <div class={detailKlaim[0] === undefined ? 'step' : detailKlaim[0].status_transaksi > 5 ? "step completed" : 'step'}>
+                                            <div class="step-icon-wrap">
+                                            <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
+                                            </div>
+                                            <h4 class="step-title">Selesai</h4>
+                                        </div>
+                                    </div>
+                                ) : this.state.tipeCol === 'Approval List Ajuan Bayar' && (
+                                    <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
+                                        {detailKlaim[0] !== undefined && detailKlaim[0].appList.length && detailKlaim[0].appList.slice(0).reverse().map(item => {
+                                            return (
+                                                <div class={item.status === '1' ? 'step completed' : item.status === '0' ? 'step reject' : 'step'}>
+                                                    <div class="step-icon-wrap">
+                                                    <button class="step-icon"><FaFileSignature size={30} className="center2" /></button>
+                                                    </div>
+                                                    <h4 class="step-title">{item.jabatan}</h4>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 )}
                             </div>

@@ -116,7 +116,7 @@ export default (state=opsState, action) => {
                     ...state,
                     isLoading: false,
                     isGetReport: true,
-                    dataReport: action.payload.data.result,
+                    dataReport: action.payload.data.result || [],
                     alertMsg: 'get coa Succesfully'
                 };
             }
@@ -126,6 +126,7 @@ export default (state=opsState, action) => {
                     isLoading: false,
                     isError: true,
                     isGetReport: false,
+                    dataReport: [],
                     alertMsg: "Unable connect to server"
                 };
             }
