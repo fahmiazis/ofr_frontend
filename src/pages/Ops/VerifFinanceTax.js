@@ -36,6 +36,9 @@ import Tracking from '../../components/Ops/tracking'
 import dokumen from '../../redux/actions/dokumen'
 import FAA from '../../components/Ops/FAA'
 import FPD from '../../components/Ops/FPD'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
+const nonObject = 'Non Object PPh'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
@@ -110,6 +113,17 @@ class VerifOps extends Component {
             upload: false,
             openAppDoc: false,
             openRejDoc: false,
+            listOps: [],
+            modalDownload: false,
+            dataDownload: [],
+            message: '',
+            time: '',
+            time1: '',
+            time2: '',
+            subject: '',
+            docHist: false,
+            detailDoc: {},
+            docCon: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -277,13 +291,6 @@ class VerifOps extends Component {
         this.props.history.push(`/${val}`)
     }
 
-    getDetailStock = async (value) => {
-        const token = localStorage.getItem("token")
-        this.setState({dataItem: value})
-        await this.props.getDetailStock(token, value.id)
-        this.openModalRinci()
-    }
-
     deleteStock = async (value) => {
         const token = localStorage.getItem("token")
         await this.props.deleteStock(token, value.id)
@@ -307,8 +314,20 @@ class VerifOps extends Component {
     }
 
     componentDidMount() {
-        // const level = localStorage.getItem('level')
-        this.getDataOps()
+        const dataCek = localStorage.getItem('docData')
+        const {item, type} = (this.props.location && this.props.location.state) || {}
+        if (type === 'approve') {
+            this.getDataOps()
+            this.prosesDetail(item)
+        } else if (dataCek !== undefined && dataCek !== null) {
+            const data = {
+                no_transaksi: dataCek
+            }
+            this.getDataOps()
+            this.prosesDocTab(data)
+        } else {
+            this.getDataOps()
+        }
     }
 
     componentDidUpdate() {
@@ -473,7 +492,7 @@ class VerifOps extends Component {
         const {dataRinci} = this.state
         const data = {
             dpp: val.dpp,
-            pa: val.ppn,
+            ppn: val.ppn,
             nilai_utang: val.nilai_utang,
         }
         const tempno = {
@@ -493,46 +512,89 @@ class VerifOps extends Component {
         const token = localStorage.getItem("token")
         const status = level === '2' ? 3 : 4
         const statusAll = 'all'
+        const {time1, time2} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif')
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif')
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif')
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, 'verif', status)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         }
     }
 
-    prosesSubmitPre = async () => {
+    changeTime = async (val) => {
         const token = localStorage.getItem("token")
-        await this.props.getAssetAll(token, 1000, '', 1, 'asset')
-        this.modalSubmitPre()
+        this.setState({time: val})
+        if (val === 'all') {
+            this.setState({time1: '', time2: ''})
+            setTimeout(() => {
+                this.getDataTime()
+             }, 500)
+        }
+    }
+
+    selectTime = (val) => {
+        this.setState({[val.type]: val.val})
+    }
+
+    getDataTime = async () => {
+        const {time1, time2, filter} = this.state
+        const level = localStorage.getItem('level')
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
+        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2)
+    }
+
+    prosesSubmit = async () => {
+        const {listOps} = this.state
+        const {dataOps} = this.props.ops
+        const data = []
+        for (let i = 0; i < listOps.length; i++) {
+            for (let j = 0; j < dataOps.length; j++) {
+                if (dataOps[j].no_transaksi === listOps[i]) {
+                    data.push(dataOps[j])
+                }
+            }
+        }
+        this.openModalApprove()
     }
 
     approveDataOps = async () => {
         const { detailOps } = this.props.ops
+        const {listOps} = this.state
         const level = localStorage.getItem("level")
         const token = localStorage.getItem("token")
+        const noTrans = detailOps.length > 0 ? detailOps[0].no_transaksi : listOps[0]
         const tempno = {
-            no: detailOps[0].no_transaksi
+            no: noTrans,
+            list: listOps
         }
-        if (level === '4') {
+        if (level === '4' || level === '14') {
             await this.props.submitVerif(token, tempno)
             this.getDataOps()
             this.setState({confirm: 'submit'})
             this.openConfirm()
             this.openModalApprove()
-            this.openModalRinci()
+            if (listOps.length > 0) {
+                this.setState()
+            } else {
+                this.openModalRinci()
+            }
             // const cek = []
             // detailOps.map(item => {
             //     return ((item.dpp !== null && item.ppn !== null && item.nilai_utang !== null) && cek.push(item))
@@ -557,6 +619,139 @@ class VerifOps extends Component {
             this.openModalApprove()
             this.openModalRinci()
         }
+    }
+
+    chekAppList = (val) => {
+        const { listOps } = this.state
+        const {newOps} = this.props.ops
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < newOps.length; i++) {
+                data.push(newOps[i].no_transaksi)
+            }
+            this.setState({listOps: data})
+        } else {
+            listOps.push(val)
+            this.setState({listOps: listOps})
+        }
+    }
+
+    chekRejList = (val) => {
+        const {listOps} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listOps: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listOps.length; i++) {
+                if (listOps[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listOps[i])
+                }
+            }
+            this.setState({listOps: data})
+        }
+    }
+
+    prosesDownload = () => {
+        const {listOps} = this.state
+        const {dataOps} = this.props.ops
+        const data = []
+        for (let i = 0; i < listOps.length; i++) {
+            for (let j = 0; j < dataOps.length; j++) {
+                if (dataOps[j].no_transaksi === listOps[i]) {
+                    data.push(dataOps[j])
+                }
+            }
+        }
+        this.setState({dataDownload: data})
+        this.openDownload()
+    }
+
+    openDownload = () => {
+        this.setState({modalDownload: !this.state.modalDownload})
+    }
+
+    downloadExcel = async () => {
+        const { dataDownload } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data ajuan')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+            {header: 'NO', key: 'c1'},
+            {header: 'NO AJUAN', key: 'c22'},
+            {header: 'COST CENTRE', key: 'c2'}, 
+            {header: 'NO COA', key: 'c3'},
+            {header: 'NAMA COA', key: 'c4'},
+            {header: 'KETERANGAN TAMBAHAN', key: 'c5'},
+            {header: 'PERIODE', key: 'c6'},
+            {header: 'NILAI YANG DIAJUKAN', key: 'c7'},
+            {header: 'BANK', key: 'c8'},
+            {header: 'NOMOR REKENING', key: 'c9'},
+            {header: 'ATAS NAMA', key: 'c10'},
+            {header: 'MEMILIKI NPWP', key: 'c11'},
+            {header: 'NAMA SESUAI NPWP', key: 'c12'},
+            {header: 'NOMOR NPWP', key: 'c13'},
+            {header: 'NAMA SESUAI KTP', key: 'c14'},
+            {header: 'NOMOR KTP', key: 'c15'},
+            {header: 'DPP', key: 'c16'},
+            {header: 'PPN', key: 'c17'},
+            {header: 'PPh', key: 'c18'},
+            {header: 'NILAI YANG DIBAYARKAN', key: 'c19'},
+            {header: 'TANGGAL TRANSFER', key: 'c20'},
+            {header: 'Jenis PPh', key: 'c21'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: index + 1,
+                c22: item.no_transaksi,
+                c2: item.cost_center,
+                c3: item.no_coa,
+                c4: item.nama_coa,
+                c5: item.keterangan,
+                c6: `${moment(item.periode_awal).format('DD/MMMM/YYYY')} - ${moment(item.periode_akhir).format('DD/MMMM/YYYY')}`,
+                c7: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c8: item.bank_tujuan,
+                c9: item.norek_ajuan,
+                c10: item.nama_tujuan,
+                c11: item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-',
+                c12: item.status_npwp === 0 ? '' : item.nama_npwp,
+                c13: item.status_npwp === 0 ? '' : item.no_npwp,
+                c14: item.status_npwp === 0 ? item.nama_ktp : '',
+                c15: item.status_npwp === 0 ? item.no_ktp : '',
+                c16: item.dpp,
+                c17: item.ppn,
+                c18: item.nilai_utang,
+                c19: item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c20: item.tanggal_transfer !== null ? `${moment(item.tanggal_transfer).format('DD/MMMM/YYYY')}` : '-',
+                c21: item.jenis_pph,
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+          
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Data Ajuan IKK ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
     }
 
     onSearch = async (e) => {
@@ -643,12 +838,52 @@ class VerifOps extends Component {
 
     openProsesModalDoc = async (val) => {
         const token = localStorage.getItem("token")
+        localStorage.removeItem('docData')
         const tempno = {
             no: val.no_transaksi,
             name: 'Draft Pengajuan Ops'
         }
         await this.props.getDocOps(token, tempno)
+        this.setState({docCon: false})
         this.openModalDoc()
+    }
+
+    prosesDocTab = async (val) => {
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: val.no_transaksi
+        }
+        const sendDoc = {
+            no_transaksi: val.no_transaksi
+        }
+        const data = {
+            no: val.no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
+        this.setState({listMut: []})
+        await this.props.getDetail(token, tempno)
+        await this.props.getApproval(token, tempno)
+        await this.props.getDocOps(token, data)
+        this.openModalRinci()
+        this.openProsesModalDoc(sendDoc)
+    }
+
+    openDocNewTab = async (val) => {
+        localStorage.setItem('docData', val[0].no_transaksi)
+        const newWindow = window.open('veriffintax', '_blank', 'noopener,noreferrer')
+        this.setState({docCon: false})
+        if (newWindow) {
+            newWindow.opener = null
+        }
+    }
+
+    openDocCon = () => {
+        this.setState({docCon: !this.state.docCon})
+    }
+
+    docHistory = (val) => {
+        this.setState({detailDoc: val})
+        this.setState({docHist: !this.state.docHist})
     }
 
     openModalDoc = () => {
@@ -699,10 +934,21 @@ class VerifOps extends Component {
     }
 
     cekDataDoc = () => {
-        const { dataDoc } = this.props.ops
+        const { dataDoc, detailOps } = this.props.ops
         const level = localStorage.getItem("level")
-        if (level === '4') {
-            this.openModalApprove()
+        if (level === '4' || level === '14') {
+            const tempdoc = []
+            for (let i = 0; i < detailOps.length; i++) {
+                if (detailOps[i].typeniknpwp === 'manual' && (detailOps[i].new_ident === null || detailOps[i].new_ident === '')) {
+                    tempdoc.push(detailOps[i])
+                }
+            }
+            if (tempdoc.length > 0) {
+                this.setState({confirm: 'appNotifIdent'})
+                this.openConfirm()
+            } else {
+                this.openModalApprove()
+            }
         } else {
             const tempdoc = []
             for (let i = 0; i < dataDoc.length; i++) {
@@ -712,10 +958,6 @@ class VerifOps extends Component {
                 const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
                 if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
                     tempdoc.push(arr)
-                    console.log('masuk if')
-                } else {
-                    console.log('masuk else')
-                    console.log(cekLevel)
                 }
             }
             if (tempdoc.length === dataDoc.length) {
@@ -833,6 +1075,16 @@ class VerifOps extends Component {
             this.setState({listMut: data})
         }
     }
+    
+    confirmIdent = async (val) => {
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: val.no_transaksi
+        }
+        await this.props.confirmNewIdent(token, val.id)
+        await this.props.getDetail(token, tempno)
+        
+    }
 
     prepareReject = async () => {
         const token = localStorage.getItem("token")
@@ -865,7 +1117,7 @@ class VerifOps extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
+        const {dataRinci, dropApp, dataItem, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
@@ -911,6 +1163,58 @@ class VerifOps extends Component {
                                 <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : "Tax"}</div>
                             </div>
                             <div className={style.secEmail3}>
+                                <div className='rowCenter'>
+                                    <div className='rowCenter'>
+                                        <text className='mr-4'>Time:</text>
+                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
+                                    </div>
+                                    {this.state.time === 'pilih' ?  (
+                                        <>
+                                            <div className='rowCenter'>
+                                                <text className='bold'>:</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                />
+                                                <text className='mr-1 ml-1'>To</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                color='primary' 
+                                                onClick={this.getDataTime} 
+                                                className='ml-1'>
+                                                    Go
+                                                </Button>
+                                            </div>
+                                        </>
+                                    ) : null}
+                                </div>
+                                <div className={style.headEmail2}>
+                                    {level === '14' ?  (
+                                        <>
+                                            {this.state.filter === 'available' && (
+                                                <Button 
+                                                    className='mr-1' 
+                                                    onClick={this.prosesSubmit} 
+                                                    color="primary" 
+                                                    size="lg"
+                                                    disabled={listOps.length > 0 ? false : true}
+                                                >
+                                                    Submit
+                                                </Button>
+                                            )}
+                                            <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
+                                        </>
+                                    ) : null}
+                                </div>
                             </div>
                             <div className={[style.secEmail4]}>
                                 <div className={style.searchEmail2}>
@@ -937,6 +1241,17 @@ class VerifOps extends Component {
                                     <Table bordered responsive hover className={style.tab} id="table-ops">
                                         <thead>
                                             <tr>
+                                                {level === '14' && (
+                                                    <th>
+                                                        <input  
+                                                        className='mr-2'
+                                                        type='checkbox'
+                                                        checked={listOps.length === 0 ? false : listOps.length === newOps.length ? true : false}
+                                                        onChange={() => listOps.length === newOps.length ? this.chekRejList('all') : this.chekAppList('all')}
+                                                        />
+                                                        Select
+                                                    </th>    
+                                                )}
                                                 <th>No</th>
                                                 <th>NO.AJUAN</th>
                                                 <th>COST CENTRE</th>
@@ -953,6 +1268,15 @@ class VerifOps extends Component {
                                             {newOps.map(item => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                        {level === '14' && (
+                                                            <th>
+                                                                <input 
+                                                                type='checkbox'
+                                                                checked={listOps.find(element => element === item.no_transaksi) !== undefined ? true : false}
+                                                                onChange={listOps.find(element => element === item.no_transaksi) === undefined ? () => this.chekAppList(item.no_transaksi) : () => this.chekRejList(item.no_transaksi)}
+                                                                />
+                                                            </th>
+                                                        )}
                                                         <th>{newOps.indexOf(item) + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.cost_center}</th>
@@ -1049,11 +1373,14 @@ class VerifOps extends Component {
                                         <th>MEMILIKI NPWP</th>
                                         <th>NAMA SESUAI NPWP</th>
                                         <th>NOMOR NPWP</th>
-                                        <th>PPU</th>
-                                        <th>PA</th>
-                                        <th>NOMINAL</th>
+                                        <th>NAMA SESUAI KTP</th>
+                                        <th>NIK</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>TANGGAL TRANSFER</th>
+                                        <th>Jenis PPh</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -1083,15 +1410,48 @@ class VerifOps extends Component {
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.status_npwp === 1 ? 'Ya' : nonObject}</th>
+                                                <th>{item.nama_npwp}</th>
+                                                <th>
+                                                    <div className='colGeneral'>
+                                                        {level !== '2' && item.typeniknpwp === 'manual' && item.status_npwp === 1 && (
+                                                           <>
+                                                            <input  
+                                                            className='mr-2'
+                                                            type='checkbox'
+                                                            checked={item.new_ident === 'confirm' ? true : false}
+                                                            onChange={() => this.confirmIdent(item)}
+                                                            />
+                                                            <text>New</text>
+                                                        </>
+                                                        )}
+                                                        <div className='mt-1'>{item.no_npwp}</div>
+                                                    </div>
+                                                </th>
+                                                <th>{item.nama_ktp}</th>
+                                                <th>
+                                                    <div className='colGeneral'>
+                                                        {level !== '2' && item.typeniknpwp === 'manual' && item.status_npwp === 0 && (
+                                                            <>
+                                                                <input  
+                                                                className='mr-2'
+                                                                type='checkbox'
+                                                                checked={item.new_ident === 'confirm' ? true : false}
+                                                                onChange={() => this.confirmIdent(item)}
+                                                                />
+                                                                <text>New</text>
+                                                            </>
+                                                        )}
+                                                        <div className='mt-1'>{item.no_ktp}</div>
+                                                    </div>
+                                                </th>
+                                                <th>{item.dpp}</th>
+                                                <th>{item.pph}</th>
+                                                <th>{item.nilai_utang}</th>
+                                                <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.tanggal_transfer}</th>
+                                                <th>{item.jenis_pph}</th>
+                                                <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                             </tr>
                                             )
                                         })}
@@ -1103,7 +1463,7 @@ class VerifOps extends Component {
                         <div className="btnFoot">
                             <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
                             <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>FAA</Button>
-                            <Button color="primary"  onClick={() => this.openProsesModalDoc(detailOps[0])}>Dokumen</Button>
+                            <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
                             {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
@@ -1113,11 +1473,88 @@ class VerifOps extends Component {
                                     <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
+                                    <Button color="success" disabled={listOps.length > 0 ? true : this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
                                         Submit
                                     </Button>
                                 </>
                             )}
+                        </div>
+                    </div>
+                </Modal>
+                <Modal size="xl" className='modalrinci' isOpen={this.state.modalDownload} toggle={this.openDownload}>
+                    <ModalHeader>
+                        Download
+                    </ModalHeader>
+                    <ModalBody>
+                        <div className={style.tableDashboard}>
+                            <Table bordered responsive hover className={style.tab} id="table-to-xls">
+                                <thead>
+                                    <tr>
+                                        <th>NO</th>
+                                        <th>NO AJUAN</th>
+                                        <th>COST CENTRE</th>
+                                        <th>NO COA</th>
+                                        <th>NAMA COA</th>
+                                        <th>KETERANGAN TAMBAHAN</th>
+                                        <th>PERIODE</th>
+                                        <th>NILAI YANG DIAJUKAN</th>
+                                        <th>BANK</th>
+                                        <th>NOMOR REKENING</th>
+                                        <th>ATAS NAMA</th>
+                                        <th>MEMILIKI NPWP</th>
+                                        <th>NAMA SESUAI NPWP</th>
+                                        <th>NOMOR NPWP</th>
+                                        <th>NAMA SESUAI KTP</th>
+                                        <th>NOMOR KTP</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
+                                        <th>NILAI YANG DIBAYARKAN</th>
+                                        <th>TANGGAL TRANSFER</th>
+                                        <th>Jenis PPh</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dataDownload.length !== 0 && dataDownload.map(item => {
+                                        return (
+                                            <tr>
+                                                <th scope="row">{dataDownload.indexOf(item) + 1}</th>
+                                                <th>{item.no_transaksi}</th>
+                                                <th>{item.cost_center}</th>
+                                                <th>{item.no_coa}</th>
+                                                <th>{item.nama_coa}</th>
+                                                <th>{item.keterangan}</th>
+                                                <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
+                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.bank_tujuan}</th>
+                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.nama_tujuan}</th>
+                                                <th>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-'}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
+                                                <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
+                                                <th>{item.dpp}</th>
+                                                <th>{item.ppn}</th>
+                                                <th>{item.nilai_utang}</th>
+                                                <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.tanggal_transfer !== null ? moment(item.tanggal_transfer).format('DD/MMMM/YYYY') : '-'}</th>
+                                                <th>{item.jenis_pph}</th>
+                                            </tr>
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
+                        </div>
+                    </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div></div>
+                        <div className="btnFoot">
+                            <Button className="mr-2" color='warning' onClick={this.downloadExcel} >Download</Button>
+                            <Button color="success" onClick={this.openDownload}>
+                                Close
+                            </Button>
                         </div>
                     </div>
                 </Modal>
@@ -1171,10 +1608,11 @@ class VerifOps extends Component {
                                 keterangan: dataRinci.keterangan,
                                 periode_awal: dataRinci.periode_awal,
                                 periode_akhir: dataRinci.periode_akhir,
+                                bank_tujuan: dataRinci.bank_tujuan,
                                 nilai_ajuan: dataRinci.nilai_ajuan,
                                 norek_ajuan: dataRinci.norek_ajuan,
                                 nama_tujuan: dataRinci.nama_tujuan,
-                                status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : 'Ya',
+                                status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : dataRinci.status_npwp === 1 ? 'Ya' : '',
                                 nama_npwp: dataRinci.nama_npwp === null ? '' : dataRinci.nama_npwp,
                                 no_npwp: dataRinci.no_npwp === null ? '' : dataRinci.no_npwp,
                                 no_ktp: dataRinci.no_ktp === null ? '' : dataRinci.no_ktp,
@@ -1239,7 +1677,7 @@ class VerifOps extends Component {
                                                 type= "date"
                                                 disabled
                                                 className="inputRinci"
-                                                value={values.periode_awal}
+                                                value={moment(values.periode_awal).format('YYYY-MM-DD')}
                                                 onBlur={handleBlur("periode_awal")}
                                                 onChange={handleChange("periode_awal")}
                                                 />
@@ -1248,7 +1686,7 @@ class VerifOps extends Component {
                                                 type= "date" 
                                                 disabled
                                                 className="inputRinci"
-                                                value={values.periode_akhir}
+                                                value={moment(values.periode_akhir).format('YYYY-MM-DD')}
                                                 onBlur={handleBlur("periode_akhir")}
                                                 onChange={handleChange("periode_akhir")}
                                                 />
@@ -1260,7 +1698,7 @@ class VerifOps extends Component {
                                             <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
                                         ) : null }
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nilai DN Area</Col>
+                                            <Col md={3}>Nilai Ajuan</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
@@ -1353,9 +1791,9 @@ class VerifOps extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {values.status_npwp === 'Ya' && values.nama_npwp === '' ? (
+                                        {/* {values.status_npwp === 'Ya' && values.nama_npwp === '' ? (
                                             <text className={style.txtError}>must be filled</text>
-                                        ) : null}
+                                        ) : null} */}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nomor NPWP</Col>
                                             <Col md={9} className="colRinci">:  <Input
@@ -1370,9 +1808,9 @@ class VerifOps extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
+                                        {/* {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
-                                        ) : null}
+                                        ) : null} */}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nama Sesuai KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
@@ -1406,6 +1844,15 @@ class VerifOps extends Component {
                                             <text className={style.txtError}>must be filled with 16 digits characters</text>
                                         ) : null}
                                     </div>
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>Tgl Invoice</Col>
+                                        <Col md={9} className="colRinci">:  <Input
+                                            type= "text" 
+                                            className="inputRinci"
+                                            value={dataRinci.tgl_tagihanbayar === null ? '-' : moment(dataRinci.tgl_tagihanbayar).format('DD MMMM YYYY')}
+                                            />
+                                        </Col>
+                                    </Row>
                                     <Row className="mb-2 rowRinci">
                                         <Col md={3}>DPP</Col>
                                         <Col md={9} className="colRinci">:  <Input
@@ -1526,7 +1973,7 @@ class VerifOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.ops.isLoading || this.props.dokumen.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1606,7 +2053,7 @@ class VerifOps extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'submit' ? (
@@ -1634,14 +2081,21 @@ class VerifOps extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                             <AiOutlineClose size={80} className={style.red} />
-                            <div className={[style.sucUpdate, style.green]}>Gagal Approve, Pastikan Dokumen Lampiran Telah Diapprove</div>
+                            <div className={[style.sucUpdate, style.green]}>Gagal Submit, Pastikan Dokumen Lampiran Telah Terapprove</div>
+                        </div>
+                        </div>
+                    ) : this.state.confirm === 'appNotifIdent' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                            <AiOutlineClose size={80} className={style.red} />
+                            <div className={[style.sucUpdate, style.green]}>Gagal Submit, Pastikan Data Identitas Baru Telah Terverifikasi</div>
                         </div>
                         </div>
                     ) : this.state.confirm === 'isAppDoc' ? (
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'isRejDoc' ? (
@@ -1668,7 +2122,7 @@ class VerifOps extends Component {
             </Modal>
             <Modal size="xl" isOpen={this.state.modalDoc} toggle={this.openModalDoc}>
                 <ModalHeader>
-                   Kelengkapan Dokumen
+                   Kelengkapan Dokumen {detailOps !== undefined && detailOps.length > 0 && detailOps[0].no_transaksi}
                 </ModalHeader>
                 <ModalBody>
                     <Container>
@@ -1686,6 +2140,9 @@ class VerifOps extends Component {
                                                     <BsCircle size={20} />
                                                 )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+                                            <div>
+                                                <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
+                                            </div>
                                             {/* <div className="colDoc">
                                                 <input
                                                 className="ml-4"
@@ -1820,6 +2277,34 @@ class VerifOps extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal isOpen={this.state.docHist} toggle={this.docHistory}>
+                    <ModalBody>
+                        <div className='mb-4'>History Dokumen</div>
+                        <div className='history'>
+                            {detailDoc.status !== undefined && detailDoc.status !== null && detailDoc.status.split(',').map(item => {
+                                return (
+                                    item !== null && item !== 'null' && 
+                                    <Button className='mb-2' color='info'>{item}</Button>
+                                )
+                            })}
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.docCon} toggle={this.openDocCon} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div className='btnDocCon'>
+                                <text>
+                                    Pilih Open Kelengkapan Dokumen
+                                </text>
+                            </div>
+                            <div className='btnDocCon mb-4'>
+                                <Button color="primary" className='mr-2' onClick={() => this.openProsesModalDoc(detailOps[0])}>Open Pop Up</Button>
+                                <Button color="success" className='ml-2' onClick={() => this.openDocNewTab(detailOps)}>Open New Tab</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     }
@@ -1855,7 +2340,8 @@ const mapDispatchToProps = {
     editVerif: ops.editVerif,
     showDokumen: dokumen.showDokumen,
     approveDokumen: dokumen.approveDokumen,
-    rejectDokumen: dokumen.rejectDokumen
+    rejectDokumen: dokumen.rejectDokumen,
+    confirmNewIdent: ops.confirmNewIdent
     // notifStock: notif.notifStock
 }
 

@@ -132,7 +132,10 @@ class Klaim extends Component {
             time: '',
             time1: '',
             time2: '',
-            subject: ''
+            subject: '',
+            docHist: false,
+            detailDoc: {},
+            docCon: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -350,11 +353,17 @@ class Klaim extends Component {
     }
 
     componentDidMount() {
-        // const level = localStorage.getItem('level')
+        const dataCek = localStorage.getItem('docData')
         const {item, type} = (this.props.location && this.props.location.state) || {}
         if (type === 'approve') {
             this.getDataKlaim()
             this.prosesDetail(item)
+        } else if (dataCek !== undefined && dataCek !== null) {
+            const data = {
+                no_transaksi: dataCek
+            }
+            this.getDataKlaim()
+            this.prosesDocTab(data)
         } else {
             this.getDataKlaim()
         }
@@ -465,6 +474,26 @@ class Klaim extends Component {
         this.openModalRinci()
     }
 
+    prosesDocTab = async (val) => {
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: val.no_transaksi
+        }
+        const sendDoc = {
+            no_transaksi: val.no_transaksi
+        }
+        const data = {
+            no: val.no_transaksi,
+            name: 'Draft Pengajuan Klaim'
+        }
+        this.setState({listMut: []})
+        await this.props.getDetail(token, tempno)
+        await this.props.getApproval(token, tempno)
+        await this.props.getDocKlaim(token, data)
+        this.openModalRinci()
+        this.openProsesModalDoc(sendDoc)
+    }
+
     openModalDok = () => {
         this.setState({opendok: !this.state.opendok})
     }
@@ -535,6 +564,11 @@ class Klaim extends Component {
 
     openHistory = () => {
         this.setState({history: !this.state.history})
+    }
+
+    docHistory = (val) => {
+        this.setState({detailDoc: val})
+        this.setState({docHist: !this.state.docHist})
     }
 
     changeFilter = async (val) => {
@@ -685,7 +719,7 @@ class Klaim extends Component {
         const tipe = tempApp.length === app.length-1 ? 'full approve' : 'approve'
         const tempno = {
             no: detailKlaim[0].no_transaksi,
-            jenis: 'klm',
+            jenis: 'klaim',
             kode: detailKlaim[0].kode_plant,
             tipe: tipe,
             menu: 'Pengajuan Klaim (Klaim)'
@@ -764,12 +798,27 @@ class Klaim extends Component {
 
     openProsesModalDoc = async (val) => {
         const token = localStorage.getItem("token")
+        localStorage.removeItem('docData')
         const tempno = {
             no: val.no_transaksi,
             name: 'Draft Pengajuan Klaim'
         }
         await this.props.getDocKlaim(token, tempno)
+        this.setState({docCon: false})
         this.openModalDoc()
+    }
+
+    openDocNewTab = async (val) => {
+        localStorage.setItem('docData', val[0].no_transaksi)
+        const newWindow = window.open('klaim', '_blank', 'noopener,noreferrer')
+        this.setState({docCon: false})
+        if (newWindow) {
+            newWindow.opener = null
+        }
+    }
+
+    openDocCon = () => {
+        this.setState({docCon: !this.state.docCon})
     }
 
     cekStatus = async (val) => {
@@ -967,7 +1016,7 @@ class Klaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
+        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim } = this.props.klaim
@@ -1519,7 +1568,7 @@ class Klaim extends Component {
                         <div className="btnFoot">
                             <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
                             <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>FAA</Button>
-                            <Button color="primary"  onClick={() => this.openProsesModalDoc(detailKlaim[0])}>Dokumen</Button>
+                            <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
                             {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
@@ -1641,7 +1690,7 @@ class Klaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading || this.props.menu.isLoading || this.props.reason.isLoading || this.props.email.isLoading} size="sm">
+                <Modal isOpen={this.props.klaim.isLoading || this.props.menu.isLoading || this.props.reason.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1688,6 +1737,21 @@ class Klaim extends Component {
                             <div className={style.btnApprove}>
                                 <Button color="primary" onClick={() => this.submitAset()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalSub}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.docCon} toggle={this.openDocCon} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div className='btnDocCon'>
+                                <text>
+                                    Pilih Open Kelengkapan Dokumen
+                                </text>
+                            </div>
+                            <div className='btnDocCon mb-4'>
+                                <Button color="primary" className='mr-2' onClick={() => this.openProsesModalDoc(detailKlaim[0])}>Open Pop Up</Button>
+                                <Button color="success" className='ml-2' onClick={() => this.openDocNewTab(detailKlaim)}>Open New Tab</Button>
                             </div>
                         </div>
                     </ModalBody>
@@ -1817,7 +1881,7 @@ class Klaim extends Component {
             </Modal>
             <Modal size="xl" isOpen={this.state.modalDoc} toggle={this.openModalDoc}>
                 <ModalHeader>
-                   Kelengkapan Dokumen
+                   Kelengkapan Dokumen {detailKlaim !== undefined && detailKlaim.length > 0 && detailKlaim[0].no_transaksi}
                 </ModalHeader>
                 <ModalBody>
                 <Container>
@@ -1827,14 +1891,17 @@ class Klaim extends Component {
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
                                             <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
-                                                {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
-                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
-                                                : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
-                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
-                                                : (
-                                                    <BsCircle size={20} />
-                                                )}
+                                            {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                            x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
+                                            : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                            x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
+                                            : (
+                                                <BsCircle size={20} />
+                                            )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+                                            <div>
+                                                <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
+                                            </div>
                                             {/* <div className="colDoc">
                                                 <input
                                                 className="ml-4"
@@ -1919,6 +1986,19 @@ class Klaim extends Component {
                         </Button>
                     </div>
                 </div>
+            </Modal>
+            <Modal isOpen={this.state.docHist} toggle={this.docHistory}>
+                <ModalBody>
+                    <div className='mb-4'>History Dokumen</div>
+                    <div className='history'>
+                        {detailDoc.status !== undefined && detailDoc.status !== null && detailDoc.status.split(',').map(item => {
+                            return (
+                                item !== null && item !== 'null' && 
+                                <Button className='mb-2' color='info'>{item}</Button>
+                            )
+                        })}
+                    </div>
+                </ModalBody>
             </Modal>
             <Modal isOpen={this.state.history} toggle={this.openHistory}>
                 <ModalBody>

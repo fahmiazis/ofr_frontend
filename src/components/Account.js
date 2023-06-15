@@ -60,11 +60,14 @@ class Account extends Component {
 
      editProfile = async (val) => {
         const token = localStorage.getItem("token")
+        const {detailUser} = this.props.user
         const id = localStorage.getItem("id")
         const data = {
             username: val.username,
             fullname: val.fullname,
-            email: val.email
+            email: val.email,
+            kode_plant: detailUser.kode_plant,
+            level: detailUser.level
         }
         await this.props.updateUser(token, id, data)
         const {isUpdate} = this.props.user

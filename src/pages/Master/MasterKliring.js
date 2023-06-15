@@ -3,11 +3,11 @@ import {  NavbarBrand, DropdownToggle, DropdownMenu,
     DropdownItem, Table, ButtonDropdown, Input, Button,
     Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
 import style from '../../assets/css/input.module.css'
-import {FaSearch, FaBars} from 'react-icons/fa'
+import {FaSearch, FaKliringCircle, FaBars} from 'react-icons/fa'
 import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
 import depo from '../../redux/actions/depo'
 import user from '../../redux/actions/user'
-import faktur from '../../redux/actions/faktur'
+import kliring from '../../redux/actions/kliring'
 import {connect} from 'react-redux'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
@@ -16,26 +16,25 @@ import {default as axios} from 'axios'
 import Sidebar from "../../components/Header";
 import MaterialTitlePanel from "../../components/material_title_panel";
 import SidebarContent from "../../components/sidebar_content";
-import moment from 'moment'
 import NavBar from '../../components/NavBar'
 const {REACT_APP_BACKEND_URL} = process.env
 
-const fakturSchema = Yup.object().shape({
-    no_faktur: Yup.string().required(),
-    tgl_faktur: Yup.date().required(),
-    npwp: Yup.string().required(),
+const kliringSchema = Yup.object().shape({
     nama: Yup.string().required(),
-    jumlah_dpp: Yup.string().required(),
-    jumlah_ppn: Yup.string().required()
+    nama_singkat: Yup.string().required(),
+    bic: Yup.string().required(),
+    sandi_bank: Yup.string().required(),
+    sandi_usaha: Yup.string().required(),
+    sandi_kliring: Yup.string().required()
 });
 
-const fakturEditSchema = Yup.object().shape({
-    no_faktur: Yup.string().required(),
-    tgl_faktur: Yup.date().required(),
-    npwp: Yup.string().required(),
+const kliringEditSchema = Yup.object().shape({
     nama: Yup.string().required(),
-    jumlah_dpp: Yup.string().required(),
-    jumlah_ppn: Yup.string().required()
+    nama_singkat: Yup.string().required(),
+    bic: Yup.string().required(),
+    sandi_bank: Yup.string().required(),
+    sandi_usaha: Yup.string().required(),
+    sandi_kliring: Yup.string().required()
 });
 
 const changeSchema = Yup.object().shape({
@@ -43,7 +42,7 @@ const changeSchema = Yup.object().shape({
     new_password: Yup.string().required('must be filled')
 });
 
-class MasterFaktur extends Component {
+class MasterKliring extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -114,7 +113,7 @@ class MasterFaktur extends Component {
      }
 
     DownloadMaster = () => {
-        const {link} = this.props.faktur
+        const {link} = this.props.kliring
         axios({
             url: `${link}`,
             method: 'GET',
@@ -150,7 +149,6 @@ class MasterFaktur extends Component {
         this.setState({modalAdd: !this.state.modalAdd})
     }
     openModalEdit = () => {
-        console.log(this.state.detail)
         this.setState({modalEdit: !this.state.modalEdit})
     }
     openModalUpload = () => {
@@ -175,10 +173,10 @@ class MasterFaktur extends Component {
         });
     }
 
-    addFaktur = async (values) => {
+    addKliring = async (values) => {
         const token = localStorage.getItem("token")
-        await this.props.addFaktur(token, values)
-        const {isAdd} = this.props.faktur
+        await this.props.addKliring(token, values)
+        const {isAdd} = this.props.kliring
         if (isAdd) {
             this.setState({confirm: 'add'})
             this.openConfirm()
@@ -187,10 +185,10 @@ class MasterFaktur extends Component {
         }
     }
 
-    delFaktur = async () => {
+    delKliring = async () => {
         const token = localStorage.getItem("token")
         const {detail} = this.state
-        await this.props.deleteFaktur(token, detail.id)
+        await this.props.deleteKliring(token, detail.id)
         this.openModalEdit()
         this.setState({confirm: 'del'})
         this.openConfirm()
@@ -199,13 +197,13 @@ class MasterFaktur extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.faktur
+        const { page } = this.props.kliring
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.faktur
+        const { page } = this.props.kliring
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.prevLink)
     }
@@ -237,10 +235,10 @@ class MasterFaktur extends Component {
         await this.props.uploadMaster(token, data)
     }
 
-    editFaktur = async (values, id) => {
+    editKliring = async (values, id) => {
         const token = localStorage.getItem("token")
-        await this.props.updateFaktur(token, values, id)
-        const {isUpdate} = this.props.faktur
+        await this.props.updateKliring(token, values, id)
+        const {isUpdate} = this.props.kliring
         if (isUpdate) {
             this.setState({confirm: 'edit'})
             this.openConfirm()
@@ -255,7 +253,7 @@ class MasterFaktur extends Component {
     }
 
     componentDidUpdate() {
-        const {isError, isUpload, isExport, isReset} = this.props.faktur
+        const {isError, isUpload, isExport, isReset} = this.props.kliring
         if (isError) {
             this.props.resetError()
             this.showAlert()
@@ -284,14 +282,14 @@ class MasterFaktur extends Component {
     }
 
     getDataCount = async (value) => {
-        const { page } = this.props.faktur
+        const { page } = this.props.kliring
         const pages = value === undefined || value.page === undefined ? page.currentPage : value.page
         const token = localStorage.getItem("token")
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
         const filter = value === undefined || value.filter === undefined ? this.state.filter : value.filter
         console.log(this.state.filter)
-        await this.props.getFaktur(token, limit, search, pages, filter)
+        await this.props.getKliring(token, limit, search, pages, filter)
         this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages})
     }
 
@@ -319,7 +317,7 @@ class MasterFaktur extends Component {
 
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
-        const {dataFaktur, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.faktur
+        const {dataKliring, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.kliring
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
 
@@ -369,7 +367,7 @@ class MasterFaktur extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master Faktur</div>
+                                    <div className={style.titleDashboard}>Master Kliring</div>
                                 </div>
                                 <div className={style.secHeadDashboard} >
                                     <div>
@@ -386,38 +384,7 @@ class MasterFaktur extends Component {
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
                                     </div>
-                                    <div className='filterFaktur'>
-                                        {/* <text className='mr-2'>Filter:</text>
-                                        <UncontrolledDropdown className={style.drop}>
-                                            <DropdownToggle caret color="light">
-                                                {this.state.filterName}
-                                            </DropdownToggle>
-                                            <DropdownMenu 
-                                                right
-                                                modifiers={{
-                                                setMaxHeight: {
-                                                    enabled: true,
-                                                    order: 890,
-                                                    fn: (data) => {
-                                                    return {
-                                                        ...data,
-                                                        styles: {
-                                                        ...data.styles,
-                                                        overflow: 'auto',
-                                                        maxHeight: '400px',
-                                                        },
-                                                    };
-                                                    },
-                                                },
-                                            }}
-                                            >
-                                                {dataRole !== undefined && dataRole.map(item => {
-                                                    return (
-                                                        <DropdownItem className='uppercase' onClick={() => {this.setState({filter: item.id, filterName: item.name}); this.changeFilter({name: item.name, level: item.id})}}>{item.name}</DropdownItem>
-                                                    )
-                                                })}
-                                            </DropdownMenu>
-                                        </UncontrolledDropdown> */}
+                                    <div className='filterKliring'>
                                     </div>
                                 </div>
                                 <div className='secEmail'>
@@ -443,13 +410,11 @@ class MasterFaktur extends Component {
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
-                                                <th>NO</th>
-                                                <th>NO FAKTUR</th>
-                                                <th>TGL FAKTUR</th>
-                                                <th>NPWP</th>
-                                                <th>NAMA</th>
-                                                <th>JUMLAH DPP</th>
-                                                <th>JUMLAH PPN</th>
+                                                <th>No</th>
+                                                <th>Nama</th>
+                                                <th>Nama Singkat</th>
+                                                <th>Bic Peserta</th>
+                                                <th>Sandi Bank</th>
                                             </tr>
                                         </thead>
                                     </Table>
@@ -462,13 +427,13 @@ class MasterFaktur extends Component {
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
-                                                <th>NO</th>
-                                                <th>NO FAKTUR</th>
-                                                <th>TGL FAKTUR</th>
-                                                <th>NPWP</th>
-                                                <th>NAMA</th>
-                                                <th>JUMLAH DPP</th>
-                                                <th>JUMLAH PPN</th>
+                                                <th>No</th>
+                                                <th>Nama</th>
+                                                <th>Nama Singkat</th>
+                                                <th>Bic Peserta</th>
+                                                <th>Sandi Bank</th>
+                                                <th>Sandi Jenis Usaha</th>
+                                                <th>Sandi Kliring Kantor Pusat</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -476,12 +441,12 @@ class MasterFaktur extends Component {
                                                 return (
                                                 <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
-                                                    <td>{item.no_faktur}</td>
-                                                    <td>{moment(item.tgl_faktur).format('DD/MM/YYYY')}</td>
-                                                    <td>{item.npwp}</td>
                                                     <td>{item.nama}</td>
-                                                    <td>{item.jumlah_dpp}</td>
-                                                    <td>{item.jumlah_ppn}</td>
+                                                    <td>{item.nama_singkat}</td>
+                                                    <td>{item.bic}</td>
+                                                    <td>{item.sandi_bank}</td>
+                                                    <td>{item.sandi_usaha}</td>
+                                                    <td>{item.sandi_kliring}</td>
                                                 </tr>
                                             )})}
                                         </tbody>
@@ -502,71 +467,19 @@ class MasterFaktur extends Component {
                     </MaterialTitlePanel>
                 </Sidebar>
                 <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
-                    <ModalHeader toggle={this.openModalAdd}>Add Master Faktur</ModalHeader>
+                    <ModalHeader toggle={this.openModalAdd}>Add Master Kliring</ModalHeader>
                     <Formik
                     initialValues={{
-                        no_faktur: '',
-                        tgl_faktur: '',
-                        npwp: '',
                         nama: '',
-                        jumlah_dpp: '',
-                        jumlah_ppn: ''
+                        nama_singkat: '',
+                        bic: '',
+                        sandi_bank: ''
                     }}
-                    validationSchema={fakturSchema}
-                    onSubmit={(values) => {this.addFaktur(values)}}
+                    validationSchema={kliringSchema}
+                    onSubmit={(values) => {this.addKliring(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                No Faktur
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                value={values.no_faktur}
-                                onBlur={handleBlur("no_faktur")}
-                                onChange={handleChange("no_faktur")}
-                                />
-                                {errors.no_faktur ? (
-                                    <text className={style.txtError}>{errors.no_faktur}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tgl Faktur
-                            </text>
-                            <div className="col-md-9">
-                                <Input
-                                type= "date" 
-                                className="inputRinci"
-                                value={values.tgl_faktur}
-                                onBlur={handleBlur("tgl_faktur")}
-                                onChange={handleChange("tgl_faktur")}
-                                />
-                                {errors.tgl_faktur ? (
-                                    <text className={style.txtError}>{errors.tgl_faktur}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                NPWP
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="npwp"
-                                value={values.npwp}
-                                onBlur={handleBlur("npwp")}
-                                onChange={handleChange("npwp")}
-                                />
-                                {errors.npwp ? (
-                                    <text className={style.txtError}>{errors.npwp}</text>
-                                ) : null}
-                            </div>
-                        </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
                                 Nama
@@ -586,35 +499,52 @@ class MasterFaktur extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Jumlah DPP
+                                Nama Singkat
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="jumlah_dpp"
-                                value={values.jumlah_dpp}
-                                onBlur={handleBlur("jumlah_dpp")}
-                                onChange={handleChange("jumlah_dpp")}
+                                name="nama_singkat"
+                                value={values.nama_singkat}
+                                onBlur={handleBlur("nama_singkat")}
+                                onChange={handleChange("nama_singkat")}
                                 />
-                                {errors.jumlah_dpp ? (
-                                    <text className={style.txtError}>{errors.jumlah_dpp}</text>
+                                {errors.nama_singkat ? (
+                                    <text className={style.txtError}>{errors.nama_singkat}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Jumlah PPN
+                                Bic Peserta
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="jumlah_ppn"
-                                value={values.jumlah_ppn}
-                                onBlur={handleBlur("jumlah_ppn")}
-                                onChange={handleChange("jumlah_ppn")}
+                                name="bic"
+                                value={values.bic}
+                                onBlur={handleBlur("bic")}
+                                onChange={handleChange("bic")}
                                 />
-                                {errors.jumlah_ppn ? (
-                                    <text className={style.txtError}>{errors.jumlah_ppn}</text>
+                                {errors.bic ? (
+                                    <text className={style.txtError}>{errors.bic}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Sandi Bank
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="sandi_bank"
+                                value={values.sandi_bank}
+                                onBlur={handleBlur("sandi_bank")}
+                                onChange={handleChange("sandi_bank")}
+                                />
+                                {errors.sandi_bank ? (
+                                    <text className={style.txtError}>{errors.sandi_bank}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -631,71 +561,19 @@ class MasterFaktur extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
-                    <ModalHeader toggle={this.openModalEdit}>Edit Master Faktur</ModalHeader>
+                    <ModalHeader toggle={this.openModalEdit}>Edit Master Kliring</ModalHeader>
                     <Formik
                     initialValues={{
-                        no_faktur: detail.no_faktur === null ? '' : detail.no_faktur,
-                        tgl_faktur: detail.tgl_faktur === null ? '' : detail.tgl_faktur,
-                        npwp: detail.npwp === null ? '' : detail.npwp,
-                        nama: detail.nama === null ? '' : detail.nama,
-                        jumlah_dpp: detail.jumlah_dpp === null ? '' : detail.jumlah_dpp,
-                        jumlah_ppn: detail.jumlah_ppn === null ? '' : detail.jumlah_ppn
+                    nama: detail.nama === null ? '' : detail.nama,
+                    nama_singkat: detail.nama_singkat === null ? '' : detail.nama_singkat,
+                    bic: detail.bic === null ? '' : detail.bic,
+                    sandi_bank: detail.sandi_bank === null ? '' : detail.sandi_bank
                     }}
-                    validationSchema={fakturEditSchema}
-                    onSubmit={(values) => {this.editFaktur(values, detail.id)}}
+                    validationSchema={kliringEditSchema}
+                    onSubmit={(values) => {this.editKliring(values, detail.id)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                No Faktur
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                value={values.no_faktur}
-                                onBlur={handleBlur("no_faktur")}
-                                onChange={handleChange("no_faktur")}
-                                />
-                                {errors.no_faktur ? (
-                                    <text className={style.txtError}>{errors.no_faktur}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tgl Faktur
-                            </text>
-                            <div className="col-md-9">
-                                <Input
-                                type= "date" 
-                                className="inputRinci"
-                                value={moment(values.tgl_faktur).format('YYYY-MM-DD')}
-                                onBlur={handleBlur("tgl_faktur")}
-                                onChange={handleChange("tgl_faktur")}
-                                />
-                                {errors.tgl_faktur ? (
-                                    <text className={style.txtError}>{errors.tgl_faktur}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                NPWP
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="npwp"
-                                value={values.npwp}
-                                onBlur={handleBlur("npwp")}
-                                onChange={handleChange("npwp")}
-                                />
-                                {errors.npwp ? (
-                                    <text className={style.txtError}>{errors.npwp}</text>
-                                ) : null}
-                            </div>
-                        </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
                                 Nama
@@ -715,42 +593,59 @@ class MasterFaktur extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Jumlah DPP
+                                Nama Singkat
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="jumlah_dpp"
-                                value={values.jumlah_dpp}
-                                onBlur={handleBlur("jumlah_dpp")}
-                                onChange={handleChange("jumlah_dpp")}
+                                name="nama_singkat"
+                                value={values.nama_singkat}
+                                onBlur={handleBlur("nama_singkat")}
+                                onChange={handleChange("nama_singkat")}
                                 />
-                                {errors.jumlah_dpp ? (
-                                    <text className={style.txtError}>{errors.jumlah_dpp}</text>
+                                {errors.nama_singkat ? (
+                                    <text className={style.txtError}>{errors.nama_singkat}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Jumlah PPN
+                                Bic Peserta
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="jumlah_ppn"
-                                value={values.jumlah_ppn}
-                                onBlur={handleBlur("jumlah_ppn")}
-                                onChange={handleChange("jumlah_ppn")}
+                                name="bic"
+                                value={values.bic}
+                                onBlur={handleBlur("bic")}
+                                onChange={handleChange("bic")}
                                 />
-                                {errors.jumlah_ppn ? (
-                                    <text className={style.txtError}>{errors.jumlah_ppn}</text>
+                                {errors.bic ? (
+                                    <text className={style.txtError}>{errors.bic}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Sandi Bank
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="sandi_bank"
+                                value={values.sandi_bank}
+                                onBlur={handleBlur("sandi_bank")}
+                                onChange={handleChange("sandi_bank")}
+                                />
+                                {errors.sandi_bank ? (
+                                    <text className={style.txtError}>{errors.sandi_bank}</text>
                                 ) : null}
                             </div>
                         </div>
                         <hr/>
                         <div className={style.foot}>
                             <div>
-                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Faktur</Button>
+                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Kliring</Button>
                             </div>
                             <div>
                                 <Button  onClick={handleSubmit} color="primary">Save</Button>
@@ -761,7 +656,7 @@ class MasterFaktur extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
-                    <ModalHeader>Upload Master Faktur</ModalHeader>
+                    <ModalHeader>Upload Master Kliring</ModalHeader>
                     <ModalBody className={style.modalUpload}>
                         <div className={style.titleModalUpload}>
                             <text>Upload File: </text>
@@ -789,23 +684,23 @@ class MasterFaktur extends Component {
                         {this.state.confirm === 'edit' ? (
                         <div className={style.cekUpdate}>
                             <AiFillCheckCircle size={80} className={style.green} />
-                            <div className={style.sucUpdate}>Berhasil Memperbarui Faktur</div>
+                            <div className={style.sucUpdate}>Berhasil Memperbarui Kliring</div>
                         </div>
                         ) : this.state.confirm === 'add' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menambahkan Faktur</div>
+                                <div className={style.sucUpdate}>Berhasil Menambahkan Kliring</div>
                             </div>
                         ) : this.state.confirm === 'del' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menghapus Faktur</div>
+                                <div className={style.sucUpdate}>Berhasil Menghapus Kliring</div>
                             </div>
                         ) : this.state.confirm === 'upload' ?(
                             <div>
                                 <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Mengupload Master Faktur</div>
+                                <div className={style.sucUpdate}>Berhasil Mengupload Master Kliring</div>
                             </div>
                             </div>
                         ) : this.state.confirm === 'reset' ? (
@@ -820,7 +715,7 @@ class MasterFaktur extends Component {
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.faktur.isLoading ? true: false} size="sm">
+                <Modal isOpen={this.props.kliring.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -830,7 +725,7 @@ class MasterFaktur extends Component {
                         </div>
                         </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.faktur.isUpload ? true: false} size="sm">
+                <Modal isOpen={this.props.kliring.isUpload ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -907,11 +802,11 @@ class MasterFaktur extends Component {
                     <div className={style.modalApprove}>
                         <div>
                             <text>
-                                Anda yakin untuk delete coa {detail.no_ktp} ?
+                                Anda yakin untuk delete coa {detail.bic} ?
                             </text>
                         </div>
                         <div className={style.btnApprove}>
-                            <Button color="primary" onClick={() => this.delFaktur()}>Ya</Button>
+                            <Button color="primary" onClick={() => this.delKliring()}>Ya</Button>
                             <Button color="secondary" onClick={this.openModalDel}>Tidak</Button>
                         </div>
                     </div>
@@ -924,21 +819,21 @@ class MasterFaktur extends Component {
 
 const mapStateToProps = state => ({
     user: state.user,
-    faktur: state.faktur
+    kliring: state.kliring
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
-    addFaktur: faktur.addFaktur,
-    updateFaktur: faktur.updateFaktur,
-    getFaktur: faktur.getAllFaktur,
-    uploadMaster: faktur.uploadMaster,
-    nextPage: faktur.nextPage,
-    exportMaster: faktur.exportMaster,
-    resetError: faktur.resetError,
+    addKliring: kliring.addKliring,
+    updateKliring: kliring.updateKliring,
+    getKliring: kliring.getAllKliring,
+    uploadMaster: kliring.uploadMaster,
+    nextPage: kliring.nextPage,
+    exportMaster: kliring.exportMaster,
+    resetError: kliring.resetError,
     resetPassword: user.resetPassword,
-    deleteFaktur: faktur.deleteFaktur
+    deleteKliring: kliring.deleteKliring
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(MasterFaktur)
+export default connect(mapStateToProps, mapDispatchToProps)(MasterKliring)
 	

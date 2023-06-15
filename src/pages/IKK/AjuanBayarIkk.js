@@ -1011,7 +1011,7 @@ class AjuanBayarIkk extends Component {
                                         {this.state.filter === 'available' && level === '2' ?  (
                                             <>
                                                 <Button className='mr-1' onClick={this.prosesSubmit} color="primary" size="lg">Submit</Button>
-                                                <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
+                                                {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button> */}
                                             </>
                                         ) : null}
                                         <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
@@ -1144,7 +1144,7 @@ class AjuanBayarIkk extends Component {
                 </Sidebar>
                 <Modal isOpen={this.state.modalRinci} className='modalrinci'  toggle={this.openModalRinci} size="xl">
                     <ModalBody>
-                        <div>
+                        <div className='mb-3'>
                             {/* <div className="stockTitle">form ajuan area (claim)</div> */}
                             {/* <div className="ptStock">pt. pinus merah abadi</div> */}
                             <Row className="ptStock inputStock">
@@ -1160,7 +1160,60 @@ class AjuanBayarIkk extends Component {
                                 <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailIkk.length > 0 ? moment(detailIkk[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
                             </Row>
                         </div>
-                        <TableRincian />
+                        <Table bordered responsive hover className={style.tab}>
+                                <thead>
+                                    <tr>
+                                        <th>NO</th>
+                                        <th>COST CENTRE</th>
+                                        <th>NO COA</th>
+                                        <th>NAMA COA</th>
+                                        <th>KETERANGAN TAMBAHAN</th>
+                                        <th>PERIODE</th>
+                                        <th>NILAI YANG DIAJUKAN</th>
+                                        <th>BANK</th>
+                                        <th>NOMOR REKENING</th>
+                                        <th>ATAS NAMA</th>
+                                        <th>MEMILIKI NPWP</th>
+                                        <th>NAMA SESUAI NPWP</th>
+                                        <th>NOMOR NPWP</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
+                                        <th>NILAI YANG DIBAYARKAN</th>
+                                        <th>TANGGAL TRANSFER</th>
+                                        <th>Jenis PPh</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {detailIkk.length !== 0 && detailIkk.map(item => {
+                                        return (
+                                            <tr>
+                                                <th scope="row">{detailIkk.indexOf(item) + 1}</th>
+                                                <th>{item.cost_center}</th>
+                                                <th>{item.no_coa}</th>
+                                                <th>{item.nama_coa}</th>
+                                                <th>{item.keterangan}</th>
+                                                <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
+                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.bank_tujuan}</th>
+                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.nama_tujuan}</th>
+                                                <th>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-'}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                <th>{item.dpp}</th>
+                                                <th>{item.ppn}</th>
+                                                <th>{item.nilai_utang}</th>
+                                                <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.tanggal_transfer !== null ? moment(item.tanggal_transfer).format('DD/MMMM/YYYY') : '-'}</th>
+                                                <th>{item.jenis_pph}</th>
+                                                <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
+                                            </tr>
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
                     </ModalBody>
                     <div className="modalFoot ml-3">
                         <div className="btnFoot">
@@ -1192,7 +1245,7 @@ class AjuanBayarIkk extends Component {
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab} id="table-to-xls">
                                 <thead>
-                                    <tr className='tbikk'>
+                                    <tr>
                                         <th>NO</th>
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>
@@ -1208,11 +1261,12 @@ class AjuanBayarIkk extends Component {
                                         <th>NOMOR NPWP</th>
                                         <th>NAMA SESUAI KTP</th>
                                         <th>NOMOR KTP</th>
-                                        <th>PPU</th>
-                                        <th>PA</th>
-                                        <th>NOMINAL</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>TANGGAL TRANSFER</th>
+                                        <th>Jenis PPh</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1229,16 +1283,17 @@ class AjuanBayarIkk extends Component {
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
+                                                <th>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
                                                 <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
                                                 <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                                <th>{item.ppu}</th>
-                                                <th>{item.pa}</th>
-                                                <th>{item.nominal}</th>
-                                                <th>{item.nilai_bayar}</th>
+                                                <th>{item.dpp}</th>
+                                                <th>{item.pph}</th>
+                                                <th>{item.nilai_utang}</th>
+                                                <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.tanggal_transfer}</th>
+                                                <th>{item.jenis_pph}</th>
                                             </tr>
                                             )
                                         })}
@@ -1258,7 +1313,7 @@ class AjuanBayarIkk extends Component {
                                 sheet="Dokumentasi"
                                 buttonText="Download"
                             />
-                            <Button color="success" onClick={this.openModalFaa}>
+                            <Button color="success" onClick={this.openDownload}>
                                 Close
                             </Button>
                         </div>
@@ -1295,7 +1350,7 @@ class AjuanBayarIkk extends Component {
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab} id="table-to-xls">
                                 <thead>
-                                    <tr className='tbikk'>
+                                    <tr>
                                         <th>NO</th>
                                         <th>No FPD</th>
                                         <th>Cabang</th>
@@ -1377,7 +1432,7 @@ class AjuanBayarIkk extends Component {
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab} id="table-to-xls">
                                 <thead>
-                                    <tr className='tbikk'>
+                                    <tr>
                                         <th>
                                             <input  
                                             className='mr-2'

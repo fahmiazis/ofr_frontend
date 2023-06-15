@@ -980,43 +980,27 @@ class AjuanBayarOps extends Component {
                                 <div className={style.titleDashboard}>List Ajuan Bayar Operasional</div>
                             </div>
                             <div className={style.secEmail3}>
-                                {this.state.filter === 'available' && level !== '2' ? (
-                                    null
-                                ) : (
-                                    <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="all">All</option>
-                                            {/* <option value="reject">Reject</option> */}
-                                            <option value="available">{level === '2' ? 'Verifikasi Tax' : 'Available approve'}</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                        </Input>
-                                    </div>
-                                )}
+                                <div className={style.headEmail2}>
+                                    {this.state.filter === 'available' && level === '2' ?  (
+                                        <>
+                                            <Button className='mr-1' onClick={this.prosesSubmit} color="primary" size="lg">Submit</Button>
+                                            {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button> */}
+                                            <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
+                                        </>
+                                    ) : null}
+                                </div>
                                 <div></div>
                             </div>
                             <div className={[style.secEmail4]}>
-                                {this.state.filter === 'available' && level !== '2' ? (
-                                    <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="all">All</option>
-                                            {/* <option value="reject">Reject</option> */}
-                                            <option value="available">{level === '2' ? 'Verifikasi Tax' : 'Available approve'}</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                        </Input>
-                                    </div>
-                                ) : (
-                                    <div className={style.headEmail2}>
-                                        {this.state.filter === 'available' && level === '2' ?  (
-                                            <>
-                                                <Button className='mr-1' onClick={this.prosesSubmit} color="primary" size="lg">Submit</Button>
-                                                <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                            </>
-                                        ) : null}
-                                        <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
-                                    </div>
-                                )}
+                                <div className={style.searchEmail2}>
+                                    <text>Filter:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value="all">All</option>
+                                        {/* <option value="reject">Reject</option> */}
+                                        <option value="available">{level === '2' ? 'Verifikasi Tax' : 'Available approve'}</option>
+                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                    </Input>
+                                </div>
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 

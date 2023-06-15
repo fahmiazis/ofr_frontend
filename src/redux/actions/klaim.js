@@ -43,6 +43,10 @@ export default {
         type: 'DETAIL_KLAIM',
         payload: http(token).patch(`/klaim/detail`, qs.stringify(no)),
     }),
+    getDetailId: (token, id) => ({
+        type: 'DETAILID_KLAIM',
+        payload: http(token).patch(`/klaim/detailid/${id}`),
+    }),
     getApproval: (token, no) => ({
         type: 'TTD_KLAIM',
         payload: http(token).patch(`/klaim/ttd`, qs.stringify(no))
@@ -94,6 +98,18 @@ export default {
     getReport: (token, status, reject, menu, time1, time2) => ({
         type: 'REPORT_KLAIM',
         payload: http(token).get(`/klaim/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}`),
+    }),
+    uploadBuktiBayar: (token, id, data) => ({
+        type: 'UPLOAD_BUKTI',
+        payload: http(token).post(`/klaim/uplist?id=${id}`, data)
+    }),
+    submitBuktiBayar: (token, data) => ({
+        type: 'SUBMIT_BUKTI',
+        payload: http(token).patch(`/klaim/sublistbayar`, qs.stringify(data))
+    }),
+    getDocBayar: (token,  data) => ({
+        type: 'DOC_BUKTI',
+        payload: http(token).patch(`/klaim/getdocbayar`, qs.stringify(data))
     }),
     resetKlaim: () => ({
         type: 'RESET_KLAIM'

@@ -43,6 +43,10 @@ export default {
         type: 'DETAIL_IKK',
         payload: http(token).patch(`/ikk/detail`, qs.stringify(no)),
     }),
+    getDetailId: (token, id) => ({
+        type: 'DETAILID_IKK',
+        payload: http(token).patch(`/ikk/detailid/${id}`),
+    }),
     getApproval: (token, no) => ({
         type: 'TTD_IKK',
         payload: http(token).patch(`/ikk/ttd`, qs.stringify(no))
@@ -63,9 +67,9 @@ export default {
         type: 'APP_REVISI',
         payload: http(token).patch(`/ikk/apprev`, qs.stringify(no))
     }),
-    editIkk: (token, id, data) => ({
+    editIkk: (token, id, idtrans, data) => ({
         type: 'EDIT_IKK',
-        payload: http(token).patch(`/ikk/update/${id}`, qs.stringify(data))
+        payload: http(token).patch(`/ikk/update/${id}/${idtrans}`, qs.stringify(data))
     }),
     editVerif: (token, id, data) => ({
         type: 'EDIT_VERIF',
@@ -77,7 +81,7 @@ export default {
     }),
     submitVerif: (token, data) => ({
         type: 'SUBMIT_VERIF',
-        payload: http(token).patch(`/ikk/verif`, qs.stringify(data))
+        payload: http(token).patch(`/ikk/verif`, data)
     }),
     submitAjuanBayar: (token, data) => ({
         type: 'SUBMIT_BAYAR',
@@ -94,6 +98,22 @@ export default {
     getReport: (token, status, reject, menu, time1, time2) => ({
         type: 'REPORT_IKK',
         payload: http(token).get(`/ikk/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}`),
+    }),
+    confirmNewIdent: (token, id) => ({
+        type: 'CONFIRM_IDENTIKK',
+        payload: http(token).patch(`/ikk/confident/${id}`)
+    }),
+    uploadBuktiBayar: (token, id, data) => ({
+        type: 'UPLOAD_BUKTIIKK',
+        payload: http(token).post(`/ikk/uplist?id=${id}`, data)
+    }),
+    submitBuktiBayar: (token, data) => ({
+        type: 'SUBMIT_BUKTIIKK',
+        payload: http(token).patch(`/ikk/sublistbayar`, qs.stringify(data))
+    }),
+    getDocBayar: (token,  data) => ({
+        type: 'DOC_BUKTIIKK',
+        payload: http(token).patch(`/ikk/getdocbayar`, qs.stringify(data))
     }),
     resetIkk: () => ({
         type: 'RESET_IKK'

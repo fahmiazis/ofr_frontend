@@ -207,8 +207,8 @@ export default (state=userState, action) => {
                     isLoading: false,
                     isDetail: false,
                     isError: true,
-                    alertMsg: action.payload.response.data.message,
-                    alert: action.payload.response.data.error
+                    alertMsg: action.payload.response.data.message || 'something went wrong',
+                    alert: action.payload.response.data.error || 'something went wrong'
                 };
             }
             case 'UPDATE_USER_PENDING': {

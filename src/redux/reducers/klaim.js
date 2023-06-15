@@ -47,7 +47,13 @@ const klaimState = {
     baseTtdList: [],
     isRejectList: null,
     isGetReport: null,
-    dataReport: []
+    dataReport: [],
+    uploadBukti: null,
+    isDocBukti: null,
+    docBukti: [],
+    submitBukti: null,
+    idKlaim: {},
+    detailId: null
 };
 
 export default (state=klaimState, action) => {
@@ -154,6 +160,30 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'DETAILID_KLAIM_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DETAILID_KLAIM_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    detailId: true,
+                    idKlaim: action.payload.data.result,
+                    alertMsg: 'get coa Succesfully'
+                };
+            }
+            case 'DETAILID_KLAIM_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    detailId: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'TTD_KLAIM_PENDING': {
                 return {
                     ...state,
@@ -218,7 +248,7 @@ export default (state=klaimState, action) => {
                     ...state,
                     isLoading: false,
                     isAdd: true,
-                    alertMsg: 'get detail coa Succesfully',
+                    alertMsg: 'add cart klaim succesfully',
                 };
             }
             case 'ADD_CART_REJECTED': {
@@ -227,7 +257,7 @@ export default (state=klaimState, action) => {
                     isLoading: false,
                     isAdd: false,
                     isError: true,
-                    alertMsg: "Unable connect to server"
+                    alertMsg: action.payload.response.data.message || 'something went wrong in server'
                 };
             }
             case 'EDIT_KLAIM_PENDING': {
@@ -536,6 +566,77 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'DOC_BUKTI_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DOC_BUKTI_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDocBukti: true,
+                    docBukti: action.payload.data.result,
+                    alertMsg: 'upload bukti Succesfully',
+                };
+            }
+            case 'DOC_BUKTI_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDocBukti: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'UPLOAD_BUKTI_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPLOAD_BUKTI_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    uploadBukti: true,
+                    alertMsg: 'upload bukti Succesfully',
+                };
+            }
+            case 'UPLOAD_BUKTI_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    uploadBukti: false,
+                    isError: true,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'SUBMIT_BUKTI_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'SUBMIT_BUKTI_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    submitBukti: true,
+                    alertMsg: 'upload bukti Succesfully',
+                };
+            }
+            case 'SUBMIT_BUKTI_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    submitBukti: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'UPLOAD_DOC_PENDING': {
                 return {
                     ...state,
@@ -629,7 +730,11 @@ export default (state=klaimState, action) => {
                     subVerif: null,
                     editVrf: null,
                     subBayar: null,
-                    isGetReport: null
+                    isGetReport: null,
+                    uploadBukti: null,
+                    isDocBukti: null,
+                    submitBukti: null,
+                    detailId: null
                 }
             }
             default: {

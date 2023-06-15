@@ -1,5 +1,5 @@
 /* eslint-disable import/no-anonymous-default-export */
-const emailState = {
+const financeState = {
     isAdd: false,
     isAddDetail: false,
     isUpdate: false,
@@ -8,162 +8,65 @@ const emailState = {
     isLoading: false,
     isError: false,
     alertMsg: '',
-    dataEmail: [],
+    dataFinance: [],
     dataName: [],
     alertM: '',
     alertUpload: [],
     page: {},
     isExport: false,
-    detEmail: {},
+    detFinance: {},
     link: '',
     dataAll: [],
     isAll: false,
     isUpload: false,
-    draftEmail: {},
-    isDraft: null,
-    isSend: null,
-    draftAjuan: null
+    allFinance: []
 };
 
-export default (state=emailState, action) => {
+export default (state=financeState, action) => {
         switch(action.type){
-            case 'GET_ALL_EMAIL_PENDING': {
+            case 'GET_ALL_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_ALL_EMAIL_FULFILLED': {
+            case 'GET_ALL_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isAll: true,
-                    dataAll: action.payload.data.result,
-                    alertMsg: 'get email Succesfully'
+                    dataAll: action.payload.data.result.rows,
+                    alertMsg: 'get finance Succesfully',
+                    page: action.payload.data.pageInfo
                 };
             }
-            case 'GET_ALL_EMAIL_REJECTED': {
+            case 'GET_ALL_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
                     isError: true,
-                    alertMsg: "Failed get data email"
+                    alertMsg: "Failed get data finance"
                 };
             }
-            case 'GET_EMAIL_PENDING': {
+            case 'GET_FINANCE_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_EMAIL_FULFILLED': {
+            case 'GET_FINANCE_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    dataEmail: action.payload.data.result.rows,
-                    page: action.payload.data.pageInfo,
-                    alertMsg: 'get email Succesfully'
+                    dataFinance: action.payload.data.result,
+                    allFinance: action.payload.data.length,
+                    alertMsg: 'get finance Succesfully'
                 };
             }
-            case 'GET_EMAIL_REJECTED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isError: true,
-                    alertMsg: "Unable connect to server"
-                };
-            }
-            case 'DRAFT_EMAIL_PENDING': {
-                return {
-                    ...state,
-                    isLoading: true,
-                    alertMsg: 'Waiting ...'
-                };
-            }
-            case 'DRAFT_EMAIL_FULFILLED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    draftEmail: action.payload.data,
-                    isDraft: true,
-                    alertMsg: 'get email Succesfully'
-                };
-            }
-            case 'DRAFT_EMAIL_REJECTED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isDraft: false,
-                    alertMsg: "Unable connect to server"
-                };
-            }
-            case 'AJUAN_EMAIL_PENDING': {
-                return {
-                    ...state,
-                    isLoading: true,
-                    alertMsg: 'Waiting ...'
-                };
-            }
-            case 'AJUAN_EMAIL_FULFILLED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    draftEmail: action.payload.data,
-                    draftAjuan: true,
-                    alertMsg: 'get email Succesfully'
-                };
-            }
-            case 'AJUAN_EMAIL_REJECTED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    draftAjuan: false,
-                    alertMsg: "Unable connect to server"
-                };
-            }
-            case 'SEND_EMAIL_PENDING': {
-                return {
-                    ...state,
-                    isLoading: true,
-                    alertMsg: 'Waiting ...'
-                };
-            }
-            case 'SEND_EMAIL_FULFILLED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isSend: true,
-                    alertMsg: 'send email Succesfully'
-                };
-            }
-            case 'SEND_EMAIL_REJECTED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isSend: false,
-                    alertMsg: "Unable connect to server"
-                };
-            }
-            case 'DETAIL_EMAIL_PENDING': {
-                return {
-                    ...state,
-                    isLoading: true,
-                    alertMsg: 'Waiting ...'
-                };
-            }
-            case 'DETAIL_EMAIL_FULFILLED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isGet: true,
-                    detEmail: action.payload.data.result,
-                    alertMsg: 'get detail email Succesfully',
-                };
-            }
-            case 'DETAIL_EMAIL_REJECTED': {
+            case 'GET_FINANCE_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -171,40 +74,64 @@ export default (state=emailState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'NEXT_DATA_EMAIL_PENDING': {
+            case 'DETAIL_FINANCE_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'NEXT_DATA_EMAIL_FULFILLED': {
+            case 'DETAIL_FINANCE_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    dataEmail: action.payload.data.result.rows,
+                    detFinance: action.payload.data.result,
+                    alertMsg: 'get detail finance Succesfully',
+                };
+            }
+            case 'DETAIL_FINANCE_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'NEXT_DATA_FINANCE_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'NEXT_DATA_FINANCE_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isAll: true,
+                    dataAll: action.payload.data.result.rows,
                     alertMsg: 'next data Succesfully',
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'NEXT_DATA_EMAIL_REJECTED': {
+            case 'NEXT_DATA_FINANCE_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
-                    isGet: false,
+                    isAll: false,
                     isError: true,
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'UPDATE_EMAIL_PENDING': {
+            case 'UPDATE_FINANCE_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting'
                 };
             }
-            case 'UPDATE_EMAIL_FULFILLED': {
+            case 'UPDATE_FINANCE_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -212,7 +139,7 @@ export default (state=emailState, action) => {
                     alertMsg: 'update user Succesfully'
                 };
             }
-            case 'UPDATE_EMAIL_REJECTED': {
+            case 'UPDATE_FINANCE_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -221,14 +148,14 @@ export default (state=emailState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'ADD_EMAIL_PENDING': {
+            case 'ADD_FINANCE_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'ADD_EMAIL_FULFILLED': {
+            case 'ADD_FINANCE_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -237,7 +164,7 @@ export default (state=emailState, action) => {
                     alertMsg: 'add user Succesfully'
                 };
             }
-            case 'ADD_EMAIL_REJECTED': {
+            case 'ADD_FINANCE_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -246,7 +173,55 @@ export default (state=emailState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'RESET_EMAIL': {
+            case 'UPLOAD_FINANCE_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting....'
+                };
+            }
+            case 'UPLOAD_FINANCE_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpload: true,
+                    alertMsg: 'upload master Succesfully'
+                };
+            }
+            case 'UPLOAD_FINANCE_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    alertMsg: action.payload.response.data.message,
+                    alertUpload: action.payload.response.data.result
+                };
+            }
+            case 'EXPORT_MASTER_FINANCE_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'EXPORT_MASTER_FINANCE_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isExport: true,
+                    link: action.payload.data.link,
+                    alertMsg: 'success export data'
+                };
+            }
+            case 'EXPORT_MASTER_FINANCE_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    alertMsg: 'Failed export data'
+                };
+            }
+            case 'RESET_FINANCE': {
                 return {
                     ...state,
                     isError: false,
@@ -256,10 +231,7 @@ export default (state=emailState, action) => {
                     isGet: false,
                     isExport: false,
                     isLoading: false,
-                    isUpload: false,
-                    isDraft: null,
-                    isSend: null,
-                    draftAjuan: null
+                    isUpload: false
                 }
             }
             default: {

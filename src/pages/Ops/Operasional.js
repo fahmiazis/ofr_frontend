@@ -132,7 +132,10 @@ class Ops extends Component {
             time: '',
             time1: '',
             time2: '',
-            subject: ''
+            subject: '',
+            docHist: false,
+            detailDoc: {},
+            docCon: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -350,11 +353,17 @@ class Ops extends Component {
     }
 
     componentDidMount() {
-        // const level = localStorage.getItem('level')
+        const dataCek = localStorage.getItem('docData')
         const {item, type} = (this.props.location && this.props.location.state) || {}
         if (type === 'approve') {
             this.getDataOps()
             this.prosesDetail(item)
+        } else if (dataCek !== undefined && dataCek !== null) {
+            const data = {
+                no_transaksi: dataCek
+            }
+            this.getDataOps()
+            this.prosesDocTab(data)
         } else {
             this.getDataOps()
         }
@@ -790,12 +799,52 @@ class Ops extends Component {
 
     openProsesModalDoc = async (val) => {
         const token = localStorage.getItem("token")
+        localStorage.removeItem('docData')
         const tempno = {
             no: val.no_transaksi,
             name: 'Draft Pengajuan Ops'
         }
         await this.props.getDocOps(token, tempno)
+        this.setState({docCon: false})
         this.openModalDoc()
+    }
+
+    prosesDocTab = async (val) => {
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: val.no_transaksi
+        }
+        const sendDoc = {
+            no_transaksi: val.no_transaksi
+        }
+        const data = {
+            no: val.no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
+        this.setState({listMut: []})
+        await this.props.getDetail(token, tempno)
+        await this.props.getApproval(token, tempno)
+        await this.props.getDocOps(token, data)
+        this.openModalRinci()
+        this.openProsesModalDoc(sendDoc)
+    }
+
+    openDocNewTab = async (val) => {
+        localStorage.setItem('docData', val[0].no_transaksi)
+        const newWindow = window.open('ops', '_blank', 'noopener,noreferrer')
+        this.setState({docCon: false})
+        if (newWindow) {
+            newWindow.opener = null
+        }
+    }
+
+    openDocCon = () => {
+        this.setState({docCon: !this.state.docCon})
+    }
+
+    docHistory = (val) => {
+        this.setState({detailDoc: val})
+        this.setState({docHist: !this.state.docHist})
     }
 
     openModalDoc = () => {
@@ -985,7 +1034,7 @@ class Ops extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
+        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
@@ -1075,7 +1124,7 @@ class Ops extends Component {
                             </div>
                             <div className={[style.secEmail4]}>
                                 {(level === '5' || level === '6') && (
-                                    <Button onClick={() => this.goRoute('cartops')} color="info" size="lg">Create</Button>
+                                    <Button onClick={() => this.goRoute('navkasbon')} color="info" size="lg">Create</Button>
                                 )}
                                 {(level === '5' || level === '6') ? (
                                     <div></div>
@@ -1144,6 +1193,7 @@ class Ops extends Component {
                                                 <th>NAMA COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
                                                 <th>TGL AJUAN</th>
+                                                <th>TIPE KASBON</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
                                             </tr>
@@ -1160,6 +1210,7 @@ class Ops extends Component {
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
+                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Detail</Button>
@@ -1189,6 +1240,7 @@ class Ops extends Component {
                                                 <th>NAMA COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
                                                 <th>TGL AJUAN</th>
+                                                <th>TIPE KASBON</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
                                             </tr>
@@ -1205,6 +1257,7 @@ class Ops extends Component {
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
+                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -1369,7 +1422,7 @@ class Ops extends Component {
                         <div className="btnFoot">
                             <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
                             <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>FAA</Button>
-                            <Button color="primary"  onClick={() => this.openProsesModalDoc(detailOps[0])}>Dokumen</Button>
+                            <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
                             {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
@@ -1490,7 +1543,7 @@ class Ops extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.props.menu.isLoading || this.props.reason.isLoading || this.props.email.isLoading} size="sm">
+                <Modal isOpen={this.props.ops.isLoading || this.props.menu.isLoading || this.props.reason.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1630,7 +1683,7 @@ class Ops extends Component {
             </Modal>
             <Modal size="xl" isOpen={this.state.modalDoc} toggle={this.openModalDoc}>
                 <ModalHeader>
-                   Kelengkapan Dokumen
+                   Kelengkapan Dokumen {detailOps !== undefined && detailOps.length > 0 && detailOps[0].no_transaksi}
                 </ModalHeader>
                 <ModalBody>
                     <Container>
@@ -1648,6 +1701,9 @@ class Ops extends Component {
                                                     <BsCircle size={20} />
                                                 )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+                                            <div>
+                                                <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
+                                            </div>
                                             {/* <div className="colDoc">
                                                 <input
                                                 className="ml-4"
@@ -1798,6 +1854,34 @@ class Ops extends Component {
                             <div className={style.btnApprove}>
                                 <Button color="primary" onClick={() => this.rejectDoc()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalRejDoc}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.docHist} toggle={this.docHistory}>
+                    <ModalBody>
+                        <div className='mb-4'>History Dokumen</div>
+                        <div className='history'>
+                            {detailDoc.status !== undefined && detailDoc.status !== null && detailDoc.status.split(',').map(item => {
+                                return (
+                                    item !== null && item !== 'null' && 
+                                    <Button className='mb-2' color='info'>{item}</Button>
+                                )
+                            })}
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.docCon} toggle={this.openDocCon} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div className='btnDocCon'>
+                                <text>
+                                    Pilih Open Kelengkapan Dokumen
+                                </text>
+                            </div>
+                            <div className='btnDocCon mb-4'>
+                                <Button color="primary" className='mr-2' onClick={() => this.openProsesModalDoc(detailOps[0])}>Open Pop Up</Button>
+                                <Button color="success" className='ml-2' onClick={() => this.openDocNewTab(detailOps)}>Open New Tab</Button>
                             </div>
                         </div>
                     </ModalBody>

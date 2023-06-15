@@ -23,6 +23,10 @@ export default {
         type: 'DRAFT_EMAIL',
         payload: http(token).patch(`/email/draft`, data)
     }),
+    getDraftAjuan: (token, data) => ({
+        type: 'AJUAN_EMAIL',
+        payload: http(token).patch(`/email/drajuan`, data)
+    }),
     sendEmail: (token, data) => ({
         type: 'SEND_EMAIL',
         payload: http(token).patch(`/email/send`, data)

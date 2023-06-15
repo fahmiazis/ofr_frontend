@@ -45,6 +45,9 @@ const addSchema = Yup.object().shape({
     periode_akhir: Yup.date().required('must be filled'),
     nilai_ajuan: Yup.string().required("must be filled"),
     status_npwp: Yup.string().required('must be filled'),
+    no_surkom: Yup.string().required("must be filled"),
+    nama_program: Yup.string().required("must be filled"),
+    dn_area: Yup.string().required("must be filled")
 })
 
 const alasanSchema = Yup.object().shape({
@@ -119,6 +122,7 @@ class CartKlaim extends Component {
             openDraft: false,
             subject: '',
             message: '',
+            isLoading: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -351,7 +355,7 @@ class CartKlaim extends Component {
         const tempno = {
             no: noklaim,
             kode: dataCart[0].kode_plant,
-            jenis: 'klm',
+            jenis: 'klaim',
             tipe: tipe,
             menu: 'Pengajuan Klaim (Klaim)'
         }
@@ -415,7 +419,7 @@ class CartKlaim extends Component {
     }
 
     componentDidUpdate() {
-        const { isAdd, isUpload } = this.props.klaim
+        const { isAdd, isUpload, isEdit } = this.props.klaim
         const token = localStorage.getItem("token")
         if (isAdd === true) {
             this.openModalAdd()
@@ -432,6 +436,10 @@ class CartKlaim extends Component {
                 name: 'Draft Pengajuan Klaim'
             }
             this.props.getDocKlaim(token, tempno)
+            this.props.resetKlaim()
+        } else if (isEdit === true) {
+            this.props.getCart(token)
+            this.openConfirm(this.setState({confirm: 'editcart'}))
             this.props.resetKlaim()
         }
     }
@@ -686,14 +694,45 @@ class CartKlaim extends Component {
             nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : val.nama_tujuan,
             tujuan_tf: this.state.tujuan_tf,
             tiperek: this.state.tiperek,
-            status_npwp: val.status_npwp === 'Tidak' ? 0 : 1,
+            status_npwp: val.status_npwp === 'Tidak' ? 0 : val.status_npwp === 'Ya' ? 1 : null,
             nama_npwp: val.status_npwp === 'Tidak' ? '' : val.nama_npwp,
             no_npwp: val.status_npwp === 'Tidak' ? '' : val.no_npwp,
             nama_ktp: val.status_npwp === 'Tidak' ? val.nama_ktp : '',
             no_ktp: val.status_npwp === 'Tidak' ? val.no_ktp : '',
-            periode: ''
+            periode: '',
+            no_surkom: val.no_surkom,
+            nama_program: val.nama_program,
+            dn_area: val.dn_area
         }
         await this.props.addCart(token, data)
+    }
+
+    editCartKlaim = async (val) => {
+        const token = localStorage.getItem("token")
+        const {detailDepo} = this.props.depo
+        const data = {
+            no_coa: this.state.no_coa,
+            keterangan: val.keterangan,
+            periode_awal: val.periode_awal,
+            periode_akhir: val.periode_akhir,
+            nilai_ajuan: val.nilai_ajuan,
+            bank_tujuan: this.state.bank,
+            norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
+            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : val.nama_tujuan,
+            tujuan_tf: this.state.tujuan_tf,
+            tiperek: this.state.tiperek,
+            status_npwp: val.status_npwp === 'Tidak' ? 0 : val.status_npwp === 'Ya' ? 1 : null,
+            nama_npwp: val.status_npwp === 'Tidak' ? '' : val.nama_npwp,
+            no_npwp: val.status_npwp === 'Tidak' ? '' : val.no_npwp,
+            nama_ktp: val.status_npwp === 'Tidak' ? val.nama_ktp : '',
+            no_ktp: val.status_npwp === 'Tidak' ? val.no_ktp : '',
+            periode: '',
+            no_surkom: val.no_surkom,
+            nama_program: val.nama_program,
+            dn_area: val.dn_area
+        }
+        const {idKlaim} = this.props.klaim
+        await this.props.editKlaim(token, idKlaim.id, data)
     }
 
     updateNewAsset = async (value) => {
@@ -794,6 +833,40 @@ class CartKlaim extends Component {
         this.openModalAdd()
     }
 
+    prosesOpenEdit = async (val) => {
+        const token = localStorage.getItem('token')
+        await this.props.getDetailId(token, val)
+        await this.props.getRek(token)
+        await this.props.getDetailDepo(token)
+        const { dataRek } = this.props.rekening
+        const spending = dataRek[0].rek_spending
+        const zba = dataRek[0].rek_zba
+        const bankcol = dataRek[0].rek_bankcol
+        const temp = [
+            {label: '-Pilih-', value: ''},
+            spending !== '0' ? {label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card'} : {value: '', label: ''},
+            zba !== '0' ? {label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA'} : {value: '', label: ''},
+            bankcol !== '0' ? {label: `${bankcol}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
+        ]
+
+        const {idKlaim} = this.props.klaim
+        this.setState({
+            rekList: temp, 
+            isLoading: true, 
+            norek: idKlaim.norek_ajuan,
+            tiperek: idKlaim.tiperek,
+        })
+
+        this.selectCoa({value: idKlaim.no_coa, label: idKlaim.nama_coa})
+        this.selectTujuan(idKlaim.tujuan_tf)
+        this.prepBank(idKlaim.bank_tujuan)
+
+        setTimeout(() => {
+            this.setState({isLoading: false})
+            this.openModalEdit()
+         }, 1000)
+    }
+
     showDokumen = async (value) => {
         const token = localStorage.getItem('token')
         await this.props.showDokumen(token, value.id)
@@ -832,19 +905,22 @@ class CartKlaim extends Component {
         this.setState({modalAdd: !this.state.modalAdd})
     }
 
-    getRincian = async (val) => {
-        const token = localStorage.getItem("token")
-        this.setState({dataRinci: val})
-        await this.props.getDetailAsset(token, val.no_asset)
-        this.openModalEdit()
-    }
-
     selectCoa = (e) => {
         this.setState({no_coa: e.value, nama_coa: e.label})
     }
 
     selectBank = (e) => {
         this.setState({bank: e.label, digit: e.value})
+    }
+
+    prepBank = (val) => {
+        const { dataBank } = this.props.bank
+        const data = dataBank.find(({bank}) => bank === val)
+        if (data === undefined) {
+            this.setState()
+        } else {
+            this.setState({bank: data.name, digit: data.digit})
+        }
     }
 
     selectRek = (e) => {
@@ -886,13 +962,6 @@ class CartKlaim extends Component {
         const token = localStorage.getItem("token")
     }
 
-    getRinciStock = async (val) => {
-        const token = localStorage.getItem("token")
-        this.setState({dataRinci: val, dataId: val.id})
-        await this.props.getDetailItem(token, val.id)
-        this.openModalStock()
-    }
-
     openModalStock = () => {
         this.setState({modalStock: !this.state.modalStock})
     }
@@ -905,7 +974,7 @@ class CartKlaim extends Component {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
         const {dataRinci, dropApp, dataItem, listMut, drop, newStock} = this.state
-        const {dataCart, dataDoc} = this.props.klaim
+        const {dataCart, dataDoc, idKlaim} = this.props.klaim
         const { detailDepo, dataDepo } = this.props.depo
         // const pages = this.props.depo.page
 
@@ -984,7 +1053,7 @@ class CartKlaim extends Component {
                                                     <th>{item.norek_ajuan}</th>
                                                     <th>{item.nama_tujuan}</th>
                                                     <th>
-                                                        <Button className='mb-1 mr-1' color='success'>EDIT</Button>
+                                                        <Button onClick={() => this.prosesOpenEdit(item.id)} className='mb-1 mr-1' color='success'>EDIT</Button>
                                                         <Button onClick={() => this.deleteCart(item.id)} color='danger'>DELETE</Button>
                                                     </th>
                                                 </tr>
@@ -1081,14 +1150,17 @@ class CartKlaim extends Component {
                                 keterangan: '',
                                 periode_awal: '',
                                 periode_akhir: '',
-                                nilai_ajuan: '',
+                                nilai_ajuan: 0,
                                 norek_ajuan: '',
                                 nama_tujuan: '',
                                 status_npwp: '',
                                 nama_npwp: '',
                                 no_npwp: '',
                                 no_ktp: '',
-                                nama_ktp: ''
+                                nama_ktp: '',
+                                no_surkom: '',
+                                nama_program: '',
+                                dn_area: ''
                             }}
                             validationSchema = {addSchema}
                             onSubmit={(values) => {this.addCartKlaim(values)}}
@@ -1138,21 +1210,45 @@ class CartKlaim extends Component {
                                             <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Tujuan Transfer</Col>
+                                            <Col md={3}>No Surkom</Col>
                                             <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "select" 
+                                                type= "text" 
                                                 className="inputRinci"
-                                                value={this.state.tujuan_tf}
-                                                onChange={e => this.selectTujuan(e.target.value)}
-                                                >
-                                                    <option value=''>Pilih</option>
-                                                    <option value="PMA">PMA</option>
-                                                    <option value="Outlet">Outlet</option>
-                                                </Input>
+                                                value={values.no_surkom}
+                                                onBlur={handleBlur("no_surkom")}
+                                                onChange={handleChange("no_surkom")}
+                                                />
                                             </Col>
                                         </Row>
-                                        {this.state.tujuan_tf === '' ? (
+                                        {errors.no_surkom ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama Program</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.nama_program}
+                                                onBlur={handleBlur("nama_program")}
+                                                onChange={handleChange("nama_program")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.nama_program ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>DN Area</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.dn_area}
+                                                onBlur={handleBlur("dn_area")}
+                                                onChange={handleChange("dn_area")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.dn_area ? (
                                             <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
@@ -1207,6 +1303,24 @@ class CartKlaim extends Component {
                                             </Col>
                                         </Row>
                                         {errors.nilai_ajuan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Tujuan Transfer</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "select" 
+                                                className="inputRinci"
+                                                value={this.state.tujuan_tf}
+                                                onChange={e => this.selectTujuan(e.target.value)}
+                                                >
+                                                    <option value=''>Pilih</option>
+                                                    <option value="PMA">PMA</option>
+                                                    <option value="Outlet">Outlet</option>
+                                                </Input>
+                                            </Col>
+                                        </Row>
+                                        {this.state.tujuan_tf === '' ? (
                                             <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
@@ -1403,8 +1517,364 @@ class CartKlaim extends Component {
                 </Modal>
                 <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
                     <ModalHeader>
-                        Rincian
+                        Edit Ajuan Klaim
                     </ModalHeader>
+                    <ModalBody>
+                        <div className="mainRinci2">
+                            <Formik
+                            initialValues = {{
+                                keterangan: idKlaim.keterangan || '',
+                                periode_awal: idKlaim.periode_awal || '',
+                                periode_akhir: idKlaim.periode_akhir || '',
+                                nilai_ajuan: idKlaim.nilai_ajuan || 0,
+                                norek_ajuan: idKlaim.norek_ajuan || '',
+                                nama_tujuan: idKlaim.nama_tujuan || '',
+                                status_npwp: idKlaim.status_npwp === 0 ? 'Tidak' : idKlaim.status_npwp === 1 && 'Ya',
+                                nama_npwp: idKlaim.nama_npwp || '',
+                                no_npwp: idKlaim.no_npwp || '',
+                                no_ktp: idKlaim.no_ktp || '',
+                                nama_ktp: idKlaim.nama_ktp || '',
+                                no_surkom: idKlaim.no_surkom || '',
+                                nama_program: idKlaim.nama_program || '',
+                                dn_area: idKlaim.dn_area || ''
+                            }}
+                            validationSchema = {addSchema}
+                            onSubmit={(values) => {this.editCartKlaim(values)}}
+                            >
+                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                                <div className="rightRinci2">
+                                    <div>
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>COA</Col>
+                                            <Col md={9} className="colRinci">: 
+                                                <Select
+                                                    className="inputRinci2"
+                                                    options={this.state.options}
+                                                    onChange={this.selectCoa}
+                                                    value={{value: this.state.no_coa, label: this.state.nama_coa}}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.no_coa === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>No COA</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={this.state.no_coa}
+                                                onBlur={handleBlur("no_coa")}
+                                                onChange={handleChange("no_coa")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.no_coa === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama COA</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={this.state.nama_coa}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.no_coa === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>No Surkom</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.no_surkom}
+                                                onBlur={handleBlur("no_surkom")}
+                                                onChange={handleChange("no_surkom")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.no_surkom ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama Program</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.nama_program}
+                                                onBlur={handleBlur("nama_program")}
+                                                onChange={handleChange("nama_program")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.nama_program ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>DN Area</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.dn_area}
+                                                onBlur={handleBlur("dn_area")}
+                                                onChange={handleChange("dn_area")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.dn_area ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Keterangan</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.keterangan}
+                                                onBlur={handleBlur("keterangan")}
+                                                onChange={handleChange("keterangan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.keterangan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Periode</Col>
+                                            <Col md={9} className="colRinci">: 
+                                                <Input
+                                                type= "date" 
+                                                className="inputRinci"
+                                                value={moment(values.periode_awal).format('YYYY-MM-DD')}
+                                                onBlur={handleBlur("periode_awal")}
+                                                onChange={handleChange("periode_awal")}
+                                                />
+                                                <text className='mr-1 ml-1'>To</text>
+                                                <Input
+                                                type= "date" 
+                                                className="inputRinci"
+                                                value={moment(values.periode_akhir).format('YYYY-MM-DD')}
+                                                onBlur={handleBlur("periode_akhir")}
+                                                onChange={handleChange("periode_akhir")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.periode_awal || errors.periode_akhir ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : values.periode_awal > values.periode_akhir ? (
+                                            <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
+                                        ) : null }
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nilai Yang Diajukan</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.nilai_ajuan}
+                                                onBlur={handleBlur("nilai_ajuan")}
+                                                onChange={handleChange("nilai_ajuan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.nilai_ajuan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Tujuan Transfer</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "select" 
+                                                className="inputRinci"
+                                                value={this.state.tujuan_tf}
+                                                onChange={e => this.selectTujuan(e.target.value)}
+                                                >
+                                                    <option value=''>Pilih</option>
+                                                    <option value="PMA">PMA</option>
+                                                    <option value="Outlet">Outlet</option>
+                                                </Input>
+                                            </Col>
+                                        </Row>
+                                        {this.state.tujuan_tf === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Bank</Col>
+                                            <Col md={9} className="colRinci">: 
+                                            {this.state.tujuan_tf === 'PMA' ? (
+                                                <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={this.state.bank}
+                                                disabled
+                                                />
+                                            ) : (
+                                                <Select
+                                                isDisabled={this.state.tujuan_tf === '' && true}
+                                                className="inputRinci2"
+                                                options={this.state.bankList}
+                                                onChange={this.selectBank}
+                                                />
+                                            )}
+                                            </Col>
+                                        </Row>
+                                        {this.state.bank === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor Rekening</Col>
+                                            <Col md={9} className="colRinci">:  
+                                            {this.state.tujuan_tf === 'PMA' ? (
+                                                <Select
+                                                    className="inputRinci2"
+                                                    options={this.state.rekList}
+                                                    onChange={this.selectRek}
+                                                    value={{label: this.state.norek, value: this.state.tiperek}}
+                                                />
+                                            ) : (
+                                                <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                disabled={this.state.digit === 0 ? true : false}
+                                                minLength={this.state.digit}
+                                                maxLength={this.state.digit}
+                                                value={values.norek_ajuan}
+                                                onBlur={handleBlur("norek_ajuan")}
+                                                onChange={handleChange("norek_ajuan")}
+                                                />
+                                            )}
+                                            </Col>
+                                        </Row>
+                                        {(errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit) && this.state.tujuan_tf !== 'PMA'? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : this.state.tujuan_tf === 'PMA' && this.state.norek.length !== this.state.digit ? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Atas Nama</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={this.state.tujuan_tf === '' || this.state.tujuan_tf === 'PMA' ? true : false}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : values.nama_tujuan}
+                                                onBlur={handleBlur("nama_tujuan")}
+                                                onChange={handleChange("nama_tujuan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.nama_tujuan === '' && this.state.tujuan_tf !== 'PMA' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Memiliki NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "select" 
+                                                className="inputRinci"
+                                                value={values.status_npwp}
+                                                onBlur={handleBlur("status_npwp")}
+                                                onChange={handleChange("status_npwp")}
+                                                >
+                                                    <option value=''>Pilih</option>
+                                                    <option value="Ya">Ya</option>
+                                                    <option value="Tidak">Tidak</option>
+                                                </Input>
+                                            </Col>
+                                        </Row>
+                                        {errors.status_npwp ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama Sesuai NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Ya' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Ya' ? values.nama_npwp : ''}
+                                                onBlur={handleBlur("nama_npwp")}
+                                                onChange={handleChange("nama_npwp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Ya' && values.nama_npwp === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Ya' ? false : true}
+                                                type= "text" 
+                                                minLength={15}
+                                                maxLength={15}
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Ya' ? values.no_npwp : ''}
+                                                onBlur={handleBlur("no_npwp")}
+                                                onChange={handleChange("no_npwp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
+                                            <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama Sesuai KTP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Tidak' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Tidak' ? values.nama_ktp : ''}
+                                                onBlur={handleBlur("nama_ktp")}
+                                                onChange={handleChange("nama_ktp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Tidak' && values.nama_ktp === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor KTP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Tidak' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                minLength={16}
+                                                maxLength={16}
+                                                value={values.status_npwp === 'Tidak' ? values.no_ktp : ''}
+                                                onBlur={handleBlur("no_ktp")}
+                                                onChange={handleChange("no_ktp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Tidak' && values.no_ktp.length < 16 ? (
+                                            <text className={style.txtError}>must be filled with 16 digits characters</text>
+                                        ) : null}
+                                    </div>
+                                    <div className="modalFoot mt-3">
+                                        <div></div>
+                                        <div className='btnfoot'>
+                                            <Button 
+                                                className="mr-3" 
+                                                size="md" 
+                                                disabled={this.state.no_coa === '' ? true 
+                                                : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp === '' ) ? true 
+                                                : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
+                                                // : values.norek_ajuan.length < this.state.digit ? true 
+                                                : this.state.tujuan_tf === '' ? true
+                                                : false } 
+                                                color="primary" 
+                                                onClick={handleSubmit}>
+                                                Save
+                                            </Button>
+                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalEdit()}>Close</Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            </Formik>
+                        </div>
+                    </ModalBody>
                 </Modal>
                 <Modal isOpen={this.state.modalStock} toggle={this.openModalStock} size="lg">
                     <ModalHeader>
@@ -1656,7 +2126,7 @@ class CartKlaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading || this.props.email.isLoading} size="sm">
+                <Modal isOpen={this.props.klaim.isLoading || this.props.email.isLoading || this.state.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2026,6 +2496,13 @@ class CartKlaim extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Menambahkan Data</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'editcart' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Menyimpan Perubahan Data</div>
+                            </div>
+                        </div>
                     ) : this.state.confirm === 'reject' ?(
                         <div>
                             <div className={style.cekUpdate}>
@@ -2053,7 +2530,7 @@ class CartKlaim extends Component {
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Gagal Menambahkan Data</div>
-                                <div className={[style.sucUpdate, style.green]}>Pastikan pengisian program dan periode sesuai dengan SOP</div>
+                                <div className={[style.sucUpdate, style.green]}>{this.props.klaim.alertMsg}</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'isApprove' ? (
@@ -2142,20 +2619,9 @@ class CartKlaim extends Component {
                     <Button className="mr-2" disabled={dataDoc.length > 0 ? false : true} color="primary" onClick={this.cekDok}>
                         Done
                     </Button>
-                    {/* {this.state.stat === 'DIPINJAM SEMENTARA' && (dataDoc.length === 0 || dataDoc.find(({status}) => status === 1) === undefined) ? (
-                        <Button color="primary" disabled onClick={this.updateStatus}>
-                            Save 
-                        </Button>
-                    ) : this.state.stat === 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.updateStatus}>
-                            Save 
-                        </Button>
-                    )}
-                    {this.state.stat !== 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.openModalDoc}>
-                            Save 
-                        </Button>
-                    )} */}
+                    <Button color="primary" onClick={this.openModalDoc}>
+                        Close 
+                    </Button>
                 </ModalFooter>
             </Modal>
             <Modal isOpen={this.state.openPdf} size="xl" toggle={this.openModalPdf} centered={true}>
@@ -2215,6 +2681,8 @@ const mapDispatchToProps = {
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
     getDetail: klaim.getDetail,
+    getDetailId: klaim.getDetailId,
+    editKlaim: klaim.editKlaim
     // notifStock: notif.notifStock
 }
 

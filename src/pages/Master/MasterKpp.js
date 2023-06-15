@@ -432,7 +432,7 @@ class MasterKpp extends Component {
                                         </Input>
                                     </div>
                                 </div>
-                                {isAll === false ? (
+                                {dataAll.length === 0 ? (
                                     <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
@@ -446,11 +446,7 @@ class MasterKpp extends Component {
                                         </thead>
                                     </Table>
                                         <div className={style.spin}>
-                                            <Spinner type="grow" color="primary"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="success"/>
-                                            <Spinner type="grow" color="warning"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="danger"/>
-                                            <Spinner type="grow" color="info"/>
+                                            Data tidak ditemukan
                                         </div>
                                     </div>
                                 ) : (

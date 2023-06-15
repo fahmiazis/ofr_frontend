@@ -403,7 +403,7 @@ class ReportIkk extends Component {
 
     getDataIkk = async (value) => {
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('all')
+        this.changeFilter('ready')
     }
 
     getDataList = async () => {
@@ -500,7 +500,7 @@ class ReportIkk extends Component {
 
     changeFilter = async (val) => {
         const token = localStorage.getItem("token")
-        const status = 7
+        const status = val === 'reject' ? 6 : val === 'bayar' ? 8 : 7
         const {time1, time2} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
@@ -510,7 +510,7 @@ class ReportIkk extends Component {
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'reject') {
             const newKlaim = []
-            await this.props.getReport(token, 6, 'all', 'all', cekTime1, cekTime2)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'revisi') {
             const newKlaim = []
@@ -541,9 +541,8 @@ class ReportIkk extends Component {
         const {time1, time2, filter, time} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
-        console.log(cekTime1)
         const token = localStorage.getItem("token")
-        const status = filter === 'reject' ? 6 : 7
+        const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
         await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
     }
 
@@ -875,8 +874,8 @@ class ReportIkk extends Component {
                                     <text>Status:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                         <option value="reject">Reject</option>
-                                        <option value="all">Siap Bayar</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        <option value="ready">Siap Bayar</option>
+                                        <option value="bayar">Telah Bayar</option>
                                     </Input>
                                 </div>
                             </div>
@@ -982,7 +981,7 @@ class ReportIkk extends Component {
                                                         <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
                                                         <th>{item.ppu}</th>
                                                         <th>{item.pa}</th>
-                                                        <th>{item.nominal}</th>
+                                                        <th>{item.nilai_bayar}</th>
                                                         <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
                                                         <th></th>
                                                         <th>{item.history.split(',').reverse()[0]}</th>
@@ -1089,7 +1088,7 @@ class ReportIkk extends Component {
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab}>
                                 <thead>
-                                    <tr className='tbikk'>
+                                    <tr>
                                         <th>
                                             <input  
                                             className='mr-2'
@@ -1207,7 +1206,7 @@ class ReportIkk extends Component {
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab}>
                                 <thead>
-                                    <tr className='tbikk'>
+                                    <tr>
                                         <th>NO</th>
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>

@@ -111,7 +111,7 @@ const SidebarContent = props => {
         ) : (
           <div></div>
         )}
-        {level === '4' ? (
+        {level === '4' || level === '14' ? (
           <Collapse isOpen={isOpen} className="ml-4 mb-3">
             <button onClick={() => goHome('vendor')} className={stile.btnSide}>
               <BsClipboardData size={20} className="mr-2"/>
@@ -187,6 +187,14 @@ const SidebarContent = props => {
             <button onClick={() => goHome('kpp')} className={stile.btnSide}>
               <BsClipboardData size={20} className="mr-2"/>
               Master Kpp
+            </button>
+            <button onClick={() => goHome('kliring')} className={stile.btnSide}>
+              <RiBankCardFill size={20} className="mr-2"/>
+              Master Kliring
+            </button>
+            <button onClick={() => goHome('finance')} className={stile.btnSide}>
+              <BsClipboardData size={20} className="mr-2"/>
+              Master Finance
             </button>
           </Collapse>
         )}

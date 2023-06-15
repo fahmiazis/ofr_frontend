@@ -27,8 +27,10 @@ class TableRincian extends Component {
         const { draftEmail } = this.props.email
         const {detailOps} = this.props.ops
         const cek = draftEmail.result
+        const stat = detailOps[0].status_transaksi
+        const no = stat === 5 || stat === 6 || stat ===  7 ? detailOps[0].no_pembayaran : detailOps[0].no_transaksi
         const message = cek === undefined ? '' : cek.message
-        const subject = cek === undefined ? '' : `${cek.type} ${cek.menu} NO ${detailOps[0].no_transaksi}`
+        const subject = cek === undefined ? '' : `${cek.type === 'submit' ? '' : cek.type} ${cek.menu} NO ${no}`
         this.setState({message: message, subject: subject})
         this.props.handleData({message: message, subject: subject})
     }
@@ -51,6 +53,7 @@ class TableRincian extends Component {
                     To
                 </text>
                 <div className="col-md-9 listcek">
+                    {draftEmail.to.length === undefined ? (
                         <div className='listcek mr-2'>
                             <Input
                             type="checkbox" 
@@ -61,6 +64,22 @@ class TableRincian extends Component {
                             />
                             <text className='ml-4'>{`${draftEmail.to.role.name}: ${draftEmail.to.username}`}</text>
                         </div>
+                    ) : draftEmail.to.length > 0 && draftEmail.to.map(item => {
+                        return (
+                            <div className='listcek mr-2'>
+                                <Input
+                                type="checkbox" 
+                                name="access"
+                                checked
+                                className='ml-1'
+                                // onChange={listTo.find(element => element === item.name) === undefined ? () => this.checkToApp(item.name) : () => this.checkToRej(item.name)}
+                                />
+                                <text className='ml-4'>{`${item.role.name}: ${item.username}`}</text>
+                            </div>
+                        )
+                    }
+                    )}
+                    
                 </div>
             </div>
             <div className='addModalMenu'>
@@ -123,7 +142,7 @@ class TableRincian extends Component {
             <div className={style.tableDashboard}>
                 <Table bordered responsive hover className={style.tab}>
                     <thead>
-                        <tr className='tbikk'>
+                        <tr>
                             <th>NO</th>
                             <th>COST CENTRE</th>
                             <th>NO COA</th>

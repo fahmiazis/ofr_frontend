@@ -24,7 +24,7 @@ const changeSchema = Yup.object().shape({
     new_password: Yup.string().required('must be filled')
 })
 
-class NavStock extends Component {
+class NavKlaim extends Component {
     state = {
         dataNull: [],
         relog: false
@@ -134,83 +134,21 @@ class NavStock extends Component {
                         </div>
                     </div>
                     <div>
-                        <div className="titHome">Operasional menu</div>
+                        <div className="titHome">Menu list ajuan bayar klaim </div>
                         <div className="txtChoose">Please select an option</div>
                         <div className="mainBody">
-                        {level === '5' ? (
-                                <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('ops')}>
-                                        <div className="titCard">
-                                            Pengajuan Operasional
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revops')}>
-                                        <div className="titCard">
-                                            Revisi Operasional
-                                        </div>
-                                    </button>
-                                </>
-                            ) : level === '2' ? (
-                                <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('veriffintax')}>
-                                        <div className="titCard">
-                                            Verifikasi Finance
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('navlistops')}>
-                                        <div className="titCard">
-                                            List Ajuan Bayar
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('repops')}>
-                                        <div className="titCard">
-                                            Report Operasional
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revops')}>
-                                        <div className="titCard">
-                                            Revisi Operasional
-                                        </div>
-                                    </button>
-                                </>
-                            ) : level === '4' || level === '14' ? (
-                                <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('veriffintax')}>
-                                        <div className="titCard">
-                                            Verifikasi Tax
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revops')}>
-                                        <div className="titCard">
-                                            Revisi Operasional
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('reptaxops')}>
-                                        <div className="titCard">
-                                            Report Tax (Operasional)
-                                        </div>
-                                    </button>
-                                </>
-                            ) : level === '7' || level === '8' || level === '9' ? (
-                                <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('navlistops')}>
-                                        <div className="titCard">
-                                            List Ajuan Bayar
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('repops')}>
-                                        <div className="titCard">
-                                            Report Operasional
-                                        </div>
-                                    </button>
-                                </>
-                            ) : (
-                                <button className="cardNav1" onClick={() => this.goRoute('ops')}>
+                            <>
+                                <button className="cardNav1" onClick={() => this.goRoute('listklm')}>
                                     <div className="titCard">
-                                        Pengajuan Operasional
+                                        Approval (List Ajuan Klaim)
                                     </div>
                                 </button>
-                            )}
+                                <button className="cardNav1" onClick={() => this.goRoute('payklm')}>
+                                    <div className="titCard">
+                                        Pembayaran (List Ajuan Klaim)
+                                    </div>
+                                </button>
+                            </>
                         </div>
                     </div>
                 </div>
@@ -327,4 +265,4 @@ const mapDispatchToProps = {
     // upNotif: notif.upNotif
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(NavStock)
+export default connect(mapStateToProps, mapDispatchToProps)(NavKlaim)

@@ -1066,7 +1066,7 @@ class ReportIkk extends Component {
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab}>
                                 <thead>
-                                    <tr className='tbikk'>
+                                    <tr>
                                         <th>
                                             <input  
                                             className='mr-2'
@@ -1184,7 +1184,7 @@ class ReportIkk extends Component {
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab}>
                                 <thead>
-                                    <tr className='tbikk'>
+                                    <tr>
                                         <th>NO</th>
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>

@@ -1,7 +1,6 @@
 /* eslint-disable jsx-a11y/alt-text */
 /* eslint-disable jsx-a11y/no-distracting-elements */
 import React, { Component } from 'react'
-import {VscAccount} from 'react-icons/vsc'
 import { Container, Collapse, Nav, Navbar,
     NavbarToggler, NavbarBrand, NavItem, NavLink,
     UncontrolledDropdown, DropdownToggle, DropdownMenu, Dropdown,
@@ -31,14 +30,22 @@ import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
-import klaim from '../../redux/actions/klaim'
-import Tracking from '../../components/Klaim/tracking'
+import ops from '../../redux/actions/ops'
+import Tracking from '../../components/Ops/tracking'
+import TableRincian from '../../components/Ops/tableRincian'
+import FAA from '../../components/Ops/FAA'
+import FPD from '../../components/Ops/FPD'
 import dokumen from '../../redux/actions/dokumen'
+import email from '../../redux/actions/email'
+import Email from '../../components/Ops/Email'
+import ExcelJS from "exceljs";
+import fs from "file-saver";
+import { CSVLink } from "react-csv";
 const {REACT_APP_BACKEND_URL} = process.env
 
-const klaimSchema = Yup.object().shape({
-    pa: Yup.string().required('must be filled'),
+const opsSchema = Yup.object().shape({
     ppu: Yup.string().required('must be filled'),
+    pa: Yup.string().required('must be filled'),
     nominal: Yup.number().required('must be filled')
 })
 
@@ -47,7 +54,7 @@ const alasanSchema = Yup.object().shape({
 });
 
 
-class VerifKlaim extends Component {
+class AjuanBayarOps extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -99,15 +106,27 @@ class VerifKlaim extends Component {
             dropOp: false,
             noAsset: null,
             filter: 'available',
-            newKlaim: [],
+            newOps: [],
             totalfpd: 0,
             dataMenu: [],
             listMenu: [],
             formDis: false,
             history: false,
             upload: false,
-            docHist: false,
-            detailDoc: {}
+            listOps: [],
+            modalDownload: false,
+            dataDownload: [],
+            no_transfer: '',
+            tgl_transfer: null,
+            rinciAjuan: false,
+            modalSubmit: false,
+            modalApplist: false,
+            csvData: [],
+            openMcm: false,
+            openBukti: false,
+            openDraft: false,
+            subject: '',
+            message: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -134,6 +153,24 @@ class VerifKlaim extends Component {
             const data = new FormData()
             data.append('document', e.target.files[0])
             this.props.uploadDocumentDis(token, detail.id, data)
+        }
+    }
+
+    onUploadBukti = e => {
+        const {size, type} = e.target.files[0]
+        this.setState({fileUpload: e.target.files[0]})
+        if (size >= 20000000) {
+            this.setState({errMsg: "Maximum upload size 20 MB"})
+            this.uploadAlert()
+        } else if (type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && type !== 'application/vnd.ms-excel' && type !== 'application/pdf' && type !== 'application/x-7z-compressed' && type !== 'application/vnd.rar' && type !== 'application/zip' && type !== 'application/x-zip-compressed' && type !== 'application/octet-stream' && type !== 'multipart/x-zip' && type !== 'application/x-rar-compressed') {
+            this.setState({errMsg: 'Invalid file type. Only excel, pdf, zip, and rar files are allowed.'})
+            this.uploadAlert()
+        } else {
+            const {detail} = this.state
+            const token = localStorage.getItem('token')
+            const data = new FormData()
+            data.append('document', e.target.files[0])
+            this.props.uploadBuktiBayar(token, detail.id, data)
         }
     }
 
@@ -178,30 +215,44 @@ class VerifKlaim extends Component {
         await this.props.getApproveStock(token, value.no, value.nama)
     }
 
-    rejectKlaim = async (val) => {
-        const {listMut, listReason, listMenu} = this.state
-        const { detailKlaim } = this.props.klaim
+    approveOps = async () => {
+        const { detailOps } = this.props.ops
         const token = localStorage.getItem('token')
         const tempno = {
-            no: detailKlaim[0].no_transaksi
+            no: detailOps[0].no_pembayaran
+        }
+        await this.props.approveListOps(token, tempno)
+        this.getDataOps()
+        this.setState({confirm: 'isApprove'})
+        this.openConfirm()
+        this.openModalApplist()
+        this.modalRinciAjuan()
+    }
+
+    rejectOps = async (val) => {
+        const {listMut, listReason, listMenu} = this.state
+        const { detailOps } = this.props.ops
+        const token = localStorage.getItem('token')
+        const tempno = {
+            no: detailOps[0].no_pembayaran
         }
         let temp = ''
         for (let i = 0; i < listReason.length; i++) {
             temp += listReason[i] + '. '
         }
         const data = {
-            no: detailKlaim[0].no_transaksi,
+            no: detailOps[0].no_pembayaran,
             list: listMut,
             alasan: temp + val.alasan,
             menu: listMenu.toString(),
             type: "verif"
         }
-        await this.props.rejectKlaim(token, data)
-        this.getDataKlaim()
+        await this.props.rejectListOps(token, data)
+        this.getDataOps()
         this.setState({confirm: 'reject'})
         this.openConfirm()
         this.openModalReject()
-        this.openModalRinci()
+        this.modalRinciAjuan()
     }
 
     dropApp = () => {
@@ -221,13 +272,17 @@ class VerifKlaim extends Component {
     }
 
     prosesModalFpd = () => {
-        const {detailKlaim} = this.props.klaim
+        const {detailOps} = this.props.ops
         let total = 0
-        for (let i = 0; i < detailKlaim.length; i++) {
-            total += parseInt(detailKlaim[i].nilai_ajuan)
+        for (let i = 0; i < detailOps.length; i++) {
+            total += parseInt(detailOps[i].nilai_ajuan)
         }
         this.setState({totalfpd: total})
         this.openModalFpd()
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val.message, subject: val.subject})
     }
 
     openModalReject = () => {
@@ -267,6 +322,12 @@ class VerifKlaim extends Component {
         await this.props.nextPage(token, page.prevLink)
     }
 
+    generateData = () => {
+        const header = [
+
+        ]
+    }
+
     onSetOpen(open) {
         this.setState({ open });
     }
@@ -285,7 +346,7 @@ class VerifKlaim extends Component {
     deleteStock = async (value) => {
         const token = localStorage.getItem("token")
         await this.props.deleteStock(token, value.id)
-        this.getDataKlaim()
+        this.getDataOps()
     }
 
     showAlert = () => {
@@ -306,16 +367,39 @@ class VerifKlaim extends Component {
 
     componentDidMount() {
         // const level = localStorage.getItem('level')
-        this.getDataKlaim()
+        this.getDataOps()
     }
 
     componentDidUpdate() {
-        const { isApprove, isReject, subVerif } = this.props.klaim
-        if (subVerif === false) {
-            this.setState({confirm: 'rejSubmit'})
+        const { isApplist, isRejectList, uploadBukti, detailOps } = this.props.ops
+        const { isSend } = this.props.email
+        const token = localStorage.getItem('token')
+        console.log(this.state.no_transfer, this.state.tgl_transfer)
+        if (isApplist === false) {
+            this.setState({confirm: 'rejApprove'})
             this.openConfirm()
-            this.openModalApprove()
-            this.props.resetKlaim()
+            this.openModalApplist()
+            this.props.resetOps()
+        } else if (isRejectList === false) {
+            this.setState({confirm: 'rejReject'})
+            this.openConfirm()
+            this.openModalReject()
+            this.props.resetOps()
+        } else if (uploadBukti === true) {
+            const tempno = {
+                no: detailOps[0].no_pembayaran
+            }
+            this.props.getDocBayar(token, tempno)
+            this.props.resetOps()
+        } else if (isSend === false) {
+            this.setState({confirm: 'rejSend'})
+            this.openConfirm()
+            this.getDataOps()
+            this.openDraftEmail()
+            this.openModalSubmit()
+            this.modalRinciAjuan()
+            this.modalBukti()
+            this.props.resetEmail()
         }
     }
 
@@ -387,9 +471,9 @@ class VerifKlaim extends Component {
         this.setState({modalEdit: !this.state.modalEdit})
     }
 
-    getDataKlaim = async (value) => {
+    getDataOps = async (value) => {
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('available')
+        this.changeFilter('ready')
     }
 
     getDataList = async () => {
@@ -401,49 +485,27 @@ class VerifKlaim extends Component {
         this.setState({modalUpload: !this.state.modalUpload})
     }
 
-    prosesDetail = async (val) => {
+    prosesDetail = async (val, tipe) => {
         const token = localStorage.getItem("token")
-        const tempno = {
-            no: val.no_transaksi
-        }
-        const data = {
-            no: val.no_transaksi,
-            name: 'Draft Pengajuan Klaim'
-        }
-        this.setState({listMut: []})
-        await this.props.getDetail(token, tempno)
-        await this.props.getApproval(token, tempno)
-        await this.props.getDocKlaim(token, data)
-        this.openModalRinci()
-    }
-
-    cekDataDoc = () => {
-        const { dataDoc } = this.props.klaim
-        const level = localStorage.getItem("level")
-        // if (level === '3') {
-        //     this.openModalApprove()
-        // } else {
-        const tempdoc = []
-        for (let i = 0; i < dataDoc.length; i++) {
-            const arr = dataDoc[i]
-            const stat = arr.status
-            const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
-            const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
-            if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
-                tempdoc.push(arr)
-                console.log('masuk if')
-            } else {
-                console.log('masuk else')
-                console.log(cekLevel)
+        const level = localStorage.getItem('level')
+        if (tipe === 'detail') {
+            const tempno = {
+                no: val.no_transaksi
             }
-        }
-        if (tempdoc.length === dataDoc.length) {
-            this.openModalApprove()
+            this.setState({listMut: []})
+            await this.props.getDetail(token, tempno)
+            await this.props.getApproval(token, tempno)
+            this.openModalRinci()
         } else {
-            this.setState({confirm: 'appNotifDoc'})
-            this.openConfirm()
+            const tempno = {
+                no: val.no_pembayaran,
+                tipe: 'ajuan bayar'
+            }
+            this.setState({listMut: []})
+            await this.props.getDetail(token, tempno)
+            await this.props.getApprovalList(token, tempno)
+            this.modalRinciAjuan()
         }
-        // }
     }
 
     openModalDok = () => {
@@ -488,7 +550,11 @@ class VerifKlaim extends Component {
         this.openSum()
     }
 
-    openModalSub = () => {
+    openModalApplist = () => {
+        this.setState({modalApplist: !this.state.modalApplist})
+    }
+
+    openModalSubmit = () => {
         this.setState({modalSubmit: !this.state.modalSubmit})
     }
 
@@ -496,11 +562,7 @@ class VerifKlaim extends Component {
         this.setState({modalSum: !this.state.modalSum})
     }
 
-    modalSubmitPre = () => {
-        this.setState({submitPre: !this.state.submitPre})
-    }
-
-    prosesEditKlaim = async (val) => {
+    prosesEditOps = async (val) => {
         const token = localStorage.getItem("token")
         const {dataRinci} = this.state
         const data = {
@@ -520,52 +582,66 @@ class VerifKlaim extends Component {
     }
 
     changeFilter = async (val) => {
-        const {dataKlaim, noDis} = this.props.klaim
+        const {dataOps, noDis} = this.props.ops
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const status = level === '2' ? 3 : 4
+        const status = val === 'reject' ? 6 : val === 'bayar' ? 8 : 7
         const statusAll = 'all'
+        const category = 'ajuan bayar'
         const role = localStorage.getItem('role')
-        if (val === 'available') {
-            const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif')
-            this.setState({filter: val, newKlaim: newKlaim})
+        if (val === 'ready') {
+            const newOps = []
+            await this.props.getOps(token, status, 'all', 'all', val, category)
+            this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
-            const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif')
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'revisi') {
-            const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif')
-            this.setState({filter: val, newKlaim: newKlaim})
+            const newOps = []
+            await this.props.getOps(token, status, 'all', 'all', val, category)
+            this.setState({filter: val, newOps: newOps})
+        } else if (val === 'bayar') {
+            const newOps = []
+            await this.props.getOps(token, status, 'all', 'all', val, category)
+            this.setState({filter: val, newOps: newOps})
         } else {
-            const newKlaim = []
-            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'verif', status)
-            this.setState({filter: val, newKlaim: newKlaim})
+            const newOps = []
+            await this.props.getOps(token, statusAll, 'all', 'all', val, category, status)
+            this.setState({filter: val, newOps: newOps})
         }
     }
 
-    prosesSubmitPre = async () => {
-        const token = localStorage.getItem("token")
-        await this.props.getAssetAll(token, 1000, '', 1, 'asset')
+    prosesSubmit = async () => {
+        const {listOps} = this.state
+        const {dataOps} = this.props.ops
+        const data = []
+        for (let i = 0; i < listOps.length; i++) {
+            for (let j = 0; j < dataOps.length; j++) {
+                if (dataOps[j].no_transaksi === listOps[i]) {
+                    data.push(dataOps[j])
+                }
+            }
+        }
+        this.setState({dataDownload: data})
         this.modalSubmitPre()
     }
 
-    approveDataKlaim = async () => {
-        const { detailKlaim } = this.props.klaim
+    modalSubmitPre = () => {
+        this.setState({submitPre: !this.state.submitPre})
+    }
+
+    approveDataOps = async () => {
+        const { detailOps } = this.props.ops
         const level = localStorage.getItem("level")
         const token = localStorage.getItem("token")
         const tempno = {
-            no: detailKlaim[0].no_transaksi
+            no: detailOps[0].no_transaksi
         }
         if (level === '3') {
             const cek = []
-            detailKlaim.map(item => {
+            detailOps.map(item => {
                 return ((item.ppu !== null && item.pa !== null && item.nominal !== null) && cek.push(item))
             })
-            if (cek.length === detailKlaim.length) {
+            if (cek.length === detailOps.length) {
                 await this.props.submitVerif(token, tempno)
-                this.getDataKlaim()
+                this.getDataOps()
                 this.setState({confirm: 'submit'})
                 this.openConfirm()
                 this.openModalApprove()
@@ -577,12 +653,16 @@ class VerifKlaim extends Component {
             }
         } else {
             await this.props.submitVerif(token, tempno)
-            this.getDataKlaim()
+            this.getDataOps()
             this.setState({confirm: 'submit'})
             this.openConfirm()
             this.openModalApprove()
             this.openModalRinci()
         }
+    }
+
+    printData = (val) => {
+        this.props.history.push(`/${val}`)
     }
 
     onSearch = async (e) => {
@@ -591,6 +671,28 @@ class VerifKlaim extends Component {
         if(e.key === 'Enter'){
             await this.props.getAssetAll(token, 10, e.target.value, 1)
         }
+    }
+
+    modalRinciAjuan = () => {
+        this.setState({rinciAjuan: !this.state.rinciAjuan})
+    }
+
+    updateData = async (val) => {
+        const data = {
+            [val.target.name]: val.target.value
+        }
+        console.log(data)
+        this.setState(data)
+    }
+
+    submitBuktiAjuan = async () => {
+        const token = localStorage.getItem("token")
+        const { detailOps } = this.props.ops
+        const data = {
+            no: detailOps[0].no_pembayaran
+        }
+        await this.props.submitBuktiBayar(token, data)
+        this.dataSendEmail()
     }
 
     updateAsset = async (value) => {
@@ -615,11 +717,11 @@ class VerifKlaim extends Component {
         if (val === 'list') {
             this.getDataList()
         } else {
-            this.getDataKlaim()
+            this.getDataOps()
         }
     }
 
-    getAppKlaim = async (val) => {
+    getAppOps = async (val) => {
         const token = localStorage.getItem("token")
         const tempno = {
             no: val.no_transaksi
@@ -663,10 +765,23 @@ class VerifKlaim extends Component {
         }
     }
 
-    docHistory = (val) => {
-        this.setState({detailDoc: val})
-        this.setState({docHist: !this.state.docHist})
-        console.log(val.status)
+    prosesDownload = () => {
+        const {listOps} = this.state
+        const {dataOps} = this.props.ops
+        const data = []
+        for (let i = 0; i < listOps.length; i++) {
+            for (let j = 0; j < dataOps.length; j++) {
+                if (dataOps[j].no_transaksi === listOps[i]) {
+                    data.push(dataOps[j])
+                }
+            }
+        }
+        this.setState({dataDownload: data})
+        this.openDownload()
+    }
+
+    openDownload = () => {
+        this.setState({modalDownload: !this.state.modalDownload})
     }
 
     openModalPdf = () => {
@@ -677,53 +792,93 @@ class VerifKlaim extends Component {
         const token = localStorage.getItem("token")
         const tempno = {
             no: val.no_transaksi,
-            name: 'Draft Pengajuan Klaim'
+            name: 'Draft Pengajuan Ops'
         }
-        await this.props.getDocKlaim(token, tempno)
+        await this.props.getDocOps(token, tempno)
         this.openModalDoc()
+    }
+
+    cekStatus = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailAsset } = this.props.asset
+        if (val === 'DIPINJAM SEMENTARA') {
+            await this.props.cekDokumen(token, detailAsset.no_asset)
+        }
+    }
+
+    cekDok = async () => {
+        const { docBukti } = this.props.ops
+        const verifDoc = []
+        const tempDoc = []
+        for (let i = 0; i < docBukti.length; i++) {
+            if (docBukti[i].stat_upload === 1 && docBukti[i].path !== null) {
+                verifDoc.push(docBukti[i])
+                tempDoc.push(docBukti[i])
+            } else if (docBukti[i].stat_upload === 1) {
+                tempDoc.push(docBukti[i])
+            }
+        }
+        if (verifDoc.length === tempDoc.length) {
+            this.prepSendEmail()
+        } else {
+            this.openConfirm(this.setState({confirm: 'verifdoc'}))
+        }
+    }
+
+    prepSendEmail = async () => {
+        const {detailOps} = this.props.ops
+        const token = localStorage.getItem("token")
+        const tipe = 'submit'
+        const tempno = {
+            no: detailOps[0].no_pembayaran,
+            kode: detailOps[0].kode_plant,
+            jenis: 'ops',
+            tipe: tipe,
+            menu: 'Pembayaran Ajuan (Operasional)'
+        }
+        await this.props.getDraftAjuan(token, tempno)
+        this.openDraftEmail()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    dataSendEmail = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailOps } = this.props.ops
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const to = draftEmail.to
+        const tempcc = []
+        const tempto = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        to.map(item => { return (tempto.push(item.email)) })
+        const tempno = {
+            nameTo: draftEmail.to.username,
+            to: tempto.toString(),
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: detailOps[0].no_pembayaran,
+            tipe: 'ops',
+            jenis: 'ajuan'
+        }
+        await this.props.sendEmail(token, tempno)
+        this.getDataOps()
+        this.setState({confirm: 'isApprove'})
+        this.openConfirm()
+        this.openDraftEmail()
+        this.openModalSubmit()
+        this.modalRinciAjuan()
+        this.modalBukti()
     }
 
     openModalDoc = () => {
         this.setState({modalDoc: !this.state.modalDoc})
-    }
-
-    approveDoc = async () => {
-        const token = localStorage.getItem('token')
-        const {idDoc} = this.state
-        const { detailKlaim } = this.props.klaim
-        const tempno = {
-            no: detailKlaim[0].no_transaksi,
-            name: 'Draft Pengajuan Klaim'
-        }
-        await this.props.approveDokumen(token, idDoc)
-        await this.props.getDocKlaim(token, tempno)
-        this.setState({confirm: 'isAppDoc'})
-        this.openConfirm()
-        this.openModalAppDoc()
-        
-    }
-
-    openModalAppDoc = () => {
-        this.setState({openAppDoc: !this.state.openAppDoc})
-    }
-
-    rejectDoc = async () => {
-        const token = localStorage.getItem('token')
-        const {idDoc} = this.state
-        const { detailKlaim } = this.props.klaim
-        const tempno = {
-            no: detailKlaim[0].no_transaksi,
-            name: 'Draft Pengajuan Klaim'
-        }
-        await this.props.rejectDokumen(token, idDoc)
-        await this.props.getDocKlaim(token, tempno)
-        this.setState({confirm: 'isRejDoc'})
-        this.openConfirm()
-        this.openModalRejDoc()
-    }
-
-    openModalRejDoc = () => {
-        this.setState({openRejDoc: !this.state.openRejDoc})
     }
 
     openModalAdd = () => {
@@ -806,11 +961,11 @@ class VerifKlaim extends Component {
 
     chekApp = (val) => {
         const { listMut } = this.state
-        const {detailKlaim} = this.props.klaim
+        const {detailOps} = this.props.ops
         if (val === 'all') {
             const data = []
-            for (let i = 0; i < detailKlaim.length; i++) {
-                data.push(detailKlaim[i].id)
+            for (let i = 0; i < detailOps.length; i++) {
+                data.push(detailOps[i].id)
             }
             this.setState({listMut: data})
         } else {
@@ -837,6 +992,246 @@ class VerifKlaim extends Component {
         }
     }
 
+    chekAppList = (val) => {
+        const { listOps } = this.state
+        const {newOps} = this.props.ops
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < newOps.length; i++) {
+                data.push(newOps[i].no_transaksi)
+            }
+            this.setState({listOps: data})
+        } else {
+            listOps.push(val)
+            this.setState({listOps: listOps})
+        }
+    }
+
+    chekRejList = (val) => {
+        const {listOps} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listOps: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listOps.length; i++) {
+                if (listOps[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listOps[i])
+                }
+            }
+            this.setState({listOps: data})
+        }
+    }
+
+    mcmExcel = async () => {
+        const { detailOps } = this.props.ops
+        const nilai =  detailOps.reduce((accumulator, object) => {
+            return accumulator + parseInt(object.nilai_ajuan);
+        }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('report ops')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+            {header: 'P', key: 'c1'},
+            {header: moment().format('YYYYMMDD'), key: 'c2'}, 
+            {header: "1300015005005", key: 'c3'},
+            {header: detailOps.length, key: 'c4'},
+            {header: nilai, key: 'c5'},
+            {header: '', key: 'c6'},
+            {header: '', key: 'c7'},
+            {header: '', key: 'c8'},
+            {header: '', key: 'c9'},
+            {header: '', key: 'c10'},
+            {header: '', key: 'c11'},
+            {header: '', key: 'c12'},
+            {header: '', key: 'c13'},
+            {header: '', key: 'c14'},
+            {header: '', key: 'c15'},
+            {header: '', key: 'c16'},
+            {header: '', key: 'c17'},
+            {header: '', key: 'c18'},
+            {header: '', key: 'c19'},
+            {header: '', key: 'c20'},
+            {header: '', key: 'c21'},
+            {header: '', key: 'c22'},
+            {header: '', key: 'c23'},
+            {header: '', key: 'c24'},
+            {header: '', key: 'c25'},
+            {header: '', key: 'c26'},
+            {header: '', key: 'c27'},
+            {header: '', key: 'c28'},
+            {header: '', key: 'c29'},
+            {header: '', key: 'c30'},
+            {header: '', key: 'c31'},
+            {header: '', key: 'c32'},
+            {header: '', key: 'c33'},
+            {header: '', key: 'c34'},
+            {header: '', key: 'c35'},
+            {header: '', key: 'c36'},
+            {header: '', key: 'c37'},
+            {header: '', key: 'c38'},
+            {header: '', key: 'c39'},
+            {header: '', key: 'c40'},
+            {header: '', key: 'c41'},
+            {header: '', key: 'c42'},
+            {header: '', key: 'c43'},
+            {header: '', key: 'c44'}
+        ]
+
+        detailOps.map(item => { return ( ws.addRow(
+            {
+                c1: item.norek_ajuan,
+                c2: item.nama_tujuan.slice(0, 70), 
+                c3: '',
+                c4: '',
+                c5: '',
+                c6: 'IDR',
+                c7: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c8: item.no_transaksi.slice(0, 19),
+                c9: '',
+                c10: item.bank_tujuan === 'Bank Mandiri' ? 'IBU' : 'LBU',
+                c11: item.bank_tujuan === 'Bank Mandiri' ? '' : '',
+                c12: item.bank_tujuan === 'Bank Mandiri' ? '' : item.bank_tujuan,
+                c13: '',
+                c14: '',
+                c15: '',
+                c16: '',
+                c17: 'N',
+                c18: '',
+                c19: '',
+                c20: '',
+                c21: '',
+                c22: '',
+                c23: '',
+                c24: '',
+                c25: '',
+                c26: '',
+                c27: '',
+                c28: '',
+                c29: '',
+                c30: '',
+                c31: '',
+                c32: '',
+                c33: '',
+                c34: '',
+                c35: '',
+                c36: '',
+                c37: '',
+                c38: '',
+                c39: 'OUR',
+                c40: '1',
+                c41: 'E',
+                c42: '',
+                c43: '',
+                c44: ''
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+          
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `MCM ops ${detailOps.length > 0 && detailOps[0].no_pembayaran}.xlsx`
+            );
+          });
+    }
+
+    prosesModalMcm = () => {
+        const { detailOps } = this.props.ops
+        const nilai =  detailOps.reduce((accumulator, object) => {
+            return accumulator + parseInt(object.nilai_ajuan);
+        }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+        const tempData = [
+            ["P", moment().format('YYYYMMDD'), "1300015005005", detailOps.length, nilai, "", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", ""]
+        ]
+        for (let i = 0; i < detailOps.length; i++) {
+            const item = detailOps[i]
+            const data = [
+                item.norek_ajuan,
+                item.nama_tujuan.slice(0, 70),
+                "",
+                "",
+                "",
+                "IDR",
+                item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                item.no_transaksi.slice(0, 19),
+                "",
+                item.bank_tujuan === 'Bank Mandiri' ? 'IBU' : 'LBU',
+                item.bank_tujuan === 'Bank Mandiri' ? '' : '',
+                item.bank_tujuan === 'Bank Mandiri' ? '' : item.bank_tujuan,
+                "",
+                "",
+                "",
+                "",
+                "N",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "OUR",
+                "1",
+                "E",
+                "",
+                "",
+                ""
+            ]
+            tempData.push(data)
+        }
+        this.setState({csvData: tempData})
+        this.modalMcm()
+    }
+
+    modalMcm = () => {
+        this.setState({openMcm: !this.state.openMcm})
+    }
+
+    prosesModalBukti = async () => {
+        const token = localStorage.getItem("token")
+        const { detailOps } = this.props.ops
+        const tempno = {
+            no: detailOps[0].no_pembayaran
+        }
+        await this.props.getDocBayar(token, tempno)
+        this.modalBukti()
+    }
+
+    modalBukti = () => {
+        this.setState({openBukti: !this.state.openBukti})
+    }
+
     prepareReject = async () => {
         const token = localStorage.getItem("token")
         await this.props.getAllMenu(token, 'reject')
@@ -844,7 +1239,7 @@ class VerifKlaim extends Component {
         const dataMenu = this.props.menu.dataAll
         const data = []
         dataMenu.map(item => {
-            return (item.kode_menu === 'Klaim' && data.push(item))
+            return (item.kode_menu === 'Ops' && data.push(item))
         })
         this.setState({dataMenu: dataMenu})
         this.openModalReject()
@@ -868,11 +1263,12 @@ class VerifKlaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, listMut, listReason, dataMenu, listMenu, listOps, dataDownload, csvData} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim } = this.props.klaim
+        const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps, docBukti } = this.props.ops
         // const pages = this.props.depo.page
+          
 
         const contentHeader =  (
             <div className={style.navbar}>
@@ -911,7 +1307,7 @@ class VerifKlaim extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : "Klaim"}</div>
+                                <div className={style.titleDashboard}>Pembayaran List Ajuan Ops</div>
                             </div>
                             <div className={style.secEmail3}>
                             </div>
@@ -919,10 +1315,8 @@ class VerifKlaim extends Component {
                                 <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="all">All</option>
-                                        <option value="reject">Reject</option>
-                                        <option value="available">Available Submit</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        <option value='ready'>Siap Bayar</option>
+                                        <option value='bayar'>Telah Bayar</option>
                                     </Input>
                                 </div>
                                 <div className={style.searchEmail2}>
@@ -936,50 +1330,39 @@ class VerifKlaim extends Component {
                                     </Input>
                                 </div>
                             </div>
-                                <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>NO.AJUAN</th>
-                                                <th>COST CENTRE</th>
-                                                <th>AREA</th>
-                                                <th>NO.COA</th>
-                                                <th>NAMA COA</th>
-                                                <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
-                                                <th>STATUS</th>
-                                                <th>OPSI</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {newKlaim.map(item => {
-                                                return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{newKlaim.indexOf(item) + 1}</th>
-                                                        <th>{item.no_transaksi}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.area}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
-                                                        <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
-                                                        <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
-                                                            <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
-                                                        </th>
-                                                    </tr>
-                                                )
-                                            })}
-                                        </tbody>
-                                    </Table>
-                                    {newKlaim.length === 0 && (
-                                        <div className={style.spin}>
-                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
-                                        </div>
-                                    )}
-                                </div>
+                            <div className={style.tableDashboard}>
+                                <Table bordered responsive hover className={style.tab} id="table-ops">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>No.Transaksi Ajuan Bayar</th>
+                                            <th>Tanggal Submit Ajuan Bayar</th>
+                                            <th>STATUS</th>
+                                            <th>OPSI</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {newOps.map(item => {
+                                            return (
+                                                <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                    <th>{newOps.indexOf(item) + 1}</th>
+                                                    <th>{item.no_pembayaran}</th>
+                                                    <th>{moment(item.tgl_sublist || item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                                    <th>{item.history.split(',').reverse()[0]}</th>
+                                                    <th>
+                                                        <Button size='sm' onClick={() => this.prosesDetail(item, 'ajuan bayar')} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                    </th>
+                                                </tr>
+                                            )
+                                        })}
+                                    </tbody>
+                                </Table>
+                                {newOps.length === 0 && (
+                                    <div className={style.spin}>
+                                        <text className='textInfo'>Data ajuan tidak ditemukan</text>
+                                    </div>
+                                )}
+                            </div>
                             <div>
                                 <div className={style.infoPageEmail1}>
                                     <text>Showing 1 of 1 pages</text>
@@ -1012,33 +1395,50 @@ class VerifKlaim extends Component {
                             {/* <div className="ptStock">pt. pinus merah abadi</div> */}
                             <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailKlaim.length > 0 ? detailKlaim[0].area : ''} className="ml-3"  /></Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailOps.length > 0 ? detailOps[0].area : ''} className="ml-3"  /></Col>
                             </Row>
                             <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>no ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailKlaim.length > 0 ? detailKlaim[0].no_transaksi : ''} className="ml-3" /></Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailOps.length > 0 ? detailOps[0].no_transaksi : ''} className="ml-3" /></Col>
                             </Row>
                             <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailKlaim.length > 0 ? moment(detailKlaim[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailOps.length > 0 ? moment(detailOps[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
                             </Row>
                         </div>
+                        <TableRincian />
+                    </ModalBody>
+                    <div className="modalFoot ml-3">
+                        <div className="btnFoot">
+                            <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
+                            <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>FAA</Button>
+                            <Button color="primary"  onClick={() => this.openProsesModalDoc(detailOps[0])}>Dokumen</Button>
+                        </div>
+                        <div className="btnFoot">
+                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
+                                <div></div>
+                            ) : (
+                                <>
+                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
+                                        Reject
+                                    </Button>
+                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
+                                        Submit
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </Modal>
+                <Modal size="xl" className='modalrinci' isOpen={this.state.modalDownload} toggle={this.openDownload}>
+                    <ModalHeader>
+                        Download
+                    </ModalHeader>
+                    <ModalBody>
                         <div className={style.tableDashboard}>
-                            <Table bordered responsive hover className={style.tab}>
+                            <Table bordered responsive hover className={style.tab} id="table-to-xls">
                                 <thead>
-                                    <tr className='tbklaim'>
-                                        <th>
-                                            <input  
-                                            className='mr-2'
-                                            type='checkbox'
-                                            checked={listMut.length === 0 ? false : listMut.length === detailKlaim.length ? true : false}
-                                            onChange={() => listMut.length === detailKlaim.length ? this.chekRej('all') : this.chekApp('all')}
-                                            />
-                                            Select
-                                        </th>
-                                        {level === '2' ? (<></>) : (
-                                            <th>OPSI</th>
-                                        )}
+                                    <tr>
                                         <th>NO</th>
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>
@@ -1053,32 +1453,19 @@ class VerifKlaim extends Component {
                                         <th>NAMA SESUAI NPWP</th>
                                         <th>NOMOR NPWP</th>
                                         <th>NAMA SESUAI KTP</th>
-                                        <th>NIK</th>
+                                        <th>NOMOR KTP</th>
                                         <th>PPU</th>
                                         <th>PA</th>
-                                        <th>NOMINAL VERIFIKASi</th>
+                                        <th>NOMINAL</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>TANGGAL TRANSFER</th>
-                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {detailKlaim.length !== 0 && detailKlaim.map(item => {
+                                    {dataDownload.length !== 0 && dataDownload.map(item => {
                                         return (
                                             <tr>
-                                                <th>
-                                                    <input 
-                                                    type='checkbox'
-                                                    checked={listMut.find(element => element === item.id) !== undefined ? true : false}
-                                                    onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
-                                                    />
-                                                </th>
-                                                {level === '2' ? (<></>) : (
-                                                <th>
-                                                    <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Proses</Button>
-                                                </th>
-                                                )}
-                                                <th scope="row">{detailKlaim.indexOf(item) + 1}</th>
+                                                <th scope="row">{dataDownload.indexOf(item) + 1}</th>
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
@@ -1089,16 +1476,15 @@ class VerifKlaim extends Component {
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
                                                 <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
-                                                <th>{item.status_npwp === 0 ? '-' : item.nama_npwp}</th>
-                                                <th>{item.status_npwp === 0 ? '-' : item.no_npwp}</th>
-                                                <th>{item.status_npwp === 0 ? item.nama_ktp : '-'}</th>
-                                                <th>{item.status_npwp === 0 ? item.no_ktp : '-'}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
+                                                <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
                                                 <th>{item.ppu}</th>
                                                 <th>{item.pa}</th>
                                                 <th>{item.nominal}</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
+                                                <th>{item.nilai_bayar}</th>
+                                                <th>{item.tanggal_transfer}</th>
                                             </tr>
                                             )
                                         })}
@@ -1106,25 +1492,509 @@ class VerifKlaim extends Component {
                             </Table>
                         </div>
                     </ModalBody>
+                    <hr />
                     <div className="modalFoot ml-3">
+                        <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
-                            <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>FAA</Button>
-                            <Button color="primary"  onClick={() => this.openProsesModalDoc(detailKlaim[0])}>Dokumen</Button>
+                            <ReactHtmlToExcel
+                                id="test-table-xls-button"
+                                className="btn btn-warning mr-2"
+                                table="table-to-xls"
+                                filename={`Data Ops ${moment().format('DD MMMM YYYY')}`}
+                                sheet="Dokumentasi"
+                                buttonText="Download"
+                            />
+                            <Button color="success" onClick={this.openModalFaa}>
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+                <Modal size="xl" className='modalrinci' isOpen={this.state.submitPre} toggle={this.modalSubmitPre}>
+                    <ModalBody>
+                        <div>
+                            <div className="stockTitle">DAFTAR PENGIRIMAN DANA KE CABANG</div>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>No Transaksi</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input 
+                                name='no_transfer'
+                                onChange={e => this.updateData({target: e.target, key: e.key})} 
+                                className="ml-3" /></Col>
+                            </Row>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>tanggal transaksi</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input 
+                                    type='date'
+                                    name='tgl_transfer'
+                                    onChange={e => this.updateData({target: e.target, key: e.key})} 
+                                    className="ml-3" /></Col>
+                            </Row>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>sumber rekening</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value="1300015005005 / PT PINUS MERAH ABADI" /></Col>
+                            </Row>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>nama bank</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value="BANK MANDIRI  BINA CITRA  BANDUNG" /></Col>
+                            </Row>
+                        </div>
+                        <div className={style.tableDashboard}>
+                            <Table bordered responsive hover className={style.tab} id="table-to-xls">
+                                <thead>
+                                    <tr>
+                                        <th>NO</th>
+                                        <th>No FPD</th>
+                                        <th>Cabang</th>
+                                        <th>COST CENTRE</th>
+                                        <th>Nama Bank</th>
+                                        <th>No Rekening</th>
+                                        <th>Atas Nama</th>
+                                        <th>Nominal</th>
+                                        <th>Keterangan</th>
+                                        <th>No PO</th>
+                                        <th>Area</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dataDownload.length !== 0 && dataDownload.map(item => {
+                                        return (
+                                            <tr>
+                                                <th scope="row">{dataDownload.indexOf(item) + 1}</th>
+                                                <th>{item.no_transaksi}</th>
+                                                <th>{item.area}</th>
+                                                <th>{item.cost_center}</th>
+                                                <th>{item.bank_tujuan}</th>
+                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.nama_tujuan}</th>
+                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.keterangan}</th>
+                                                <th>-</th>
+                                                <th>{item.depo.channel}</th>
+                                            </tr>
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
+                        </div>
+                    </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div></div>
+                        <div className="btnFoot">
+                            <Button color="warning mr-2" disabled={this.state.no_transfer === '' || this.state.tgl_transfer === null ? true : false} onClick={this.openModalSubmit}>
+                                Submit
+                            </Button>
+                            <Button color="success" onClick={this.modalSubmitPre}>
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+                <Modal size="xl" className='modalrinci' isOpen={this.state.rinciAjuan} toggle={this.modalRinciAjuan}>
+                    <ModalBody>
+                        {/* <Table id="form-list"> */}
+                        <div>
+                            <div className="stockTitle">DAFTAR PENGIRIMAN DANA KE CABANG</div>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>No Transaksi</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input 
+                                name='no_transfer'
+                                value={detailOps.length > 0 ? detailOps[0].no_pembayaran : ''}
+                                disabled
+                                className="ml-3" /></Col>
+                            </Row>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>tanggal transaksi</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input 
+                                    name='tgl_transfer'
+                                    value={detailOps.length > 0 ? moment(detailOps[0].tanggal_transfer).format('DD MMMM YYYY') : ''}
+                                    disabled
+                                    className="ml-3" /></Col>
+                            </Row>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>sumber rekening</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value="1300015005005 / PT PINUS MERAH ABADI" /></Col>
+                            </Row>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>nama bank</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value="BANK MANDIRI  BINA CITRA  BANDUNG" /></Col>
+                            </Row>
+                        </div>
+                        <div className={style.tableDashboard}>
+                            <Table bordered responsive hover className={style.tab} id="table-to-xls">
+                                <thead>
+                                    <tr>
+                                        {/* <th>
+                                            <input  
+                                            className='mr-2'
+                                            type='checkbox'
+                                            checked={listMut.length === 0 ? false : listMut.length === detailOps.length ? true : false}
+                                            onChange={() => listMut.length === detailOps.length ? this.chekRej('all') : this.chekApp('all')}
+                                            />
+                                            Select
+                                        </th> */}
+                                        <th>NO</th>
+                                        <th>No FPD</th>
+                                        <th>Cabang</th>
+                                        <th>COST CENTRE</th>
+                                        <th>Nama Bank</th>
+                                        <th>No Rekening</th>
+                                        <th>Atas Nama</th>
+                                        <th>Nominal</th>
+                                        <th>Keterangan</th>
+                                        <th>No PO</th>
+                                        <th>Area</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {detailOps.length !== 0 && detailOps.map(item => {
+                                        return (
+                                            <tr>
+                                                {/* <th>
+                                                    <input 
+                                                    type='checkbox'
+                                                    checked={listMut.find(element => element === item.id) !== undefined ? true : false}
+                                                    onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                    />
+                                                </th> */}
+                                                <th scope="row">{detailOps.indexOf(item) + 1}</th>
+                                                <th>{item.no_transaksi}</th>
+                                                <th>{item.area}</th>
+                                                <th>{item.cost_center}</th>
+                                                <th>{item.bank_tujuan}</th>
+                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.nama_tujuan}</th>
+                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.keterangan}</th>
+                                                <th>-</th>
+                                                <th>{item.depo.channel}</th>
+                                            </tr>
+                                            )
+                                        })}
+                                        {detailOps.length > 0 && (
+                                            <tr>
+                                                <th className='total' colSpan={7}>Total</th>
+                                                <th>
+                                                    {detailOps.reduce((accumulator, object) => {
+                                                        return accumulator + parseInt(object.nilai_ajuan);
+                                                    }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                                </th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                            </tr>
+                                        )}
+                                </tbody>
+                            </Table>
+                        </div>
+                        <Table borderless responsive className="tabPreview mt-4">
+                            <thead>
+                                <tr>
+                                    <th className="buatPre">Dibuat oleh,</th>
+                                    <th className="buatPre">Diketahui oleh,</th>
+                                    <th className="buatPre">Disetujui oleh,</th>
+                                </tr>
+                            </thead>
+                            <tbody className="tbodyPre">
+                                <tr>
+                                    <td className="restTable">
+                                        <Table bordered responsive className="divPre">
+                                                <thead>
+                                                    <tr>
+                                                        {ttdOpsList.pembuat !== undefined && ttdOpsList.pembuat.map(item => {
+                                                            return (
+                                                                <th className="headPre">
+                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                </th>
+                                                            )
+                                                        })}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                    {ttdOpsList.pembuat !== undefined && ttdOpsList.pembuat.map(item => {
+                                                        return (
+                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                        )
+                                                    })}
+                                                    </tr>
+                                                </tbody>
+                                        </Table>
+                                    </td>
+                                    <td className="restTable">
+                                        <Table bordered responsive className="divPre">
+                                                <thead>
+                                                    <tr>
+                                                        {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.map(item => {
+                                                            return (
+                                                                <th className="headPre">
+                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                </th>
+                                                            )
+                                                        })}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.map(item => {
+                                                            return (
+                                                                <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                            )
+                                                        })}
+                                                    </tr>
+                                                </tbody>
+                                        </Table>
+                                    </td>
+                                    <td className="restTable">
+                                        <Table bordered responsive className="divPre">
+                                                <thead>
+                                                    <tr>
+                                                        {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.map(item => {
+                                                            return (
+                                                                <th className="headPre">
+                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                </th>
+                                                            )
+                                                        })}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.map(item => {
+                                                            return (
+                                                                <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                            )
+                                                        })}
+                                                    </tr>
+                                                </tbody>
+                                        </Table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </Table>
+                        {/* </Table> */}
+                    </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div>
+                            <Button color="primary" onClick={() => this.prosesModalMcm()}>
+                                Download MCM
+                            </Button>
+                            <Button color="success ml-1" onClick={() => this.printData('formlistklm')}>
+                                Download Form
+                            </Button>
                         </div>
                         <div className="btnFoot">
-                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
-                                <div></div>
-                            ) : (
-                                <>
-                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
-                                        Reject
-                                    </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
-                                        Submit
-                                    </Button>
-                                </>
-                            )}
+                            <Button color="info" onClick={this.prosesModalBukti}>
+                                Submit Pembayaran
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+                <Modal size="xl" className='modalrinci' isOpen={this.state.submitPre} toggle={this.modalSubmitPre}>
+                    <ModalBody>
+                        <div>
+                            <div className="stockTitle">DAFTAR PENGIRIMAN DANA KE CABANG</div>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>No Transaksi</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input 
+                                name='no_transfer'
+                                onChange={e => this.updateData({target: e.target, key: e.key})} 
+                                className="ml-3" /></Col>
+                            </Row>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>tanggal transaksi</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input 
+                                    type='date'
+                                    name='tgl_transfer'
+                                    onChange={e => this.updateData({target: e.target, key: e.key})} 
+                                    className="ml-3" /></Col>
+                            </Row>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>sumber rekening</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value="1300015005005 / PT PINUS MERAH ABADI" /></Col>
+                            </Row>
+                            <Row className="ptStock inputStock">
+                                <Col md={3} xl={3} sm={3}>nama bank</Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value="BANK MANDIRI  BINA CITRA  BANDUNG" /></Col>
+                            </Row>
+                        </div>
+                        <div className={style.tableDashboard}>
+                            <Table bordered responsive hover className={style.tab} id="table-to-xls">
+                                <thead>
+                                    <tr>
+                                        <th>NO</th>
+                                        <th>No FPD</th>
+                                        <th>Cabang</th>
+                                        <th>COST CENTRE</th>
+                                        <th>Nama Bank</th>
+                                        <th>No Rekening</th>
+                                        <th>Atas Nama</th>
+                                        <th>Nominal</th>
+                                        <th>Keterangan</th>
+                                        <th>No PO</th>
+                                        <th>Area</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dataDownload.length !== 0 && dataDownload.map(item => {
+                                        return (
+                                            <tr>
+                                                <th scope="row">{dataDownload.indexOf(item) + 1}</th>
+                                                <th>{item.no_transaksi}</th>
+                                                <th>{item.area}</th>
+                                                <th>{item.cost_center}</th>
+                                                <th>{item.bank_tujuan}</th>
+                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.nama_tujuan}</th>
+                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.keterangan}</th>
+                                                <th>-</th>
+                                                <th>{item.depo.channel}</th>
+                                            </tr>
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
+                        </div>
+                    </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div></div>
+                        <div className="btnFoot">
+                            <Button color="warning mr-2" disabled={this.state.no_transfer === '' || this.state.tgl_transfer === null ? true : false} onClick={this.openModalSubmit}>
+                                Submit
+                            </Button>
+                            <Button color="success" onClick={this.modalSubmitPre}>
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+                <Modal size="xl" className='modalrinci' isOpen={this.state.openMcm} toggle={this.modalMcm}>
+                    <ModalBody>
+                        {/* <Table id="form-list"> */}
+                        <div className={style.tableDashboard}>
+                            <Table bordered responsive hover className={style.tab} id="mcm-table">
+                                <tbody>
+                                    <tr>
+                                        <th>P</th>
+                                        <th className='tabRep'>{moment().format('YYYYMMDD')}</th>
+                                        <th className='tabRep'>1300015005005</th>
+                                        <th >{detailOps.length}</th>
+                                        <th >
+                                            {detailOps.reduce((accumulator, object) => {
+                                                return accumulator + parseInt(object.nilai_ajuan);
+                                            }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                        </th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                    </tr>
+                                    {detailOps.length !== 0 && detailOps.map(item => {
+                                        return (
+                                            <tr>
+                                                <th className='tabRep'>{item.norek_ajuan}</th>
+                                                <th className='tabRep'>{item.nama_tujuan.slice(0, 70)}</th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th className='tabRep'>IDR</th>
+                                                <th className='tabRep'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th >{item.no_transaksi.slice(0, 19)}</th>
+                                                <th ></th>
+                                                <th className='tabRep'>{item.bank_tujuan === 'Bank Mandiri' ? 'IBU' : 'LBU'}</th>
+                                                <th className='tabRep'>{item.bank_tujuan === 'Bank Mandiri' ? '' : ''}</th>
+                                                <th >{item.bank_tujuan === 'Bank Mandiri' ? '' : item.bank_tujuan}</th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th >N</th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th >OUR</th>
+                                                <th >1</th>
+                                                <th className='tabRep'>E</th>
+                                                <th ></th>
+                                                <th ></th>
+                                                <th ></th>
+                                            </tr>
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
+                        </div>
+                        {/* </Table> */}
+                    </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div className="btnFoot">
+                            <Button className="mr-2" color='primary' onClick={this.mcmExcel} >Download MCM (Excel)</Button>
+                            <CSVLink 
+                            className='btn btn-warning ml-1' 
+                            data={csvData} 
+                            enclosingCharacter={""}
+                            filename={`MCM ops ${detailOps.length > 0 && detailOps[0].no_pembayaran}.csv`} 
+                                >
+                                Download MCM (CSV)
+                            </CSVLink>
                         </div>
                     </div>
                 </Modal>
@@ -1133,195 +2003,7 @@ class VerifKlaim extends Component {
                         FORM AJUAN AREA
                     </ModalHeader>
                     <ModalBody>
-                        <div>
-                            {/* <div className="stockTitle">form ajuan area (claim)</div> */}
-                            {/* <div className="ptStock">pt. pinus merah abadi</div> */}
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailKlaim.length > 0 ? detailKlaim[0].area : ''} className="ml-3"  /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>no ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailKlaim.length > 0 ? detailKlaim[0].no_transaksi : ''} className="ml-3" /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailKlaim.length > 0 ? moment(detailKlaim[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
-                            </Row>
-                        </div>
-                        <div className={style.tableDashboard}>
-                            <Table bordered responsive hover className={style.tab}>
-                                <thead>
-                                    <tr className='tbklaim'>
-                                        <th>NO</th>
-                                        <th>COST CENTRE</th>
-                                        <th>NO COA</th>
-                                        <th>NAMA COA</th>
-                                        <th>KETERANGAN TAMBAHAN</th>
-                                        <th>PERIODE</th>
-                                        <th>NILAI YANG DIAJUKAN</th>
-                                        <th>BANK</th>
-                                        <th>NOMOR REKENING</th>
-                                        <th>ATAS NAMA</th>
-                                        <th>MEMILIKI NPWP</th>
-                                        <th>NAMA SESUAI NPWP</th>
-                                        <th>NOMOR NPWP</th>
-                                        <th>PPU</th>
-                                        <th>PA</th>
-                                        <th>NOMINAL</th>
-                                        <th>NILAI YANG DIBAYARKAN</th>
-                                        <th>TANGGAL TRANSFER</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {detailKlaim.length !== 0 && detailKlaim.map(item => {
-                                        return (
-                                            <tr>
-                                                <th scope="row">{detailKlaim.indexOf(item) + 1}</th>
-                                                <th>{item.cost_center}</th>
-                                                <th>{item.no_coa}</th>
-                                                <th>{item.nama_coa}</th>
-                                                <th>{item.keterangan}</th>
-                                                <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
-                                                <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </Table>
-                        </div>
-                        <Table borderless responsive className="tabPreview mt-4">
-                           <thead>
-                               <tr>
-                                   <th className="buatPre">Dibuat oleh,</th>
-                                   <th className="buatPre">Diperiksa oleh,</th>
-                                   <th className="buatPre">Disetujui oleh,</th>
-                                   <th className="buatPre">Diketahui oleh,</th>
-                               </tr>
-                           </thead>
-                           <tbody className="tbodyPre">
-                               <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.mengetahui !== undefined && ttdKlaim.mengetahui.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdKlaim.mengetahui !== undefined && ttdKlaim.mengetahui.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr>
-                           </tbody>
-                       </Table>
+                        <FAA />
                     </ModalBody>
                     <hr />
                     <div className="modalFoot ml-3">
@@ -1339,148 +2021,7 @@ class VerifKlaim extends Component {
                 </Modal>
                 <Modal isOpen={this.state.modalFpd} toggle={this.openModalFpd} size="lg">
                     <ModalBody>
-                        <div>
-                            <div className="fpdTit">FORM PERMINTAAN DANA</div>
-                            <div className='fpdTit'>cabang/depo : {detailKlaim.length > 0 ? detailKlaim[0].area : ''}</div>
-                            <div className='fpdTit'>no : {detailKlaim.length > 0 ? detailKlaim[0].no_transaksi : ''}</div>
-                        </div>
-                        <div className={style.tableDashboard}>
-                            <Row>
-                                <Col md={1} className='upper'>
-                                    <div className='liner2'>no</div>
-                                </Col>
-                                <Col md={8} className='upper'>
-                                    <div className='line'>keperluan / <br />keterangan</div>
-                                </Col>
-                                <Col md={3} className='upper'>
-                                    <div className='liner'>rupiah</div>
-                                </Col>
-                            </Row>
-                            {detailKlaim.length !== 0 && detailKlaim.map(item => {
-                                return (
-                                    <Row className='mt-4'>
-                                        <Col md={1} className='upper'>
-                                            <div className='line'>{detailKlaim.indexOf(item) + 1}</div>
-                                        </Col>
-                                        <Col md={8} className='upper'>
-                                            <div className='line2'>{item.keterangan}</div>
-                                            <div className='line mt-1'>NO REK {item.bank_tujuan} {item.norek_ajuan}</div>
-                                        </Col>
-                                        <Col md={3} className='upper'>
-                                            <div className='line'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>
-                                        </Col>
-                                    </Row>
-                                )
-                            })}
-                            <Row className='mt-4'>
-                                <Col md={1} className='upper'>
-                                </Col>
-                                <Col md={8} className='upper'>
-                                    <div className='line'>Total</div>
-                                </Col>
-                                <Col md={3} className='upper'>
-                                    <div className='line'>
-                                        {this.state.totalfpd.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                                    </div>
-                                </Col>
-                            </Row>
-                        </div>
-                        <div className='bold'>{detailKlaim.length > 0 ? detailKlaim[0].area : ''}, {moment(detailKlaim.length > 0 ? moment(detailKlaim[0].updatedAt).format('DD MMMM YYYY') : '').format('DD MMMM YYYY')}</div>
-                        <Table borderless responsive className="tabPreview mt-4">
-                           <thead>
-                               <tr>
-                                   <th className="buatPre">Dibuat oleh,</th>
-                                   <th className="buatPre">Diperiksa oleh,</th>
-                                   <th className="buatPre">Disetujui oleh,</th>
-                               </tr>
-                           </thead>
-                           <tbody className="tbodyPre">
-                               <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr>
-                           </tbody>
-                       </Table>
+                        <FPD totalfpd={this.state.totalfpd} />
                     </ModalBody>
                     <hr />
                     <div className="modalFoot ml-3">
@@ -1498,7 +2039,7 @@ class VerifKlaim extends Component {
                 </Modal>
                 <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
                     <ModalHeader>
-                        Update Data Klaim
+                        Update Data Ops
                     </ModalHeader>
                     <ModalBody>
                         <div className="mainRinci2">
@@ -1519,8 +2060,8 @@ class VerifKlaim extends Component {
                                 pa: dataRinci.pa === null ? '' : dataRinci.pa,
                                 nominal: dataRinci.nominal === null ? '' : dataRinci.nominal
                             }}
-                            validationSchema = {klaimSchema}
-                            onSubmit={(values) => {this.prosesEditKlaim(values)}}
+                            validationSchema = {opsSchema}
+                            onSubmit={(values) => {this.prosesEditOps(values)}}
                             >
                             {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                                 <div className="rightRinci2">
@@ -1575,7 +2116,7 @@ class VerifKlaim extends Component {
                                                 type= "date"
                                                 disabled
                                                 className="inputRinci"
-                                                value={moment(values.periode_awal).format('YYYY-MM-DD')}
+                                                value={values.periode_awal}
                                                 onBlur={handleBlur("periode_awal")}
                                                 onChange={handleChange("periode_awal")}
                                                 />
@@ -1584,7 +2125,7 @@ class VerifKlaim extends Component {
                                                 type= "date" 
                                                 disabled
                                                 className="inputRinci"
-                                                value={moment(values.periode_akhir).format('YYYY-MM-DD')}
+                                                value={values.periode_akhir}
                                                 onBlur={handleBlur("periode_akhir")}
                                                 onChange={handleChange("periode_akhir")}
                                                 />
@@ -1596,7 +2137,7 @@ class VerifKlaim extends Component {
                                             <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
                                         ) : null }
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nilai DN Area</Col>
+                                            <Col md={3}>Nilai Yang Diajukan</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
@@ -1754,17 +2295,6 @@ class VerifKlaim extends Component {
                                         </Col>
                                     </Row> */}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>PPU</Col>
-                                        <Col md={9} className="colRinci">:  <Input
-                                            type= "text" 
-                                            className="inputRinci"
-                                            value={values.ppu}
-                                            onBlur={handleBlur("ppu")}
-                                            onChange={handleChange("ppu")}
-                                            />
-                                        </Col>
-                                    </Row>
-                                    <Row className="mb-2 rowRinci">
                                         <Col md={3}>PA</Col>
                                         <Col md={9} className="colRinci">:  <Input
                                             type= "text" 
@@ -1776,7 +2306,7 @@ class VerifKlaim extends Component {
                                         </Col>
                                     </Row>
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>Nominal verifikasi</Col>
+                                        <Col md={3}>NOMINAL</Col>
                                         <Col md={9} className="colRinci">:  <Input
                                             type= "text" 
                                             className="inputRinci"
@@ -1792,12 +2322,10 @@ class VerifKlaim extends Component {
                                             <Button 
                                                 className="mr-3" 
                                                 size="md" 
-                                                disabled={ 
-                                                    values.ppu === '' ? true 
-                                                    : values.pa === '' ? true 
-                                                    : values.nominal === '' ? true 
-                                                    : false 
-                                                } 
+                                                disabled={ values.ppu === '' ? true 
+                                                : values.pa === '' ? true 
+                                                : values.nominal === '' ? true 
+                                                : false } 
                                                 color="primary" 
                                                 onClick={handleSubmit}>
                                                 Save
@@ -1818,7 +2346,7 @@ class VerifKlaim extends Component {
                     alasan: "",
                     }}
                     validationSchema={alasanSchema}
-                    onSubmit={(values) => {this.rejectKlaim(values)}}
+                    onSubmit={(values) => {this.rejectOps(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
@@ -1876,7 +2404,7 @@ class VerifKlaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.ops.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1898,26 +2426,44 @@ class VerifKlaim extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveDataKlaim()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.approveDataOps()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.state.modalSubmit} toggle={this.openModalSub} centered={true}>
+                <Modal isOpen={this.state.modalApplist} toggle={this.openModalApplist} centered={true}>
                     <ModalBody>
                         <div className={style.modalApprove}>
                             <div>
                                 <text>
-                                    Anda yakin untuk submit     
+                                    Anda yakin untuk approve list ajuan bayar    
                                     <text className={style.verif}> </text>
                                     pada tanggal
                                     <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.submitAset()}>Ya</Button>
-                                <Button color="secondary" onClick={this.openModalSub}>Tidak</Button>
+                                <Button color="primary" onClick={() => this.approveOps()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalApplist}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.modalSubmit} toggle={this.openModalSubmit} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk submit pembayaran ajuan ops    
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.submitBuktiAjuan()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalSubmit}>Tidak</Button>
                             </div>
                         </div>
                     </ModalBody>
@@ -1956,7 +2502,7 @@ class VerifKlaim extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve dan Kirim Email</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'submit' ? (
@@ -1966,6 +2512,14 @@ class VerifKlaim extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'verifdoc' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                                <div className={[style.sucUpdate, style.green]}>Pastikan seluruh dokumen telah diupload</div>
+                            </div>
+                        </div>
                     ) : this.state.confirm === 'rejSubmitKlm' ?(
                         <div>
                             <div className={style.cekUpdate}>
@@ -1973,32 +2527,18 @@ class VerifKlaim extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, dan nominal telah diisi</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'rejSend' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Submit dan Gagal Kirim Email</div>
+                            </div>
+                        </div>
                     ) : this.state.confirm === 'rejSubmit' ?(
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, dan nominal telah diisi</div>
-                            </div>
-                        </div>
-                    ) : this.state.confirm === 'appNotifDoc' ?(
-                        <div>
-                            <div className={style.cekUpdate}>
-                            <AiOutlineClose size={80} className={style.red} />
-                            <div className={[style.sucUpdate, style.green]}>Gagal Approve, Pastikan Dokumen Lampiran Telah Diapprove</div>
-                        </div>
-                        </div>
-                    ) : this.state.confirm === 'isAppDoc' ? (
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
-                            </div>
-                        </div>
-                    ) : this.state.confirm === 'isRejDoc' ? (
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
                             </div>
                         </div>
                     ) : (
@@ -2021,24 +2561,21 @@ class VerifKlaim extends Component {
                    Kelengkapan Dokumen
                 </ModalHeader>
                 <ModalBody>
-                    <Container>
+                <Container>
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
                                             <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
-                                                {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
-                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
-                                                : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
-                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
-                                                : (
-                                                    <BsCircle size={20} />
-                                                )}
+                                            {x.status === 0 ? (
+                                                <AiOutlineClose size={20} />
+                                            ) : x.status === 3 ? (
+                                                <AiOutlineCheck size={20} />
+                                            ) : (
+                                                <BsCircle size={20} />
+                                            )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
-                                            <div>
-                                                <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
-                                            </div>
                                             {/* <div className="colDoc">
                                                 <input
                                                 className="ml-4"
@@ -2071,20 +2608,63 @@ class VerifKlaim extends Component {
                     <Button className="mr-2" color="secondary" onClick={this.openModalDoc}>
                         Close
                     </Button>
-                    {/* {this.state.stat === 'DIPINJAM SEMENTARA' && (dataDoc.length === 0 || dataDoc.find(({status}) => status === 1) === undefined) ? (
-                        <Button color="primary" disabled onClick={this.updateStatus}>
-                            Save 
-                        </Button>
-                    ) : this.state.stat === 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.updateStatus}>
-                            Save 
-                        </Button>
-                    )}
-                    {this.state.stat !== 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.openModalDoc}>
-                            Save 
-                        </Button>
-                    )} */}
+                </ModalFooter>
+            </Modal>
+            <Modal size="xl" isOpen={this.state.openBukti} toggle={this.modalBukti}>
+                <ModalHeader>
+                   Kelengkapan Bukti Bayar
+                </ModalHeader>
+                <ModalBody>
+                <Container>
+                        {docBukti !== undefined && docBukti.map(x => {
+                            return (
+                                <Row className="mt-3 mb-4">
+                                    {x.path !== null ? (
+                                        <Col md={12} lg={12} className='mb-2' >
+                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
+                                            {x.status === 0 ? (
+                                                <AiOutlineClose size={20} />
+                                            ) : x.status === 3 ? (
+                                                <AiOutlineCheck size={20} />
+                                            ) : (
+                                                <BsCircle size={20} />
+                                            )}
+                                            <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+                                            <div className="colDoc">
+                                                <input
+                                                type="file"
+                                                className='ml-4'
+                                                onClick={() => this.setState({detail: x})}
+                                                onChange={this.onUploadBukti}
+                                                />
+                                                <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                            </div>
+                                        </Col>
+                                    ) : (
+                                        <Col md={6} lg={6} className="colDoc">
+                                            <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
+                                            <div className="colDoc">
+                                                <input
+                                                type="file"
+                                                onClick={() => this.setState({detail: x})}
+                                                onChange={this.onUploadBukti}
+                                                />
+                                            </div>
+                                            <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                        </Col>
+                                    )}
+                                </Row>
+                            )
+                        })}
+                    </Container>
+                </ModalBody>
+                <ModalFooter>
+                    <Button className="mr-2" color="primary" onClick={this.cekDok}>
+                        Done
+                    </Button>
+                    <Button color="secondary" onClick={this.modalBukti}>
+                        Close
+                    </Button>
                 </ModalFooter>
             </Modal>
             <Modal isOpen={this.state.openPdf} size="xl" toggle={this.openModalPdf} centered={true}>
@@ -2095,18 +2675,10 @@ class VerifKlaim extends Component {
                     </div>
                     <hr/>
                     <div className={style.foot}>
-                        {this.state.filter === 'available' ? (
-                            <div>
-                                <Button color="success" onClick={() => this.openModalAppDoc()}>Approve</Button>
-                                <Button className='ml-1' color="danger" onClick={() => this.openModalRejDoc()}>Reject</Button>
-                            </div>
-                        ) : (
-                            <div></div>
-                        )}
-                        <div className='rowGeneral'>
-                            <Button color="primary" className='mr-1' onClick={() => this.downloadData()}>Download</Button>
-                            <Button color="secondary" onClick={() => this.setState({openPdf: false})}>Close</Button>
+                        <div>
+                            <Button color="success" onClick={() => this.downloadData()}>Download</Button>
                         </div>
+                        <Button color="primary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                     </div>
                 </ModalBody>
             </Modal>
@@ -2128,7 +2700,7 @@ class VerifKlaim extends Component {
                 <ModalBody>
                     <div className='mb-4'>History Transaksi</div>
                     <div className='history'>
-                        {detailKlaim.length > 0 && detailKlaim[0].history.split(',').map(item => {
+                        {detailOps.length > 0 && detailOps[0].history.split(',').map(item => {
                             return (
                                 item !== null && item !== 'null' && 
                                 <Button className='mb-2' color='info'>{item}</Button>
@@ -2137,52 +2709,23 @@ class VerifKlaim extends Component {
                     </div>
                 </ModalBody>
             </Modal>
-            <Modal isOpen={this.state.openAppDoc} toggle={this.openModalAppDoc} centered={true}>
+            <Modal toggle={this.openDraftEmail} isOpen={this.state.openDraft} size='xl'>
+                <ModalHeader>Email Pemberitahuan</ModalHeader>
                 <ModalBody>
-                    <div className={style.modalApprove}>
+                    <Email handleData={this.getMessage}/>
+                    <div className={style.foot}>
+                        <div></div>
                         <div>
-                            <text>
-                                Anda yakin untuk approve     
-                                <text className={style.verif}> </text>
-                                pada tanggal
-                                <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
-                            </text>
+                            <Button
+                                disabled={this.state.message === '' ? true : false} 
+                                className="mr-2"
+                                onClick={() => this.openModalSubmit()} 
+                                color="primary"
+                            >
+                                Submit & Send Email
+                            </Button>
+                            <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
                         </div>
-                        <div className={style.btnApprove}>
-                            <Button color="primary" onClick={() => this.approveDoc()}>Ya</Button>
-                            <Button color="secondary" onClick={this.openModalAppDoc}>Tidak</Button>
-                        </div>
-                    </div>
-                </ModalBody>
-            </Modal>
-            <Modal isOpen={this.state.openRejDoc} toggle={this.openModalRejDoc} centered={true}>
-                <ModalBody>
-                    <div className={style.modalApprove}>
-                        <div>
-                            <text>
-                                Anda yakin untuk reject     
-                                <text className={style.verif}> </text>
-                                pada tanggal
-                                <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
-                            </text>
-                        </div>
-                        <div className={style.btnApprove}>
-                            <Button color="primary" onClick={() => this.rejectDoc()}>Ya</Button>
-                            <Button color="secondary" onClick={this.openModalRejDoc}>Tidak</Button>
-                        </div>
-                    </div>
-                </ModalBody>
-            </Modal>
-            <Modal isOpen={this.state.docHist} toggle={this.docHistory}>
-                <ModalBody>
-                    <div className='mb-4'>History Dokumen</div>
-                    <div className='history'>
-                        {detailDoc.status !== undefined && detailDoc.status !== null && detailDoc.status.split(',').map(item => {
-                            return (
-                                item !== null && item !== 'null' && 
-                                <Button className='mb-2' color='info'>{item}</Button>
-                            )
-                        })}
                     </div>
                 </ModalBody>
             </Modal>
@@ -2196,10 +2739,11 @@ const mapStateToProps = state => ({
     depo: state.depo,
     user: state.user,
     notif: state.notif,
-    klaim: state.klaim,
+    ops: state.ops,
     menu: state.menu,
     reason: state.reason,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    email: state.email
 })
 
 const mapDispatchToProps = {
@@ -2208,21 +2752,28 @@ const mapDispatchToProps = {
     getDetailDepo: depo.getDetailDepo,
     getDepo: depo.getDepo,
     getRole: user.getRole,
-    getKlaim: klaim.getKlaim,
-    getDetail: klaim.getDetail,
-    getApproval: klaim.getApproval,
-    getDocKlaim: klaim.getDocCart,
-    approveKlaim: klaim.approveKlaim,
+    getOps: ops.getOps,
+    getDetail: ops.getDetail,
+    getApproval: ops.getApproval,
+    getDocOps: ops.getDocCart,
     getAllMenu: menu.getAllMenu,
     getReason: reason.getReason,
-    rejectKlaim: klaim.rejectKlaim,
-    resetKlaim: klaim.resetKlaim,
-    submitVerif: klaim.submitVerif,
-    editVerif: klaim.editVerif,
+    rejectOps: ops.rejectOps,
+    resetOps: ops.resetOps,
+    submitVerif: ops.submitVerif,
+    editVerif: ops.editVerif,
+    submitAjuanBayar: ops.submitAjuanBayar,
+    getApprovalList: ops.getApprovalList,
+    approveListOps: ops.approveListOps,
+    rejectListOps: ops.rejectListOps,
     showDokumen: dokumen.showDokumen,
-    approveDokumen: dokumen.approveDokumen,
-    rejectDokumen: dokumen.rejectDokumen
+    uploadBuktiBayar: ops.uploadBuktiBayar,
+    getDocBayar: ops.getDocBayar,
+    submitBuktiBayar: ops.submitBuktiBayar,
+    getDraftAjuan: email.getDraftAjuan,
+    sendEmail: email.sendEmail,
+    resetEmail: email.resetError,
     // notifStock: notif.notifStock
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(VerifKlaim)
+export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarOps)

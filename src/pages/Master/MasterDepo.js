@@ -35,10 +35,14 @@ const depoSchema = Yup.object().shape({
     om: Yup.string().required('must be filled'),
     bm: Yup.string().required('must be filled'),
     aos: Yup.string().required('must be filled'),
-    pic_1: Yup.string().required('must be filled'),
-    pic_2: Yup.string().required('must be filled'),
-    pic_3: Yup.string().required('must be filled'),
-    pic_4: Yup.string().required('must be filled')
+    pic_finance: Yup.string().required('must be filled'),
+    spv_finance: Yup.string().required('must be filled'),
+    asman_finance: Yup.string().required('must be filled'),
+    manager_finance: Yup.string().required('must be filled'),
+    pic_klaim: Yup.string().required('must be filled'),
+    manager_klaim: Yup.string().required('must be filled'),
+    pic_tax: Yup.string().required('must be filled'),
+    manager_tax: Yup.string().required('must be filled'),
 });
 
 class MasterDepo extends Component {
@@ -374,19 +378,19 @@ class MasterDepo extends Component {
                                                 <th>Nama OM</th>
                                                 <th>Nama BM</th>
                                                 <th>Nama AOS</th>
-                                                <th>Nama PIC 1</th>
-                                                <th>Nama PIC 2</th>
-                                                <th>Nama PIC 3</th>
-                                                <th>Nama PIC 4</th>
+                                                <th>PIC FINANCE</th>
+                                                <th>SPV FINANCE</th>
+                                                <th>ASMAN FINANCE</th>
+                                                <th>MANAGER FINANCE</th>
+                                                <th>PIC KLAIM</th>
+                                                <th>MANAGER KLAIM</th>
+                                                <th>PIC TAX</th>
+                                                <th>MANAGER TAX</th>
                                             </tr>
                                         </thead>
                                     </Table>
                                     <div className={style.spin}>
-                                            <Spinner type="grow" color="primary"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="success"/>
-                                            <Spinner type="grow" color="warning"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="danger"/>
-                                            <Spinner type="grow" color="info"/>
+                                        Data tidak ditemukan
                                     </div>
                                     </div>
                                 ) : (
@@ -408,10 +412,14 @@ class MasterDepo extends Component {
                                                 <th>Nama OM</th>
                                                 <th>Nama BM</th>
                                                 <th>Nama AOS</th>
-                                                <th>Nama PIC 1</th>
-                                                <th>Nama PIC 2</th>
-                                                <th>Nama PIC 3</th>
-                                                <th>Nama PIC 4</th>
+                                                <th>PIC FINANCE</th>
+                                                <th>SPV FINANCE</th>
+                                                <th>ASMAN FINANCE</th>
+                                                <th>MANAGER FINANCE</th>
+                                                <th>PIC KLAIM</th>
+                                                <th>MANAGER KLAIM</th>
+                                                <th>PIC TAX</th>
+                                                <th>MANAGER TAX</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -432,10 +440,14 @@ class MasterDepo extends Component {
                                                     <td>{item.om}</td>
                                                     <td>{item.bm}</td>
                                                     <td>{item.aos}</td>
-                                                    <td>{item.pic_1}</td>
-                                                    <td>{item.pic_2}</td>
-                                                    <td>{item.pic_3}</td>
-                                                    <td>{item.pic_4}</td>
+                                                    <td>{item.pic_finance}</td>
+                                                    <td>{item.spv_finance}</td>
+                                                    <td>{item.asman_finance}</td>
+                                                    <td>{item.manager_finance}</td>
+                                                    <td>{item.pic_klaim}</td>
+                                                    <td>{item.manager_klaim}</td>
+                                                    <td>{item.pic_tax}</td>
+                                                    <td>{item.manager_tax}</td>
                                                 </tr>
                                                 )})}
                                         </tbody>
@@ -472,10 +484,14 @@ class MasterDepo extends Component {
                         om: "",
                         bm: "",
                         aos: "",
-                        pic_1: "",
-                        pic_2: "",
-                        pic_3: "",
-                        pic_4: ""
+                        pic_finance: "",
+                        spv_finance: "",
+                        asman_finance: "",
+                        manager_finance: "",
+                        pic_klaim: "",
+                        manager_klaim: "",
+                        pic_tax: "",
+                        manager_tax: "",
                     }}
                     validationSchema={depoSchema}
                     onSubmit={(values) => {this.addDepo(values)}}
@@ -723,71 +739,139 @@ class MasterDepo extends Component {
                             </div>
                             <div className={style.addModalDepo}>
                                 <text className="col-md-4">
-                                    Nama PIC 1
+                                    PIC FINANCE
                                 </text>
                                 <div className="col-md-8">
                                 <Input 
                                 type="name" 
                                 name="spv"
-                                value={values.pic_1}
-                                onBlur={handleBlur("pic_1")}
-                                onChange={handleChange("pic_1")}
+                                value={values.pic_finance}
+                                onBlur={handleBlur("pic_finance")}
+                                onChange={handleChange("pic_finance")}
                                 />
-                                    {errors.pic_1 ? (
-                                        <text className={style.txtError}>{errors.pic_1}</text>
+                                    {errors.pic_finance ? (
+                                        <text className={style.txtError}>{errors.pic_finance}</text>
                                     ) : null}
                                 </div>    
                             </div>
                             <div className={style.addModalDepo}>
                                 <text className="col-md-4">
-                                    Nama PIC 2
+                                    SPV FINANCE
                                 </text>
                                 <div className="col-md-8">
                                 <Input 
                                 type="name" 
                                 name="spv"
-                                value={values.pic_2}
-                                onBlur={handleBlur("pic_2")}
-                                onChange={handleChange("pic_2")}
+                                value={values.spv_finance}
+                                onBlur={handleBlur("spv_finance")}
+                                onChange={handleChange("spv_finance")}
                                 />
-                                    {errors.pic_2 ? (
-                                        <text className={style.txtError}>{errors.pic_2}</text>
+                                    {errors.spv_finance ? (
+                                        <text className={style.txtError}>{errors.spv_finance}</text>
                                     ) : null}
                                 </div>    
                             </div>
                             <div className={style.addModalDepo}>
                                 <text className="col-md-4">
-                                    Nama PIC 3
+                                    ASMAN FINANCE
                                 </text>
                                 <div className="col-md-8">
                                 <Input 
                                 type="name" 
                                 name="spv"
-                                value={values.pic_3}
-                                onBlur={handleBlur("pic_3")}
-                                onChange={handleChange("pic_3")}
+                                value={values.asman_finance}
+                                onBlur={handleBlur("asman_finance")}
+                                onChange={handleChange("asman_finance")}
                                 />
-                                    {errors.pic_3 ? (
-                                        <text className={style.txtError}>{errors.pic_3}</text>
+                                    {errors.asman_finance ? (
+                                        <text className={style.txtError}>{errors.asman_finance}</text>
                                     ) : null}
                                 </div>    
                             </div>
                             <div className={style.addModalDepo}>
                                 <text className="col-md-4">
-                                    Nama PIC 4
+                                    MANAGER FINANCE
                                 </text>
                                 <div className="col-md-8">
                                 <Input 
                                 type="name" 
                                 name="spv"
-                                value={values.pic_4}
-                                onBlur={handleBlur("pic_4")}
-                                onChange={handleChange("pic_4")}
+                                value={values.manager_finance}
+                                onBlur={handleBlur("manager_finance")}
+                                onChange={handleChange("manager_finance")}
                                 />
-                                    {errors.pic_4 ? (
-                                        <text className={style.txtError}>{errors.pic_4}</text>
+                                    {errors.manager_finance ? (
+                                        <text className={style.txtError}>{errors.manager_finance}</text>
                                     ) : null}
                                 </div>    
+                            </div>
+                            <div className={style.addModalDepo}>
+                                <text className="col-md-4">
+                                    PIC KLAIM
+                                </text>
+                                <div className="col-md-8">
+                                <Input 
+                                type="name" 
+                                name="spv"
+                                value={values.pic_finance}
+                                onBlur={handleBlur("pic_finance")}
+                                onChange={handleChange("pic_finance")}
+                                />
+                                    {errors.pic_finance ? (
+                                        <text className={style.txtError}>{errors.pic_finance}</text>
+                                    ) : null}
+                                </div>
+                            </div>
+                            <div className={style.addModalDepo}>
+                                <text className="col-md-4">
+                                    MANAGER KLAIM
+                                </text>
+                                <div className="col-md-8">
+                                <Input 
+                                type="name" 
+                                name="spv"
+                                value={values.manager_finance}
+                                onBlur={handleBlur("manager_finance")}
+                                onChange={handleChange("manager_finance")}
+                                />
+                                    {errors.manager_finance ? (
+                                        <text className={style.txtError}>{errors.manager_finance}</text>
+                                    ) : null}
+                                </div>
+                            </div>
+                            <div className={style.addModalDepo}>
+                                <text className="col-md-4">
+                                    PIC TAX
+                                </text>
+                                <div className="col-md-8">
+                                <Input 
+                                type="name" 
+                                name="spv"
+                                value={values.pic_finance}
+                                onBlur={handleBlur("pic_finance")}
+                                onChange={handleChange("pic_finance")}
+                                />
+                                    {errors.pic_finance ? (
+                                        <text className={style.txtError}>{errors.pic_finance}</text>
+                                    ) : null}
+                                </div>
+                            </div>
+                            <div className={style.addModalDepo}>
+                                <text className="col-md-4">
+                                    MANAGER TAX
+                                </text>
+                                <div className="col-md-8">
+                                <Input 
+                                type="name" 
+                                name="spv"
+                                value={values.manager_finance}
+                                onBlur={handleBlur("manager_finance")}
+                                onChange={handleChange("manager_finance")}
+                                />
+                                    {errors.manager_finance ? (
+                                        <text className={style.txtError}>{errors.manager_finance}</text>
+                                    ) : null}
+                                </div>
                             </div>
                         </div>
                     </ModalBody>
@@ -820,10 +904,14 @@ class MasterDepo extends Component {
                         om: detail.om === null ? '' : detail.om,
                         bm: detail.bm === null ? '' : detail.bm,
                         aos: detail.aos === null ? '' : detail.aos,
-                        pic_1: detail.pic_1 === null ? '' : detail.pic_1,
-                        pic_2: detail.pic_2 === null ? '' : detail.pic_2,
-                        pic_3: detail.pic_3 === null ? '' : detail.pic_3,
-                        pic_4: detail.pic_4 === null ? '' : detail.pic_4
+                        pic_finance: detail.pic_finance === null ? '' : detail.pic_finance,
+                        spv_finance: detail.spv_finance === null ? '' : detail.spv_finance,
+                        asman_finance: detail.asman_finance === null ? '' : detail.asman_finance,
+                        manager_finance: detail.manager_finance === null ? '' : detail.manager_finance,
+                        pic_klaim: detail.pic_klaim === null ? '' : detail.pic_klaim,
+                        manager_klaim: detail.manager_klaim === null ? '' : detail.manager_klaim,
+                        pic_tax: detail.pic_tax === null ? '' : detail.pic_tax,
+                        manager_tax: detail.manager_tax === null ? '' : detail.manager_tax,
                     }}
                     validationSchema={depoSchema}
                     onSubmit={(values) => {this.editDepo(values, detail.id)}}
@@ -1071,71 +1159,139 @@ class MasterDepo extends Component {
                             </div>
                             <div className={style.addModalDepo}>
                                 <text className="col-md-4">
-                                    Nama PIC 1
+                                    PIC FINANCE
                                 </text>
                                 <div className="col-md-8">
                                 <Input 
                                 type="name" 
                                 name="spv"
-                                value={values.pic_1}
-                                onBlur={handleBlur("pic_1")}
-                                onChange={handleChange("pic_1")}
+                                value={values.pic_finance}
+                                onBlur={handleBlur("pic_finance")}
+                                onChange={handleChange("pic_finance")}
                                 />
-                                    {errors.pic_1 ? (
-                                        <text className={style.txtError}>{errors.pic_1}</text>
+                                    {errors.pic_finance ? (
+                                        <text className={style.txtError}>{errors.pic_finance}</text>
                                     ) : null}
                                 </div>    
                             </div>
                             <div className={style.addModalDepo}>
                                 <text className="col-md-4">
-                                    Nama PIC 2
+                                    SPV FINANCE
                                 </text>
                                 <div className="col-md-8">
                                 <Input 
                                 type="name" 
                                 name="spv"
-                                value={values.pic_2}
-                                onBlur={handleBlur("pic_2")}
-                                onChange={handleChange("pic_2")}
+                                value={values.spv_finance}
+                                onBlur={handleBlur("spv_finance")}
+                                onChange={handleChange("spv_finance")}
                                 />
-                                    {errors.pic_2 ? (
-                                        <text className={style.txtError}>{errors.pic_2}</text>
+                                    {errors.spv_finance ? (
+                                        <text className={style.txtError}>{errors.spv_finance}</text>
                                     ) : null}
                                 </div>    
                             </div>
                             <div className={style.addModalDepo}>
                                 <text className="col-md-4">
-                                    Nama PIC 3
+                                    ASMAN FINANCE
                                 </text>
                                 <div className="col-md-8">
                                 <Input 
                                 type="name" 
                                 name="spv"
-                                value={values.pic_3}
-                                onBlur={handleBlur("pic_3")}
-                                onChange={handleChange("pic_3")}
+                                value={values.asman_finance}
+                                onBlur={handleBlur("asman_finance")}
+                                onChange={handleChange("asman_finance")}
                                 />
-                                    {errors.pic_3 ? (
-                                        <text className={style.txtError}>{errors.pic_3}</text>
+                                    {errors.asman_finance ? (
+                                        <text className={style.txtError}>{errors.asman_finance}</text>
                                     ) : null}
                                 </div>    
                             </div>
                             <div className={style.addModalDepo}>
                                 <text className="col-md-4">
-                                    Nama PIC 4
+                                    MANAGER FINANCE
                                 </text>
                                 <div className="col-md-8">
                                 <Input 
                                 type="name" 
                                 name="spv"
-                                value={values.pic_4}
-                                onBlur={handleBlur("pic_4")}
-                                onChange={handleChange("pic_4")}
+                                value={values.manager_finance}
+                                onBlur={handleBlur("manager_finance")}
+                                onChange={handleChange("manager_finance")}
                                 />
-                                    {errors.pic_4 ? (
-                                        <text className={style.txtError}>{errors.pic_4}</text>
+                                    {errors.manager_finance ? (
+                                        <text className={style.txtError}>{errors.manager_finance}</text>
                                     ) : null}
-                                </div>    
+                                </div>
+                                <div className={style.addModalDepo}>
+                                    <text className="col-md-4">
+                                        PIC KLAIM
+                                    </text>
+                                    <div className="col-md-8">
+                                    <Input 
+                                    type="name" 
+                                    name="spv"
+                                    value={values.pic_klaim}
+                                    onBlur={handleBlur("pic_klaim")}
+                                    onChange={handleChange("pic_klaim")}
+                                    />
+                                        {errors.pic_klaim ? (
+                                            <text className={style.txtError}>{errors.pic_klaim}</text>
+                                        ) : null}
+                                    </div>
+                                </div>
+                                <div className={style.addModalDepo}>
+                                    <text className="col-md-4">
+                                        MANAGER KLAIM
+                                    </text>
+                                    <div className="col-md-8">
+                                    <Input 
+                                    type="name" 
+                                    name="spv"
+                                    value={values.manager_klaim}
+                                    onBlur={handleBlur("manager_klaim")}
+                                    onChange={handleChange("manager_klaim")}
+                                    />
+                                        {errors.manager_klaim ? (
+                                            <text className={style.txtError}>{errors.manager_klaim}</text>
+                                        ) : null}
+                                    </div>
+                                </div>
+                                <div className={style.addModalDepo}>
+                                    <text className="col-md-4">
+                                        PIC TAX
+                                    </text>
+                                    <div className="col-md-8">
+                                    <Input 
+                                    type="name" 
+                                    name="spv"
+                                    value={values.pic_tax}
+                                    onBlur={handleBlur("pic_tax")}
+                                    onChange={handleChange("pic_tax")}
+                                    />
+                                        {errors.pic_tax ? (
+                                            <text className={style.txtError}>{errors.pic_tax}</text>
+                                        ) : null}
+                                    </div>
+                                </div>
+                                <div className={style.addModalDepo}>
+                                    <text className="col-md-4">
+                                        MANAGER TAX
+                                    </text>
+                                    <div className="col-md-8">
+                                    <Input 
+                                    type="name" 
+                                    name="spv"
+                                    value={values.manager_tax}
+                                    onBlur={handleBlur("manager_tax")}
+                                    onChange={handleChange("manager_tax")}
+                                    />
+                                        {errors.manager_tax ? (
+                                            <text className={style.txtError}>{errors.manager_tax}</text>
+                                        ) : null}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </ModalBody>

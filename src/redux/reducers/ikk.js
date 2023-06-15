@@ -1,5 +1,5 @@
 /* eslint-disable import/no-anonymous-default-export */
-const klaimState = {
+const ikkState = {
     isAdd: null,
     isAddDetail: false,
     isUpdate: false,
@@ -48,10 +48,17 @@ const klaimState = {
     isRejectList: null,
     depoCart: {},
     isGetReport: null,
-    dataReport: []
+    dataReport: [],
+    idIkk: {},
+    detailId: null,
+    confIdent: null,
+    uploadBukti: null,
+    isDocBukti: null,
+    docBukti: [],
+    submitBukti: null,
 };
 
-export default (state=klaimState, action) => {
+export default (state=ikkState, action) => {
         switch(action.type){
             case 'GET_CART_PENDING': {
                 return {
@@ -153,6 +160,30 @@ export default (state=klaimState, action) => {
                     isLoading: false,
                     isError: true,
                     isDetIkk: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'DETAILID_IKK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DETAILID_IKK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    detailId: true,
+                    idIkk: action.payload.data.result,
+                    alertMsg: 'get coa Succesfully'
+                };
+            }
+            case 'DETAILID_IKK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    detailId: false,
                     alertMsg: "Unable connect to server"
                 };
             }
@@ -612,6 +643,100 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'DOC_BUKTIIKK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DOC_BUKTIIKK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDocBukti: true,
+                    docBukti: action.payload.data.result,
+                    alertMsg: 'upload bukti Succesfully',
+                };
+            }
+            case 'DOC_BUKTIIKK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDocBukti: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'UPLOAD_BUKTIIKK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPLOAD_BUKTIIKK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    uploadBukti: true,
+                    alertMsg: 'upload bukti Succesfully',
+                };
+            }
+            case 'UPLOAD_BUKTIIKK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    uploadBukti: false,
+                    isError: true,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'SUBMIT_BUKTIIKK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'SUBMIT_BUKTIIKK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    submitBukti: true,
+                    alertMsg: 'upload bukti Succesfully',
+                };
+            }
+            case 'SUBMIT_BUKTIIKK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    submitBukti: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'CONFIRM_IDENTIKK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'CONFIRM_IDENTIKK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    confIdent: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'CONFIRM_IDENTIKK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    confIdent: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'RESET_IKK': {
                 return {
                     ...state,
@@ -631,7 +756,12 @@ export default (state=klaimState, action) => {
                     subVerif: null,
                     editVrf: null,
                     subBayar: null,
-                    isGetReport: null
+                    isGetReport: null,
+                    detailId: null,
+                    confIdent: null,
+                    uploadBukti: null,
+                    isDocBukti: null,
+                    submitBukti: null,
                 }
             }
             default: {

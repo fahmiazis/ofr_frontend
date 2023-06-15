@@ -544,6 +544,13 @@ html,body{
     transform: translate(0%, -30%) !important; */
     background-color: #76923B !important;
 }
+.tbikk {
+    font-size: small !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    top: 50% !important;
+    transform: translate(0%, -30%) !important;
+}
 .tbRinci {
     margin: 30px;
 }
@@ -1089,6 +1096,33 @@ html,body{
 }
 .modalrinci {
     max-width: 90% !important;
+}
+.tabikk {
+    margin-bottom: 0 !important;
+}
+.tabikk > tbody > tr > th{
+    border: 1px solid black;
+    color: black;
+    font-size: small;
+}
+.tabikk > tbody > tr > td{
+    border: 1px solid black;
+    font-size: small;
+    color: black;
+}
+.tabikk > thead > tr > th{
+    border: 1px solid black;
+    text-align: center;
+    /* background-color: #76923B; */
+    color: black;
+    white-space: nowrap;
+}
+.btnDocCon {
+    align-self: center;
+    margin-top: 30px;
+    display: flex;
+    flex-direction: row;
+    left: 50%;
 }
 .stockTitle {
     text-transform: uppercase;
@@ -1808,4 +1842,7 @@ a:hover{
     border-radius: 50%;
     object-fit: contain;
     background-color: white;
+}
+.tabRep {
+    background-color: rgb(255, 255, 0) !important;
 }

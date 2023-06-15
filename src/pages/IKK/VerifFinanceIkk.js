@@ -36,11 +36,14 @@ import Tracking from '../../components/Ikk/tracking'
 import Formikk from '../../components/Ikk/formikk'
 import FPD from '../../components/Ikk/FPD'
 import dokumen from '../../redux/actions/dokumen'
+import ExcelJS from "exceljs";
+import fs from "file-saver";
 const {REACT_APP_BACKEND_URL} = process.env
 
-const ikkSchema = Yup.object().shape({
-    pa: Yup.string().required('must be filled'),
-    nominal: Yup.number().required('must be filled')
+const opsSchema = Yup.object().shape({
+    dpp: Yup.string().required('must be filled'),
+    ppn: Yup.string().required('must be filled'),
+    nilai_utang: Yup.number().required('must be filled')
 })
 
 const alasanSchema = Yup.object().shape({
@@ -109,6 +112,18 @@ class VerifIkk extends Component {
             upload: false,
             openAppDoc: false,
             openRejDoc: false,
+            openDraft: false,
+            listIkk: [],
+            modalDownload: false,
+            dataDownload: [],
+            message: '',
+            time: '',
+            time1: '',
+            time2: '',
+            subject: '',
+            docHist: false,
+            detailDoc: {},
+            docCon: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -306,11 +321,17 @@ class VerifIkk extends Component {
     }
 
     componentDidMount() {
-        // const level = localStorage.getItem('level')
+        const dataCek = localStorage.getItem('docData')
         const {item, type} = (this.props.location && this.props.location.state) || {}
         if (type === 'approve') {
             this.getDataIkk()
             this.prosesDetail(item)
+        } else if (dataCek !== undefined && dataCek !== null) {
+            const data = {
+                no_transaksi: dataCek
+            }
+            this.getDataIkk()
+            this.prosesDocTab(data)
         } else {
             this.getDataIkk()
         }
@@ -434,32 +455,6 @@ class VerifIkk extends Component {
         this.openModalDok()
     }
 
-    addStock = async (val) => {
-        const token = localStorage.getItem("token")
-        const dataAsset = this.props.asset.assetAll
-        const { detailDepo } = this.props.depo
-        const { kondisi, fisik } = this.state
-        const data = {
-            area: detailDepo.nama_area,
-            kode_plant: dataAsset[0].kode_plant,
-            deskripsi: val.deskripsi,
-            merk: val.merk,
-            satuan: val.satuan,
-            unit: val.unit,
-            lokasi: val.lokasi,
-            grouping: val.grouping,
-            keterangan: val.keterangan,
-            kondisi: kondisi,
-            status_fisik: fisik
-        }
-        await this.props.addOpname(token, data)
-        await this.props.getStockArea(token, '', 1000, 1, 'null')
-        const { dataAdd } = this.props.stock
-        this.setState({kondisi: '', fisik: '', dataId: dataAdd.id})
-        this.openModalAdd()
-        this.openModalUpload()
-    }
-
     openModalSum = async () => {
         const token = localStorage.getItem('token')
         await this.props.getStockArea(token, '', 1000, 1, 'null')
@@ -482,9 +477,9 @@ class VerifIkk extends Component {
         const token = localStorage.getItem("token")
         const {dataRinci} = this.state
         const data = {
-            ppu: val.ppu,
-            pa: val.pa,
-            nominal: val.nominal,
+            dpp: val.dpp,
+            ppn: val.ppn,
+            nilai_utang: val.nilai_utang,
         }
         const tempno = {
             no: dataRinci.no_transaksi,
@@ -523,26 +518,41 @@ class VerifIkk extends Component {
         }
     }
 
-    prosesSubmitPre = async () => {
-        const token = localStorage.getItem("token")
-        await this.props.getAssetAll(token, 1000, '', 1, 'asset')
-        this.modalSubmitPre()
+    prosesSubmit = async () => {
+        const {listIkk} = this.state
+        const {newIkk} = this.props.ikk
+        const data = []
+        for (let i = 0; i < listIkk.length; i++) {
+            for (let j = 0; j < newIkk.length; j++) {
+                if (newIkk[j].no_transaksi === listIkk[i]) {
+                    data.push(newIkk[j])
+                }
+            }
+        }
+        this.openModalApprove()
     }
 
     approveDataIkk = async () => {
         const { detailIkk } = this.props.ikk
+        const {listIkk} = this.state
         const level = localStorage.getItem("level")
         const token = localStorage.getItem("token")
+        const noTrans = detailIkk.length > 0 ? detailIkk[0].no_transaksi : listIkk[0]
         const tempno = {
-            no: detailIkk[0].no_transaksi
+            no: noTrans,
+            list: listIkk
         }
-        if (level === '4') {
+        if (level === '4' || level === '14') {
             await this.props.submitVerif(token, tempno)
             this.getDataIkk()
             this.setState({confirm: 'submit'})
             this.openConfirm()
             this.openModalApprove()
-            this.openModalRinci()
+            if (listIkk.length > 0) {
+                this.setState()
+            } else {
+                this.openModalRinci()
+            }
         } else {
             await this.props.submitVerif(token, tempno)
             this.getDataIkk()
@@ -553,29 +563,145 @@ class VerifIkk extends Component {
         }
     }
 
+    chekAppList = (val) => {
+        const { listIkk } = this.state
+        const {newIkk} = this.props.ikk
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < newIkk.length; i++) {
+                data.push(newIkk[i].no_transaksi)
+            }
+            this.setState({listIkk: data})
+        } else {
+            listIkk.push(val)
+            this.setState({listIkk: listIkk})
+        }
+    }
+
+    chekRejList = (val) => {
+        const {listIkk} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listIkk: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listIkk.length; i++) {
+                if (listIkk[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listIkk[i])
+                }
+            }
+            this.setState({listIkk: data})
+        }
+    }
+
+    prosesDownload = () => {
+        const {listIkk} = this.state
+        const {dataIkk} = this.props.ikk
+        const data = []
+        for (let i = 0; i < listIkk.length; i++) {
+            for (let j = 0; j < dataIkk.length; j++) {
+                if (dataIkk[j].no_transaksi === listIkk[i]) {
+                    data.push(dataIkk[j])
+                }
+            }
+        }
+        this.setState({dataDownload: data})
+        this.openDownload()
+    }
+
+    openDownload = () => {
+        this.setState({modalDownload: !this.state.modalDownload})
+    }
+
+    downloadExcel = async () => {
+        const { dataDownload } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data ajuan')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+            {header: 'NO', key: 'c1'},
+            {header: 'NO AJUAN', key: 'c22'},
+            {header: 'COST CENTRE', key: 'c2'}, 
+            {header: 'NO COA', key: 'c3'},
+            {header: 'NAMA COA', key: 'c4'},
+            {header: 'KETERANGAN TAMBAHAN', key: 'c5'},
+            {header: 'PERIODE', key: 'c6'},
+            {header: 'NILAI YANG DIAJUKAN', key: 'c7'},
+            {header: 'BANK', key: 'c8'},
+            {header: 'NOMOR REKENING', key: 'c9'},
+            {header: 'ATAS NAMA', key: 'c10'},
+            {header: 'MEMILIKI NPWP', key: 'c11'},
+            {header: 'NAMA SESUAI NPWP', key: 'c12'},
+            {header: 'NOMOR NPWP', key: 'c13'},
+            {header: 'NAMA SESUAI KTP', key: 'c14'},
+            {header: 'NOMOR KTP', key: 'c15'},
+            {header: 'DPP', key: 'c16'},
+            {header: 'PPN', key: 'c17'},
+            {header: 'PPh', key: 'c18'},
+            {header: 'NILAI YANG DIBAYARKAN', key: 'c19'},
+            {header: 'TANGGAL TRANSFER', key: 'c20'},
+            {header: 'Jenis PPh', key: 'c21'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: index + 1,
+                c22: item.no_transaksi,
+                c2: item.cost_center,
+                c3: item.no_coa,
+                c4: item.nama_coa,
+                c5: item.uraian,
+                c6: `${moment(item.periode_awal).format('DD/MMMM/YYYY')} - ${moment(item.periode_akhir).format('DD/MMMM/YYYY')}`,
+                c7: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c8: item.bank_tujuan,
+                c9: item.norek_ajuan,
+                c10: item.nama_tujuan,
+                c11: item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-',
+                c12: item.status_npwp === 0 ? '' : item.nama_npwp,
+                c13: item.status_npwp === 0 ? '' : item.no_npwp,
+                c14: item.status_npwp === 0 ? item.nama_ktp : '',
+                c15: item.status_npwp === 0 ? item.no_ktp : '',
+                c16: item.dpp,
+                c17: item.ppn,
+                c18: item.nilai_utang,
+                c19: item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c20: item.tanggal_transfer !== null ? `${moment(item.tanggal_transfer).format('DD/MMMM/YYYY')}` : '-',
+                c21: item.jenis_pph,
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+          
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Data Ajuan IKK ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
+    }
+
     onSearch = async (e) => {
         this.setState({search: e.target.value})
         const token = localStorage.getItem("token")
         if(e.key === 'Enter'){
             await this.props.getAssetAll(token, 10, e.target.value, 1)
         }
-    }
-
-    updateAsset = async (value) => {
-        const token = localStorage.getItem("token")
-        const { dataRinci } = this.state
-        const { detailAsset } = this.props.asset
-        const data = {
-            merk: value.merk,
-            satuan: value.satuan,
-            unit: value.unit,
-            lokasi: value.lokasi,
-            grouping: detailAsset.grouping,
-            keterangan: value.keterangan,
-            status_fisik: detailAsset.fisik,
-            kondisi: detailAsset.kondisi
-        }
-        await this.props.updateAssetNew(token, dataRinci.id, data)
     }
 
     changeView = (val) => {
@@ -637,12 +763,52 @@ class VerifIkk extends Component {
 
     openProsesModalDoc = async (val) => {
         const token = localStorage.getItem("token")
+        localStorage.removeItem('docData')
         const tempno = {
             no: val.no_transaksi,
             name: 'Draft Pengajuan Ikk'
         }
         await this.props.getDocIkk(token, tempno)
+        this.setState({docCon: false})
         this.openModalDoc()
+    }
+
+    prosesDocTab = async (val) => {
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: val.no_transaksi
+        }
+        const sendDoc = {
+            no_transaksi: val.no_transaksi
+        }
+        const data = {
+            no: val.no_transaksi,
+            name: 'Draft Pengajuan Ikk'
+        }
+        this.setState({listMut: []})
+        await this.props.getDetail(token, tempno)
+        await this.props.getApproval(token, tempno)
+        await this.props.getDocIkk(token, data)
+        this.openModalRinci()
+        this.openProsesModalDoc(sendDoc)
+    }
+
+    openDocNewTab = async (val) => {
+        localStorage.setItem('docData', val[0].no_transaksi)
+        const newWindow = window.open('veriffinikk', '_blank', 'noopener,noreferrer')
+        this.setState({docCon: false})
+        if (newWindow) {
+            newWindow.opener = null
+        }
+    }
+
+    openDocCon = () => {
+        this.setState({docCon: !this.state.docCon})
+    }
+
+    docHistory = (val) => {
+        this.setState({detailDoc: val})
+        this.setState({docHist: !this.state.docHist})
     }
 
     openModalDoc = () => {
@@ -859,7 +1025,7 @@ class VerifIkk extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
+        const {dataRinci, dropApp, dataItem, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listIkk} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailIkk, ttdIkk, dataDoc, newIkk } = this.props.ikk
@@ -905,6 +1071,25 @@ class VerifIkk extends Component {
                                 <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : "Tax"}</div>
                             </div>
                             <div className={style.secEmail3}>
+                                <div className={style.headEmail2}>
+                                    {level === '14' ?  (
+                                        <>
+                                            {this.state.filter === 'available' && (
+                                                <Button 
+                                                    className='mr-1' 
+                                                    onClick={this.prosesSubmit} 
+                                                    color="primary" 
+                                                    size="lg"
+                                                    disabled={listIkk.length > 0 ? false : true}
+                                                >
+                                                    Submit
+                                                </Button>
+                                            )}
+                                            <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
+                                        </>
+                                    ) : null}
+                                </div>
+                                <div></div>
                             </div>
                             <div className={[style.secEmail4]}>
                                 <div className={style.searchEmail2}>
@@ -931,6 +1116,17 @@ class VerifIkk extends Component {
                                     <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
                                             <tr>
+                                                {level === '14' && (
+                                                    <th>
+                                                        <input  
+                                                        className='mr-2'
+                                                        type='checkbox'
+                                                        checked={listIkk.length === 0 ? false : listIkk.length === newIkk.length ? true : false}
+                                                        onChange={() => listIkk.length === newIkk.length ? this.chekRejList('all') : this.chekAppList('all')}
+                                                        />
+                                                        Select
+                                                    </th>    
+                                                )}
                                                 <th>No</th>
                                                 <th>NO.AJUAN</th>
                                                 <th>COST CENTRE</th>
@@ -947,6 +1143,15 @@ class VerifIkk extends Component {
                                             {newIkk.map(item => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                        {level === '14' && (
+                                                            <th>
+                                                                <input 
+                                                                type='checkbox'
+                                                                checked={listIkk.find(element => element === item.no_transaksi) !== undefined ? true : false}
+                                                                onChange={listIkk.find(element => element === item.no_transaksi) === undefined ? () => this.chekAppList(item.no_transaksi) : () => this.chekRejList(item.no_transaksi)}
+                                                                />
+                                                            </th>
+                                                        )}
                                                         <th>{newIkk.indexOf(item) + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.cost_center}</th>
@@ -1017,7 +1222,7 @@ class VerifIkk extends Component {
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab}>
                                 <thead>
-                                    <tr className='tbklaim'>
+                                    <tr>
                                         <th>
                                             <input  
                                             className='mr-2'
@@ -1043,11 +1248,12 @@ class VerifIkk extends Component {
                                         <th>MEMILIKI NPWP</th>
                                         <th>NAMA SESUAI NPWP</th>
                                         <th>NOMOR NPWP</th>
-                                        <th>PPU</th>
-                                        <th>PA</th>
-                                        <th>NOMINAL</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>TANGGAL TRANSFER</th>
+                                        <th>Jenis PPh</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -1071,21 +1277,22 @@ class VerifIkk extends Component {
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
-                                                <th>{item.keterangan}</th>
+                                                <th>{item.uraian}</th>
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
+                                                <th>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
+                                                <th>{item.dpp}</th>
+                                                <th>{item.ppn}</th>
+                                                <th>{item.nilai_utang}</th>
+                                                <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.tanggal_transfer !== null ? moment(item.tanggal_transfer).format('DD/MMMM/YYYY') : '-'}</th>
+                                                <th>{item.jenis_pph}</th>
+                                                <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                             </tr>
                                             )
                                         })}
@@ -1097,7 +1304,7 @@ class VerifIkk extends Component {
                         <div className="btnFoot">
                             <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
                             <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>Form Ikk</Button>
-                            <Button color="primary"  onClick={() => this.openProsesModalDoc(detailIkk[0])}>Dokumen</Button>
+                            <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
                             {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
@@ -1107,11 +1314,88 @@ class VerifIkk extends Component {
                                     <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
+                                    <Button color="success" disabled={listIkk.length > 0 ? true : this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
                                         Submit
                                     </Button>
                                 </>
                             )}
+                        </div>
+                    </div>
+                </Modal>
+                <Modal size="xl" className='modalrinci' isOpen={this.state.modalDownload} toggle={this.openDownload}>
+                    <ModalHeader>
+                        Download
+                    </ModalHeader>
+                    <ModalBody>
+                        <div className={style.tableDashboard}>
+                            <Table bordered responsive hover className={style.tab} id="table-to-xls">
+                                <thead>
+                                    <tr>
+                                        <th>NO</th>
+                                        <th>NO AJUAN</th>
+                                        <th>COST CENTRE</th>
+                                        <th>NO COA</th>
+                                        <th>NAMA COA</th>
+                                        <th>KETERANGAN TAMBAHAN</th>
+                                        <th>PERIODE</th>
+                                        <th>NILAI YANG DIAJUKAN</th>
+                                        <th>BANK</th>
+                                        <th>NOMOR REKENING</th>
+                                        <th>ATAS NAMA</th>
+                                        <th>MEMILIKI NPWP</th>
+                                        <th>NAMA SESUAI NPWP</th>
+                                        <th>NOMOR NPWP</th>
+                                        <th>NAMA SESUAI KTP</th>
+                                        <th>NOMOR KTP</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
+                                        <th>NILAI YANG DIBAYARKAN</th>
+                                        <th>TANGGAL TRANSFER</th>
+                                        <th>Jenis PPh</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dataDownload.length !== 0 && dataDownload.map(item => {
+                                        return (
+                                            <tr>
+                                                <th scope="row">{dataDownload.indexOf(item) + 1}</th>
+                                                <th>{item.no_transaksi}</th>
+                                                <th>{item.cost_center}</th>
+                                                <th>{item.no_coa}</th>
+                                                <th>{item.nama_coa}</th>
+                                                <th>{item.uraian}</th>
+                                                <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
+                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.bank_tujuan}</th>
+                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.nama_tujuan}</th>
+                                                <th>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-'}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
+                                                <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
+                                                <th>{item.dpp}</th>
+                                                <th>{item.ppn}</th>
+                                                <th>{item.nilai_utang}</th>
+                                                <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.tanggal_transfer !== null ? moment(item.tanggal_transfer).format('DD/MMMM/YYYY') : '-'}</th>
+                                                <th>{item.jenis_pph}</th>
+                                            </tr>
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
+                        </div>
+                    </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div></div>
+                        <div className="btnFoot">
+                            <Button className="mr-2" color='warning' onClick={this.downloadExcel} >Download</Button>
+                            <Button color="success" onClick={this.openDownload}>
+                                Close
+                            </Button>
                         </div>
                     </div>
                 </Modal>
@@ -1159,22 +1443,23 @@ class VerifIkk extends Component {
                         <div className="mainRinci2">
                             <Formik
                             initialValues = {{
-                                keterangan: dataRinci.keterangan,
+                                uraian: dataRinci.uraian,
                                 periode_awal: dataRinci.periode_awal,
                                 periode_akhir: dataRinci.periode_akhir,
                                 nilai_ajuan: dataRinci.nilai_ajuan,
+                                bank_tujuan: dataRinci.bank_tujuan,
                                 norek_ajuan: dataRinci.norek_ajuan,
                                 nama_tujuan: dataRinci.nama_tujuan,
-                                status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : 'Ya',
+                                status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : dataRinci.status_npwp === 1 ? 'Ya' : '',
                                 nama_npwp: dataRinci.nama_npwp === null ? '' : dataRinci.nama_npwp,
                                 no_npwp: dataRinci.no_npwp === null ? '' : dataRinci.no_npwp,
                                 no_ktp: dataRinci.no_ktp === null ? '' : dataRinci.no_ktp,
                                 nama_ktp: dataRinci.nama_ktp === null ? '' : dataRinci.nama_ktp,
-                                ppu: dataRinci.ppu === null ? '' : dataRinci.ppu,
-                                pa: dataRinci.pa === null ? '' : dataRinci.pa,
-                                nominal: dataRinci.nominal === null ? '' : dataRinci.nominal
+                                dpp: dataRinci.dpp === null ? '' : dataRinci.dpp,
+                                ppn: dataRinci.ppn === null ? '' : dataRinci.ppn,
+                                nilai_utang: dataRinci.nilai_utang === null ? '' : dataRinci.nilai_utang
                             }}
-                            validationSchema = {ikkSchema}
+                            validationSchema = {opsSchema}
                             onSubmit={(values) => {this.prosesEditIkk(values)}}
                             >
                             {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
@@ -1214,13 +1499,13 @@ class VerifIkk extends Component {
                                                 type= "text"
                                                 disabled
                                                 className="inputRinci"
-                                                value={values.keterangan}
-                                                onBlur={handleBlur("keterangan")}
-                                                onChange={handleChange("keterangan")}
+                                                value={values.uraian}
+                                                onBlur={handleBlur("uraian")}
+                                                onChange={handleChange("uraian")}
                                                 />
                                             </Col>
                                         </Row>
-                                        {errors.keterangan ? (
+                                        {errors.uraian ? (
                                             <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
@@ -1230,7 +1515,7 @@ class VerifIkk extends Component {
                                                 type= "date"
                                                 disabled
                                                 className="inputRinci"
-                                                value={values.periode_awal}
+                                                value={moment(values.periode_awal).format('YYYY-MM-DD')}
                                                 onBlur={handleBlur("periode_awal")}
                                                 onChange={handleChange("periode_awal")}
                                                 />
@@ -1239,7 +1524,7 @@ class VerifIkk extends Component {
                                                 type= "date" 
                                                 disabled
                                                 className="inputRinci"
-                                                value={values.periode_akhir}
+                                                value={moment(values.periode_akhir).format('YYYY-MM-DD')}
                                                 onBlur={handleBlur("periode_akhir")}
                                                 onChange={handleChange("periode_akhir")}
                                                 />
@@ -1251,7 +1536,7 @@ class VerifIkk extends Component {
                                             <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
                                         ) : null }
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nilai DN Area</Col>
+                                            <Col md={3}>Nilai ajuan</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
@@ -1397,36 +1682,45 @@ class VerifIkk extends Component {
                                             <text className={style.txtError}>must be filled with 16 digits characters</text>
                                         ) : null}
                                     </div>
-                                    {/* <Row className="mb-2 rowRinci">
-                                        <Col md={3}>PPU</Col>
-                                        <Col md={9} className="colRinci">:  <Input
-                                            type= "text" 
-                                            className="inputRinci"
-                                            value={values.ppu}
-                                            onBlur={handleBlur("ppu")}
-                                            onChange={handleChange("ppu")}
-                                            />
-                                        </Col>
-                                    </Row> */}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>PA</Col>
+                                        <Col md={3}>Tgl Invoice</Col>
                                         <Col md={9} className="colRinci">:  <Input
                                             type= "text" 
                                             className="inputRinci"
-                                            value={values.pa}
-                                            onBlur={handleBlur("pa")}
-                                            onChange={handleChange("pa")}
+                                            value={dataRinci.tgl_tagihanbayar === null ? '-' : moment(dataRinci.tgl_tagihanbayar).format('DD MMMM YYYY')}
                                             />
                                         </Col>
                                     </Row>
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>Nominal verifikasi</Col>
+                                        <Col md={3}>DPP</Col>
                                         <Col md={9} className="colRinci">:  <Input
                                             type= "text" 
                                             className="inputRinci"
-                                            value={values.nominal}
-                                            onBlur={handleBlur("nominal")}
-                                            onChange={handleChange("nominal")}
+                                            value={values.dpp}
+                                            onBlur={handleBlur("dpp")}
+                                            onChange={handleChange("dpp")}
+                                            />
+                                        </Col>
+                                    </Row>
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>PPN</Col>
+                                        <Col md={9} className="colRinci">:  <Input
+                                            type= "text" 
+                                            className="inputRinci"
+                                            value={values.ppn}
+                                            onBlur={handleBlur("ppn")}
+                                            onChange={handleChange("ppn")}
+                                            />
+                                        </Col>
+                                    </Row>
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>Nilai PPh</Col>
+                                        <Col md={9} className="colRinci">:  <Input
+                                            type= "text" 
+                                            className="inputRinci"
+                                            value={values.nilai_utang}
+                                            onBlur={handleBlur("nilai_utang")}
+                                            onChange={handleChange("nilai_utang")}
                                             />
                                         </Col>
                                     </Row>
@@ -1436,8 +1730,9 @@ class VerifIkk extends Component {
                                             <Button 
                                                 className="mr-3" 
                                                 size="md" 
-                                                disabled={ values.pa === '' ? true 
-                                                : values.nominal === '' ? true 
+                                                disabled={ values.dpp === '' ? true 
+                                                : values.ppn === '' ? true
+                                                : values.nilai_pph === '' ? true 
                                                 : false } 
                                                 color="primary" 
                                                 onClick={handleSubmit}>
@@ -1517,7 +1812,7 @@ class VerifIkk extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ikk.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.ikk.isLoading || this.props.dokumen.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1659,7 +1954,7 @@ class VerifIkk extends Component {
             </Modal>
             <Modal size="xl" isOpen={this.state.modalDoc} toggle={this.openModalDoc}>
                 <ModalHeader>
-                   Kelengkapan Dokumen
+                   Kelengkapan Dokumen {detailIkk !== undefined && detailIkk.length > 0 && detailIkk[0].no_transaksi}
                 </ModalHeader>
                 <ModalBody>
                     <Container>
@@ -1677,6 +1972,9 @@ class VerifIkk extends Component {
                                                     <BsCircle size={20} />
                                                 )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+                                            <div>
+                                                <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
+                                            </div>
                                             {/* <div className="colDoc">
                                                 <input
                                                 className="ml-4"
@@ -1811,6 +2109,34 @@ class VerifIkk extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal isOpen={this.state.docHist} toggle={this.docHistory}>
+                    <ModalBody>
+                        <div className='mb-4'>History Dokumen</div>
+                        <div className='history'>
+                            {detailDoc.status !== undefined && detailDoc.status !== null && detailDoc.status.split(',').map(item => {
+                                return (
+                                    item !== null && item !== 'null' && 
+                                    <Button className='mb-2' color='info'>{item}</Button>
+                                )
+                            })}
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.docCon} toggle={this.openDocCon} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div className='btnDocCon'>
+                                <text>
+                                    Pilih Open Kelengkapan Dokumen
+                                </text>
+                            </div>
+                            <div className='btnDocCon mb-4'>
+                                <Button color="primary" className='mr-2' onClick={() => this.openProsesModalDoc(detailIkk[0])}>Open Pop Up</Button>
+                                <Button color="success" className='ml-2' onClick={() => this.openDocNewTab(detailIkk)}>Open New Tab</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     }

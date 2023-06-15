@@ -53,7 +53,7 @@ class FAA extends Component {
                                 <div className='pl-3'>
                                     <Row >
                                         <Col className='rowGeneral'>
-                                        <Input type='checkbox' /> TUNAI 
+                                            <Input type='checkbox' /> TUNAI 
                                         </Col>
                                         <Col>-</Col>
                                     </Row>

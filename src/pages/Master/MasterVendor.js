@@ -432,7 +432,7 @@ class MasterVendor extends Component {
                                         </Input>
                                     </div>
                                 </div>
-                                {isAll === false ? (
+                                {dataAll.length === 0 ? (
                                     <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
@@ -446,11 +446,7 @@ class MasterVendor extends Component {
                                         </thead>
                                     </Table>
                                         <div className={style.spin}>
-                                            <Spinner type="grow" color="primary"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="success"/>
-                                            <Spinner type="grow" color="warning"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="danger"/>
-                                            <Spinner type="grow" color="info"/>
+                                            Data tidak ditemukan
                                         </div>
                                     </div>
                                 ) : (
@@ -509,7 +505,7 @@ class MasterVendor extends Component {
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                No COA
+                                Nama
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -526,7 +522,7 @@ class MasterVendor extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama COA
+                                No NPWP
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -543,7 +539,7 @@ class MasterVendor extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama Sub COA
+                                No KTP
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -560,20 +556,16 @@ class MasterVendor extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Tipe
+                                Alamat
                             </text>
                             <div className="col-md-9">
-                            <Input 
-                                type="select"
+                                <Input 
+                                type="name" 
                                 name="alamat"
                                 value={values.alamat}
-                                onChange={handleChange("alamat")}
                                 onBlur={handleBlur("alamat")}
-                                >   
-                                    <option>-Pilih-</option>
-                                    <option value="OPS">Operasional</option>
-                                    <option value="KLAIM">Klaim</option>
-                                </Input>
+                                onChange={handleChange("alamat")}
+                                />
                                 {errors.alamat ? (
                                     <text className={style.txtError}>{errors.alamat}</text>
                                 ) : null}

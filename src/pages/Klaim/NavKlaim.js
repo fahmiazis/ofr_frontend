@@ -162,7 +162,7 @@ class NavKlaim extends Component {
                                             Revisi Klaim
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('listklm')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('navlistklm')}>
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
@@ -173,7 +173,7 @@ class NavKlaim extends Component {
                                         </div>
                                     </button>
                                 </>
-                            ) : level === '3' ? (
+                            ) : level === '3' || level === '13'? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('veriffinklm')}>
                                         <div className="titCard">
@@ -188,7 +188,7 @@ class NavKlaim extends Component {
                                 </>
                             ) : level === '7' || level === '8' || level === '9' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('listklm')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('navlistklm')}>
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>

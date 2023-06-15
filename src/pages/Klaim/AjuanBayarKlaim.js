@@ -977,7 +977,7 @@ class AjuanBayarKlaim extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>List Ajuan Bayar Klaim</div>
+                                <div className={style.titleDashboard}>Approval List Ajuan Klaim</div>
                             </div>
                             <div className={style.secEmail3}>
                                 {this.state.filter === 'available' && level !== '2' ? (
@@ -1011,7 +1011,7 @@ class AjuanBayarKlaim extends Component {
                                         {this.state.filter === 'available' && level === '2' ?  (
                                             <>
                                                 <Button className='mr-1' onClick={this.prosesSubmit} color="primary" size="lg">Submit</Button>
-                                                <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
+                                                {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button> */}
                                             </>
                                         ) : null}
                                         <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
@@ -1046,7 +1046,7 @@ class AjuanBayarKlaim extends Component {
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>{newKlaim.indexOf(item) + 1}</th>
                                                         <th>{item.no_pembayaran}</th>
-                                                        <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                                        <th>{moment(item.tgl_sublist || item.tanggal_transfer).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item, 'ajuan bayar')} className='mb-1 mr-1' color='success'>Proses</Button>

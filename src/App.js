@@ -19,8 +19,11 @@ import VerifFinanceKlaim from './pages/Klaim/VerifFinanceKlaim'
 import RevisiKlaim from './pages/Klaim/RevisiKlaim'
 import ReportKlaim from './pages/Klaim/ReportKlaim'
 import AjuanBayarKlaim from './pages/Klaim/AjuanBayarKlaim'
+import PayKlaim from './pages/Klaim/PayKlaim'
+import NavAjuan from './pages/Klaim/NavAjuan'
 import KlaimFaa from './components/Klaim/FAA'
 import KlaimFpd from './components/Klaim/FPD'
+import FormList from './components/FormList'
 
 //Operasional
 import NavOps from './pages/Ops/NavOps'
@@ -33,6 +36,9 @@ import RevisiOps from './pages/Ops/RevisiOps'
 import OpsFaa from './components/Ops/FAA'
 import OpsFpd from './components/Ops/FPD'
 import ReportTaxOps from './pages/Ops/ReportTax'
+import NavAjuanOps from './pages/Ops/NavAjuanOps'
+import PayOps from './pages/Ops/PayOps'
+import NavKasbon from './pages/Ops/NavKasbon'
 
 //Ikk
 import NavIkk from './pages/IKK/NavIkk'
@@ -45,6 +51,8 @@ import ReportIkk from './pages/IKK/ReportIkk'
 import IkkFaa from './components/Ikk/formikk'
 import IkkFpd from './components/Ikk/FPD'
 import ReportTaxIkk from './pages/IKK/ReportTax'
+import NavAjuanIkk from './pages/IKK/NavAjuanIkk'
+import PayIkk from './pages/IKK/PayIkk'
 
 //Master
 import MasterDepo from './pages/Master/MasterDepo'
@@ -60,8 +68,10 @@ import MasterTarif from './pages/Master/MasterTarif'
 import MasterPagu from './pages/Master/MasterPagu'
 import MasterEmail from './pages/Master/MasterEmail'
 import MasterVendor from './pages/Master/MasterVendor'
+import MasterKliring from './pages/Master/MasterKliring'
 import MasterFaktur from './pages/Master/MasterFaktur'
 import MasterKpp from './pages/Master/MasterKpp'
+import MasterFinance from './pages/Master/MasterFinance'
 
 //For Tes
 import Tes from './pages/Tes'
@@ -121,6 +131,15 @@ class App extends Component {
                 <PrivateRoute path='/klmfpd'>
                     <KlaimFpd/>
                 </PrivateRoute>
+                <PrivateRoute path='/navlistklm'>
+                    <NavAjuan/>
+                </PrivateRoute>
+                <PrivateRoute path='/payklm'>
+                    <PayKlaim/>
+                </PrivateRoute>
+                <PrivateRoute path='/formlistklm'>
+                    <FormList/>
+                </PrivateRoute>
 
                 {/* Operasional */}
                 <PrivateRoute path='/navops'>
@@ -153,6 +172,15 @@ class App extends Component {
                 <PrivateRoute path='/opsfpd'>
                     <OpsFpd/>
                 </PrivateRoute>
+                <PrivateRoute path='/navlistops'>
+                    <NavAjuanOps/>
+                </PrivateRoute>
+                <PrivateRoute path='/payops'>
+                    <PayOps />
+                </PrivateRoute>
+                <PrivateRoute path='/navkasbon'>
+                    <NavKasbon/>
+                </PrivateRoute>
 
                 {/* IKK */}
                 <PrivateRoute path='/navikk'>
@@ -184,6 +212,12 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/ikkfpd'>
                     <IkkFpd/>
+                </PrivateRoute>
+                <PrivateRoute path='/navlistikk'>
+                    <NavAjuanIkk/>
+                </PrivateRoute>
+                <PrivateRoute path='/payikk'>
+                    <PayIkk />
                 </PrivateRoute>
 
                 {/* Master */}
@@ -231,6 +265,12 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/kpp'>
                     <MasterKpp />
+                </PrivateRoute>
+                <PrivateRoute path='/kliring'>
+                    <MasterKliring />
+                </PrivateRoute>
+                <PrivateRoute path='/finance'>
+                    <MasterFinance />
                 </PrivateRoute>
             </Switch>
         </BrowserRouter>

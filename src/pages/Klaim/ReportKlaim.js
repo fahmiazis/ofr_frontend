@@ -34,6 +34,8 @@ import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
 import klaim from '../../redux/actions/klaim'
 import dokumen from '../../redux/actions/dokumen'
+import ExcelJS from "exceljs";
+import fs from "file-saver";
 const {REACT_APP_BACKEND_URL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -121,7 +123,8 @@ class ReportKlaim extends Component {
             history: false,
             time: '',
             time1: '',
-            time2: ''
+            time2: '',
+            openDown: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -406,7 +409,7 @@ class ReportKlaim extends Component {
 
     getDataKlaim = async (value) => {
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('all')
+        this.changeFilter('ready')
     }
 
     getDataList = async () => {
@@ -503,7 +506,7 @@ class ReportKlaim extends Component {
 
     changeFilter = async (val) => {
         const token = localStorage.getItem("token")
-        const status = 7
+        const status = val === 'reject' ? 6 : val === 'bayar' ? 8 : 7
         const {time1, time2} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
@@ -513,9 +516,9 @@ class ReportKlaim extends Component {
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'reject') {
             const newKlaim = []
-            await this.props.getReport(token, 6, 'all', 'all', cekTime1, cekTime2)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
             this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'revisi') {
+        } else if (val === 'bayar') {
             const newKlaim = []
             await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
             this.setState({filter: val, newKlaim: newKlaim})
@@ -546,7 +549,7 @@ class ReportKlaim extends Component {
         const cekTime2 = time2 === '' ? 'undefined' : time2
         console.log(cekTime1)
         const token = localStorage.getItem("token")
-        const status = filter === 'reject' ? 6 : 7
+        const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
         await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
     }
 
@@ -756,11 +759,11 @@ class ReportKlaim extends Component {
 
     chekApp = (val) => {
         const { listMut } = this.state
-        const {detailKlaim} = this.props.klaim
+        const {dataReport} = this.props.klaim
         if (val === 'all') {
             const data = []
-            for (let i = 0; i < detailKlaim.length; i++) {
-                data.push(detailKlaim[i].id)
+            for (let i = 0; i < dataReport.length; i++) {
+                data.push(dataReport[i].id)
             }
             this.setState({listMut: data})
         } else {
@@ -785,6 +788,10 @@ class ReportKlaim extends Component {
             }
             this.setState({listMut: data})
         }
+    }
+
+    openDownload = () => {
+        this.setState({openDown: !this.state.openDown})
     }
 
     prepareReject = async () => {
@@ -814,6 +821,34 @@ class ReportKlaim extends Component {
     dropDown = () => {
         this.setState({drop: !this.state.drop})
     }
+
+    excelExport = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('report klaim')
+
+        ws.columns = [
+            {header: 'Id'},
+            {header: 'Name', key: 'name'}, 
+            {header: 'D.O.B.', key: 'dob'}
+        ];
+
+        ws.getCell('A1').border = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.addRow({id: 1, name: 'John Doe', dob: new Date(1970, 1, 1)})
+        ws.addRow({id: 2, name: 'Jane Doe', dob: new Date(1965, 1, 7)})
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `report.xlsx`
+            );
+          });
+      }
 
     render() {
         const level = localStorage.getItem('level')
@@ -861,24 +896,26 @@ class ReportKlaim extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Report Klaim</div>
+                                <div className={style.titleDashboard}>Report Konsol Klaim</div>
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.headEmail2}>
-                                    <ReactHtmlToExcel
+                                    {/* <ReactHtmlToExcel
                                         id="test-table-xls-button"
                                         className="btn btn-success mr-2"
                                         table="table-klaim"
                                         filename={`Report Klaim ${moment().format('DD MMMM YYYY')}`}
                                         sheet="Report"
                                         buttonText="Download"
-                                    />
+                                    /> */}
+                                    <Button onClick={this.openDownload} color='success' className='mr-2'>Download</Button>
                                 </div>
                                 <div className={style.searchEmail2}>
                                     <text>Status:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                         <option value="reject">Reject</option>
-                                        <option value="all">Siap Bayar</option>
+                                        <option value="ready">Siap Bayar</option>
+                                        <option value="bayar">Telah Bayar</option>
                                         {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                     </Input>
                                 </div>
@@ -928,9 +965,18 @@ class ReportKlaim extends Component {
                             </div>
                             <div className='mb-4 mt-2' />
                                 <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                    <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listMut.length === 0 ? false : listMut.length === dataReport.length ? true : false}
+                                                    onChange={() => listMut.length === dataReport.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    />
+                                                    Select
+                                                </th>
                                                 <th>No</th>
                                                 <th>PIC</th>
                                                 <th>NAMA</th>
@@ -963,6 +1009,13 @@ class ReportKlaim extends Component {
                                             {dataReport.map(item => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                        <th>
+                                                            <input 
+                                                            type='checkbox'
+                                                            checked={listMut.find(element => element === item.id) !== undefined ? true : false}
+                                                            onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                            />
+                                                        </th>
                                                         <th>{dataReport.indexOf(item) + 1}</th>
                                                         <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
                                                         <th>{item.area}</th>
@@ -1000,6 +1053,7 @@ class ReportKlaim extends Component {
                                                             return accumulator + parseInt(object.nilai_ajuan);
                                                         }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                                     </th>
+                                                    <th></th>
                                                     <th></th>
                                                     <th></th>
                                                     <th></th>
@@ -1066,10 +1120,106 @@ class ReportKlaim extends Component {
                         Rincian
                     </ModalHeader>
                 </Modal>
-                <Modal isOpen={this.state.modalStock} toggle={this.openModalStock} size="lg">
+                <Modal className='modalrinci' isOpen={this.state.openDown} toggle={this.openDownload} size="xl">
                     <ModalHeader>
-                        Rincian
+                        Download Report
                     </ModalHeader>
+                    <ModalBody>
+                        <div className='rowCenter'>
+                            <Button color='primary' className='mb-4' onClick={this.excelExport}>Download Report</Button>
+                        </div>
+                        <Table bordered responsive hover className={style.tab}>
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>PIC</th>
+                                    <th>NAMA</th>
+                                    <th>AREA</th>
+                                    <th>NOMOR FPD</th>
+                                    <th>COST CENTRE</th>
+                                    <th>NO COA</th>
+                                    <th>NAMA COA</th>
+                                    <th>KETERANGAN TAMBAHAN</th>
+                                    <th>TGL AJUAN</th>
+                                    <th>PERIODE (DDMMYY)</th>
+                                    <th>NILAI YANG DIAJUKAN</th>
+                                    <th>BANK</th>
+                                    <th>NOMOR REKENING</th>
+                                    <th>ATAS NAMA</th>
+                                    <th>MEMILIKI NPWP</th>
+                                    <th>NAMA SESUAI NPWP</th>
+                                    <th>NOMOR NPWP</th>
+                                    <th>NAMA SESUAI KTP</th>
+                                    <th>NIK</th>
+                                    <th>PPU</th>
+                                    <th>PA</th>
+                                    <th>NILAI YANG DIBAYARKAN</th>
+                                    <th>TANGGAL TRANSFER</th>
+                                    <th>KETERANGAN</th>
+                                    <th>STATUS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dataReport.map(item => {
+                                    return (
+                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                            <th>{dataReport.indexOf(item) + 1}</th>
+                                            <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                            <th>{item.area}</th>
+                                            <th>{item.depo.channel}</th>
+                                            <th>{item.no_transaksi}</th>
+                                            <th>{item.cost_center}</th>
+                                            <th>{item.no_coa}</th>
+                                            <th>{item.nama_coa}</th>
+                                            <th>{item.keterangan}</th>
+                                            <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
+                                            <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                            <th>{item.bank_tujuan}</th>
+                                            <th>{item.norek_ajuan}</th>
+                                            <th>{item.nama_tujuan}</th>
+                                            <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
+                                            <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                            <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                            <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
+                                            <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
+                                            <th>{item.ppu}</th>
+                                            <th>{item.pa}</th>
+                                            <th>{item.nominal}</th>
+                                            <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                            <th></th>
+                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                        </tr>
+                                    )
+                                })}
+                                {dataReport.length > 0 && (
+                                    <tr>
+                                        <th className='total' colSpan={11}>Total</th>
+                                        <th>
+                                            {dataReport.reduce((accumulator, object) => {
+                                                return accumulator + parseInt(object.nilai_ajuan);
+                                            }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                        </th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </Table>
+                    </ModalBody>
                 </Modal>
                 <Modal isOpen={this.state.modalRinci} className='modalrinci'  toggle={this.openModalRinci} size="xl">
                     <ModalBody>
@@ -1093,15 +1243,6 @@ class ReportKlaim extends Component {
                             <Table bordered responsive hover className={style.tab}>
                                 <thead>
                                     <tr className='tbklaim'>
-                                        <th>
-                                            <input  
-                                            className='mr-2'
-                                            type='checkbox'
-                                            checked={listMut.length === 0 ? false : listMut.length === detailKlaim.length ? true : false}
-                                            onChange={() => listMut.length === detailKlaim.length ? this.chekRej('all') : this.chekApp('all')}
-                                            />
-                                            Select
-                                        </th>
                                         <th>NO</th>
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>
@@ -1129,13 +1270,6 @@ class ReportKlaim extends Component {
                                     {detailKlaim.length !== 0 && detailKlaim.map(item => {
                                         return (
                                             <tr>
-                                                <th>
-                                                    <input 
-                                                    type='checkbox'
-                                                    checked={listMut.find(element => element === item.id) !== undefined ? true : false}
-                                                    onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
-                                                    />
-                                                </th>
                                                 <th scope="row">{detailKlaim.indexOf(item) + 1}</th>
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
@@ -1394,6 +1528,9 @@ class ReportKlaim extends Component {
                             </Button>
                         </div>
                     </div>
+                </Modal>
+                <Modal>
+
                 </Modal>
                 <Modal isOpen={this.state.modalFpd} toggle={this.openModalFpd} size="lg">
                     <ModalBody>

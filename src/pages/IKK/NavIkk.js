@@ -157,7 +157,7 @@ class NavIkk extends Component {
                                             Verifikasi Finance
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('listikk')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('navlistikk')}>
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
@@ -175,7 +175,7 @@ class NavIkk extends Component {
                                 </>
                             ) : level === '7' || level === '8' || level === '9' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('listikk')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('navlistikk')}>
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
@@ -186,7 +186,7 @@ class NavIkk extends Component {
                                         </div>
                                     </button>
                                 </>
-                            ) : level === '4' ? (
+                            ) : level === '4' || level === '14' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('veriffinikk')}>
                                         <div className="titCard">

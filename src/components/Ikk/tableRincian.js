@@ -11,16 +11,16 @@ class TableRincian extends Component {
         <>
         <div>
             <Table bordered responsive hover 
-                className={style.tabikk}
+                className='tabikk' size='sm'
             >
                 <thead>
                     <tr>
-                        <th className='tbklaim' rowSpan={2}>NO</th>
-                        <th className='tbklaim' rowSpan={2}>NO. BPKK</th>
-                        <th className='tbklaim' rowSpan={2} colSpan={2}>URAIAN</th>
-                        <th className='tbklaim' rowSpan={2}>KETERANGAN</th>
+                        <th className='tbikk' rowSpan={2}>NO</th>
+                        <th className='tbikk' rowSpan={2}>NO. BPKK</th>
+                        <th className='tbikk' rowSpan={2} colSpan={2}>URAIAN</th>
+                        <th className='tbikk' rowSpan={2}>KETERANGAN</th>
                         <th colSpan={2}>USER</th>
-                        <th className='tbklaim' rowSpan={2}>JUMLAH</th>
+                        <th className='tbikk' rowSpan={2}>JUMLAH</th>
                     </tr>
                     <tr>
                         <th>NAMA</th>

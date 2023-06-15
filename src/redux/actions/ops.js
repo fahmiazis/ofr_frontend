@@ -11,9 +11,9 @@ export default {
         type: 'DELETE_CART',
         payload: http(token).delete(`/ops/del/${id}`)
     }),
-    getCart: (token) => ({
+    getCart: (token, tipe) => ({
         type: 'GET_CART',
-        payload: http(token).get(`/ops/cart`),
+        payload: http(token).get(`/ops/cart?tipe=${tipe}`),
     }),
     getDocCart: (token, no) => ({
         type: 'GET_DOC',
@@ -43,6 +43,10 @@ export default {
         type: 'DETAIL_OPS',
         payload: http(token).patch(`/ops/detail`, qs.stringify(no)),
     }),
+    getDetailId: (token, id) => ({
+        type: 'DETAILID_OPS',
+        payload: http(token).patch(`/ops/detailid/${id}`),
+    }),
     getApproval: (token, no) => ({
         type: 'TTD_OPS',
         payload: http(token).patch(`/ops/ttd`, qs.stringify(no))
@@ -63,13 +67,17 @@ export default {
         type: 'APP_REVISI',
         payload: http(token).patch(`/ops/apprev`, qs.stringify(no))
     }),
-    editOps: (token, id, data) => ({
+    editOps: (token, id, idtrans, data) => ({
         type: 'EDIT_OPS',
-        payload: http(token).patch(`/ops/update/${id}`, qs.stringify(data))
+        payload: http(token).patch(`/ops/update/${id}/${idtrans}`, qs.stringify(data))
     }),
     editVerif: (token, id, data) => ({
         type: 'EDIT_VERIF',
         payload: http(token).patch(`/ops/editvrf/${id}`, qs.stringify(data))
+    }),
+    confirmNewIdent: (token, id) => ({
+        type: 'CONFIRM_IDENT',
+        payload: http(token).patch(`/ops/confident/${id}`)
     }),
     submitRevisi: (token, data) => ({
         type: 'SUBMIT_REVISI',
@@ -77,7 +85,7 @@ export default {
     }),
     submitVerif: (token, data) => ({
         type: 'SUBMIT_VERIF',
-        payload: http(token).patch(`/ops/verif`, qs.stringify(data))
+        payload: http(token).patch(`/ops/verif`, data)
     }),
     submitAjuanBayar: (token, data) => ({
         type: 'SUBMIT_BAYAR',
@@ -94,6 +102,18 @@ export default {
     getReport: (token, status, reject, menu, time1, time2) => ({
         type: 'REPORT_OPS',
         payload: http(token).get(`/ops/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}`),
+    }),
+    uploadBuktiBayar: (token, id, data) => ({
+        type: 'UPLOAD_BUKTIOPS',
+        payload: http(token).post(`/ops/uplist?id=${id}`, data)
+    }),
+    submitBuktiBayar: (token, data) => ({
+        type: 'SUBMIT_BUKTIOPS',
+        payload: http(token).patch(`/ops/sublistbayar`, qs.stringify(data))
+    }),
+    getDocBayar: (token,  data) => ({
+        type: 'DOC_BUKTIOPS',
+        payload: http(token).patch(`/ops/getdocbayar`, qs.stringify(data))
     }),
     resetOps: () => ({
         type: 'RESET_OPS'
