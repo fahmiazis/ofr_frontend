@@ -40,6 +40,7 @@ import vendor from '../../redux/actions/vendor'
 import faktur from '../../redux/actions/faktur'
 import email from '../../redux/actions/email'
 import Email from '../../components/Ikk/Email'
+import NumberInput from '../../components/NumberInput'
 const {REACT_APP_BACKEND_URL} = process.env
 const nonObject = 'Non Object PPh'
 
@@ -1957,23 +1958,15 @@ class CartIkk extends Component {
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nilai Yang Diajukan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
+                                            <Col md={9} className="colRinci">:  <NumberInput
                                                 disabled={
                                                     this.state.idTrans === '' ? true 
                                                     : this.state.tipePpn === "Ya" || this.state.tipePpn === "" ? true
                                                     : false
                                                 }
-                                                type= "text"
-                                                className="inputRinci"
-                                                value={
-                                                    // this.state.tipePpn === "Ya" ? parseFloat(values.dpp) + parseFloat(values.ppn)
-                                                    // : 
-                                                    this.state.nilai_ajuan
-                                                }
-                                                // onBlur={handleBlur("nilai_ajuan")}
-                                                // onChange={handleChange("nilai_ajuan")}
-                                                // onEnded={e => this.formulaTax(e.target.value)}
-                                                onChange={e => this.onEnterVal(e.target.value)}
+                                                className="inputRinci1"
+                                                value={this.state.nilai_ajuan}
+                                                onValueChange={val => this.onEnterVal(val.floatValue)}
                                                 />
                                             </Col>
                                         </Row>
@@ -2608,23 +2601,15 @@ class CartIkk extends Component {
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nilai Yang Diajukan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
+                                            <Col md={9} className="colRinci">:  <NumberInput
                                                 disabled={
                                                     this.state.idTrans === '' ? true 
                                                     : this.state.tipePpn === "Ya" || this.state.tipePpn === "" ? true
                                                     : false
                                                 }
-                                                type= "text"
-                                                className="inputRinci"
-                                                value={
-                                                    // this.state.tipePpn === "Ya" ? parseFloat(values.dpp) + parseFloat(values.ppn)
-                                                    // : 
-                                                    this.state.nilai_ajuan
-                                                }
-                                                // onBlur={handleBlur("nilai_ajuan")}
-                                                // onChange={handleChange("nilai_ajuan")}
-                                                // onEnded={e => this.formulaTax(e.target.value)}
-                                                onChange={e => this.onEnterVal(e.target.value)}
+                                                className="inputRinci1"
+                                                value={this.state.nilai_ajuan}
+                                                onValueChange={val => this.onEnterVal(val.floatValue)}
                                                 />
                                             </Col>
                                         </Row>

@@ -40,6 +40,7 @@ import dokumen from '../../redux/actions/dokumen'
 import NavBar from '../../components/NavBar'
 import email from '../../redux/actions/email'
 import Email from '../../components/Ops/Email'
+import NumberInput from '../../components/NumberInput'
 const {REACT_APP_BACKEND_URL} = process.env
 const nonObject = 'Non Object PPh'
 
@@ -364,8 +365,7 @@ class CartOps extends Component {
     }
 
     async componentDidMount() {
-        const level = localStorage.getItem('level')
-        const {type} = (this.props.location && this.props.location.state) || {}
+        const type = localStorage.getItem('tipeKasbon')
         const token = localStorage.getItem("token")
         this.setState({type_kasbon: type})
         await this.props.getCoa(token, type === 'kasbon' ? 'kasbon' :'ikk')
@@ -543,7 +543,7 @@ class CartOps extends Component {
 
     getDataCart = async (value) => {
         const token = localStorage.getItem("token")
-        const {type} = (this.props.location && this.props.location.state) || {}
+        const type = localStorage.getItem('tipeKasbon')
         await this.props.getCart(token, type)
         // await this.props.getPagu(token)
         this.prepareSelect()
@@ -1544,6 +1544,8 @@ class CartOps extends Component {
                                 dpp: 0,
                                 ppn: 0,
                                 tgl_tagihanbayar: '',
+                                tipe_po: '',
+                                no_po: ''
                             }}
                             validationSchema = {addSchema}
                             onSubmit={(values) => {this.addCartOps(values)}}
@@ -1603,6 +1605,45 @@ class CartOps extends Component {
                                             {this.state.jenisTrans === '' ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
+                                            {type_kasbon === 'kasbon' && (
+                                                <>
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>Tipe PO</Col>
+                                                        <Col md={9} className="colRinci">: 
+                                                            <Input
+                                                                type= "select" 
+                                                                className="inputRinci"
+                                                                disabled={this.state.idTrans === '' ? true : false}
+                                                                value={values.tipe_po}
+                                                                onBlur={handleBlur('tipe_po')}
+                                                                onChange={handleChange('tipe_po')}
+                                                                >
+                                                                    <option value=''>Pilih</option>
+                                                                    <option value="po">PO</option>
+                                                                    <option value="non po">Non PO</option>
+                                                            </Input>
+                                                        </Col>
+                                                    </Row>
+                                                    {values.tipe_po === '' ? (
+                                                        <text className={style.txtError}>must be filled</text>
+                                                    ) : null}
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>No PO</Col>
+                                                        <Col md={9} className="colRinci">:  <Input
+                                                            type= "text" 
+                                                            disabled={values.tipe_po === 'po' ? false : true}
+                                                            className="inputRinci"
+                                                            value={values.no_po}
+                                                            onBlur={handleBlur("no_po")}
+                                                            onChange={handleChange('no_po')}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                    {values.tipe_po === 'po' && values.no_po === '' ? (
+                                                        <text className={style.txtError}>must be filled</text>
+                                                    ) : null}
+                                                </>
+                                            )}
                                             <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Jenis Vendor</Col>
                                                 <Col md={9} className="colRinci">:  
@@ -1906,23 +1947,15 @@ class CartOps extends Component {
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Nilai Yang Diajukan</Col>
-                                                <Col md={9} className="colRinci">:  <Input
+                                                <Col md={9} className="colRinci">:  <NumberInput
                                                     disabled={
                                                         this.state.idTrans === '' ? true 
                                                         : this.state.tipePpn === "Ya" || this.state.tipePpn === "" ? true
                                                         : false
                                                     }
-                                                    type= "text"
-                                                    className="inputRinci"
-                                                    value={
-                                                        // this.state.tipePpn === "Ya" ? parseFloat(values.dpp) + parseFloat(values.ppn)
-                                                        // : 
-                                                        this.state.nilai_ajuan
-                                                    }
-                                                    // onBlur={handleBlur("nilai_ajuan")}
-                                                    // onChange={handleChange("nilai_ajuan")}
-                                                    // onEnded={e => this.formulaTax(e.target.value)}
-                                                    onChange={e => this.onEnterVal(e.target.value)}
+                                                    className="inputRinci1"
+                                                    value={this.state.nilai_ajuan}
+                                                    onValueChange={val => this.onEnterVal(val.floatValue)}
                                                     />
                                                 </Col>
                                             </Row>
@@ -2521,24 +2554,16 @@ class CartOps extends Component {
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Nilai Yang Diajukan</Col>
-                                                <Col md={9} className="colRinci">:  <Input
+                                                <Col md={9} className="colRinci">:  <NumberInput
                                                     disabled={
                                                         this.state.idTrans === '' ? true 
                                                         : this.state.tipePpn === "Ya" || this.state.tipePpn === "" ? true
                                                         : false
                                                     }
-                                                    type= "text"
-                                                    className="inputRinci"
-                                                    value={
-                                                        // this.state.tipePpn === "Ya" ? parseFloat(values.dpp) + parseFloat(values.ppn)
-                                                        // : 
-                                                        this.state.nilai_ajuan
-                                                    }
-                                                    // onBlur={handleBlur("nilai_ajuan")}
-                                                    // onChange={handleChange("nilai_ajuan")}
-                                                    // onEnded={e => this.formulaTax(e.target.value)}
-                                                    onChange={e => this.onEnterVal(e.target.value)}
-                                                    />
+                                                    className="inputRinci1"
+                                                    value={this.state.nilai_ajuan}
+                                                    onValueChange={val => this.onEnterVal(val.floatValue)}
+                                                />
                                                 </Col>
                                             </Row>
                                             {this.state.nilai_ajuan === 0 && this.state.tipePpn === "Tidak" ? (

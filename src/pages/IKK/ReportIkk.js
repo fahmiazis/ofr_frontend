@@ -34,6 +34,8 @@ import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
 import ikk from '../../redux/actions/ikk'
 import dokumen from '../../redux/actions/dokumen'
+import ExcelJS from "exceljs";
+import fs from "file-saver";
 const {REACT_APP_BACKEND_URL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -110,7 +112,7 @@ class ReportIkk extends Component {
             month: moment().format('M'),
             dropOp: false,
             noAsset: null,
-            filter: 'available',
+            filter: 'bayar',
             newIkk: [],
             totalfpd: 0,
             dataMenu: [],
@@ -118,7 +120,15 @@ class ReportIkk extends Component {
             collap: false,
             tipeCol: '',
             formDis: false,
-            history: false
+            history: false,
+            listIkk: [],
+            dataDownload: [],
+            modalDownload: false,
+            titleDownload: '',
+            time: 'pilih',
+            time1: moment().format('YYYY-MM-DD'),
+            time2: moment().format('YYYY-MM-DD'),
+            jurnalMap: [1, 2]
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -403,7 +413,7 @@ class ReportIkk extends Component {
 
     getDataIkk = async (value) => {
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('ready')
+        this.changeFilter('bayar')
     }
 
     getDataList = async () => {
@@ -504,23 +514,9 @@ class ReportIkk extends Component {
         const {time1, time2} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
-        if (val === 'available') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'reject') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'revisi') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        }
+        const newIkk = []
+        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, val)
+        this.setState({filter: val, newIkk: newIkk})
     }
 
     changeTime = async (val) => {
@@ -529,7 +525,7 @@ class ReportIkk extends Component {
             this.setState({time1: '', time2: ''})
             setTimeout(() => {
                 this.getDataTime()
-             }, 500)
+             }, 200)
         }
     }
 
@@ -543,7 +539,7 @@ class ReportIkk extends Component {
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
-        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, filter)
     }
 
     prosesSubmitPre = async () => {
@@ -783,6 +779,287 @@ class ReportIkk extends Component {
         }
     }
 
+    chekAppList = (val) => {
+        const { listIkk } = this.state
+        const {dataReport} = this.props.ikk
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataReport.length; i++) {
+                data.push(dataReport[i].id)
+            }
+            this.setState({listIkk: data})
+        } else {
+            listIkk.push(val)
+            this.setState({listIkk: listIkk})
+        }
+    }
+
+    chekRejList = (val) => {
+        const {listIkk} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listIkk: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listIkk.length; i++) {
+                if (listIkk[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listIkk[i])
+                }
+            }
+            this.setState({listIkk: data})
+        }
+    }
+
+    prosesDownload = (val) => {
+        const {listIkk} = this.state
+        const {dataReport} = this.props.ikk
+        const data = []
+        for (let i = 0; i < listIkk.length; i++) {
+            for (let j = 0; j < dataReport.length; j++) {
+                if (dataReport[j].id === listIkk[i]) {
+                    data.push(dataReport[j])
+                }
+            }
+        }
+        this.setState({dataDownload: data, titleDownload: val})
+        this.openDownload()
+    }
+
+    openDownload = () => {
+        this.setState({modalDownload: !this.state.modalDownload})
+    }
+
+    downloadKonsol = async () => {
+        const { dataDownload } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data ajuan')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+            {header: 'NO', key: 'c1'},
+            {header: 'NO AJUAN', key: 'c22'},
+            {header: 'COST CENTRE', key: 'c2'}, 
+            {header: 'NO COA', key: 'c3'},
+            {header: 'NAMA COA', key: 'c4'},
+            {header: 'KETERANGAN TAMBAHAN', key: 'c5'},
+            {header: 'PERIODE', key: 'c6'},
+            {header: 'NILAI YANG DIAJUKAN', key: 'c7'},
+            {header: 'BANK', key: 'c8'},
+            {header: 'NOMOR REKENING', key: 'c9'},
+            {header: 'ATAS NAMA', key: 'c10'},
+            {header: 'MEMILIKI NPWP', key: 'c11'},
+            {header: 'NAMA SESUAI NPWP', key: 'c12'},
+            {header: 'NOMOR NPWP', key: 'c13'},
+            {header: 'NAMA SESUAI KTP', key: 'c14'},
+            {header: 'NOMOR KTP', key: 'c15'},
+            {header: 'DPP', key: 'c16'},
+            {header: 'PPN', key: 'c17'},
+            {header: 'PPh', key: 'c18'},
+            {header: 'NILAI YANG DIBAYARKAN', key: 'c19'},
+            {header: 'TANGGAL TRANSFER', key: 'c20'},
+            {header: 'Jenis PPh', key: 'c21'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: index + 1,
+                c22: item.no_transaksi,
+                c2: item.cost_center,
+                c3: item.no_coa,
+                c4: item.nama_coa,
+                c5: item.uraian,
+                c6: `${moment(item.periode_awal).format('DD/MMMM/YYYY')} - ${moment(item.periode_akhir).format('DD/MMMM/YYYY')}`,
+                c7: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c8: item.bank_tujuan,
+                c9: item.norek_ajuan,
+                c10: item.nama_tujuan,
+                c11: item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-',
+                c12: item.status_npwp === 0 ? '' : item.nama_npwp,
+                c13: item.status_npwp === 0 ? '' : item.no_npwp,
+                c14: item.status_npwp === 0 ? item.nama_ktp : '',
+                c15: item.status_npwp === 0 ? item.no_ktp : '',
+                c16: item.dpp,
+                c17: item.ppn,
+                c18: item.nilai_utang,
+                c19: item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c20: item.tanggal_transfer !== null ? `${moment(item.tanggal_transfer).format('DD/MMMM/YYYY')}` : '-',
+                c21: item.jenis_pph,
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+          
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Data Ajuan IKK ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
+    }
+
+    downloadJurnal = async () => {
+        const { dataDownload, jurnalMap } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('file upload ikk')
+        
+        await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+                {header: 'no', key: 'c1'},
+                {header: 'header_text', key: 'c2'},
+                {header: 'comp_code', key: 'c3'},
+                {header: 'doc_date', key: 'c4'},
+                {header: 'post_date', key: 'c5'},
+                {header: 'period', key: 'c6'},
+                {header: 'doc_type', key: 'c7'},
+                {header: 'ref_doc_no', key: 'c8'},
+                {header: 'curr', key: 'c9'},
+                {header: 'item_no', key: 'c10'},
+                {header: 'gl_acc', key: 'c11'},
+                {header: 'post_key', key: 'c12'},
+                {header: 'gl_indic', key: 'c13'},
+                {header: 'func_area', key: 'c14'},
+                {header: 'amount', key: 'c15'},
+                {header: 'tax_code', key: 'c16'},
+                {header: 'cost_ctr', key: 'c17'},
+                {header: 'wbs_elemnt', key: 'c18'},
+                {header: 'aufnr', key: 'c19'},
+                {header: 'item_text', key: 'c20'},
+                {header: 'valdate', key: 'c21'},
+                {header: 'bsldate', key: 'c22'},
+                {header: 'payterm', key: 'c23'},
+                {header: 'paymeth', key: 'c24'},
+                {header: 'parbank', key: 'c25'},
+                {header: 'houbank', key: 'c26'},
+                {header: 'prctr', key: 'c27'},
+                {header: 'gsber', key: 'c28'},
+                {header: 'vat_base', key: 'c29'},
+                {header: 'account_id', key: 'c30'},
+                {header: 'assignment', key: 'c31'},
+                {header: 'ref_key(head)', key: 'c32'},
+                {header: 'ref_key(head2)', key: 'c33'},
+                {header: 'ref_key 3', key: 'c34'},
+        ]
+
+        ws.addRow(
+            {
+                c1: 'No Identifikasi',
+                c2: 'Text Bebas',
+                c3: 'Kode',
+                c4: 'Tanggal Faktur',
+                c5: 'Tanggal Posting',
+                c6: '',
+                c7: 'Tipe Dokumen',
+                c8: 'No Dokumen Pendukung',
+                c9: 'Mata Uang',
+                c10: 'Nomor Item',
+                c11: 'Nomor Akun',
+                c12: 'Posting Key',
+                c13: 'Kode Special',
+                c14: 'Kosongi Saja',
+                c15: 'Jumlah',
+                c16: 'Kode PPN',
+                c17: 'Cost Center',
+                c18: 'No WBSt',
+                c19: 'Kode Order',
+                c20: 'Text Bebas',
+                c21: 'Kosongi',
+                c22: 'Tanggal',
+                c23: 'TOP',
+                c24: 'Metode',
+                c25: 'Kode Rekening',
+                c26: 'Kode Cabang',
+                c27: 'Profit Center',
+                c28: 'SBU',
+                c29: 'DPP PPN',
+                c30: 'Nomor ID',
+                c31: 'Untuk AP',
+                c32: 'Status Payment',
+                c33: 'Hanya diisi',
+                c34: 'Hanya diisi'
+            }
+        )
+
+        dataDownload.map((item, index) => { return (
+            jurnalMap.map((x, iter) => {
+                return (  ws.addRow({
+                    c1: index + 1,
+                    c2: item.no_transaksi,
+                    c3: 'PP01',
+                    c4: moment().format('DDMMYYYY'),
+                    c5: moment().format('DDMMYYYY'),
+                    c6: '',
+                    c7: 'SA',
+                    c8: item.appList.find(({sebagai}) => sebagai === "pembuat").nama,
+                    c9: 'IDR',
+                    c10: iter + 1,
+                    c11: item.finance.gl_kk,
+                    c12: iter === 0 ? 40 : 50,
+                    c13: '',
+                    c14: '',
+                    c15: item.nilai_ajuan,
+                    c16: '',
+                    c17: item.cost_center,
+                    c18: '',
+                    c19: '',
+                    c20: `Kas Kecil ${item.area}`,
+                    c21: '',
+                    c22: '',
+                    c23: '',
+                    c24: '',
+                    c25: '',
+                    c26: '',
+                    c27: item.depo.profit_center,
+                    c28: '',
+                    c29: '',
+                    c30: '',
+                    c31: '',
+                    c32: '',
+                    c33: '',
+                    c34: '',
+                })
+                )
+            })
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+          
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `FIle Upload Jurnal Ikk ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
+    }
+
     prepareReject = async () => {
         const token = localStorage.getItem("token")
         await this.props.getAllMenu(token, 'reject')
@@ -814,7 +1091,7 @@ class ReportIkk extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
+        const {dataRinci, dropApp, dataItem, listMut, dataDownload, listReason, dataMenu, listMenu, listIkk, jurnalMap} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailIkk, ttdIkk, dataDoc, newIkk, dataReport } = this.props.ikk
@@ -857,18 +1134,22 @@ class ReportIkk extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Report Ikhtisar Kas Kecil</div>
+                                <div className={style.titleDashboard}>Report Konsol Ikhtisar Kas Kecil</div>
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.headEmail2}>
-                                    <ReactHtmlToExcel
-                                        id="test-table-xls-button"
-                                        className="btn btn-success mr-2"
-                                        table="table-ikk"
-                                        filename={`Report Ikk ${moment().format('DD MMMM YYYY')}`}
-                                        sheet="Report"
-                                        buttonText="Download"
-                                    />
+                                    <Button 
+                                    color='success' 
+                                    className='mr-2' 
+                                    onClick={() => this.prosesDownload('Konsol')}>
+                                        Download Konsol
+                                    </Button>
+                                    <Button 
+                                    color='warning' 
+                                    className='mr-2' 
+                                    onClick={() => this.prosesDownload('Jurnal')}>
+                                        Download Jurnal
+                                    </Button>
                                 </div>
                                 <div className={style.searchEmail2}>
                                     <text>Status:  </text>
@@ -892,12 +1173,14 @@ class ReportIkk extends Component {
                                                 <Input
                                                     type= "date" 
                                                     className="inputRinci"
+                                                    value={this.state.time1}
                                                     onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
                                                 />
                                                 <text className='mr-1 ml-1'>To</text>
                                                 <Input
                                                     type= "date" 
                                                     className="inputRinci"
+                                                    value={this.state.time2}
                                                     onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
                                                 />
                                                 <Button
@@ -927,6 +1210,15 @@ class ReportIkk extends Component {
                                     <Table bordered responsive hover className={style.tab} id="table-ikk">
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listIkk.length === 0 ? false : listIkk.length === dataReport.length ? true : false}
+                                                    onChange={() => listIkk.length === dataReport.length ? this.chekRejList('all') : this.chekAppList('all')}
+                                                    />
+                                                    Select
+                                                </th>
                                                 <th>No</th>
                                                 <th>PIC</th>
                                                 <th>NAMA</th>
@@ -947,8 +1239,6 @@ class ReportIkk extends Component {
                                                 <th>NOMOR NPWP</th>
                                                 <th>NAMA SESUAI KTP</th>
                                                 <th>NIK</th>
-                                                <th>PPU</th>
-                                                <th>PA</th>
                                                 <th>NILAI YANG DIBAYARKAN</th>
                                                 <th>TANGGAL TRANSFER</th>
                                                 <th>KETERANGAN</th>
@@ -959,6 +1249,13 @@ class ReportIkk extends Component {
                                             {dataReport.map(item => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                        <th>
+                                                            <input 
+                                                            type='checkbox'
+                                                            checked={listIkk.find(element => element === item.id) !== undefined ? true : false}
+                                                            onChange={listIkk.find(element => element === item.id) === undefined ? () => this.chekAppList(item.id) : () => this.chekRejList(item.id)}
+                                                            />
+                                                        </th>
                                                         <th>{dataReport.indexOf(item) + 1}</th>
                                                         <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
                                                         <th>{item.area}</th>
@@ -979,8 +1276,6 @@ class ReportIkk extends Component {
                                                         <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
                                                         <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
                                                         <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                                        <th>{item.ppu}</th>
-                                                        <th>{item.pa}</th>
                                                         <th>{item.nilai_bayar}</th>
                                                         <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
                                                         <th></th>
@@ -990,14 +1285,12 @@ class ReportIkk extends Component {
                                             })}
                                             {dataReport.length > 0 && (
                                                 <tr>
-                                                    <th className='total' colSpan={11}>Total</th>
+                                                    <th className='total' colSpan={12}>Total</th>
                                                     <th>
                                                         {dataReport.reduce((accumulator, object) => {
                                                             return accumulator + parseInt(object.nilai_ajuan);
                                                         }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                                     </th>
-                                                    <th></th>
-                                                    <th></th>
                                                     <th></th>
                                                     <th></th>
                                                     <th></th>
@@ -1040,22 +1333,238 @@ class ReportIkk extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal isOpen={this.state.modalUpload} toggle={this.openModalUpload} size="lg">
+                <Modal size="xl" className='modalrinci' isOpen={this.state.modalDownload} toggle={this.openDownload}>
                     <ModalHeader>
-                        Upload gambar asset
+                        Download {this.state.titleDownload}
                     </ModalHeader>
                     <ModalBody>
-                        <div className="mainRinci2">
-                            <div className="leftRinci2 mb-5">
-                                <div className="titRinci">{dataRinci.nama_asset}</div>
-                                {/* <img src={detRinci.img === undefined || detRinci.img.length === 0 ? placeholder : `${REACT_APP_BACKEND_URL}/${detRinci.img[detRinci.img.length - 1].path}`} className="imgRinci" /> */}
-                                <Input type="file" className='mt-2' onChange={this.uploadGambar}>Upload Picture</Input>
-                            </div>
+                        <div className={style.tableDashboard}>
+                            {this.state.titleDownload === 'Konsol' ? (
+                                <Table bordered responsive hover className={style.tab} id="table-to-xls">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>PIC</th>
+                                            <th>NAMA</th>
+                                            <th>AREA</th>
+                                            <th>NOMOR FPD</th>
+                                            <th>COST CENTRE</th>
+                                            <th>NO COA</th>
+                                            <th>NAMA COA</th>
+                                            <th>KETERANGAN TAMBAHAN</th>
+                                            <th>TGL AJUAN</th>
+                                            <th>PERIODE (DDMMYY)</th>
+                                            <th>NILAI YANG DIAJUKAN</th>
+                                            <th>BANK</th>
+                                            <th>NOMOR REKENING</th>
+                                            <th>ATAS NAMA</th>
+                                            <th>MEMILIKI NPWP</th>
+                                            <th>NAMA SESUAI NPWP</th>
+                                            <th>NOMOR NPWP</th>
+                                            <th>NAMA SESUAI KTP</th>
+                                            <th>NIK</th>
+                                            <th>NILAI YANG DIBAYARKAN</th>
+                                            <th>TANGGAL TRANSFER</th>
+                                            <th>KETERANGAN</th>
+                                            <th>STATUS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {dataDownload.length !== 0 && dataDownload.map(item => {
+                                            return (
+                                                <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                    <th>{dataDownload.indexOf(item) + 1}</th>
+                                                    <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                                    <th>{item.area}</th>
+                                                    <th>{item.depo.channel}</th>
+                                                    <th>{item.no_transaksi}</th>
+                                                    <th>{item.cost_center}</th>
+                                                    <th>{item.no_coa}</th>
+                                                    <th>{item.nama_coa}</th>
+                                                    <th>{item.uraian}</th>
+                                                    <th>{moment(item.start_ikk).format('DD MMMM YYYY')}</th>
+                                                    <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
+                                                    <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                    <th>{item.bank_tujuan}</th>
+                                                    <th>{item.norek_ajuan}</th>
+                                                    <th>{item.nama_tujuan}</th>
+                                                    <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
+                                                    <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                                    <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                    <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
+                                                    <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
+                                                    <th>{item.nilai_bayar}</th>
+                                                    <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                                    <th></th>
+                                                    <th>{item.history.split(',').reverse()[0]}</th>
+                                                </tr>
+                                            )
+                                        })}
+                                        {dataDownload.length > 0 && (
+                                            <tr>
+                                                <th className='total' colSpan={11}>Total</th>
+                                                <th>
+                                                    {dataDownload.reduce((accumulator, object) => {
+                                                        return accumulator + parseInt(object.nilai_ajuan);
+                                                    }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                                </th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </Table>
+                            ) : (
+                                <Table bordered responsive hover className='tabjurnal'>
+                                    <thead>
+                                        <tr>
+                                            <th>no</th>
+                                            <th>header_text</th>
+                                            <th>comp_code</th>
+                                            <th>doc_date</th>
+                                            <th>post_date</th>
+                                            <th>period</th>
+                                            <th>doc_type</th>
+                                            <th>ref_doc_no</th>
+                                            <th>curr</th>
+                                            <th>item_no</th>
+                                            <th>gl_acc</th>
+                                            <th>post_key</th>
+                                            <th>gl_indic</th>
+                                            <th>func_area</th>
+                                            <th>amount</th>
+                                            <th>tax_code</th>
+                                            <th>cost_ctr</th>
+                                            <th>wbs_elemnt</th>
+                                            <th>aufnr</th>
+                                            <th>item_text</th>
+                                            <th>valdate</th>
+                                            <th>bsldate</th>
+                                            <th>payterm</th>
+                                            <th>paymeth</th>
+                                            <th>parbank</th>
+                                            <th>houbank</th>
+                                            <th>prctr</th>
+                                            <th>gsber</th>
+                                            <th>vat_base</th>
+                                            <th>account_id</th>
+                                            <th>assignment</th>
+                                            <th>ref_key(head)</th>
+                                            <th>ref_key(head2)</th>
+                                            <th>ref_key 3</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <th>No Identifikasi</th>
+                                            <th>Text Bebas</th>
+                                            <th>Kode</th>
+                                            <th>Tanggal Faktur</th>
+                                            <th>Tanggal Posting</th>
+                                            <th></th>
+                                            <th>Tipe Dokumen</th>
+                                            <th>No Dokumen Pendukung</th>
+                                            <th>Mata Uang</th>
+                                            <th>Nomor Item</th>
+                                            <th>Nomor Akun</th>
+                                            <th>Posting Key</th>
+                                            <th>Kode Special</th>
+                                            <th>Kosongi Saja</th>
+                                            <th>Jumlah</th>
+                                            <th>Kode PPN</th>
+                                            <th>Cost Center</th>
+                                            <th>No WBSt</th>
+                                            <th>Kode Order</th>
+                                            <th>Text Bebas</th>
+                                            <th>Kosongi</th>
+                                            <th>Tanggal</th>
+                                            <th>TOP</th>
+                                            <th>Metode</th>
+                                            <th>Kode Rekening</th>
+                                            <th>Kode Cabang</th>
+                                            <th>Profit Center</th>
+                                            <th>SBU</th>
+                                            <th>DPP PPN</th>
+                                            <th>Nomor ID</th>
+                                            <th>Untuk AP</th>
+                                            <th>Status Payment</th>
+                                            <th>Hanya diisi</th>
+                                            <th>Hanya diisi</th>
+                                        </tr>
+                                        {dataDownload.length !== 0 && dataDownload.map((item, index) => {
+                                            return (
+                                                jurnalMap.map((x, iter) => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>PP01</th>
+                                                            <th>{moment().format('DDMMYYYY')}</th>
+                                                            <th>{moment().format('DDMMYYYY')}</th>
+                                                            <th></th>
+                                                            <th>SA</th>
+                                                            <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                                            <th>IDR</th>
+                                                            <th>{iter + 1}</th>
+                                                            <th>{item.finance.gl_kk}</th>
+                                                            <th>{iter === 0 ? 40 : 50}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.nilai_ajuan}</th>
+                                                            <th></th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>Kas Kecil {item.area}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                        </tr>
+                                                    )
+                                                })
+                                                
+                                                )
+                                            })}
+                                    </tbody>
+                                </Table>
+                            )}
                         </div>
                     </ModalBody>
-                    <ModalFooter>
-                        <Button color='primary' onClick={this.openModalUpload}>Done</Button>
-                    </ModalFooter>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div></div>
+                        <div className="btnFoot">
+                            {this.state.titleDownload === 'Konsol' ? (
+                                <Button className="mr-2" color='warning' >Download</Button>
+                            ) : (
+                                <Button className="mr-2" color='warning' onClick={this.downloadJurnal} >Download</Button>
+                            )}
+                            <Button color="success" onClick={this.openDownload}>
+                                Close
+                            </Button>
+                        </div>
+                    </div>
                 </Modal>
                 <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
                     <ModalHeader>
@@ -1804,221 +2313,35 @@ class ReportIkk extends Component {
                 </ModalBody>
             </Modal>
             <Modal isOpen={this.state.formDis} toggle={() => {this.openModalDis(); this.showCollap('close')}} size="xl">
-                    {/* <Alert color="danger" className={style.alertWrong} isOpen={detailIkk.find(({status_transaksi}) => status_transaksi === 26) === undefined ? false : true}>
-                        <div>Data Penjualan Asset Sedang Dilengkapi oleh divisi purchasing</div>
-                    </Alert> */}
-                    <ModalBody>
-                        <Row className='trackTitle ml-4'>
-                            <Col>
-                                Tracking Pengajuan Ikk
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub'>
-                            <Col md={3}>
-                                Area
-                            </Col>
-                            <Col md={9}>
-                            : {detailIkk[0] === undefined ? '' : detailIkk[0].area}
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub'>
-                            <Col md={3}>
-                            No Ajuan
-                            </Col>
-                            <Col md={9}>
-                            : {detailIkk[0] === undefined ? '' : detailIkk[0].no_transaksi}
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub1'>
-                            <Col md={3}>
-                            Tanggal Ajuan
-                            </Col>
-                            <Col md={9}>
-                            : {detailIkk[0] === undefined ? '' : moment(detailIkk[0].start_ikk === null ? detailIkk[0].createdAt : detailIkk[0].start_ikk).locale('idn').format('DD MMMM YYYY ')}
-                            </Col>
-                        </Row>
-                        <Row className='mt-2 ml-4 m40'>
-                            <Col md={12}>
-                                <Button onClick={this.openHistory} size='sm' color='success'>History lengkap</Button>
-                            </Col>
-                        </Row>
-                        <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                            <div class="step completed">
-                                <div class="step-icon-wrap">
-                                <button class="step-icon" onClick={() => this.showCollap('Submit')} ><FiSend size={40} className="center1" /></button>
-                                </div>
-                                <h4 class="step-title">Submit Ikk</h4>
-                            </div>
-                            <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 2 ? "step completed" : 'step'} >
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Proses Approval')}><MdAssignment size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Proses Approval</h4>
-                            </div>
-                            <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Verifikasi Finance')}><FiSettings size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Verifikasi Finance</h4>
-                            </div>
-                            <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Verifikasi Ikk')}><FiSettings size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Verifikasi Ikk</h4>
-                            </div>
-                            <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi === 5 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon"><AiOutlineCheck size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Selesai</h4>
-                            </div>
-                        </div>
-                        <Collapse isOpen={this.state.collap} className="collapBody">
-                            <Card className="cardCollap">
-                                <CardBody>
-                                    <div className='textCard1'>{this.state.tipeCol}</div>
-                                    {this.state.tipeCol === 'submit' ? (
-                                        <div>Tanggal submit : {detailIkk[0] === undefined ? '' : moment(detailIkk[0].start_ikk === null ? detailIkk[0].createdAt : detailIkk[0].start_ikk).locale('idn').format('DD MMMM YYYY ')}</div>
-                                    ) : (
-                                        <div></div>
-                                    )}
-                                    <div>Rincian Data:</div>
-                                    <Table striped bordered responsive hover className="tableDis mb-3">
-                                        <thead>
-                                            <tr>
-                                                <th>NO</th>
-                                                <th>COST CENTRE</th>
-                                                <th>NO COA</th>
-                                                <th>NAMA COA</th>
-                                                <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
-                                                <th>NILAI YANG DIAJUKAN</th>
-                                                <th>BANK</th>
-                                                <th>NOMOR REKENING</th>
-                                                <th>ATAS NAMA</th>
-                                                <th>MEMILIKI NPWP</th>
-                                                <th>NAMA SESUAI NPWP</th>
-                                                <th>NOMOR NPWP</th>
-                                                <th>PPU</th>
-                                                <th>PA</th>
-                                                <th>NOMINAL</th>
-                                                <th>NILAI YANG DIBAYARKAN</th>
-                                                <th>TANGGAL TRANSFER</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {detailIkk.length !== 0 && detailIkk.map(item => {
-                                                return (
-                                                    <tr>
-                                                        <th scope="row">{detailIkk.indexOf(item) + 1}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
-                                                        <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                        <th>{item.bank_tujuan}</th>
-                                                        <th>{item.norek_ajuan}</th>
-                                                        <th>{item.nama_tujuan}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                        <th>{item.ppu}</th>
-                                                        <th>{item.pa}</th>
-                                                        <th>{item.nominal}</th>
-                                                        <th>{item.nilai_bayar}</th>
-                                                        <th>{item.tanggal_transfer}</th>
-                                                    </tr>
-                                                )
-                                            })}
-                                        </tbody>
-                                    </Table>
-                                    {detailIkk[0] === undefined || this.state.tipeCol === 'Submit' ? (
-                                        <div></div>
-                                    ) : (
-                                        <div>
-                                            <div className="mb-4 mt-2">Tracking {this.state.tipeCol} :</div>
-                                            {this.state.tipeCol === 'Proses Approval' ? (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    {detailIkk[0] !== undefined && detailIkk[0].appForm.length && detailIkk[0].appForm.slice(0).reverse().map(item => {
-                                                        return (
-                                                            <div class={item.status === '1' ? 'step completed' : item.status === '0' ? 'step reject' : 'step'}>
-                                                                <div class="step-icon-wrap">
-                                                                <button class="step-icon"><FaFileSignature size={30} className="center2" /></button>
-                                                                </div>
-                                                                <h4 class="step-title">{item.jabatan}</h4>
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
-                                            ) : this.state.tipeCol === 'Verifikasi Finance' ? (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Check Dokumen</h4>
-                                                    </div>
-                                                    <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Selesai</h4>
-                                                    </div>
-                                                </div>
-                                            ) : this.state.tipeCol === 'Verifikasi Ikk' && (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FiSettings size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Proses Kelengkapan Data</h4>
-                                                    </div>
-                                                    <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Check Dokumen</h4>
-                                                    </div>
-                                                    <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Selesai</h4>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </CardBody>
-                            </Card>
-                        </Collapse>
-                    </ModalBody>
-                    <hr />
-                    <div className="modalFoot ml-3">
-                        {/* <Button color="primary" onClick={() => this.openModPreview({nama: 'disposal pengajuan', no: detailIkk[0] !== undefined && detailIkk[0].no_disposal})}>Preview</Button> */}
-                        <div></div>
-                        <div className="btnFoot">
-                            <Button color="primary" onClick={() => {this.openModalDis(); this.showCollap('close')}}>
-                                Close
-                            </Button>
-                        </div>
+                {/* <Alert color="danger" className={style.alertWrong} isOpen={detailIkk.find(({status_transaksi}) => status_transaksi === 26) === undefined ? false : true}>
+                    <div>Data Penjualan Asset Sedang Dilengkapi oleh divisi purchasing</div>
+                </Alert> */}
+                <ModalBody>
+                </ModalBody>
+                <hr />
+                <div className="modalFoot ml-3">
+                    {/* <Button color="primary" onClick={() => this.openModPreview({nama: 'disposal pengajuan', no: detailIkk[0] !== undefined && detailIkk[0].no_disposal})}>Preview</Button> */}
+                    <div></div>
+                    <div className="btnFoot">
+                        <Button color="primary" onClick={() => {this.openModalDis(); this.showCollap('close')}}>
+                            Close
+                        </Button>
                     </div>
-                </Modal>
-                <Modal isOpen={this.state.history} toggle={this.openHistory}>
-                    <ModalBody>
-                        <div className='mb-4'>History Transaksi</div>
-                        <div className='history'>
-                            {detailIkk.length > 0 && detailIkk[0].history.split(',').map(item => {
-                                return (
-                                    item !== null && item !== 'null' && 
-                                    <Button className='mb-2' color='info'>{item}</Button>
-                                )
-                            })}
-                        </div>
-                    </ModalBody>
-                </Modal>
+                </div>
+            </Modal>
+            <Modal isOpen={this.state.history} toggle={this.openHistory}>
+                <ModalBody>
+                    <div className='mb-4'>History Transaksi</div>
+                    <div className='history'>
+                        {detailIkk.length > 0 && detailIkk[0].history.split(',').map(item => {
+                            return (
+                                item !== null && item !== 'null' && 
+                                <Button className='mb-2' color='info'>{item}</Button>
+                            )
+                        })}
+                    </div>
+                </ModalBody>
+            </Modal>
             </>
         )
     }

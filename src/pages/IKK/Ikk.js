@@ -1089,49 +1089,83 @@ class IKK extends Component {
                                 )} */}
                             </div>
                             <div className={[style.secEmail4]}>
-                                <div className='rowCenter'>
+                                {level === '5' || level === '6' ? (
+                                    <Button onClick={() => this.goRoute('cartikk')} color="info" size="lg">Create</Button>
+                                ) : (
                                     <div className='rowCenter'>
-                                        <text className='mr-4'>Time:</text>
-                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="pilih">Periode</option>
-                                        </Input>
+                                        <div className='rowCenter'>
+                                            <text className='mr-4'>Time:</text>
+                                            <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="pilih">Periode</option>
+                                            </Input>
+                                        </div>
+                                        {this.state.time === 'pilih' ?  (
+                                            <>
+                                                <div className='rowCenter'>
+                                                    <text className='bold'>:</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                    />
+                                                    <text className='mr-1 ml-1'>To</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                    />
+                                                    <Button
+                                                    disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                    color='primary' 
+                                                    onClick={this.getDataTime} 
+                                                    className='ml-1'>
+                                                        Go
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : null}
                                     </div>
-                                    {this.state.time === 'pilih' ?  (
-                                        <>
-                                            <div className='rowCenter'>
-                                                <text className='bold'>:</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
-                                                />
-                                                <text className='mr-1 ml-1'>To</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                />
-                                                <Button
-                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
-                                                color='primary' 
-                                                onClick={this.getDataTime} 
-                                                className='ml-1'>
-                                                    Go
-                                                </Button>
-                                            </div>
-                                        </>
-                                    ) : null}
-                                </div>
+                                )}
                                 <div className={style.searchEmail2}>
                                 </div>
                             </div>
                             <div className={[style.secEmail4]}>
-                                {(level === '5' || level === '6') && (
-                                    <Button onClick={() => this.goRoute('cartikk')} color="info" size="lg">Create</Button>
-                                )}
-                                {(level === '5' || level === '6') ? (
-                                    <div></div>
+                                {level === '5' || level === '6' ? (
+                                    <div className='rowCenter'>
+                                        <div className='rowCenter'>
+                                            <text className='mr-4'>Time:</text>
+                                            <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="pilih">Periode</option>
+                                            </Input>
+                                        </div>
+                                        {this.state.time === 'pilih' ?  (
+                                            <>
+                                                <div className='rowCenter'>
+                                                    <text className='bold'>:</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                    />
+                                                    <text className='mr-1 ml-1'>To</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                    />
+                                                    <Button
+                                                    disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                    color='primary' 
+                                                    onClick={this.getDataTime} 
+                                                    className='ml-1'>
+                                                        Go
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : null}
+                                    </div>
                                 ) : (
                                     <div className={style.searchEmail2}>
                                         <text>Status:</text>

@@ -95,9 +95,9 @@ export default {
         type: 'REJECTLIST_IKK',
         payload: http(token).patch(`/ikk/rejectlist`, data)
     }),
-    getReport: (token, status, reject, menu, time1, time2) => ({
+    getReport: (token, status, reject, menu, time1, time2, type) => ({
         type: 'REPORT_IKK',
-        payload: http(token).get(`/ikk/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}`),
+        payload: http(token).get(`/ikk/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}&type=${type}`),
     }),
     confirmNewIdent: (token, id) => ({
         type: 'CONFIRM_IDENTIKK',

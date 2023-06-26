@@ -1125,7 +1125,7 @@ class VerifIkk extends Component {
                                                         onChange={() => listIkk.length === newIkk.length ? this.chekRejList('all') : this.chekAppList('all')}
                                                         />
                                                         Select
-                                                    </th>    
+                                                    </th>
                                                 )}
                                                 <th>No</th>
                                                 <th>NO.AJUAN</th>

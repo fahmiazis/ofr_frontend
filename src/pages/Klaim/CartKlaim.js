@@ -37,6 +37,7 @@ import NavBar from '../../components/NavBar'
 import dokumen from '../../redux/actions/dokumen'
 import email from '../../redux/actions/email'
 import Email from '../../components/Klaim/Email'
+import NumberInput from '../../components/NumberInput'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const addSchema = Yup.object().shape({
@@ -1048,7 +1049,7 @@ class CartKlaim extends Component {
                                                     <th>{item.nama_coa}</th>
                                                     <th>{item.keterangan}</th>
                                                     <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
-                                                    <th>{item.nilai_ajuan}</th>
+                                                    <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                     <th>{item.bank_tujuan}</th>
                                                     <th>{item.norek_ajuan}</th>
                                                     <th>{item.nama_tujuan}</th>
@@ -1165,7 +1166,7 @@ class CartKlaim extends Component {
                             validationSchema = {addSchema}
                             onSubmit={(values) => {this.addCartKlaim(values)}}
                             >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                            {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                                 <div className="rightRinci2">
                                     <div>
                                         <Row className="mb-2 rowRinci">
@@ -1292,18 +1293,15 @@ class CartKlaim extends Component {
                                         ) : null }
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nilai Yang Diajukan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.nilai_ajuan}
-                                                onBlur={handleBlur("nilai_ajuan")}
-                                                onChange={handleChange("nilai_ajuan")}
+                                            <Col md={9} className="colRinci">:  <NumberInput 
+                                                    value={values.nilai_ajuan}
+                                                    className="inputRinci1"
+                                                    onValueChange={val => setFieldValue("nilai_ajuan", val.floatValue)}
                                                 />
                                             </Col>
                                         </Row>
                                         {errors.nilai_ajuan ? (
-                                            <text className={style.txtError}>must be filled</text>
+                                            <text className={style.txtError}>{errors.nilai_ajuan}</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Tujuan Transfer</Col>
@@ -1541,7 +1539,7 @@ class CartKlaim extends Component {
                             validationSchema = {addSchema}
                             onSubmit={(values) => {this.editCartKlaim(values)}}
                             >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                            {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                                 <div className="rightRinci2">
                                     <div>
                                         <Row className="mb-2 rowRinci">
@@ -1669,18 +1667,15 @@ class CartKlaim extends Component {
                                         ) : null }
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nilai Yang Diajukan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.nilai_ajuan}
-                                                onBlur={handleBlur("nilai_ajuan")}
-                                                onChange={handleChange("nilai_ajuan")}
+                                            <Col md={9} className="colRinci">:  <NumberInput 
+                                                    value={values.nilai_ajuan}
+                                                    className="inputRinci1"
+                                                    onValueChange={val => setFieldValue("nilai_ajuan", val.floatValue)}
                                                 />
                                             </Col>
                                         </Row>
                                         {errors.nilai_ajuan ? (
-                                            <text className={style.txtError}>must be filled</text>
+                                            <text className={style.txtError}>{errors.nilai_ajuan}</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Tujuan Transfer</Col>
@@ -1815,7 +1810,7 @@ class CartKlaim extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
+                                        {values.status_npwp === 'Ya' && values.no_npwp.length <= 15  ? (
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
@@ -1847,7 +1842,7 @@ class CartKlaim extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {values.status_npwp === 'Tidak' && values.no_ktp.length < 16 ? (
+                                        {values.status_npwp === 'Tidak' && values.no_ktp.length <= 16 ? (
                                             <text className={style.txtError}>must be filled with 16 digits characters</text>
                                         ) : null}
                                     </div>

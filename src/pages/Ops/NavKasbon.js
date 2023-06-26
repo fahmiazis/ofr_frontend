@@ -40,10 +40,13 @@ class NavOps extends Component {
     }
 
     goRoute = (val) => {
-        this.props.history.push({
-            pathname: `/${val.route}`,
-            state: val
-        })
+        localStorage.setItem('tipeKasbon', val.type)
+        setTimeout(() => {
+            this.props.history.push({
+                pathname: `/${val.route}`,
+                state: val
+            })
+         }, 200)
     }
 
     componentDidMount() {

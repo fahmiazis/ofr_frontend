@@ -860,7 +860,7 @@ class ReportOps extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Report Operasional</div>
+                                <div className={style.titleDashboard}>Report Konsol Operasional</div>
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.headEmail2}>
