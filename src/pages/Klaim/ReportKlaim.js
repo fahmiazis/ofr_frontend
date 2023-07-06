@@ -95,7 +95,6 @@ class ReportKlaim extends Component {
             modalConfirm: false,
             confirm: '',
             modalDoc: false,
-            listMut: [],
             listReason: [],
             modalStock: false,
             openPdf: false,
@@ -124,7 +123,11 @@ class ReportKlaim extends Component {
             time: '',
             time1: '',
             time2: '',
-            openDown: false
+            openDown: false,
+            dataDownload: [],
+            modalDownload: false,
+            titleDownload: '',
+            listKlaim: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -196,7 +199,7 @@ class ReportKlaim extends Component {
     }
 
     rejectKlaim = async (val) => {
-        const {listMut, listReason, listMenu} = this.state
+        const {listKlaim, listReason, listMenu} = this.state
         const { detailKlaim } = this.props.klaim
         const token = localStorage.getItem('token')
         const tempno = {
@@ -208,7 +211,7 @@ class ReportKlaim extends Component {
         }
         const data = {
             no: detailKlaim[0].no_transaksi,
-            list: listMut,
+            list: listKlaim,
             alasan: temp + val.alasan,
             menu: listMenu.toString()
         }
@@ -426,7 +429,7 @@ class ReportKlaim extends Component {
         const tempno = {
             no: val.no_transaksi
         }
-        this.setState({listMut: []})
+        this.setState({listKlaim: []})
         await this.props.getDetail(token, tempno)
         await this.props.getApproval(token, tempno)
         this.openModalRinci()
@@ -758,40 +761,36 @@ class ReportKlaim extends Component {
     }
 
     chekApp = (val) => {
-        const { listMut } = this.state
+        const { listKlaim } = this.state
         const {dataReport} = this.props.klaim
         if (val === 'all') {
             const data = []
             for (let i = 0; i < dataReport.length; i++) {
                 data.push(dataReport[i].id)
             }
-            this.setState({listMut: data})
+            this.setState({listKlaim: data})
         } else {
-            listMut.push(val)
-            this.setState({listMut: listMut})
+            listKlaim.push(val)
+            this.setState({listKlaim: listKlaim})
         }
     }
 
     chekRej = (val) => {
-        const {listMut} = this.state
+        const {listKlaim} = this.state
         if (val === 'all') {
             const data = []
-            this.setState({listMut: data})
+            this.setState({listKlaim: data})
         } else {
             const data = []
-            for (let i = 0; i < listMut.length; i++) {
-                if (listMut[i] === val) {
+            for (let i = 0; i < listKlaim.length; i++) {
+                if (listKlaim[i] === val) {
                     data.push()
                 } else {
-                    data.push(listMut[i])
+                    data.push(listKlaim[i])
                 }
             }
-            this.setState({listMut: data})
+            this.setState({listKlaim: data})
         }
-    }
-
-    openDownload = () => {
-        this.setState({openDown: !this.state.openDown})
     }
 
     prepareReject = async () => {
@@ -822,38 +821,148 @@ class ReportKlaim extends Component {
         this.setState({drop: !this.state.drop})
     }
 
-    excelExport = async () => {
+    prosesDownload = (val) => {
+        const {listKlaim} = this.state
+        const {dataReport} = this.props.klaim
+        const data = []
+        for (let i = 0; i < listKlaim.length; i++) {
+            for (let j = 0; j < dataReport.length; j++) {
+                if (dataReport[j].id === listKlaim[i]) {
+                    data.push(dataReport[j])
+                }
+            }
+        }
+        this.setState({dataDownload: data, titleDownload: val})
+        this.openDownload()
+    }
+
+    openDownload = () => {
+        this.setState({modalDownload: !this.state.modalDownload})
+    }
+
+    downloadKlaim = async () => {
+        const { dataDownload } = this.state
+
         const workbook = new ExcelJS.Workbook();
-        const ws = workbook.addWorksheet('report klaim')
+        const ws = workbook.addWorksheet('data klaim')
 
-        ws.columns = [
-            {header: 'Id'},
-            {header: 'Name', key: 'name'}, 
-            {header: 'D.O.B.', key: 'dob'}
-        ];
+        // await ws.protect('F1n4NcePm4')
 
-        ws.getCell('A1').border = {
+        const borderStyles = {
             top: {style:'thin'},
             left: {style:'thin'},
             bottom: {style:'thin'},
             right: {style:'thin'}
         }
 
-        ws.addRow({id: 1, name: 'John Doe', dob: new Date(1970, 1, 1)})
-        ws.addRow({id: 2, name: 'Jane Doe', dob: new Date(1965, 1, 7)})
+        ws.columns = [
+            {header: 'NO', key: 'c1'},
+            {header: 'PIC', key: 'c2'},
+            {header: 'NAMA', key: 'c3'},
+            {header: 'AREA', key: 'c4'},
+            {header: 'NOMOR FPD', key: 'c5'},
+            {header: 'COST CENTRE', key: 'c6'},
+            {header: 'NO COA', key: 'c7'},
+            {header: 'NAMA COA', key: 'c8'},
+            {header: 'KETERANGAN TAMBAHAN', key: 'c9'},
+            {header: 'TGL AJUAN', key: 'c10'},
+            {header: 'PERIODE (DDMMYY)', key: 'c11'},
+            {header: 'NILAI YANG DIAJUKAN', key: 'c12'},
+            {header: 'BANK', key: 'c13'},
+            {header: 'NOMOR REKENING', key: 'c14'},
+            {header: 'ATAS NAMA', key: 'c15'},
+            {header: 'MEMILIKI NPWP', key: 'c16'},
+            {header: 'NAMA SESUAI NPWP', key: 'c17'},
+            {header: 'NOMOR NPWP', key: 'c18'},
+            {header: 'NAMA SESUAI KTP', key: 'c19'},
+            {header: 'NIK', key: 'c20'},
+            {header: 'PPU', key: 'c21'},
+            {header: 'PA', key: 'c22'},
+            {header: 'NILAI YANG DIBAYARKAN', key: 'c23'},
+            {header: 'TANGGAL TRANSFER', key: 'c24'},
+            {header: 'KETERANGAN', key: 'c25'},
+            {header: 'STATUS', key: 'c26'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: index + 1,
+                c2: `${item.appList.find(({sebagai}) => sebagai === "pembuat").nama}`,
+                c3: item.area,
+                c4: item.depo.channel,
+                c5: item.no_transaksi,
+                c6: item.cost_center,
+                c7: item.no_coa,
+                c8: item.nama_coa,
+                c9: item.keterangan,
+                c10: `${moment(item.start_klaim).format('DD MMMM YYYY')}`,
+                c11: `${moment(item.periode_awal).format('DD MMMM YYYY')} - ${moment(item.periode_akhir).format('DD MMMM YYYY')}`,
+                c12: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c13: item.bank_tujuan,
+                c14: item.norek_ajuan,
+                c15: item.nama_tujuan,
+                c16: item.status_npwp === 0 ? 'Tidak' : 'Ya',
+                c17: item.status_npwp === 0 ? '' : item.nama_npwp,
+                c18: item.status_npwp === 0 ? '' : item.no_npwp,
+                c19: item.status_npwp === 0 ? item.nama_ktp : '',
+                c20: item.status_npwp === 0 ? item.no_ktp : '',
+                c21: item.ppu,
+                c22: item.pa,
+                c23: item.nominal,
+                c24: `${moment(item.tanggal_transfer).format('DD MMMM YYYY')}`,
+                c25: '',
+                c26: item.history.split(',').reverse()[0],
+            }
+        )
+        ) })
+
+        ws.addRow(
+            {
+                c11: 'TOTAL :',
+                c12: dataDownload.reduce((accumulator, object) => {
+                    return accumulator + parseInt(object.nilai_ajuan);
+                }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c13: '',
+                c14: '',
+                c15: '',
+                c16: '',
+                c17: '',
+                c18: '',
+                c19: '',
+                c20: '',
+                c21: '',
+                c22: '',
+                c23: '',
+                c24: '',
+                c25: '',
+                c26: '',
+            }
+        )
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
 
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
               new Blob([buffer], { type: "application/octet-stream" }),
-              `report.xlsx`
+              `Data Ajuan Klaim ${moment().format('DD MMMM YYYY')}.xlsx`
             );
           });
-      }
+    }
 
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
+        const {dataRinci, dropApp, dataItem, listKlaim, drop, listReason, dataMenu, listMenu, dataDownload} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim, dataReport } = this.props.klaim
@@ -908,7 +1017,7 @@ class ReportKlaim extends Component {
                                         sheet="Report"
                                         buttonText="Download"
                                     /> */}
-                                    <Button onClick={this.openDownload} color='success' className='mr-2'>Download</Button>
+                                    <Button onClick={this.prosesDownload} color='success' className='mr-2'>Download</Button>
                                 </div>
                                 <div className={style.searchEmail2}>
                                     <text>Status:  </text>
@@ -972,8 +1081,8 @@ class ReportKlaim extends Component {
                                                     <input  
                                                     className='mr-2'
                                                     type='checkbox'
-                                                    checked={listMut.length === 0 ? false : listMut.length === dataReport.length ? true : false}
-                                                    onChange={() => listMut.length === dataReport.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    checked={listKlaim.length === 0 ? false : listKlaim.length === dataReport.length ? true : false}
+                                                    onChange={() => listKlaim.length === dataReport.length ? this.chekRej('all') : this.chekApp('all')}
                                                     />
                                                     Select
                                                 </th>
@@ -1012,8 +1121,8 @@ class ReportKlaim extends Component {
                                                         <th>
                                                             <input 
                                                             type='checkbox'
-                                                            checked={listMut.find(element => element === item.id) !== undefined ? true : false}
-                                                            onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                            checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                            onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
                                                             />
                                                         </th>
                                                         <th>{dataReport.indexOf(item) + 1}</th>
@@ -1120,14 +1229,11 @@ class ReportKlaim extends Component {
                         Rincian
                     </ModalHeader>
                 </Modal>
-                <Modal className='modalrinci' isOpen={this.state.openDown} toggle={this.openDownload} size="xl">
+                <Modal className='modalrinci' isOpen={this.state.modalDownload} toggle={this.openDownload} size="xl">
                     <ModalHeader>
                         Download Report
                     </ModalHeader>
                     <ModalBody>
-                        <div className='rowCenter'>
-                            <Button color='primary' className='mb-4' onClick={this.excelExport}>Download Report</Button>
-                        </div>
                         <Table bordered responsive hover className={style.tab}>
                             <thead>
                                 <tr>
@@ -1160,10 +1266,10 @@ class ReportKlaim extends Component {
                                 </tr>
                             </thead>
                             <tbody>
-                                {dataReport.map(item => {
+                                {dataDownload.map(item => {
                                     return (
                                         <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                            <th>{dataReport.indexOf(item) + 1}</th>
+                                            <th>{dataDownload.indexOf(item) + 1}</th>
                                             <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
                                             <th>{item.area}</th>
                                             <th>{item.depo.channel}</th>
@@ -1192,11 +1298,11 @@ class ReportKlaim extends Component {
                                         </tr>
                                     )
                                 })}
-                                {dataReport.length > 0 && (
+                                {dataDownload.length > 0 && (
                                     <tr>
                                         <th className='total' colSpan={11}>Total</th>
                                         <th>
-                                            {dataReport.reduce((accumulator, object) => {
+                                            {dataDownload.reduce((accumulator, object) => {
                                                 return accumulator + parseInt(object.nilai_ajuan);
                                             }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                         </th>
@@ -1220,6 +1326,14 @@ class ReportKlaim extends Component {
                             </tbody>
                         </Table>
                     </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div></div>
+                        <div className="btnFoot">
+                            <Button color='warning' className='mb-4' onClick={this.downloadKlaim}>Download Report</Button>
+                            <Button color='success' className='mb-4 ml-3' onClick={this.openDownload}>Close</Button>
+                        </div>
+                    </div>
                 </Modal>
                 <Modal isOpen={this.state.modalRinci} className='modalrinci'  toggle={this.openModalRinci} size="xl">
                     <ModalBody>
@@ -1309,7 +1423,7 @@ class ReportKlaim extends Component {
                                 <div></div>
                             ) : (
                                 <>
-                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
+                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listKlaim.length > 0 ? false : this.state.filter !== 'available' ? true : listKlaim.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
                                     <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
