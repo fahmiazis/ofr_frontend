@@ -36,6 +36,8 @@ import TableRincian from '../../components/Ikk/tableRincian'
 import Formikk from '../../components/Ikk/formikk'
 import FPD from '../../components/Ikk/FPD'
 import dokumen from '../../redux/actions/dokumen'
+import email from '../../redux/actions/email'
+import Email from '../../components/Ikk/Email'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const ikkSchema = Yup.object().shape({
@@ -115,7 +117,11 @@ class AjuanBayarIkk extends Component {
             tgl_transfer: null,
             rinciAjuan: false,
             modalSubmit: false,
-            modalApplist: false
+            modalApplist: false,
+            openDraft: false,
+            message: '',
+            subject: '',
+            tipeTrans: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -193,11 +199,7 @@ class AjuanBayarIkk extends Component {
             no: detailIkk[0].no_pembayaran
         }
         await this.props.approveListIkk(token, tempno)
-        this.getDataIkk()
-        this.setState({confirm: 'isApprove'})
-        this.openConfirm()
-        this.openModalApplist()
-        this.modalRinciAjuan()
+        this.prepSendEmail('approve')
     }
 
     rejectIkk = async (val) => {
@@ -224,6 +226,89 @@ class AjuanBayarIkk extends Component {
         this.openConfirm()
         this.openModalReject()
         this.modalRinciAjuan()
+    }
+
+    dataSendEmail = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailIkk } = this.props.ikk
+        const { draftEmail } = this.props.email
+        const { message, subject, tipeTrans, dataDownload } = this.state
+        const dataTrans = tipeTrans === 'submit' ? dataDownload : detailIkk
+        const noPemb = dataTrans.length === 0 ? null : dataTrans[0].no_pembayaran === undefined ? null : dataTrans[0].no_pembayaran
+        const noTrans = tipeTrans === 'submit' ? this.state.no_transfer : noPemb
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: noTrans,
+            tipe: 'ikk',
+            jenis: 'ajuan'
+        }
+        await this.props.sendEmail(token, tempno)
+        if (tipeTrans === 'submit') {
+            this.getDataIkk()
+            this.setState({confirm: 'submit'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalSubmit()
+            this.modalSubmitPre()
+        } else {
+            this.getDataIkk()
+            this.setState({confirm: 'isApprove'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalApplist()
+            this.modalRinciAjuan()
+        }
+    }
+
+    prepSendEmail = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailIkk } = this.props.ikk
+        const {dataDownload} = this.state
+        const dataTrans = val === 'submit' ? dataDownload : detailIkk
+        const noPemb = dataTrans.length === 0 ? null : dataTrans[0].no_pembayaran === undefined ? null : dataTrans[0].no_pembayaran
+        const noTrans = val === 'submit' ? this.state.no_transfer : noPemb
+        const app = dataTrans[0].appList
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = tempApp.length === app.length-1 ? 'full approve' : 'approve'
+        console.log(tipe)
+        const cekMenu = 'List Ajuan Bayar (IKK)'
+        const tempno = {
+            no: noTrans,
+            kode: dataTrans[0].kode_plant,
+            jenis: 'ikk',
+            tipe: tipe,
+            menu: cekMenu
+        }
+        const draftno = {
+            no: noTrans,
+            tipe: 'ajuan bayar'
+        }
+        this.setState({tipeTrans: val})
+        await this.props.getDetail(token, draftno)
+        await this.props.getDraftAjuan(token, tempno)
+        this.openDraftEmail()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val.message, subject: val.subject})
     }
 
     dropApp = () => {
@@ -529,9 +614,9 @@ class AjuanBayarIkk extends Component {
         const {dataIkk, noDis} = this.props.ikk
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const status = level === '2' ? 5 : 6
+        const status = level === '2'  && val === 'available' ? 5 : 6
         const statusAll = 'all'
-        const category = level === '2' ? 'verif' : 'ajuan bayar'
+        const category = level === '2' && val === 'available' ? 'verif' : 'ajuan bayar'
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newIkk = []
@@ -578,31 +663,12 @@ class AjuanBayarIkk extends Component {
         const tempno = {
             no: detailIkk[0].no_transaksi
         }
-        if (level === '3') {
-            const cek = []
-            detailIkk.map(item => {
-                return ((item.ppu !== null && item.pa !== null && item.nominal !== null) && cek.push(item))
-            })
-            if (cek.length === detailIkk.length) {
-                await this.props.submitVerif(token, tempno)
-                this.getDataIkk()
-                this.setState({confirm: 'submit'})
-                this.openConfirm()
-                this.openModalApprove()
-                this.openModalRinci()
-            } else {
-                this.setState({confirm: 'rejSubmit'})
-                this.openConfirm()
-                this.openModalApprove()
-            }
-        } else {
-            await this.props.submitVerif(token, tempno)
-            this.getDataIkk()
-            this.setState({confirm: 'submit'})
-            this.openConfirm()
-            this.openModalApprove()
-            this.openModalRinci()
-        }
+        await this.props.submitVerif(token, tempno)
+        this.getDataIkk()
+        this.setState({confirm: 'submit'})
+        this.openConfirm()
+        this.openModalApprove()
+        this.openModalRinci()
     }
 
     onSearch = async (e) => {
@@ -637,11 +703,7 @@ class AjuanBayarIkk extends Component {
         }
         await this.props.submitAjuanBayar(token, data)
         await this.props.getApprovalList(token, tempno)
-        this.getDataIkk()
-        this.setState({confirm: 'submit'})
-        this.openConfirm()
-        this.openModalSubmit()
-        this.modalSubmitPre()
+        this.prepSendEmail('submit')
     }
 
     updateAsset = async (value) => {
@@ -1029,34 +1091,7 @@ class AjuanBayarIkk extends Component {
                                 </div>
                             </div>
                             <div className={style.tableDashboard}>
-                                {level !== '2' ? (
-                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>NO.Transaksi Ajuan Bayar</th>
-                                                <th>Tanggal Submit Ajuan Bayar</th>
-                                                <th>STATUS</th>
-                                                <th>OPSI</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {newIkk.map(item => {
-                                                return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{newIkk.indexOf(item) + 1}</th>
-                                                        <th>{item.no_pembayaran}</th>
-                                                        <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
-                                                        <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item, 'ajuan bayar')} className='mb-1 mr-1' color='success'>Proses</Button>
-                                                        </th>
-                                                    </tr>
-                                                )
-                                            })}
-                                        </tbody>
-                                    </Table>
-                                ) : (
+                                {this.state.filter === 'available' && level === '2' ? (
                                     <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
                                             <tr>
@@ -1104,6 +1139,33 @@ class AjuanBayarIkk extends Component {
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item, 'detail')} className='mb-1 mr-1' color='success'>Detail</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                        </th>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </Table>
+                                ) : (
+                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                        <thead>
+                                            <tr>
+                                                <th>No</th>
+                                                <th>NO.Transaksi Ajuan Bayar</th>
+                                                <th>Tanggal Submit Ajuan Bayar</th>
+                                                <th>STATUS</th>
+                                                <th>OPSI</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {newIkk.map(item => {
+                                                return (
+                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                        <th>{newIkk.indexOf(item) + 1}</th>
+                                                        <th>{item.no_pembayaran}</th>
+                                                        <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                                        <th>{item.history.split(',').reverse()[0]}</th>
+                                                        <th>
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item, 'ajuan bayar')} className='mb-1 mr-1' color='success'>Proses</Button>
                                                         </th>
                                                     </tr>
                                                 )
@@ -1319,7 +1381,7 @@ class AjuanBayarIkk extends Component {
                         </div>
                     </div>
                 </Modal>
-                <Modal size="xl" className='modalrinci' isOpen={this.state.submitPre} toggle={this.modalSubmitPre}>
+                <Modal size="xl" className='modalrinci' isOpen={this.state.submitPre}>
                     <ModalBody>
                         <div>
                             <div className="stockTitle">DAFTAR PENGIRIMAN DANA KE CABANG</div>
@@ -2005,7 +2067,7 @@ class AjuanBayarIkk extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ikk.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.ikk.isLoading || this.props.email.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2252,6 +2314,26 @@ class AjuanBayarIkk extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal isOpen={this.state.openDraft} size='xl'>
+                <ModalHeader>Email Pemberitahuan</ModalHeader>
+                <ModalBody>
+                    <Email handleData={this.getMessage}/>
+                    <div className={style.foot}>
+                        <div></div>
+                        <div>
+                            <Button
+                                disabled={this.state.message === '' ? true : false} 
+                                className="mr-2"
+                                onClick={() => this.dataSendEmail()} 
+                                color="primary"
+                            >
+                                Submit & Send Email
+                            </Button>
+                            {/* <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button> */}
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
             </>
         )
     }
@@ -2265,7 +2347,8 @@ const mapStateToProps = state => ({
     ikk: state.ikk,
     menu: state.menu,
     reason: state.reason,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    email: state.email
 })
 
 const mapDispatchToProps = {
@@ -2288,7 +2371,11 @@ const mapDispatchToProps = {
     getApprovalList: ikk.getApprovalList,
     approveListIkk: ikk.approveListIkk,
     rejectListIkk: ikk.rejectListIkk,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    resetEmail: email.resetError,
+    getDraftEmail: email.getDraftEmail,
+    sendEmail: email.sendEmail,
+    getDraftAjuan: email.getDraftAjuan,
     // notifStock: notif.notifStock
 }
 

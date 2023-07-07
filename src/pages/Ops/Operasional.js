@@ -24,7 +24,6 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-import email from '../../redux/actions/email'
 // import notif from '../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
@@ -36,6 +35,7 @@ import ops from '../../redux/actions/ops'
 import Tracking from '../../components/Ops/tracking'
 import TableRincian from '../../components/Ops/tableRincian'
 import dokumen from '../../redux/actions/dokumen'
+import email from '../../redux/actions/email'
 import Email from '../../components/Ops/Email'
 import FAA from '../../components/Ops/FAA'
 import FPD from '../../components/Ops/FPD'
@@ -127,12 +127,12 @@ class Ops extends Component {
             upload: false,
             openDraft: false,
             message: '',
+            subject: '',
             openAppDoc: false,
             openRejDoc: false,
             time: '',
             time1: '',
             time2: '',
-            subject: '',
             docHist: false,
             detailDoc: {},
             docCon: false

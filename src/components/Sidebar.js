@@ -159,6 +159,10 @@ function Sidebar(props) {
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Finance
                         </button>
+                        <button onClick={() => goHome('reservoir')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Reservoir
+                        </button>
                     </Collapse>
                 )}
                 {/* <button className="menuSides" onClick={goReport}>

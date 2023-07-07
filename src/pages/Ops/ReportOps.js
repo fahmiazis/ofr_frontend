@@ -119,9 +119,9 @@ class ReportOps extends Component {
             tipeCol: '',
             formDis: false,
             history: false,
-            time: '',
-            time1: '',
-            time2: ''
+            time: 'pilih',
+            time1: moment().startOf('week').format('YYYY-MM-DD'),
+            time2: moment().format('YYYY-MM-DD'),
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -406,7 +406,7 @@ class ReportOps extends Component {
 
     getDataOps = async (value) => {
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('ready')
+        this.changeFilter('bayar')
     }
 
     getDataList = async () => {

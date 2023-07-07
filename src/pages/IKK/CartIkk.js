@@ -1009,7 +1009,7 @@ class CartIkk extends Component {
                 const diffTime = Math.abs(date2 - date1)
                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
                 return (
-                    diffDays < 90 && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
+                    diffDays < 10000 && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
                 )
             })
             this.setState({fakturList: temp})
@@ -1038,7 +1038,7 @@ class CartIkk extends Component {
                     const diffTime = Math.abs(date2 - date1)
                     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
                     return (
-                        diffDays < 90 && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
+                        diffDays < 10000 && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
                     )
                 })
                 this.setState({dataList: data, nama: data.nama, alamat: data.alamat, noNpwp: data.no_npwp, noNik: data.no_ktp, fakturList: temp, typeniknpwp: 'auto'})
@@ -1805,7 +1805,7 @@ class CartIkk extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Alamat Vendor</Col>
                                             <Col md={9} className="colRinci">:  <Input
-                                                type= "text" 
+                                                type= "textarea" 
                                                 disabled={
                                                     this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
                                                     : this.state.jenisVendor === nonObject ? true
@@ -2448,7 +2448,7 @@ class CartIkk extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Alamat Vendor</Col>
                                             <Col md={9} className="colRinci">:  <Input
-                                                type= "text" 
+                                                type= "textarea" 
                                                 disabled={
                                                     this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
                                                     : this.state.jenisVendor === nonObject ? true

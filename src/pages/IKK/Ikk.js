@@ -38,6 +38,7 @@ import Tracking from '../../components/Ikk/tracking'
 import FPD from '../../components/Ikk/FPD'
 import Formikk from '../../components/Ikk/formikk'
 import Email from '../../components/Ikk/Email'
+import JurnalArea from '../../components/Ikk/JurnalArea'
 import TableRincian from '../../components/Ikk/tableRincian'
 const {REACT_APP_BACKEND_URL} = process.env
 
@@ -935,6 +936,19 @@ class IKK extends Component {
         }
     }
 
+    prosesJurnalArea = async (val) => {
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: val.no_transaksi
+        }
+        await this.props.getDetail(token, tempno)
+        this.openJurnalArea()
+    }
+
+    openJurnalArea = () => {
+        this.setState({jurnalArea: !this.state.jurnalArea})
+    }
+
     reasonApp = (val) => {
         const { listReason } = this.state
         const {dataReason} = this.props.reason
@@ -1001,6 +1015,14 @@ class IKK extends Component {
         }
     }
 
+    separator = (val) => {
+        if (val === undefined || val === null) {
+            return 0
+        } else {
+            return val.item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+        }
+    }
+
     getMessage = (val) => {
         this.setState({message: val.message, subject: val.subject})
         console.log(val)
@@ -1037,11 +1059,12 @@ class IKK extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, listMut, listReason, dataMenu, listMenu, detailDoc} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { draftEmail } = this.props.email
         const { noDis, detailIkk, ttdIkk, dataDoc, newIkk } = this.props.ikk
+        const changeSepar = toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1082,11 +1105,6 @@ class IKK extends Component {
                             </Alert> */}
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Pengajuan IKK</div>
-                            </div>
-                            <div className={style.secEmail3}>
-                                {/* {(level === '5' || level === '6') && (
-                                    <Button onClick={() => this.goRoute('cartikk')} color="info" size="lg">Add</Button>
-                                )} */}
                             </div>
                             <div className={[style.secEmail4]}>
                                 {level === '5' || level === '6' ? (
@@ -1266,6 +1284,7 @@ class IKK extends Component {
                                                         <th>{item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            <Button size='sm' className='mb-1 mr-1' onClick={() => this.prosesJurnalArea(item)} color='warning'>Jurnal</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
@@ -1376,6 +1395,11 @@ class IKK extends Component {
                                         <th>MEMILIKI NPWP</th>
                                         <th>NAMA SESUAI NPWP</th>
                                         <th>NOMOR NPWP</th>
+                                        <th>Jenis Vendor</th>
+                                        <th>Transaksi Ber PPN</th>
+                                        <th>Penanggung Pajak</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>TANGGAL TRANSFER</th>
                                         <th>Status</th>
@@ -1405,6 +1429,11 @@ class IKK extends Component {
                                                 <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                <th>{item.jenis_vendor}</th>
+                                                <th>{item.type_transaksi}</th>
+                                                 <th>{item.penanggung_pajak}</th>
+                                                <th>{item.dpp}</th>
+                                                <th>{item.ppn}</th>
                                                 <th>{item.nilai_bayar}</th>
                                                 <th>{item.tanggal_transfer}</th>
                                                 <th>{item.isreject === 1 ? 'reject' : '-'}</th>
@@ -1423,7 +1452,7 @@ class IKK extends Component {
                         </div>
                         <div className="btnFoot">
                             {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
-                                <div></div>
+                                <Button className='' onClick={() => this.prosesJurnalArea(detailIkk[0])} color='success'>Jurnal</Button>
                             ) : (
                                 <>
                                     <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
@@ -1472,6 +1501,20 @@ class IKK extends Component {
                             </Button>
                         </div>
                     </div>
+                </Modal>
+                <Modal size="lg" isOpen={this.state.jurnalArea} toggle={this.openJurnalArea}>
+                    <ModalBody>
+                        <JurnalArea />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button className="mr-2" color="warning" onClick={() => this.printData('klmfpd')}>
+                            {/* <TableStock /> */}
+                            Download
+                        </Button>
+                        <Button color="success" onClick={this.openJurnalArea}>
+                            Close
+                        </Button>
+                    </ModalFooter>
                 </Modal>
                 <Modal isOpen={this.state.openReject} toggle={this.openModalReject} centered={true}>
                     <ModalBody>

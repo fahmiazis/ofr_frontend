@@ -170,7 +170,7 @@ class TableRincian extends Component {
                                     <th>{item.no_coa}</th>
                                     <th>{item.nama_coa}</th>
                                     <th>{item.uraian}</th>
-                                    <th>{moment(item.start_ikk).format('DD/MMMM/YYYY')}</th>
+                                    <th>{item.start_ikk !== null ? moment(item.start_ikk).format('DD/MMMM/YYYY') : moment().format('DD/MMMM/YYYY')}</th>
                                     <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                     <th>{item.bank_tujuan}</th>
                                     <th>{item.norek_ajuan}</th>

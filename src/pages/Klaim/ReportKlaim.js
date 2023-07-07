@@ -95,7 +95,7 @@ class ReportKlaim extends Component {
             modalConfirm: false,
             confirm: '',
             modalDoc: false,
-            listMut: [],
+            listKlaim: [],
             listReason: [],
             modalStock: false,
             openPdf: false,
@@ -121,10 +121,15 @@ class ReportKlaim extends Component {
             tipeCol: '',
             formDis: false,
             history: false,
-            time: '',
-            time1: '',
-            time2: '',
-            openDown: false
+            time: 'pilih',
+            time1: moment().startOf('week').format('YYYY-MM-DD'),
+            time2: moment().format('YYYY-MM-DD'),
+            openDown: false,
+            isLoading: false,
+            dataDownload: [],
+            titleDownload: '',
+            modalJurnal: false,
+            modalDownload: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -196,7 +201,7 @@ class ReportKlaim extends Component {
     }
 
     rejectKlaim = async (val) => {
-        const {listMut, listReason, listMenu} = this.state
+        const {listKlaim, listReason, listMenu} = this.state
         const { detailKlaim } = this.props.klaim
         const token = localStorage.getItem('token')
         const tempno = {
@@ -208,7 +213,7 @@ class ReportKlaim extends Component {
         }
         const data = {
             no: detailKlaim[0].no_transaksi,
-            list: listMut,
+            list: listKlaim,
             alasan: temp + val.alasan,
             menu: listMenu.toString()
         }
@@ -371,6 +376,105 @@ class ReportKlaim extends Component {
         });
     }
 
+    setLoading = (val) => {
+        this.setState({isLoading: val})
+    }
+
+    downloadJurnal = async () => {
+        this.setLoading(true)
+        const { dataDownload, jurnalMap } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('file upload ikk')
+        
+        // await ws.protect(REACT_APP_PASSWORD)
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+                {header: 'BLDAT_DOCDATE', key: 'c1'},
+                {header: 'BUKRS_CCODE', key: 'c2'},
+                {header: 'BUDAT_PSTDATE', key: 'c3'},
+                {header: 'WAERS_CURR', key: 'c4'},
+                {header: 'XBLNR_REFF', key: 'c5'},
+                {header: 'BKTXT_HEADTEXT', key: 'c6'},
+                {header: 'AUGTX_CLRTEXT', key: 'c7'},
+                {header: 'KONTO_GLBANK', key: 'c8'},
+                {header: 'WRBTR_AMOUNT', key: 'c9'},
+                {header: 'PRCTR_PCENTER', key: 'c10'},
+                {header: 'SGTXT_BANKTEXT', key: 'c11'},
+                {header: 'ZUONR_ASSIGN', key: 'c12'},
+                {header: 'AGKON_VENDOR', key: 'c13'},
+                {header: 'AGUMS_SPGL', key: 'c14'},
+                {header: 'AVSID_PANUMB', key: 'c15'}
+        ]
+
+        ws.addRow(
+            {
+                c1: 'Doc Date',
+                c2: 'Comp Code',
+                c3: 'Posting Date',
+                c4: 'Currency',
+                c5: 'Reference',
+                c6: 'Header Text',
+                c7: 'Clearing Text',
+                c8: 'GL Bank',
+                c9: 'Amount',
+                c10: 'Profit Center',
+                c11: 'Bank Text',
+                c12: 'Assignment Bank',
+                c13: 'Vendor',
+                c14: 'Special GL',
+                c15: 'No PA'
+            }
+        )
+
+        dataDownload.map((item, index) => { return (
+            ws.addRow({
+                c1: moment().format('DDMMYYYY'),
+                c2: 'PP01',
+                c3: moment().format('DDMMYYYY'),
+                c4: 'IDR',
+                c5: item.appList.find(({sebagai}) => sebagai === "pembuat").nama,
+                c6: item.no_transaksi,
+                c7: '',
+                c8: item.finance.gl_kk,
+                c9: item.nilai_ajuan,
+                c10: item.depo.profit_center,
+                c11: item.no_transaksi,
+                c12: '',
+                c13: item.kode_vendor,
+                c14: '',
+                c15: item.pa
+            })
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+        })
+        
+        ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 2
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `FIle Upload Jurnal Ikk ${moment().format('DD MMMM YYYY')}.xlsx`
+            )
+        })
+        this.setLoading(false)
+    }
+
     openConfirm = () => {
         this.setState({modalConfirm: !this.state.modalConfirm})
     }
@@ -409,7 +513,7 @@ class ReportKlaim extends Component {
 
     getDataKlaim = async (value) => {
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('ready')
+        this.changeFilter('bayar')
     }
 
     getDataList = async () => {
@@ -426,7 +530,7 @@ class ReportKlaim extends Component {
         const tempno = {
             no: val.no_transaksi
         }
-        this.setState({listMut: []})
+        this.setState({listKlaim: []})
         await this.props.getDetail(token, tempno)
         await this.props.getApproval(token, tempno)
         this.openModalRinci()
@@ -512,19 +616,19 @@ class ReportKlaim extends Component {
         const cekTime2 = time2 === '' ? 'undefined' : time2
         if (val === 'available') {
             const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, val)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'reject') {
             const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, val)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'bayar') {
             const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, val)
             this.setState({filter: val, newKlaim: newKlaim})
         } else {
             const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, val)
             this.setState({filter: val, newKlaim: newKlaim})
         }
     }
@@ -550,7 +654,7 @@ class ReportKlaim extends Component {
         console.log(cekTime1)
         const token = localStorage.getItem("token")
         const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
-        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, filter)
     }
 
     prosesSubmitPre = async () => {
@@ -758,36 +862,55 @@ class ReportKlaim extends Component {
     }
 
     chekApp = (val) => {
-        const { listMut } = this.state
+        const { listKlaim } = this.state
         const {dataReport} = this.props.klaim
         if (val === 'all') {
             const data = []
             for (let i = 0; i < dataReport.length; i++) {
                 data.push(dataReport[i].id)
             }
-            this.setState({listMut: data})
+            this.setState({listKlaim: data})
         } else {
-            listMut.push(val)
-            this.setState({listMut: listMut})
+            listKlaim.push(val)
+            this.setState({listKlaim: listKlaim})
         }
     }
 
     chekRej = (val) => {
-        const {listMut} = this.state
+        const {listKlaim} = this.state
         if (val === 'all') {
             const data = []
-            this.setState({listMut: data})
+            this.setState({listKlaim: data})
         } else {
             const data = []
-            for (let i = 0; i < listMut.length; i++) {
-                if (listMut[i] === val) {
+            for (let i = 0; i < listKlaim.length; i++) {
+                if (listKlaim[i] === val) {
                     data.push()
                 } else {
-                    data.push(listMut[i])
+                    data.push(listKlaim[i])
                 }
             }
-            this.setState({listMut: data})
+            this.setState({listKlaim: data})
         }
+    }
+
+    prosesJurnal = (val) => {
+        const {listKlaim} = this.state
+        const {dataReport} = this.props.klaim
+        const data = []
+        for (let i = 0; i < listKlaim.length; i++) {
+            for (let j = 0; j < dataReport.length; j++) {
+                if (dataReport[j].id === listKlaim[i]) {
+                    data.push(dataReport[j])
+                }
+            }
+        }
+        this.setState({dataDownload: data, titleDownload: val})
+        this.openJurnal()
+    }
+
+    openJurnal = () => {
+        this.setState({modalJurnal: !this.state.modalJurnal})
     }
 
     openDownload = () => {
@@ -853,7 +976,7 @@ class ReportKlaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
+        const {dataRinci, dropApp, dataItem, listKlaim, drop, listReason, dataMenu, listMenu, dataDownload} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim, dataReport } = this.props.klaim
@@ -900,15 +1023,13 @@ class ReportKlaim extends Component {
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.headEmail2}>
-                                    {/* <ReactHtmlToExcel
-                                        id="test-table-xls-button"
-                                        className="btn btn-success mr-2"
-                                        table="table-klaim"
-                                        filename={`Report Klaim ${moment().format('DD MMMM YYYY')}`}
-                                        sheet="Report"
-                                        buttonText="Download"
-                                    /> */}
-                                    <Button onClick={this.openDownload} color='success' className='mr-2'>Download</Button>
+                                    <Button onClick={() => this.prosesDownload()} color='success' className='mr-2'>Download</Button>
+                                    <Button 
+                                        color='warning' 
+                                        className='mr-2' 
+                                        onClick={() => this.prosesJurnal('Jurnal')}>
+                                            Download Jurnal
+                                    </Button>
                                 </div>
                                 <div className={style.searchEmail2}>
                                     <text>Status:  </text>
@@ -933,12 +1054,14 @@ class ReportKlaim extends Component {
                                                 <Input
                                                     type= "date" 
                                                     className="inputRinci"
+                                                    value={this.state.time1}
                                                     onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
                                                 />
                                                 <text className='mr-1 ml-1'>To</text>
                                                 <Input
                                                     type= "date" 
                                                     className="inputRinci"
+                                                    value={this.state.time2}
                                                     onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
                                                 />
                                                 <Button
@@ -972,8 +1095,8 @@ class ReportKlaim extends Component {
                                                     <input  
                                                     className='mr-2'
                                                     type='checkbox'
-                                                    checked={listMut.length === 0 ? false : listMut.length === dataReport.length ? true : false}
-                                                    onChange={() => listMut.length === dataReport.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    checked={listKlaim.length === 0 ? false : listKlaim.length === dataReport.length ? true : false}
+                                                    onChange={() => listKlaim.length === dataReport.length ? this.chekRej('all') : this.chekApp('all')}
                                                     />
                                                     Select
                                                 </th>
@@ -1012,8 +1135,8 @@ class ReportKlaim extends Component {
                                                         <th>
                                                             <input 
                                                             type='checkbox'
-                                                            checked={listMut.find(element => element === item.id) !== undefined ? true : false}
-                                                            onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                            checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                            onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
                                                             />
                                                         </th>
                                                         <th>{dataReport.indexOf(item) + 1}</th>
@@ -1047,7 +1170,7 @@ class ReportKlaim extends Component {
                                             })}
                                             {dataReport.length > 0 && (
                                                 <tr>
-                                                    <th className='total' colSpan={11}>Total</th>
+                                                    <th className='total' colSpan={12}>Total</th>
                                                     <th>
                                                         {dataReport.reduce((accumulator, object) => {
                                                             return accumulator + parseInt(object.nilai_ajuan);
@@ -1067,11 +1190,15 @@ class ReportKlaim extends Component {
                                                     <th></th>
                                                     <th></th>
                                                     <th></th>
-                                                    <th></th>
                                                 </tr>
                                             )}
                                         </tbody>
                                     </Table>
+                                    {dataReport.length === 0 && (
+                                        <div className={style.spin}>
+                                            Data tidak ditemukan
+                                        </div>
+                                    )}
                                 </div>
                             <div>
                                 <div className={style.infoPageEmail1}>
@@ -1120,7 +1247,7 @@ class ReportKlaim extends Component {
                         Rincian
                     </ModalHeader>
                 </Modal>
-                <Modal className='modalrinci' isOpen={this.state.openDown} toggle={this.openDownload} size="xl">
+                <Modal className='modalrinci' isOpen={this.state.modalDownload} toggle={this.openDownload} size="xl">
                     <ModalHeader>
                         Download Report
                     </ModalHeader>
@@ -1221,6 +1348,86 @@ class ReportKlaim extends Component {
                         </Table>
                     </ModalBody>
                 </Modal>
+                <Modal size="xl" className='modalrinci' isOpen={this.state.modalJurnal} toggle={this.openJurnal}>
+                    <ModalHeader>
+                        Download Jurnal
+                    </ModalHeader>
+                    <ModalBody>
+                        <div className={style.tableDashboard}>
+                            <Table bordered responsive hover className='tabjurnal'>
+                                <thead>
+                                    <tr>
+                                        <th>BLDAT_DOCDATE</th>
+                                        <th>BUKRS_CCODE</th>
+                                        <th>BUDAT_PSTDATE</th>
+                                        <th>WAERS_CURR</th>
+                                        <th>XBLNR_REFF</th>
+                                        <th>BKTXT_HEADTEXT</th>
+                                        <th>AUGTX_CLRTEXT</th>
+                                        <th>KONTO_GLBANK</th>
+                                        <th>WRBTR_AMOUNT</th>
+                                        <th>PRCTR_PCENTER</th>
+                                        <th>SGTXT_BANKTEXT</th>
+                                        <th>ZUONR_ASSIGN</th>
+                                        <th>AGKON_VENDOR</th>
+                                        <th>AGUMS_SPGL</th>
+                                        <th>AVSID_PANUMB</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <th>Doc Date</th>
+                                        <th>Comp Code</th>
+                                        <th>Posting Date</th>
+                                        <th>Currency</th>
+                                        <th>Reference</th>
+                                        <th>Header Text</th>
+                                        <th>Clearing Text</th>
+                                        <th>GL Bank</th>
+                                        <th>Amount</th>
+                                        <th>Profit Center</th>
+                                        <th>Bank Text</th>
+                                        <th>Assignment Bank</th>
+                                        <th>Vendor</th>
+                                        <th>Special GL</th>
+                                        <th>No PA</th>
+                                    </tr>
+                                    {dataDownload.length !== 0 && dataDownload.map((item, index) => {
+                                        return (
+                                            <tr>
+                                                <th>{moment().format('DDMMYYYY')}</th>
+                                                <th>PP01</th>
+                                                <th>{moment().format('DDMMYYYY')}</th>
+                                                <th>IDR</th>
+                                                <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                                <th>{item.no_transaksi}</th>
+                                                <th></th>
+                                                <th>{item.finance.gl_kk}</th>
+                                                <th>{item.nilai_ajuan}</th>
+                                                <th>{item.depo.profit_center}</th>
+                                                <th>{item.no_transaksi}</th>
+                                                <th></th>
+                                                <th>{item.kode_vendor}</th>
+                                                <th></th>
+                                                <th>{item.pa}</th>
+                                            </tr>
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
+                        </div>
+                    </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div></div>
+                        <div className="btnFoot">
+                            <Button className="mr-2" color='warning' onClick={this.downloadJurnal} >Download</Button>
+                            <Button color="success" onClick={this.openJurnal}>
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
                 <Modal isOpen={this.state.modalRinci} className='modalrinci'  toggle={this.openModalRinci} size="xl">
                     <ModalBody>
                         <div>
@@ -1309,7 +1516,7 @@ class ReportKlaim extends Component {
                                 <div></div>
                             ) : (
                                 <>
-                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
+                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listKlaim.length > 0 ? false : this.state.filter !== 'available' ? true : listKlaim.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
                                     <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>

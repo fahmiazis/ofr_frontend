@@ -3,12 +3,12 @@ import PropTypes from "prop-types";
 import MaterialTitlePanel from "./material_title_panel";
 import { Collapse } from 'reactstrap';
 import logo from '../assets/img/logo.png'
-import { FaDatabase, FaHome, FaFileArchive, FaCartPlus, FaRecycle, FaTasks, FaTicketAlt} from 'react-icons/fa'
+import { FaDatabase, FaHome, FaFileArchive, FaHandshake, FaRecycle, FaTasks, FaTicketAlt} from 'react-icons/fa'
 import { RiArrowLeftRightFill, RiMoneyDollarCircleFill } from 'react-icons/ri'
 import { HiOutlineDocumentText } from 'react-icons/hi'
 import {RiBankCardFill} from 'react-icons/ri'
 import { SiReason } from 'react-icons/si'
-import {FiLogOut, FiUser, FiUsers, FiMail} from 'react-icons/fi'
+import {FiLogOut, FiUser, FiUsers, FiMail, FiTruck} from 'react-icons/fi'
 import { useHistory } from 'react-router-dom'
 import { BsClipboardData, BsHouseDoor, BsFileCheck } from 'react-icons/bs'
 import { GiFamilyTree } from 'react-icons/gi'
@@ -86,11 +86,11 @@ const SidebarContent = props => {
             <text className={stile.txtSide}>Dashboard</text>
         </button>
         <button className={stile.btnSide} onClick={() => goHome('navklaim')}>
-          <FaCartPlus size={20} className="mr-2" />
+          <FaHandshake size={20} className="mr-2" />
           <text className={stile.txtSide}>Klaim</text>
         </button>
         <button className={stile.btnSide} onClick={() => goHome('navops')}>
-            <FaRecycle size={20} className="mr-2" />
+           <FiTruck size={20} className="mr-2" />
             <text className={stile.txtSide}>Operasional</text>
         </button>
         <button className={level === '1' || level === '4' ? stile.btnSide : stile.marginSide} onClick={() => goHome('navikk')} >
@@ -195,6 +195,10 @@ const SidebarContent = props => {
             <button onClick={() => goHome('finance')} className={stile.btnSide}>
               <BsClipboardData size={20} className="mr-2"/>
               Master Finance
+            </button>
+            <button onClick={() => goHome('reservoir')} className={stile.btnSide}>
+              <BsClipboardData size={20} className="mr-2"/>
+              Reservoir
             </button>
           </Collapse>
         )}

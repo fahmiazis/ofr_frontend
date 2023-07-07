@@ -36,8 +36,10 @@ import Tracking from '../../components/Ikk/tracking'
 import Formikk from '../../components/Ikk/formikk'
 import FPD from '../../components/Ikk/FPD'
 import dokumen from '../../redux/actions/dokumen'
-import ExcelJS from "exceljs";
-import fs from "file-saver";
+import ExcelJS from "exceljs"
+import fs from "file-saver"
+import email from '../../redux/actions/email'
+import Email from '../../components/Ikk/Email'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
@@ -112,18 +114,18 @@ class VerifIkk extends Component {
             upload: false,
             openAppDoc: false,
             openRejDoc: false,
-            openDraft: false,
             listIkk: [],
             modalDownload: false,
             dataDownload: [],
-            message: '',
-            time: '',
-            time1: '',
-            time2: '',
-            subject: '',
+            time: 'pilih',
+            time1: moment().startOf('week').format('YYYY-MM-DD'),
+            time2: moment().format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
-            docCon: false
+            docCon: false,
+            openDraft: false,
+            message: '',
+            subject: '',
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -544,23 +546,71 @@ class VerifIkk extends Component {
         }
         if (level === '4' || level === '14') {
             await this.props.submitVerif(token, tempno)
-            this.getDataIkk()
-            this.setState({confirm: 'submit'})
-            this.openConfirm()
-            this.openModalApprove()
-            if (listIkk.length > 0) {
-                this.setState()
-            } else {
-                this.openModalRinci()
-            }
+            this.dataSendEmail()
         } else {
             await this.props.submitVerif(token, tempno)
-            this.getDataIkk()
-            this.setState({confirm: 'submit'})
-            this.openConfirm()
-            this.openModalApprove()
-            this.openModalRinci()
+            this.dataSendEmail()
         }
+    }
+
+    dataSendEmail = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailIkk } = this.props.ikk
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: detailIkk[0].no_transaksi,
+            tipe: 'ikk',
+        }
+        await this.props.sendEmail(token, tempno)
+        this.getDataIkk()
+        this.setState({confirm: 'isApprove'})
+        this.openConfirm()
+        this.openDraftEmail()
+        this.openModalApprove()
+        this.openModalRinci()
+    }
+
+    prepSendEmail = async () => {
+        const { detailIkk } = this.props.ikk
+        const level = localStorage.getItem("level")
+        const token = localStorage.getItem("token")
+        const app = detailIkk[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'submit'
+        const cekMenu = level === '2' ? 'Verifikasi Finance (IKK)' : 'Verifikasi Tax (IKK)'
+        const tempno = {
+            no: detailIkk[0].no_transaksi,
+            kode: detailIkk[0].kode_plant,
+            jenis: 'ikk',
+            tipe: tipe,
+            menu: cekMenu 
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.openDraftEmail()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val.message, subject: val.subject})
     }
 
     chekAppList = (val) => {
@@ -1068,7 +1118,7 @@ class VerifIkk extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : "Tax"}</div>
+                                <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : "Tax"} (Ikhtisar Kas Kecil)</div>
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.headEmail2}>
@@ -1812,7 +1862,7 @@ class VerifIkk extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ikk.isLoading || this.props.dokumen.isLoading} size="sm">
+                <Modal isOpen={this.props.ikk.isLoading || this.props.dokumen.isLoading || this.props.email.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1834,7 +1884,7 @@ class VerifIkk extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveDataIkk()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -2137,6 +2187,26 @@ class VerifIkk extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
+                <Modal toggle={this.openDraftEmail} isOpen={this.state.openDraft} size='xl'>
+                    <ModalHeader>Email Pemberitahuan</ModalHeader>
+                    <ModalBody>
+                        <Email handleData={this.getMessage}/>
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button
+                                    disabled={this.state.message === '' ? true : false} 
+                                    className="mr-2"
+                                    onClick={() => this.approveDataIkk()} 
+                                    color="primary"
+                                >
+                                    Submit & Send Email
+                                </Button>
+                                <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     }
@@ -2150,7 +2220,8 @@ const mapStateToProps = state => ({
     ikk: state.ikk,
     menu: state.menu,
     reason: state.reason,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    email: state.email
 })
 
 const mapDispatchToProps = {
@@ -2172,7 +2243,11 @@ const mapDispatchToProps = {
     editVerif: ikk.editVerif,
     showDokumen: dokumen.showDokumen,
     approveDokumen: dokumen.approveDokumen,
-    rejectDokumen: dokumen.rejectDokumen
+    rejectDokumen: dokumen.rejectDokumen,
+    confirmNewIdent: ikk.confirmNewIdent,
+    resetEmail: email.resetError,
+    getDraftEmail: email.getDraftEmail,
+    sendEmail: email.sendEmail,
     // notifStock: notif.notifStock
 }
 

@@ -113,6 +113,16 @@ class NavStock extends Component {
         }
     }
 
+    goProses = (val) => {
+        localStorage.setItem('tipeKasbon', val.type)
+        setTimeout(() => {
+            this.props.history.push({
+                pathname: `/${val.route}`,
+                state: val
+            })
+         }, 200)
+    }
+
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
@@ -175,9 +185,14 @@ class NavStock extends Component {
                                 </>
                             ) : level === '4' || level === '14' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('veriffintax')}>
+                                    <button className="cardNav1" onClick={() => this.goProses({route: 'veriffintax', type: 'kasbon'})}>
                                         <div className="titCard">
-                                            Verifikasi Tax
+                                            Verifikasi Tax (Kasbon)
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goProses({route: 'veriffintax', type: 'non kasbon'})}>
+                                        <div className="titCard">
+                                            Verifikasi Tax (Non Kasbon)
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('revops')}>

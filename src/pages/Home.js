@@ -20,7 +20,7 @@ import {BsFillCircleFill, BsBell, BsGearWideConnected} from 'react-icons/bs'
 import {GiNotebook} from 'react-icons/gi'
 import {GrMoney} from 'react-icons/gr'
 import {MdBalance} from 'react-icons/md'
-import { FaFileSignature } from 'react-icons/fa'
+import { FaFileSignature, FaHandshake } from 'react-icons/fa'
 import { FiLogOut } from 'react-icons/fi'
 import Bell from '../components/Bell'
 import Account from '../components/Account'
@@ -202,12 +202,14 @@ class Home extends Component {
                         <div className="titHome">Welcome to web finance</div>
                         <div className="txtChoose">Please select an option</div>
                         <div className="mainBody">
-                            <button className="cardHome1" onClick={() => this.goRoute('navklaim')}>
-                                <GiNotebook size={250} className="picHome" />
-                                <div className="titCard">
-                                    Pengajuan Klaim
-                                </div>
-                            </button>
+                            {level === '4' || level === '14' ? null : (
+                                <button className="cardHome1" onClick={() => this.goRoute('navklaim')}>
+                                    <FaHandshake size={250} className="picHome" />
+                                    <div className="titCard">
+                                        Pengajuan Klaim
+                                    </div>
+                                </button>
+                            )}
                             <button className="cardHome2" onClick={() => this.goRoute('navops')}>
                                 <BsGearWideConnected size={250} className="picHome" />
                                 <div className="titCard">
@@ -215,7 +217,7 @@ class Home extends Component {
                                 </div>
                             </button>
                             <button className="cardHome2" onClick={() => this.goRoute('navikk')}>
-                                <MdBalance color='danger' size={250} className="picHome" />
+                                <GiNotebook color='danger' size={250} className="picHome" />
                                 <div className="titCard mt-4">
                                     Ikhtisar Kas Kecil
                                 </div>

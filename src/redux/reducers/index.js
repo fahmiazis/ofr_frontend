@@ -20,6 +20,7 @@ import kliring from './kliring'
 import faktur from './faktur'
 import kpp from './kpp'
 import finance from './finance'
+import reservoir from './reservoir'
 //transaksi
 import klaim from './klaim'
 import ikk from './ikk'
@@ -46,5 +47,6 @@ export default combineReducers({
   faktur,
   kpp,
   kliring,
-  finance
+  finance,
+  reservoir
 })
