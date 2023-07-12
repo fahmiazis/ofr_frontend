@@ -845,6 +845,7 @@ class ReportIkk extends Component {
             bottom: {style:'thin'},
             right: {style:'thin'}
         }
+        
 
         ws.columns = [
             {header: 'NO', key: 'c1'},

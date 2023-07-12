@@ -807,6 +807,7 @@ class ReportOps extends Component {
             right: {style:'thin'}
         }
 
+        
         ws.columns = [
             {header: 'NO', key: 'c1'},
             {header: 'PIC', key: 'c2'},
