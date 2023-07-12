@@ -35,9 +35,9 @@ export default {
         type: 'SUBMIT_OPSFINAL',
         payload: http(token).patch(`/ops/subfinops`, qs.stringify(no))
     }),
-    getOps: (token, status, reject, menu, type, category, data, time1, time2) => ({
+    getOps: (token, status, reject, menu, type, category, data, time1, time2, kasbon) => ({
         type: 'GET_OPS',
-        payload: http(token).get(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}`),
+        payload: http(token).get(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${kasbon}`),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_OPS',
@@ -99,9 +99,9 @@ export default {
         type: 'REJECTLIST_OPS',
         payload: http(token).patch(`/ops/rejectlist`, data)
     }),
-    getReport: (token, status, reject, menu, time1, time2) => ({
+    getReport: (token, status, reject, menu, time1, time2, type) => ({
         type: 'REPORT_OPS',
-        payload: http(token).get(`/ops/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}`),
+        payload: http(token).get(`/ops/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}&type=${type}`),
     }),
     uploadBuktiBayar: (token, id, data) => ({
         type: 'UPLOAD_BUKTIOPS',

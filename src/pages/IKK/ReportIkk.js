@@ -36,7 +36,7 @@ import ikk from '../../redux/actions/ikk'
 import dokumen from '../../redux/actions/dokumen'
 import ExcelJS from "exceljs";
 import fs from "file-saver";
-const {REACT_APP_BACKEND_URL} = process.env
+const {REACT_APP_BACKEND_URL, REACT_APP_PASSWORD} = process.env
 
 const stockSchema = Yup.object().shape({
     merk: Yup.string().required("must be filled"),
@@ -126,9 +126,10 @@ class ReportIkk extends Component {
             modalDownload: false,
             titleDownload: '',
             time: 'pilih',
-            time1: moment().format('YYYY-MM-DD'),
+            time1: moment().startOf('week').format('YYYY-MM-DD'),
             time2: moment().format('YYYY-MM-DD'),
-            jurnalMap: [1, 2]
+            jurnalMap: [1, 2],
+            isLoading: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -955,13 +956,18 @@ class ReportIkk extends Component {
           });
     }
 
+    setLoading = (val) => {
+        this.setState({isLoading: val})
+    }
+
     downloadJurnal = async () => {
+        this.setLoading(true)
         const { dataDownload, jurnalMap } = this.state
 
         const workbook = new ExcelJS.Workbook();
         const ws = workbook.addWorksheet('file upload ikk')
         
-        await ws.protect('F1n4NcePm4')
+        // await ws.protect(REACT_APP_PASSWORD)
 
         const borderStyles = {
             top: {style:'thin'},
@@ -1092,15 +1098,21 @@ class ReportIkk extends Component {
             row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
               cell.border = borderStyles;
             })
-          })
-          
+        })
+        
+        ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 2
+        })
 
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
               new Blob([buffer], { type: "application/octet-stream" }),
               `FIle Upload Jurnal Ikk ${moment().format('DD MMMM YYYY')}.xlsx`
-            );
-          });
+            )
+        })
+        this.setLoading(false)
     }
 
     prepareReject = async () => {
@@ -2167,7 +2179,7 @@ class ReportIkk extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ikk.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.ikk.isLoading || this.state.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>

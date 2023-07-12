@@ -72,6 +72,7 @@ import MasterKliring from './pages/Master/MasterKliring'
 import MasterFaktur from './pages/Master/MasterFaktur'
 import MasterKpp from './pages/Master/MasterKpp'
 import MasterFinance from './pages/Master/MasterFinance'
+import Reservoir from './pages/Master/Reservoir'
 
 //For Tes
 import Tes from './pages/Tes'
@@ -271,6 +272,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/finance'>
                     <MasterFinance />
+                </PrivateRoute>
+                <PrivateRoute path='/reservoir'>
+                    <Reservoir />
                 </PrivateRoute>
             </Switch>
         </BrowserRouter>

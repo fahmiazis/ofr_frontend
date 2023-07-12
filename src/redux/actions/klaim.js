@@ -95,9 +95,9 @@ export default {
         type: 'REJECTLIST_KLAIM',
         payload: http(token).patch(`/klaim/rejectlist`, data)
     }),
-    getReport: (token, status, reject, menu, time1, time2) => ({
+    getReport: (token, status, reject, menu, time1, time2, type) => ({
         type: 'REPORT_KLAIM',
-        payload: http(token).get(`/klaim/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}`),
+        payload: http(token).get(`/klaim/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}&type=${type}`),
     }),
     uploadBuktiBayar: (token, id, data) => ({
         type: 'UPLOAD_BUKTI',

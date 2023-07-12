@@ -34,12 +34,18 @@ import NavBar from '../../components/NavBar'
 import klaim from '../../redux/actions/klaim'
 import Tracking from '../../components/Klaim/tracking'
 import dokumen from '../../redux/actions/dokumen'
+import email from '../../redux/actions/email'
+import Email from '../../components/Klaim/Email'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
+import NumberInput from '../../components/NumberInput'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const klaimSchema = Yup.object().shape({
     pa: Yup.string().required('must be filled'),
     ppu: Yup.string().required('must be filled'),
-    nominal: Yup.number().required('must be filled')
+    nominal: Yup.number().required('must be filled'),
+    kode_vendor: Yup.string().required('must be filled')
 })
 
 const alasanSchema = Yup.object().shape({
@@ -107,7 +113,13 @@ class VerifKlaim extends Component {
             history: false,
             upload: false,
             docHist: false,
-            detailDoc: {}
+            detailDoc: {},
+            openDraft: false,
+            message: '',
+            subject: '',
+            time: 'pilih',
+            time1: '',
+            time2: '',
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -507,6 +519,7 @@ class VerifKlaim extends Component {
             ppu: val.ppu,
             pa: val.pa,
             nominal: val.nominal,
+            kode_vendor: val.kode_vendor
         }
         const tempno = {
             no: dataRinci.no_transaksi,
@@ -521,28 +534,57 @@ class VerifKlaim extends Component {
 
     changeFilter = async (val) => {
         const {dataKlaim, noDis} = this.props.klaim
+        const {time1, time2} = this.state
+        const type = localStorage.getItem('tipeKasbon')
         const level = localStorage.getItem('level')
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = level === '2' ? 3 : 4
         const statusAll = 'all'
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif')
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'reject') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif')
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'revisi') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif')
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newKlaim: newKlaim})
         } else {
             const newKlaim = []
-            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'verif', status)
+            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2)
             this.setState({filter: val, newKlaim: newKlaim})
         }
+    }
+
+    changeTime = async (val) => {
+        const token = localStorage.getItem("token")
+        this.setState({time: val})
+        if (val === 'all') {
+            this.setState({time1: '', time2: ''})
+            setTimeout(() => {
+                this.getDataTime()
+             }, 500)
+        }
+    }
+
+    selectTime = (val) => {
+        this.setState({[val.type]: val.val})
+    }
+
+    getDataTime = async () => {
+        const {time1, time2, filter} = this.state
+        const level = localStorage.getItem('level')
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
+        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2)
     }
 
     prosesSubmitPre = async () => {
@@ -558,18 +600,14 @@ class VerifKlaim extends Component {
         const tempno = {
             no: detailKlaim[0].no_transaksi
         }
-        if (level === '3') {
+        if (level === '3' || level === '13') {
             const cek = []
             detailKlaim.map(item => {
                 return ((item.ppu !== null && item.pa !== null && item.nominal !== null) && cek.push(item))
             })
             if (cek.length === detailKlaim.length) {
                 await this.props.submitVerif(token, tempno)
-                this.getDataKlaim()
-                this.setState({confirm: 'submit'})
-                this.openConfirm()
-                this.openModalApprove()
-                this.openModalRinci()
+                this.dataSendEmail()
             } else {
                 this.setState({confirm: 'rejSubmit'})
                 this.openConfirm()
@@ -577,12 +615,68 @@ class VerifKlaim extends Component {
             }
         } else {
             await this.props.submitVerif(token, tempno)
-            this.getDataKlaim()
-            this.setState({confirm: 'submit'})
-            this.openConfirm()
-            this.openModalApprove()
-            this.openModalRinci()
+            this.dataSendEmail()
         }
+    }
+
+    dataSendEmail = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailKlaim } = this.props.klaim
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: detailKlaim[0].no_transaksi,
+            tipe: 'klaim',
+        }
+        await this.props.sendEmail(token, tempno)
+        this.getDataKlaim()
+        this.setState({confirm: 'submit'})
+        this.openConfirm()
+        this.openDraftEmail()
+        this.openModalApprove()
+        this.openModalRinci()
+    }
+
+    prepSendEmail = async () => {
+        const { detailKlaim } = this.props.klaim
+        const level = localStorage.getItem("level")
+        const token = localStorage.getItem("token")
+        const app = detailKlaim[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'submit'
+        const cekMenu = level === '2' ? 'Verifikasi Finance (Klaim)' : 'Verifikasi Klaim (Klaim)'
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            kode: detailKlaim[0].kode_plant,
+            jenis: 'klaim',
+            tipe: tipe,
+            menu: cekMenu 
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.openDraftEmail()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val.message, subject: val.subject})
     }
 
     onSearch = async (e) => {
@@ -1517,12 +1611,13 @@ class VerifKlaim extends Component {
                                 nama_ktp: dataRinci.nama_ktp === null ? '' : dataRinci.nama_ktp,
                                 ppu: dataRinci.ppu === null ? '' : dataRinci.ppu,
                                 pa: dataRinci.pa === null ? '' : dataRinci.pa,
-                                nominal: dataRinci.nominal === null ? '' : dataRinci.nominal
+                                nominal: dataRinci.nominal === null ? '' : dataRinci.nominal,
+                                kode_vendor: dataRinci.kode_vendor === null ? '' : dataRinci.kode_vendor
                             }}
                             validationSchema = {klaimSchema}
                             onSubmit={(values) => {this.prosesEditKlaim(values)}}
                             >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                            {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                                 <div className="rightRinci2">
                                     <div>
                                         <Row className="mb-2 rowRinci">
@@ -1776,14 +1871,31 @@ class VerifKlaim extends Component {
                                         </Col>
                                     </Row>
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>Nominal verifikasi</Col>
+                                        <Col md={3}>Kode Vendor</Col>
                                         <Col md={9} className="colRinci">:  <Input
+                                            type= "text" 
+                                            className="inputRinci"
+                                            value={values.kode_vendor}
+                                            onBlur={handleBlur("kode_vendor")}
+                                            onChange={handleChange("kode_vendor")}
+                                            />
+                                        </Col>
+                                    </Row>
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>Nominal verifikasi</Col>
+                                        <Col md={9} className="colRinci">:  
+                                            <NumberInput
+                                                className="inputRinci"
+                                                value={values.nominal}
+                                                onValueChange={val => setFieldValue("nominal", val.floatValue)}
+                                                />
+                                                {/* <Input
                                             type= "text" 
                                             className="inputRinci"
                                             value={values.nominal}
                                             onBlur={handleBlur("nominal")}
                                             onChange={handleChange("nominal")}
-                                            />
+                                            /> */}
                                         </Col>
                                     </Row>
                                     <div className="modalFoot mt-3">
@@ -1876,7 +1988,7 @@ class VerifKlaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.klaim.isLoading || this.props.email.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1898,7 +2010,7 @@ class VerifKlaim extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveDataKlaim()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -2186,6 +2298,26 @@ class VerifKlaim extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal toggle={this.openDraftEmail} isOpen={this.state.openDraft} size='xl'>
+                    <ModalHeader>Email Pemberitahuan</ModalHeader>
+                    <ModalBody>
+                        <Email handleData={this.getMessage}/>
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button
+                                    disabled={this.state.message === '' ? true : false} 
+                                    className="mr-2"
+                                    onClick={() => this.approveDataKlaim()} 
+                                    color="primary"
+                                >
+                                    Submit & Send Email
+                                </Button>
+                                <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     }
@@ -2199,7 +2331,8 @@ const mapStateToProps = state => ({
     klaim: state.klaim,
     menu: state.menu,
     reason: state.reason,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    email: state.email
 })
 
 const mapDispatchToProps = {
@@ -2221,7 +2354,10 @@ const mapDispatchToProps = {
     editVerif: klaim.editVerif,
     showDokumen: dokumen.showDokumen,
     approveDokumen: dokumen.approveDokumen,
-    rejectDokumen: dokumen.rejectDokumen
+    rejectDokumen: dokumen.rejectDokumen,
+    resetEmail: email.resetError,
+    getDraftEmail: email.getDraftEmail,
+    sendEmail: email.sendEmail,
     // notifStock: notif.notifStock
 }
 

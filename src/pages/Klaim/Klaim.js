@@ -135,7 +135,11 @@ class Klaim extends Component {
             subject: '',
             docHist: false,
             detailDoc: {},
-            docCon: false
+            docCon: false,
+            jurnalArea: false,
+            jurnal: [1, 2],
+            jurnalPPh: [1, 2, 3],
+            jurnalFull: [1, 2, 3, 4]
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -845,6 +849,19 @@ class Klaim extends Component {
         
     }
 
+    prosesJurnalArea = async (val) => {
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: val.no_transaksi
+        }
+        await this.props.getDetail(token, tempno)
+        this.openJurnalArea()
+    }
+
+    openJurnalArea = () => {
+        this.setState({jurnalArea: !this.state.jurnalArea})
+    }
+
     openModalAppDoc = () => {
         this.setState({openAppDoc: !this.state.openAppDoc})
     }
@@ -1016,7 +1033,7 @@ class Klaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, jurnal, jurnalPPh, listMut, jurnalFull, listReason, dataMenu, listMenu, detailDoc} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim } = this.props.klaim
@@ -1061,55 +1078,84 @@ class Klaim extends Component {
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Pengajuan Klaim</div>
                             </div>
-                            <div className={style.secEmail3}>
-                                {/* {(level === '5' || level === '6') && (
-                                    <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Add</Button>
-                                )} */}
-                            </div>
                             <div className={[style.secEmail4]}>
-                                <div className='rowCenter'>
+                                {(level === '5' || level === '6') ? (
+                                    <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Create</Button>
+                                ) : (
                                     <div className='rowCenter'>
-                                        <text className='mr-4'>Time:</text>
-                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="pilih">Periode</option>
-                                        </Input>
+                                        <div className='rowCenter'>
+                                            <text className='mr-4'>Time:</text>
+                                            <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="pilih">Periode</option>
+                                            </Input>
+                                        </div>
+                                        {this.state.time === 'pilih' ?  (
+                                            <>
+                                                <div className='rowCenter'>
+                                                    <text className='bold'>:</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                    />
+                                                    <text className='mr-1 ml-1'>To</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                    />
+                                                    <Button
+                                                    disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                    color='primary' 
+                                                    onClick={this.getDataTime} 
+                                                    className='ml-1'>
+                                                        Go
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : null}
                                     </div>
-                                    {this.state.time === 'pilih' ?  (
-                                        <>
-                                            <div className='rowCenter'>
-                                                <text className='bold'>:</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
-                                                />
-                                                <text className='mr-1 ml-1'>To</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                />
-                                                <Button
-                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
-                                                color='primary' 
-                                                onClick={this.getDataTime} 
-                                                className='ml-1'>
-                                                    Go
-                                                </Button>
-                                            </div>
-                                        </>
-                                    ) : null}
-                                </div>
+                                )}
                                 <div className={style.searchEmail2}>
                                 </div>
                             </div>
                             <div className={[style.secEmail4]}>
-                                {(level === '5' || level === '6') && (
-                                    <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Create</Button>
-                                )}
                                 {(level === '5' || level === '6') ? (
-                                    <div></div>
+                                    <div className='rowCenter'>
+                                        <div className='rowCenter'>
+                                            <text className='mr-4'>Time:</text>
+                                            <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="pilih">Periode</option>
+                                            </Input>
+                                        </div>
+                                        {this.state.time === 'pilih' ?  (
+                                            <>
+                                                <div className='rowCenter'>
+                                                    <text className='bold'>:</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                    />
+                                                    <text className='mr-1 ml-1'>To</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                    />
+                                                    <Button
+                                                    disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                    color='primary' 
+                                                    onClick={this.getDataTime} 
+                                                    className='ml-1'>
+                                                        Go
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : null}
+                                    </div>
                                 ) : (
                                     <div className={style.searchEmail2}>
                                         <text>Filter:  </text>
@@ -1623,6 +1669,38 @@ class Klaim extends Component {
                                 Close
                             </Button>
                         </div>
+                    </div>
+                </Modal>
+                <Modal isOpen={this.state.jurnalArea} toggle={this.openJurnalArea}>
+                    <ModalBody>
+                        <div>Jurnal Area</div>
+                        <Table borderless responsive hover>
+                            <thead>
+                                <tr>
+                                    <th>{detailKlaim.length > 0 ? detailKlaim[0].depo.status_area : ''}</th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th>Dr</th>
+                                    <th>Cr</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {detailKlaim.length > 0 && detailKlaim.find(({jenis_pph}) => jenis_pph !== 'Non PPh') !== undefined}
+                                <tr>
+
+                                </tr>
+                            </tbody>
+                        </Table>
+                    </ModalBody>
+                    <div className="btnFoot">
+                        <Button className="mr-2" color="warning" onClick={() => this.printData('klmfpd')}>
+                            {/* <TableStock /> */}
+                            Download
+                        </Button>
+                        <Button color="success" onClick={this.openJurnalArea}>
+                            Close
+                        </Button>
                     </div>
                 </Modal>
                 <Modal isOpen={this.state.openReject} toggle={this.openModalReject} centered={true}>

@@ -37,6 +37,8 @@ import dokumen from '../../redux/actions/dokumen'
 import FAA from '../../components/Ops/FAA'
 import FPD from '../../components/Ops/FPD'
 import ExcelJS from "exceljs"
+import email from '../../redux/actions/email'
+import Email from '../../components/Ops/Email'
 import fs from "file-saver"
 const nonObject = 'Non Object PPh'
 const {REACT_APP_BACKEND_URL} = process.env
@@ -116,11 +118,12 @@ class VerifOps extends Component {
             listOps: [],
             modalDownload: false,
             dataDownload: [],
+            openDraft: false,
             message: '',
-            time: '',
-            time1: '',
-            time2: '',
             subject: '',
+            time: 'pilih',
+            time1: moment().startOf('week').format('YYYY-MM-DD'),
+            time2: moment().format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
             docCon: false
@@ -508,6 +511,7 @@ class VerifOps extends Component {
 
     changeFilter = async (val) => {
         const {dataOps, noDis} = this.props.ops
+        const type = localStorage.getItem('tipeKasbon')
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const status = level === '2' ? 3 : 4
@@ -518,19 +522,19 @@ class VerifOps extends Component {
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2, type)
             this.setState({filter: val, newOps: newOps})
         }
     }
@@ -552,12 +556,13 @@ class VerifOps extends Component {
 
     getDataTime = async () => {
         const {time1, time2, filter} = this.state
+        const type = localStorage.getItem('tipeKasbon')
         const level = localStorage.getItem('level')
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
-        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2)
+        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type)
     }
 
     prosesSubmit = async () => {
@@ -586,15 +591,7 @@ class VerifOps extends Component {
         }
         if (level === '4' || level === '14') {
             await this.props.submitVerif(token, tempno)
-            this.getDataOps()
-            this.setState({confirm: 'submit'})
-            this.openConfirm()
-            this.openModalApprove()
-            if (listOps.length > 0) {
-                this.setState()
-            } else {
-                this.openModalRinci()
-            }
+            this.dataSendEmail()
             // const cek = []
             // detailOps.map(item => {
             //     return ((item.dpp !== null && item.ppn !== null && item.nilai_utang !== null) && cek.push(item))
@@ -613,12 +610,68 @@ class VerifOps extends Component {
             // }
         } else {
             await this.props.submitVerif(token, tempno)
-            this.getDataOps()
-            this.setState({confirm: 'submit'})
-            this.openConfirm()
-            this.openModalApprove()
-            this.openModalRinci()
+            this.dataSendEmail()
         }
+    }
+
+    dataSendEmail = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailOps } = this.props.ops
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: detailOps[0].no_transaksi,
+            tipe: 'ops',
+        }
+        await this.props.sendEmail(token, tempno)
+        this.getDataOps()
+        this.setState({confirm: 'isApprove'})
+        this.openConfirm()
+        this.openDraftEmail()
+        this.openModalApprove()
+        this.openModalRinci()
+    }
+
+    prepSendEmail = async () => {
+        const { detailOps } = this.props.ops
+        const level = localStorage.getItem("level")
+        const token = localStorage.getItem("token")
+        const app = detailOps[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'submit'
+        const cekMenu = level === '2' ? 'Verifikasi Finance (Operasional)' : 'Verifikasi Tax (Operasional)'
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            kode: detailOps[0].kode_plant,
+            jenis: 'ops',
+            tipe: tipe,
+            menu: cekMenu 
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.openDraftEmail()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val.message, subject: val.subject})
     }
 
     chekAppList = (val) => {
@@ -1121,6 +1174,7 @@ class VerifOps extends Component {
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
+        const type = localStorage.getItem('tipeKasbon')
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1160,42 +1214,17 @@ class VerifOps extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : "Tax"}</div>
+                                <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : `Tax ${type}`} (Operasional)</div>
                             </div>
                             <div className={style.secEmail3}>
-                                <div className='rowCenter'>
-                                    <div className='rowCenter'>
-                                        <text className='mr-4'>Time:</text>
-                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="pilih">Periode</option>
-                                        </Input>
-                                    </div>
-                                    {this.state.time === 'pilih' ?  (
-                                        <>
-                                            <div className='rowCenter'>
-                                                <text className='bold'>:</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
-                                                />
-                                                <text className='mr-1 ml-1'>To</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                />
-                                                <Button
-                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
-                                                color='primary' 
-                                                onClick={this.getDataTime} 
-                                                className='ml-1'>
-                                                    Go
-                                                </Button>
-                                            </div>
-                                        </>
-                                    ) : null}
+                                <div className={style.searchEmail2}>
+                                    <text>Filter:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value="all">All</option>
+                                        <option value="reject">Reject</option>
+                                        <option value="available">Available Submit</option>
+                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                    </Input>
                                 </div>
                                 <div className={style.headEmail2}>
                                     {level === '14' ?  (
@@ -1217,14 +1246,40 @@ class VerifOps extends Component {
                                 </div>
                             </div>
                             <div className={[style.secEmail4]}>
-                                <div className={style.searchEmail2}>
-                                    <text>Filter:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="all">All</option>
-                                        <option value="reject">Reject</option>
-                                        <option value="available">Available Submit</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                    </Input>
+                                <div className='rowCenter'>
+                                    <div className='rowCenter'>
+                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
+                                    </div>
+                                    {this.state.time === 'pilih' ?  (
+                                        <>
+                                            <div className='rowCenter'>
+                                                <text className='bold'>:</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time1}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                />
+                                                <text className='mr-1 ml-1'>To</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time2}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                color='primary' 
+                                                onClick={this.getDataTime} 
+                                                className='ml-1'>
+                                                    Go
+                                                </Button>
+                                            </div>
+                                        </>
+                                    ) : null}
                                 </div>
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>
@@ -1260,6 +1315,7 @@ class VerifOps extends Component {
                                                 <th>NAMA COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
                                                 <th>TGL AJUAN</th>
+                                                <th>TIPE KASBON</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
                                             </tr>
@@ -1285,6 +1341,7 @@ class VerifOps extends Component {
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
+                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -1973,7 +2030,7 @@ class VerifOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.props.dokumen.isLoading} size="sm">
+                <Modal isOpen={this.props.ops.isLoading || this.props.dokumen.isLoading || this.props.email.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1995,7 +2052,7 @@ class VerifOps extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveDataOps()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -2305,6 +2362,26 @@ class VerifOps extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
+                <Modal toggle={this.openDraftEmail} isOpen={this.state.openDraft} size='xl'>
+                    <ModalHeader>Email Pemberitahuan</ModalHeader>
+                    <ModalBody>
+                        <Email handleData={this.getMessage}/>
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button
+                                    disabled={this.state.message === '' ? true : false} 
+                                    className="mr-2"
+                                    onClick={() => this.approveDataOps()} 
+                                    color="primary"
+                                >
+                                    Submit & Send Email
+                                </Button>
+                                <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     }
@@ -2318,7 +2395,8 @@ const mapStateToProps = state => ({
     ops: state.ops,
     menu: state.menu,
     reason: state.reason,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    email: state.email
 })
 
 const mapDispatchToProps = {
@@ -2341,7 +2419,10 @@ const mapDispatchToProps = {
     showDokumen: dokumen.showDokumen,
     approveDokumen: dokumen.approveDokumen,
     rejectDokumen: dokumen.rejectDokumen,
-    confirmNewIdent: ops.confirmNewIdent
+    confirmNewIdent: ops.confirmNewIdent,
+    resetEmail: email.resetError,
+    getDraftEmail: email.getDraftEmail,
+    sendEmail: email.sendEmail,
     // notifStock: notif.notifStock
 }
 
