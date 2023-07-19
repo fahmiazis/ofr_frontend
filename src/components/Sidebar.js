@@ -2,7 +2,7 @@ import React, { Component, useState } from 'react'
 import logo from '../assets/img/logo.png'
 import { Collapse } from 'reactstrap';
 import {AiFillHome} from 'react-icons/ai'
-import { FaDatabase, FaTicketAlt, FaHome, FaFileArchive, FaCartPlus, FaRecycle, FaTasks, FaHandshake} from 'react-icons/fa'
+import { FaDatabase, FaTicketAlt, FaHome, FaCashRegister, FaCartPlus, FaRecycle, FaTasks, FaHandshake} from 'react-icons/fa'
 import { RiArrowLeftRightFill, RiMoneyDollarCircleFill } from 'react-icons/ri'
 import { HiOutlineDocumentText } from 'react-icons/hi'
 import {RiBankCardFill} from 'react-icons/ri'
@@ -52,6 +52,10 @@ function Sidebar(props) {
                 <button className="menuSides" onClick={() => goHome('navklaim')}>
                     <FaHandshake size={20} className="iconSide" />
                     <text className="txtMenu">Klaim</text>
+                </button>
+                <button className="menuSides" onClick={() => goHome('navkasbon')}>
+                    <FaCashRegister size={20} className="iconSide" />
+                    <text className="txtMenu">Kasbon</text>
                 </button>
                 <button className="menuSides" onClick={() => goHome('navops')}>
                     <FiTruck size={20} className="iconSide" />

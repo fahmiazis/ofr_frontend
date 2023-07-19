@@ -4,7 +4,11 @@ import Sidebar from '../../components/Sidebar'
 import {VscAccount} from 'react-icons/vsc'
 import { Row, DropdownItem, UncontrolledDropdown, DropdownToggle, DropdownMenu, Button,
     Modal, ModalHeader, ModalBody, Input } from 'reactstrap'
-import {FiLogOut} from 'react-icons/fi'
+import {FiLogOut, FiSend} from 'react-icons/fi'
+import {BiRevision} from 'react-icons/bi'
+import {MdAssignment, MdVerifiedUser} from 'react-icons/md'
+import {HiOutlineDocumentReport} from 'react-icons/hi'
+    import {RiDraftFill} from 'react-icons/ri'
 import {FaFileSignature} from 'react-icons/fa'
 import {BsBell, BsFillCircleFill} from 'react-icons/bs'
 import moment from 'moment'
@@ -140,11 +144,13 @@ class NavKlaim extends Component {
                             {level === '5' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('klaim')}>
+                                        <FiSend size={220} className="picHome" />
                                         <div className="titCard">
                                             Pengajuan Klaim
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
+                                        <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi Klaim
                                         </div>
@@ -153,34 +159,40 @@ class NavKlaim extends Component {
                             ) : level === '2' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('veriffinklm')}>
+                                        <MdVerifiedUser size={220} className="picHome" />
                                         <div className="titCard">
                                             Verifikasi Finance
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
-                                        <div className="titCard">
-                                            Revisi Klaim
-                                        </div>
-                                    </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('navlistklm')}>
+                                        <RiDraftFill size={220} className="picHome" />
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('repklm')}>
+                                        <HiOutlineDocumentReport size={220} className="picHome" />
                                         <div className="titCard">
                                             Report Klaim
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
+                                        <BiRevision size={220} className="picHome" />
+                                        <div className="titCard">
+                                            Revisi Klaim
                                         </div>
                                     </button>
                                 </>
                             ) : level === '3' || level === '13'? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('veriffinklm')}>
+                                        <MdVerifiedUser size={220} className="picHome" />
                                         <div className="titCard">
                                             Verifikasi Klaim
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
+                                        <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi Klaim
                                         </div>
@@ -189,11 +201,13 @@ class NavKlaim extends Component {
                             ) : level === '7' || level === '8' || level === '9' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('navlistklm')}>
+                                        <RiDraftFill size={220} className="picHome" />
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('repklm')}>
+                                        <HiOutlineDocumentReport size={220} className="picHome" />
                                         <div className="titCard">
                                             Report Klaim
                                         </div>
@@ -201,6 +215,7 @@ class NavKlaim extends Component {
                                 </>
                             ) : (
                                 <button className="cardNav1" onClick={() => this.goRoute('klaim')}>
+                                    <FiSend size={220} className="picHome" />
                                     <div className="titCard">
                                         Pengajuan Klaim
                                     </div>

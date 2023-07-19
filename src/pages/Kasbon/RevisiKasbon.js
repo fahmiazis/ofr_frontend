@@ -4,13 +4,12 @@ import React, { Component } from 'react'
 import {VscAccount} from 'react-icons/vsc'
 import { Container, Collapse, Nav, Navbar,
     NavbarToggler, NavbarBrand, NavItem, NavLink,
-    Card, CardBody, Table, ButtonDropdown, Input, Button, Col,
+    UncontrolledDropdown, DropdownToggle, DropdownMenu, Dropdown,
+    DropdownItem, Table, ButtonDropdown, Input, Button, Col,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
 import approve from '../../redux/actions/approve'
 import {BsCircle} from 'react-icons/bs'
-import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList, FaFileSignature} from 'react-icons/fa'
-import {MdAssignment} from 'react-icons/md'
-import {FiSend, FiTruck, FiSettings, FiUpload} from 'react-icons/fi'
+import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList} from 'react-icons/fa'
 import Sidebar from "../../components/Header";
 import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
 import MaterialTitlePanel from "../../components/material_title_panel"
@@ -19,6 +18,7 @@ import style from '../../assets/css/input.module.css'
 import placeholder from  "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
+import bank from '../../redux/actions/bank'
 import moment from 'moment'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
@@ -29,6 +29,7 @@ import reason from '../../redux/actions/reason'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
+import Select from 'react-select'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
@@ -36,22 +37,14 @@ import ops from '../../redux/actions/ops'
 import dokumen from '../../redux/actions/dokumen'
 const {REACT_APP_BACKEND_URL} = process.env
 
-const stockSchema = Yup.object().shape({
-    merk: Yup.string().required("must be filled"),
-    satuan: Yup.string().required("must be filled"),
-    unit: Yup.number().required("must be filled"),
-    lokasi: Yup.string().required("must be filled"),
-    keterangan: Yup.string().validateSync("")
-})
-
-const addStockSchema = Yup.object().shape({
-    deskripsi: Yup.string().required("must be filled"),
-    merk: Yup.string().required("must be filled"),
-    satuan: Yup.string().required("must be filled"),
-    unit: Yup.number().required("must be filled"),
-    lokasi: Yup.string().required("must be filled"),
-    grouping: Yup.string().required("must be filled"),
-    keterangan: Yup.string().validateSync("")
+const opsSchema = Yup.object().shape({
+    keterangan: Yup.string().required("must be filled"),
+    periode_awal: Yup.date().required("must be filled"),
+    periode_akhir: Yup.date().required('must be filled'),
+    nilai_ajuan: Yup.string().required("must be filled"),
+    norek_ajuan: Yup.number().required("must be filled"),
+    nama_tujuan: Yup.string().required("must be filled"),
+    status_npwp: Yup.string().required('must be filled'),
 })
 
 const alasanSchema = Yup.object().shape({
@@ -59,7 +52,7 @@ const alasanSchema = Yup.object().shape({
 });
 
 
-class ReportOps extends Component {
+class RevisiOps extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -110,18 +103,15 @@ class ReportOps extends Component {
             month: moment().format('M'),
             dropOp: false,
             noAsset: null,
-            filter: 'all',
+            filter: 'available',
             newOps: [],
             totalfpd: 0,
             dataMenu: [],
             listMenu: [],
-            collap: false,
-            tipeCol: '',
-            formDis: false,
-            history: false,
-            time: 'pilih',
-            time1: moment().startOf('week').format('YYYY-MM-DD'),
-            time2: moment().format('YYYY-MM-DD'),
+            bankList: [],
+            detail: {},
+            bank: '',
+            digit: 0
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -143,11 +133,13 @@ class ReportOps extends Component {
             this.setState({errMsg: 'Invalid file type. Only excel, pdf, zip, and rar files are allowed.'})
             this.uploadAlert()
         } else {
-            const {detail} = this.state
+            const { detailOps } = this.props.ops
+            const { detail } = this.state
             const token = localStorage.getItem('token')
             const data = new FormData()
             data.append('document', e.target.files[0])
-            this.props.uploadDocumentDis(token, detail.id, data)
+            this.props.uploadDocOps(token, detailOps[0].no_transaksi, detail.id, data)
+            // this.props.uploadDocOps(token, tempno, data)
         }
     }
 
@@ -217,17 +209,6 @@ class ReportOps extends Component {
         this.openModalRinci()
     }
 
-    showCollap = (val) => {
-        if (val === 'close') {
-            this.setState({collap: false})
-        } else {
-            this.setState({collap: false})
-            setTimeout(() => {
-                this.setState({collap: true, tipeCol: val})
-             }, 500)
-        }
-    }
-
     dropApp = () => {
         this.setState({dropApp: !this.state.dropApp})
     }
@@ -260,6 +241,22 @@ class ReportOps extends Component {
 
     openModalApprove = () => {
         this.setState({openApprove: !this.state.openApprove})
+    }
+
+    checkSubmitRev = () => {
+        const { detailOps } = this.props.ops
+        const temp = []
+        detailOps.map(item => {
+            return (
+                item.isreject === 1 && temp.push(item)
+            )
+        })
+        if (temp.length > 0) {
+            this.setState({confirm: 'rejSubmit'})
+            this.openConfirm()
+        } else {
+            this.openModalApprove()
+        }
     }
 
     openPreview = async (val) => {
@@ -328,9 +325,18 @@ class ReportOps extends Component {
         await this.props.submitAsset(token, detailStock[0].no_stock)
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         // const level = localStorage.getItem('level')
-        this.getDataOps()
+        const token = localStorage.getItem("token")
+        const {item, type} = (this.props.location && this.props.location.state) || {}
+        if (type === 'revisi') {
+            await this.props.getBank(token)
+            this.getDataOps()
+            this.prosesDetail(item)
+        } else {
+            await this.props.getBank(token)
+            this.getDataOps()
+        }
     }
 
     componentDidUpdate() {
@@ -405,8 +411,26 @@ class ReportOps extends Component {
     }
 
     getDataOps = async (value) => {
+        const token = localStorage.getItem("token")
+        const level = localStorage.getItem('level')
+        const menu = level === '5' ? 'Revisi Area' : level === '2' ? "Revisi Finance" : level === '3' && 'Revisi Tax'
+        await this.props.getOps(token, 'all', 1, menu, 'all', 'revisi')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('bayar')
+        // this.changeFilter('available')
+    }
+
+    prepareSelect = (val) => {
+        const { dataBank } = this.props.bank
+        const digit = dataBank.find(({name}) => name === val).digit
+        const bank = [
+            {value: digit, label: val}
+        ]
+        dataBank.map(item => {
+            return (
+                bank.push({value: item.digit, label: item.name})
+            )
+        })
+        this.setState({bankList: bank, digit: digit, bank: val})
     }
 
     getDataList = async () => {
@@ -431,20 +455,6 @@ class ReportOps extends Component {
 
     openModalDok = () => {
         this.setState({opendok: !this.state.opendok})
-    }
-
-    prosesTracking = async (val) => {
-        const token = localStorage.getItem("token")
-        const tempno = {
-            no: val.no_transaksi
-        }
-        await this.props.getDetail(token, tempno)
-        await this.props.getApproval(token, tempno)
-        this.openModalDis()
-    }
-
-    openModalDis = () => {
-        this.setState({formDis: !this.state.formDis})
     }
 
     getDokumentasi = async (val) => {
@@ -497,56 +507,14 @@ class ReportOps extends Component {
         this.setState({submitPre: !this.state.submitPre})
     }
 
-    openHistory = () => {
-        this.setState({history: !this.state.history})
-    }
-
-    changeFilter = async (val) => {
-        const token = localStorage.getItem("token")
-        const status = val === 'reject' ? 6 : val === 'bayar' ? 8 : 7
-        const {time1, time2} = this.state
-        const cekTime1 = time1 === '' ? 'undefined' : time1
-        const cekTime2 = time2 === '' ? 'undefined' : time2
-        if (val === 'available') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'reject') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'revisi') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
+    changeFilter = (val) => {
+        const {dataOps, noDis} = this.props.ops
+        const newOps = []
+        for (let i = 0; i < noDis.length; i++) {
+            const index = dataOps.indexOf(dataOps.find(({no_transaksi}) => no_transaksi === noDis[i]))
+            newOps.push(dataOps[index])
         }
-    }
-
-    changeTime = async (val) => {
-        this.setState({time: val})
-        if (val === 'all') {
-            this.setState({time1: '', time2: ''})
-            setTimeout(() => {
-                this.getDataTime()
-             }, 500)
-        }
-    }
-
-    selectTime = (val) => {
-        this.setState({[val.type]: val.val})
-    }
-
-    getDataTime = async () => {
-        const {time1, time2, filter, time} = this.state
-        const cekTime1 = time1 === '' ? 'undefined' : time1
-        const cekTime2 = time2 === '' ? 'undefined' : time2
-        const token = localStorage.getItem("token")
-        const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
-        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+        this.setState({filter: val, newOps: newOps})
     }
 
     prosesSubmitPre = async () => {
@@ -577,21 +545,33 @@ class ReportOps extends Component {
         }
     }
 
-    updateAsset = async (value) => {
+    prosesEditOps = async (val) => {
         const token = localStorage.getItem("token")
-        const { dataRinci } = this.state
-        const { detailAsset } = this.props.asset
+        const {dataRinci} = this.state
         const data = {
-            merk: value.merk,
-            satuan: value.satuan,
-            unit: value.unit,
-            lokasi: value.lokasi,
-            grouping: detailAsset.grouping,
-            keterangan: value.keterangan,
-            status_fisik: detailAsset.fisik,
-            kondisi: detailAsset.kondisi
+            no_coa: dataRinci.no_coa,
+            keterangan: val.keterangan,
+            periode_awal: val.periode_awal,
+            periode_akhir: val.periode_akhir,
+            nilai_ajuan: val.nilai_ajuan,
+            bank_tujuan: this.state.bank,
+            norek_ajuan: val.norek_ajuan,
+            nama_tujuan: val.nama_tujuan,
+            status_npwp: val.status_npwp === 'Tidak' ? 0 : 1,
+            nama_npwp: val.status_npwp === 'Tidak' ? '' : val.nama_npwp,
+            no_npwp: val.status_npwp === 'Tidak' ? '' : val.no_npwp,
+            nama_ktp: val.status_npwp === 'Tidak' ? val.nama_ktp : '',
+            no_ktp: val.status_npwp === 'Tidak' ? val.no_ktp : '',
+            periode: ''
         }
-        await this.props.updateAssetNew(token, dataRinci.id, data)
+        const tempno = {
+            no: dataRinci.no_transaksi,
+            id: dataRinci.id
+        }
+        await this.props.editOps(token, dataRinci.id, data)
+        await this.props.appRevisi(token, tempno)
+        await this.props.getDetail(token, tempno)
+        this.openModalEdit()
     }
 
     changeView = (val) => {
@@ -609,6 +589,10 @@ class ReportOps extends Component {
             no: val.no_transaksi
         }
         await this.props.getApproval(token, tempno)
+    }
+
+    selectBank = (e) => {
+        this.setState({bank: e.label, digit: e.value})
     }
 
     selectStatus = async (fisik, kondisi) => {
@@ -678,9 +662,8 @@ class ReportOps extends Component {
     }
 
     getRincian = async (val) => {
-        const token = localStorage.getItem("token")
-        this.setState({dataRinci: val})
-        await this.props.getDetailAsset(token, val.no_asset)
+        this.setState({dataRinci: val, bank: val.bank_tujuan})
+        this.prepareSelect(val.bank_tujuan)
         this.openModalEdit()
     }
 
@@ -810,6 +793,20 @@ class ReportOps extends Component {
         this.setState({modalStock: !this.state.modalStock})
     }
 
+    prosesSubmitRevisi = async () => {
+        const {detailOps} = this.props.ops
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: detailOps[0].no_transaksi
+        }
+        await this.props.submitRevisi(token, tempno)
+        this.openModalRinci()
+        this.openModalApprove()
+        this.getDataOps()
+        this.setState({confirm: 'submit'})
+        this.openConfirm()
+    }
+
     dropDown = () => {
         this.setState({drop: !this.state.drop})
     }
@@ -820,7 +817,7 @@ class ReportOps extends Component {
         const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, dataDoc, newOps, dataReport } = this.props.ops
+        const { noDis, detailOps, ttdOps, newOps, dataDoc } = this.props.ops
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -860,62 +857,20 @@ class ReportOps extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Report Konsol Operasional</div>
+                                <div className={style.titleDashboard}>Revisi Operasional</div>
                             </div>
                             <div className={style.secEmail3}>
-                                <div className={style.headEmail2}>
-                                    <ReactHtmlToExcel
-                                        id="test-table-xls-button"
-                                        className="btn btn-success mr-2"
-                                        table="table-ops"
-                                        filename={`Report Operasional ${moment().format('DD MMMM YYYY')}`}
-                                        sheet="Report"
-                                        buttonText="Download"
-                                    />
-                                </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Status:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="reject">Reject</option>
-                                        <option value="ready">Siap Bayar</option>
-                                        <option value="bayar">Telah Bayar</option>
-                                    </Input>
-                                </div>
                             </div>
                             <div className={[style.secEmail4]}>
-                                <div className={style.headEmail2}>
-                                    <Input className={style.filter2} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                {/* <div className={style.searchEmail2}>
+                                    <text>Filter:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                         <option value="all">All</option>
-                                        <option value="pilih">Periode</option>
+                                        <option value="reject">Reject</option>
+                                        <option value="available">Available Approve</option>
+                                        <option value="revisi">Available Reapprove (Revisi)</option>
                                     </Input>
-                                    {this.state.time === 'pilih' ?  (
-                                        <>
-                                            <div className='rowCenter'>
-                                                <text className='bold'>:</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    value={this.state.time1}
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
-                                                />
-                                                <text className='mr-1 ml-1'>To</text>
-                                                <Input
-                                                    type= "date"
-                                                    value={this.state.time2}
-                                                    className="inputRinci"
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                />
-                                                <Button
-                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
-                                                color='primary' 
-                                                onClick={this.getDataTime} 
-                                                className='ml-1'>
-                                                    Go
-                                                </Button>
-                                            </div>
-                                        </>
-                                    ) : null}
-                                </div>
+                                </div> */}
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 
@@ -927,109 +882,93 @@ class ReportOps extends Component {
                                     </Input>
                                 </div>
                             </div>
-                            <div className='mb-4 mt-2' />
+                            {level === '5' ? (
                                 <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-ops">
+                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>PIC</th>
-                                                <th>NAMA</th>
-                                                <th>AREA</th>
-                                                <th>NOMOR FPD</th>
+                                                <th>NO.AJUAN</th>
                                                 <th>COST CENTRE</th>
-                                                <th>NO COA</th>
+                                                <th>AREA</th>
+                                                <th>NO.COA</th>
                                                 <th>NAMA COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
-                                                <th>TGL AJUAN</th>
-                                                <th>PERIODE (DDMMYY)</th>
-                                                <th>NILAI YANG DIAJUKAN</th>
-                                                <th>BANK</th>
-                                                <th>NOMOR REKENING</th>
-                                                <th>ATAS NAMA</th>
-                                                <th>MEMILIKI NPWP</th>
-                                                <th>NAMA SESUAI NPWP</th>
-                                                <th>NOMOR NPWP</th>
-                                                <th>NAMA SESUAI KTP</th>
-                                                <th>NIK</th>
-                                                <th>DPP</th>
-                                                <th>PPN</th>
-                                                <th>PPh</th>
-                                                <th>NILAI YANG DIBAYARKAN</th>
-                                                <th>PO</th>
-                                                <th>TANGGAL TRANSFER</th>
-                                                <th>KETERANGAN</th>
+                                                <th>PERIODE</th>
                                                 <th>STATUS</th>
+                                                <th>ALASAN</th>
+                                                <th>OPSI</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {dataReport.map(item => {
+                                            {newOps.map(item => {
                                                 return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{dataReport.indexOf(item) + 1}</th>
-                                                        <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
-                                                        <th>{item.area}</th>
-                                                        <th>{item.depo.channel}</th>
+                                                    <tr>
+                                                        <th>{newOps.indexOf(item) + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.cost_center}</th>
+                                                        <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
-                                                        <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                        <th>{item.bank_tujuan}</th>
-                                                        <th>{item.norek_ajuan}</th>
-                                                        <th>{item.nama_tujuan}</th>
-                                                        <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
-                                                        <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                                        <th>{item.dpp}</th>
-                                                        <th>{item.ppn}</th>
-                                                        <th>{item.nilai_utang}</th>
+                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                        <th>{item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 2 ? 'Proses Approval' : ''}</th>
+                                                        <th>{item.reason}</th>
                                                         <th>
-                                                            {item.nilai_bayar !== null ? item.nilai_bayar : 
-                                                                (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi !== 'Ya' ? item.nilai_ajuan
-                                                                : item.jenis_pph !== 'Non PPh' && item.type_transaksi !== 'Ya' ? parseFloat(item.nilai_ajuan) - parseFloat(item.nilai_utang)
-                                                                : item.jenis_pph !== 'Non PPh' && item.type_transaksi === 'Ya' && parseFloat(item.nilai_ajuan) - parseFloat(item.nilai_utang)
-                                                            }
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
                                                         </th>
-                                                        <th>{item.no_po}</th>
-                                                        <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : item.type_kasbon}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
                                                     </tr>
                                                 )
                                             })}
-                                            {dataReport.length > 0 && (
-                                                <tr>
-                                                    <th className='total' colSpan={11}>Total</th>
-                                                    <th>
-                                                        {dataReport.reduce((accumulator, object) => {
-                                                            return accumulator + parseInt(object.nilai_ajuan);
-                                                        }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                                                    </th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                </tr>
-                                            )}
                                         </tbody>
                                     </Table>
                                 </div>
+                            ) : (
+                                noDis.length === 0 ? (
+                                    <div></div>
+                                ) : (
+                                    <div className={style.tableDashboard}>
+                                        <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>NO.AJUAN</th>
+                                                    <th>COST CENTRE</th>
+                                                    <th>AREA</th>
+                                                    <th>NO.COA</th>
+                                                    <th>NAMA COA</th>
+                                                    <th>KETERANGAN TAMBAHAN</th>
+                                                    <th>PERIODE</th>
+                                                    <th>STATUS</th>
+                                                    <th>ALASAN</th>
+                                                    <th>OPSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {newOps.map(item => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{newOps.indexOf(item) + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                            <th>{item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 2 ? 'Proses Approval' : ''}</th>
+                                                            <th>{item.reason}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                )
+                            )}
                             <div>
                                 <div className={style.infoPageEmail1}>
                                     <text>Showing 1 of 1 pages</text>
@@ -1055,27 +994,15 @@ class ReportOps extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal isOpen={this.state.modalUpload} toggle={this.openModalUpload} size="lg">
-                    <ModalHeader>
-                        Upload gambar asset
-                    </ModalHeader>
+                <Modal isOpen={this.props.ops.isLoading ? true : false} size="sm">
                     <ModalBody>
-                        <div className="mainRinci2">
-                            <div className="leftRinci2 mb-5">
-                                <div className="titRinci">{dataRinci.nama_asset}</div>
-                                {/* <img src={detRinci.img === undefined || detRinci.img.length === 0 ? placeholder : `${REACT_APP_BACKEND_URL}/${detRinci.img[detRinci.img.length - 1].path}`} className="imgRinci" /> */}
-                                <Input type="file" className='mt-2' onChange={this.uploadGambar}>Upload Picture</Input>
-                            </div>
+                    <div>
+                        <div className={style.cekUpdate}>
+                            <Spinner />
+                            <div sucUpdate>Waiting....</div>
                         </div>
+                    </div>
                     </ModalBody>
-                    <ModalFooter>
-                        <Button color='primary' onClick={this.openModalUpload}>Done</Button>
-                    </ModalFooter>
-                </Modal>
-                <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
-                    <ModalHeader>
-                        Rincian
-                    </ModalHeader>
                 </Modal>
                 <Modal isOpen={this.state.modalStock} toggle={this.openModalStock} size="lg">
                     <ModalHeader>
@@ -1103,17 +1030,9 @@ class ReportOps extends Component {
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab}>
                                 <thead>
-                                    <tr className='tbops'>
-                                        <th>
-                                            <input  
-                                            className='mr-2'
-                                            type='checkbox'
-                                            checked={listMut.length === 0 ? false : listMut.length === detailOps.length ? true : false}
-                                            onChange={() => listMut.length === detailOps.length ? this.chekRej('all') : this.chekApp('all')}
-                                            />
-                                            Select
-                                        </th>
+                                    <tr className='tbklaim'>
                                         <th>NO</th>
+                                        <th>Status</th>
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>
                                         <th>NAMA COA</th>
@@ -1126,28 +1045,26 @@ class ReportOps extends Component {
                                         <th>MEMILIKI NPWP</th>
                                         <th>NAMA SESUAI NPWP</th>
                                         <th>NOMOR NPWP</th>
-                                        <th>NAMA SESUAI KTP</th>
-                                        <th>NOMOR KTP</th>
                                         <th>PPU</th>
                                         <th>PA</th>
                                         <th>NOMINAL</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>TANGGAL TRANSFER</th>
-                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {detailOps.length !== 0 && detailOps.map(item => {
                                         return (
                                             <tr>
-                                                <th>
-                                                    <input 
-                                                    type='checkbox'
-                                                    checked={listMut.find(element => element === item.id) !== undefined ? true : false}
-                                                    onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
-                                                    />
-                                                </th>
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
+                                                <th>
+                                                    {item.isreject === 1 || item.isreject === 0 ? 
+                                                    <>
+                                                        {item.isreject === 1 ? 'Perlu Diperbaiki' : 'Telah diperbaiki'}
+                                                        <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Update</Button>
+                                                    </>
+                                                    :'-'}
+                                                </th>
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
@@ -1157,17 +1074,14 @@ class ReportOps extends Component {
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
+                                                <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
-                                                <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                                <th>{item.ppu}</th>
-                                                <th>{item.pa}</th>
-                                                <th>{item.nilai_bayar}</th>
-                                                <th>{item.nilai_bayar}</th>
-                                                <th>{item.tanggal_transfer}</th>
-                                                <th>{item.isreject === 1 ? 'reject' : '-'}</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                                <th>-</th>
                                             </tr>
                                             )
                                         })}
@@ -1182,20 +1096,279 @@ class ReportOps extends Component {
                             <Button color="primary"  onClick={() => this.openProsesModalDoc(detailOps[0])}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
-                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
-                                <div></div>
-                            ) : (
-                                <>
-                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
-                                        Reject
-                                    </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
-                                        Approve
-                                    </Button>
-                                </>
-                            )}
+                            {/* <Button className="mr-2" disabled={this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
+                                Reject
+                            </Button> */}
+                            <Button color="success" disabled={this.state.filter !== 'available' ? true : false} onClick={this.checkSubmitRev}>
+                                Submit Revisi
+                            </Button>
                         </div>
                     </div>
+                </Modal>
+                <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
+                    <ModalHeader>
+                        Update Data Ops
+                    </ModalHeader>
+                    <ModalBody>
+                        <div className="mainRinci2">
+                            <Formik
+                            initialValues = {{
+                                keterangan: dataRinci.keterangan,
+                                periode_awal: dataRinci.periode_awal,
+                                periode_akhir: dataRinci.periode_akhir,
+                                nilai_ajuan: dataRinci.nilai_ajuan,
+                                norek_ajuan: dataRinci.norek_ajuan,
+                                nama_tujuan: dataRinci.nama_tujuan,
+                                status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : 'Ya',
+                                nama_npwp: dataRinci.nama_npwp === null ? '' : dataRinci.nama_npwp,
+                                no_npwp: dataRinci.no_npwp === null ? '' : dataRinci.no_npwp,
+                                no_ktp: dataRinci.no_ktp === null ? '' : dataRinci.no_ktp,
+                                nama_ktp: dataRinci.nama_ktp === null ? '' : dataRinci.nama_ktp
+                            }}
+                            validationSchema = {opsSchema}
+                            onSubmit={(values) => {this.prosesEditOps(values)}}
+                            >
+                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                                <div className="rightRinci2">
+                                    <div>
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>No COA</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={dataRinci.no_coa}
+                                                onBlur={handleBlur("no_coa")}
+                                                onChange={handleChange("no_coa")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.no_coa === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama COA</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={dataRinci.nama_coa}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.no_coa === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Keterangan</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.keterangan}
+                                                onBlur={handleBlur("keterangan")}
+                                                onChange={handleChange("keterangan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.keterangan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Periode</Col>
+                                            <Col md={9} className="colRinci">: 
+                                                <Input
+                                                type= "date"
+                                                disabled
+                                                className="inputRinci"
+                                                value={values.periode_awal}
+                                                onBlur={handleBlur("periode_awal")}
+                                                onChange={handleChange("periode_awal")}
+                                                />
+                                                <text className='mr-1 ml-1'>To</text>
+                                                <Input
+                                                type= "date" 
+                                                disabled
+                                                className="inputRinci"
+                                                value={values.periode_akhir}
+                                                onBlur={handleBlur("periode_akhir")}
+                                                onChange={handleChange("periode_akhir")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.periode_awal || errors.periode_akhir ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : values.periode_awal > values.periode_akhir ? (
+                                            <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
+                                        ) : null }
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nilai Yang Diajukan</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.nilai_ajuan}
+                                                onBlur={handleBlur("nilai_ajuan")}
+                                                onChange={handleChange("nilai_ajuan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.nilai_ajuan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Bank</Col>
+                                            <Col md={9} className="colRinci">: 
+                                                <Select
+                                                    className="inputRinci2"
+                                                    options={this.state.bankList}
+                                                    onChange={this.selectBank}
+                                                    defaultValue={this.state.bankList[0]}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {this.state.bank === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor Rekening</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                type= "text" 
+                                                className="inputRinci"
+                                                disabled={this.state.digit === 0 ? true : false}
+                                                minLength={this.state.digit}
+                                                maxLength={this.state.digit}
+                                                value={values.norek_ajuan}
+                                                onBlur={handleBlur("norek_ajuan")}
+                                                onChange={handleChange("norek_ajuan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit ? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Atas Nama</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.nama_tujuan}
+                                                onBlur={handleBlur("nama_tujuan")}
+                                                onChange={handleChange("nama_tujuan")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {errors.nama_tujuan ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Memiliki NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={level === '5' || level === '6' ? false : true}
+                                                type= "select" 
+                                                className="inputRinci"
+                                                value={values.status_npwp}
+                                                onBlur={handleBlur("status_npwp")}
+                                                onChange={handleChange("status_npwp")}
+                                                >
+                                                    <option>{values.status_npwp}</option>
+                                                    <option>-Pilih-</option>
+                                                    <option value="Ya">Ya</option>
+                                                    <option value="Tidak">Tidak</option>
+                                                </Input>
+                                            </Col>
+                                        </Row>
+                                        {errors.status_npwp ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama Sesuai NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Ya' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Ya' ? values.nama_npwp : ''}
+                                                onBlur={handleBlur("nama_npwp")}
+                                                onChange={handleChange("nama_npwp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Ya' && values.nama_npwp === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor NPWP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Ya' ? false : true}
+                                                type= "text" 
+                                                minLength={15}
+                                                maxLength={15}
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Ya' ? values.no_npwp : ''}
+                                                onBlur={handleBlur("no_npwp")}
+                                                onChange={handleChange("no_npwp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
+                                            <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama Sesuai KTP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Tidak' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.status_npwp === 'Tidak' ? values.nama_ktp : ''}
+                                                onBlur={handleBlur("nama_ktp")}
+                                                onChange={handleChange("nama_ktp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Tidak' && values.nama_ktp === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nomor KTP</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled={values.status_npwp === 'Tidak' ? false : true}
+                                                type= "text" 
+                                                className="inputRinci"
+                                                minLength={16}
+                                                maxLength={16}
+                                                value={values.status_npwp === 'Tidak' ? values.no_ktp : ''}
+                                                onBlur={handleBlur("no_ktp")}
+                                                onChange={handleChange("no_ktp")}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.status_npwp === 'Tidak' && values.no_ktp.length < 16 ? (
+                                            <text className={style.txtError}>must be filled with 16 digits characters</text>
+                                        ) : null}
+                                    </div>
+                                    <div className="modalFoot mt-3">
+                                        <div></div>
+                                        <div className='btnfoot'>
+                                            <Button 
+                                                className="mr-3" 
+                                                size="md" 
+                                                disabled={this.state.no_coa === '' ? true 
+                                                : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp === '' ) ? true 
+                                                : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
+                                                : values.norek_ajuan.length < this.state.digit ? true 
+                                                : false } 
+                                                color="primary" 
+                                                onClick={handleSubmit}>
+                                                Save
+                                            </Button>
+                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            </Formik>
+                        </div>
+                    </ModalBody>
                 </Modal>
                 <Modal className='modalrinci' isOpen={this.state.modalFaa} toggle={this.openModalFaa} size="xl">
                     <ModalHeader>
@@ -1221,7 +1394,7 @@ class ReportOps extends Component {
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab}>
                                 <thead>
-                                    <tr className='tbops'>
+                                    <tr className='tbklaim'>
                                         <th>NO</th>
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>
@@ -1630,29 +1803,19 @@ class ReportOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading ? true : false} size="sm">
-                        <ModalBody>
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <Spinner />
-                                <div sucUpdate>Waiting....</div>
-                            </div>
-                        </div>
-                        </ModalBody>
-                </Modal>
-                <Modal isOpen={this.state.openApprove && level !== '5'} toggle={this.openModalApprove} centered={true}>
+                <Modal isOpen={this.state.openApprove} toggle={this.openModalApprove} centered={true}>
                     <ModalBody>
                         <div className={style.modalApprove}>
                             <div>
                                 <text>
-                                    Anda yakin untuk approve     
+                                    Anda yakin untuk submit revisi     
                                     <text className={style.verif}> </text>
                                     pada tanggal
-                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                    <text className={style.verif}> {moment().format('LL')}</text> ?
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveDataOps()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prosesSubmitRevisi()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1666,7 +1829,7 @@ class ReportOps extends Component {
                                     Anda yakin untuk submit     
                                     <text className={style.verif}> </text>
                                     pada tanggal
-                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                    <text className={style.verif}> {moment().format('LL')}</text> ?
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
@@ -1699,11 +1862,11 @@ class ReportOps extends Component {
                             <div className={[style.sucUpdate, style.green]}>Gagal Approve</div>
                         </div>
                         </div>
-                    ) : this.state.confirm === 'rejReject' ?(
+                    ) : this.state.confirm === 'rejSubmit' ?(
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal Reject</div>
+                                <div className={[style.sucUpdate, style.green]}>Gagal submit revisi, pastikan semua data reject telah diupdate</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'isApprove' ? (
@@ -1717,7 +1880,7 @@ class ReportOps extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Submit Revisi</div>
                             </div>
                         </div>
                     ) : (
@@ -1745,8 +1908,8 @@ class ReportOps extends Component {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
-                                        <Col md={12} lg={12} className='mb-2' >
-                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
+                                        <Col md={12} lg={12} >
+                                            <div className="btnDocIo mb-2" >{x.desc}</div>
                                             {x.status === 0 ? (
                                                 <AiOutlineClose size={20} />
                                             ) : x.status === 3 ? (
@@ -1755,27 +1918,34 @@ class ReportOps extends Component {
                                                 <BsCircle size={20} />
                                             )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
-                                            {/* <div className="colDoc">
-                                                <input
-                                                className="ml-4"
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                                <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
-                                            </div> */}
+                                            {level === '5' && (
+                                                <div className="colDoc">
+                                                    <input
+                                                    type="file"
+                                                    className='ml-4'
+                                                    onClick={() => this.setState({detail: x})}
+                                                    onChange={this.onChangeUpload}
+                                                    />
+                                                    <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                                </div>
+                                            )}
+                                            
                                         </Col>
                                     ) : (
-                                        <Col md={6} lg={6} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
-                                            <div className="colDoc">
-                                                <input
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                            </div>
-                                            <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                        <Col md={12} lg={12} className="colDoc">
+                                            <text className="btnDocIo" >{x.desc}</text>
+                                            {level === '5' && (
+                                                <>
+                                                    <div className="colDoc">
+                                                        <input
+                                                        type="file"
+                                                        onClick={() => this.setState({detail: x})}
+                                                        onChange={this.onChangeUpload}
+                                                        />
+                                                    </div>
+                                                    <text className="txtError">Maximum file upload is 20 Mb</text>
+                                                </>
+                                            )}
                                         </Col>
                                     )}
                                 </Row>
@@ -1818,222 +1988,6 @@ class ReportOps extends Component {
                     </div>
                 </ModalBody>
             </Modal>
-            <Modal isOpen={this.state.formDis} toggle={() => {this.openModalDis(); this.showCollap('close')}} size="xl">
-                    {/* <Alert color="danger" className={style.alertWrong} isOpen={detailOps.find(({status_transaksi}) => status_transaksi === 26) === undefined ? false : true}>
-                        <div>Data Penjualan Asset Sedang Dilengkapi oleh divisi purchasing</div>
-                    </Alert> */}
-                    <ModalBody>
-                        <Row className='trackTitle ml-4'>
-                            <Col>
-                                Tracking Pengajuan Ops
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub'>
-                            <Col md={3}>
-                                Area
-                            </Col>
-                            <Col md={9}>
-                            : {detailOps[0] === undefined ? '' : detailOps[0].area}
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub'>
-                            <Col md={3}>
-                            No Ajuan
-                            </Col>
-                            <Col md={9}>
-                            : {detailOps[0] === undefined ? '' : detailOps[0].no_transaksi}
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub1'>
-                            <Col md={3}>
-                            Tanggal Ajuan
-                            </Col>
-                            <Col md={9}>
-                            : {detailOps[0] === undefined ? '' : moment(detailOps[0].start_ops === null ? detailOps[0].createdAt : detailOps[0].start_ops).locale('idn').format('DD MMMM YYYY ')}
-                            </Col>
-                        </Row>
-                        <Row className='mt-2 ml-4 m40'>
-                            <Col md={12}>
-                                <Button onClick={this.openHistory} size='sm' color='success'>History lengkap</Button>
-                            </Col>
-                        </Row>
-                        <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                            <div class="step completed">
-                                <div class="step-icon-wrap">
-                                <button class="step-icon" onClick={() => this.showCollap('Submit')} ><FiSend size={40} className="center1" /></button>
-                                </div>
-                                <h4 class="step-title">Submit Ops</h4>
-                            </div>
-                            <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 2 ? "step completed" : 'step'} >
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Proses Approval')}><MdAssignment size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Proses Approval</h4>
-                            </div>
-                            <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Verifikasi Finance')}><FiSettings size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Verifikasi Finance</h4>
-                            </div>
-                            <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Verifikasi Ops')}><FiSettings size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Verifikasi Ops</h4>
-                            </div>
-                            <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi === 5 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon"><AiOutlineCheck size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Selesai</h4>
-                            </div>
-                        </div>
-                        <Collapse isOpen={this.state.collap} className="collapBody">
-                            <Card className="cardCollap">
-                                <CardBody>
-                                    <div className='textCard1'>{this.state.tipeCol}</div>
-                                    {this.state.tipeCol === 'submit' ? (
-                                        <div>Tanggal submit : {detailOps[0] === undefined ? '' : moment(detailOps[0].start_ops === null ? detailOps[0].createdAt : detailOps[0].start_ops).locale('idn').format('DD MMMM YYYY ')}</div>
-                                    ) : (
-                                        <div></div>
-                                    )}
-                                    <div>Rincian Data:</div>
-                                    <Table striped bordered responsive hover className="tableDis mb-3">
-                                        <thead>
-                                            <tr>
-                                                <th>NO</th>
-                                                <th>COST CENTRE</th>
-                                                <th>NO COA</th>
-                                                <th>NAMA COA</th>
-                                                <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
-                                                <th>NILAI YANG DIAJUKAN</th>
-                                                <th>BANK</th>
-                                                <th>NOMOR REKENING</th>
-                                                <th>ATAS NAMA</th>
-                                                <th>MEMILIKI NPWP</th>
-                                                <th>NAMA SESUAI NPWP</th>
-                                                <th>NOMOR NPWP</th>
-                                                <th>PPU</th>
-                                                <th>PA</th>
-                                                <th>NOMINAL</th>
-                                                <th>NILAI YANG DIBAYARKAN</th>
-                                                <th>TANGGAL TRANSFER</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {detailOps.length !== 0 && detailOps.map(item => {
-                                                return (
-                                                    <tr>
-                                                        <th scope="row">{detailOps.indexOf(item) + 1}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
-                                                        <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                        <th>{item.bank_tujuan}</th>
-                                                        <th>{item.norek_ajuan}</th>
-                                                        <th>{item.nama_tujuan}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                        <th>{item.ppu}</th>
-                                                        <th>{item.pa}</th>
-                                                        <th>{item.nilai_bayar}</th>
-                                                        <th>{item.nilai_bayar}</th>
-                                                        <th>{item.tanggal_transfer}</th>
-                                                    </tr>
-                                                )
-                                            })}
-                                        </tbody>
-                                    </Table>
-                                    {detailOps[0] === undefined || this.state.tipeCol === 'Submit' ? (
-                                        <div></div>
-                                    ) : (
-                                        <div>
-                                            <div className="mb-4 mt-2">Tracking {this.state.tipeCol} :</div>
-                                            {this.state.tipeCol === 'Proses Approval' ? (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    {detailOps[0] !== undefined && detailOps[0].appForm.length && detailOps[0].appForm.slice(0).reverse().map(item => {
-                                                        return (
-                                                            <div class={item.status === '1' ? 'step completed' : item.status === '0' ? 'step reject' : 'step'}>
-                                                                <div class="step-icon-wrap">
-                                                                <button class="step-icon"><FaFileSignature size={30} className="center2" /></button>
-                                                                </div>
-                                                                <h4 class="step-title">{item.jabatan}</h4>
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
-                                            ) : this.state.tipeCol === 'Verifikasi Finance' ? (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Check Dokumen</h4>
-                                                    </div>
-                                                    <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Selesai</h4>
-                                                    </div>
-                                                </div>
-                                            ) : this.state.tipeCol === 'Verifikasi Ops' && (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FiSettings size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Proses Kelengkapan Data</h4>
-                                                    </div>
-                                                    <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Check Dokumen</h4>
-                                                    </div>
-                                                    <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Selesai</h4>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </CardBody>
-                            </Card>
-                        </Collapse>
-                    </ModalBody>
-                    <hr />
-                    <div className="modalFoot ml-3">
-                        {/* <Button color="primary" onClick={() => this.openModPreview({nama: 'disposal pengajuan', no: detailOps[0] !== undefined && detailOps[0].no_disposal})}>Preview</Button> */}
-                        <div></div>
-                        <div className="btnFoot">
-                            <Button color="primary" onClick={() => {this.openModalDis(); this.showCollap('close')}}>
-                                Close
-                            </Button>
-                        </div>
-                    </div>
-                </Modal>
-                <Modal isOpen={this.state.history} toggle={this.openHistory}>
-                    <ModalBody>
-                        <div className='mb-4'>History Transaksi</div>
-                        <div className='history'>
-                            {detailOps.length > 0 && detailOps[0].history.split(',').map(item => {
-                                return (
-                                    item !== null && item !== 'null' && 
-                                    <Button className='mb-2' color='info'>{item}</Button>
-                                )
-                            })}
-                        </div>
-                    </ModalBody>
-                </Modal>
             </>
         )
     }
@@ -2043,10 +1997,10 @@ const mapStateToProps = state => ({
     approve: state.approve,
     depo: state.depo,
     user: state.user,
-    notif: state.notif,
     ops: state.ops,
     menu: state.menu,
     reason: state.reason,
+    bank: state.bank,
     dokumen: state.dokumen
 })
 
@@ -2056,7 +2010,7 @@ const mapDispatchToProps = {
     getDetailDepo: depo.getDetailDepo,
     getDepo: depo.getDepo,
     getRole: user.getRole,
-    getReport: ops.getReport,
+    getOps: ops.getOps,
     getDetail: ops.getDetail,
     getApproval: ops.getApproval,
     getDocOps: ops.getDocCart,
@@ -2065,8 +2019,13 @@ const mapDispatchToProps = {
     getReason: reason.getReason,
     rejectOps: ops.rejectOps,
     resetOps: ops.resetOps,
+    uploadDocOps: ops.uploadDocCart,
+    editOps: ops.editOps,
+    appRevisi: ops.appRevisi,
+    getBank: bank.getBank,
+    submitRevisi: ops.submitRevisi,
     showDokumen: dokumen.showDokumen
     // notifStock: notif.notifStock
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(ReportOps)
+export default connect(mapStateToProps, mapDispatchToProps)(RevisiOps)

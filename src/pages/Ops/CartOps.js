@@ -152,7 +152,9 @@ class CartOps extends Component {
             message: '',
             isLoading: false,
             typeniknpwp: '',
-            type_kasbon: ''
+            type_kasbon: '',
+            modalDelete: false,
+            dataDelete: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -424,6 +426,7 @@ class CartOps extends Component {
 
     closeTransaksi = async () => {
         const token = localStorage.getItem("token")
+        const type = localStorage.getItem('tipeKasbon')
         const { noops } = this.props.ops
         const { draftEmail } = this.props.email
         const { message, subject } = this.state
@@ -446,7 +449,7 @@ class CartOps extends Component {
         }
         await this.props.sendEmail(token, data)
         await this.props.submitOpsFinal(token, tempno)
-        await this.props.getCart(token)
+        await this.props.getCart(token, type)
         this.openModalDoc()
         this.modalSubmitPre()
         this.openDraftEmail()
@@ -455,10 +458,11 @@ class CartOps extends Component {
 
     componentDidUpdate() {
         const { isAdd, isUpload, isEdit } = this.props.ops
+        const type = localStorage.getItem('tipeKasbon')
         const token = localStorage.getItem("token")
         if (isAdd === true) {
             this.openModalAdd()
-            this.props.getCart(token)
+            this.props.getCart(token, type)
             this.openConfirm(this.setState({confirm: 'addcart'}))
             this.props.resetOps()
         } else if (isAdd === false) {
@@ -473,7 +477,7 @@ class CartOps extends Component {
             this.props.getDocOps(token, tempno)
             this.props.resetOps()
         } else if (isEdit === true) {
-            this.props.getCart(token)
+            this.props.getCart(token, type)
             this.openConfirm(this.setState({confirm: 'editcart'}))
             this.props.resetOps()
         }
@@ -647,9 +651,31 @@ class CartOps extends Component {
 
     deleteCart = async (val) => {
         const token = localStorage.getItem("token")
-        await this.props.deleteCart(token, val)
-        await this.props.getCart(token)
+        const {dataDelete} = this.state
+        const type = localStorage.getItem('tipeKasbon')
+        await this.props.deleteCart(token, dataDelete)
+        await this.props.getCart(token, type)
+        this.setState({confirm: 'delCart'})
+        this.openConfirm()
+        this.openModalDelete()
     }
+
+    cekAdd = (val) => {
+        const { type_kasbon, nilai_ajuan } = this.state
+        const nilaiAjuan = parseFloat(nilai_ajuan)
+        const nilaiPo = parseFloat(val.nilai_po)
+        const nilaiPr = parseFloat(val.nilai_pr)
+        const cek = nilaiAjuan === nilaiPo && nilaiAjuan === nilaiPr ? true : false
+        if (type_kasbon === 'kasbon' && cek === true) {
+            this.addCartOps(val)
+        } else if (type_kasbon === 'kasbon' && cek === false) {
+            this.setState({confirm: 'failAdd'})
+            this.openConfirm()
+        } else {
+            this.addCartOps(val)
+        }
+    }
+    
 
     addCartOps = async (val) => {
         const token = localStorage.getItem("token")
@@ -689,16 +715,36 @@ class CartOps extends Component {
             jenis_pph: dataTrans.jenis_pph,
             tgl_faktur: tgl_faktur,
             typeniknpwp: typeniknpwp,
-            type_kasbon: type_kasbon === 'kasbon' ? 'kasbon' : null
+            type_kasbon: type_kasbon === 'kasbon' ? 'kasbon' : null,
+            type_po: val.type_po,
+            no_po: val.no_po,
+            nilai_po: val.nilai_po,
+            nilai_pr: val.nilai_pr
         }
         await this.props.addCart(token, data, dataTrans.id)
+    }
+
+    cekEdit = (val) => {
+        const { type_kasbon, nilai_ajuan } = this.state
+        const nilaiAjuan = parseFloat(nilai_ajuan)
+        const nilaiPo = parseFloat(val.nilai_po)
+        const nilaiPr = parseFloat(val.nilai_pr)
+        const cek = nilaiAjuan === nilaiPo && nilaiAjuan === nilaiPr ? true : false
+        if (type_kasbon === 'kasbon' && cek === true) {
+            this.editCartOps(val)
+        } else if (type_kasbon === 'kasbon' && cek === false) {
+            this.setState({confirm: 'failEdit'})
+            this.openConfirm()
+        } else {
+            this.editCartOps(val)
+        }
     }
 
     editCartOps = async (val) => {
         const token = localStorage.getItem("token")
         const {idOps} = this.props.ops
         const {detailDepo} = this.props.depo
-        const { dataTrans, nilai_buku, nilai_ajuan, nilai_utang, tgl_faktur,
+        const { dataTrans, nilai_buku, nilai_ajuan, nilai_utang, tgl_faktur, type_kasbon,
             nilai_vendor, tipeVendor, tipePpn, nilai_dpp, nilai_ppn, typeniknpwp,
             dataSelFaktur, noNpwp, noNik, nama, alamat, status_npwp } = this.state
         const data = {
@@ -732,7 +778,12 @@ class CartOps extends Component {
             nilai_bayar: parseInt(nilai_vendor),
             jenis_pph: dataTrans.jenis_pph,
             tgl_faktur: tgl_faktur,
-            typeniknpwp: typeniknpwp
+            typeniknpwp: typeniknpwp,
+            type_kasbon: type_kasbon === 'kasbon' ? 'kasbon' : null,
+            type_po: val.type_po,
+            no_po: val.no_po,
+            nilai_po: val.nilai_po,
+            nilai_pr: val.nilai_pr
         }
         await this.props.editOps(token, idOps.id, dataTrans.id, data )
     }
@@ -1254,6 +1305,15 @@ class CartOps extends Component {
         }
     }
 
+    prosesDelete = (val) => {
+        this.setState({dataDelete: val})
+        this.openModalDelete()
+    }
+
+    openModalDelete = () => {
+        this.setState({modalDelete: !this.state.modalDelete})
+    }
+
     inputNama = (val) => {
         this.setState({nama: val})
     }
@@ -1281,14 +1341,14 @@ class CartOps extends Component {
     }
 
     formulaTax = (val, type) => {
-        const {dataTrans, nilai_ajuan, tipeVendor, tipePpn, nilai_dpp, nilai_ppn} = this.state
+        const {dataTrans, nilai_ajuan, tipeVendor, tipePpn, nilai_dpp, nilai_ppn, type_kasbon} = this.state
         const nilai = nilai_ajuan
         const tipe = tipeVendor
         console.log(dataTrans)
         if (dataTrans.jenis_pph === 'Non PPh' || dataTrans.jenis_pph === undefined) {
             this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: nilai, tipeVendor: tipe})
         } else {
-            if (tipePpn === 'Ya') {
+            if (tipePpn === 'Ya' && type_kasbon !== 'kasbon') {
                 if (tipe === 'PMA') {
                     const nilai_buku = nilai_dpp
                     const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph) / 100)
@@ -1423,7 +1483,7 @@ class CartOps extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Draft Pengajuan Operasional {type_kasbon}</div>
+                                <div className={style.titleDashboard}>Draft Pengajuan {type_kasbon === 'kasbon' ? 'Kasbon' : 'Operasional'}</div>
                             </div>
                             <div className='pagu'>
                                 <div className={style.secPaguOps}>
@@ -1456,7 +1516,6 @@ class CartOps extends Component {
                                                 <th>KETERANGAN TAMBAHAN</th>
                                                 <th>PERIODE</th>
                                                 <th>NILAI YANG DIAJUKAN</th>
-                                                <th>BANK</th>
                                                 <th>ATAS NAMA</th>
                                                 <th>TIPE KASBON</th>
                                                 <th>OPSI</th>
@@ -1481,12 +1540,11 @@ class CartOps extends Component {
                                                     <th>{item.keterangan}</th>
                                                     <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                     <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                    <th>{item.bank_tujuan}</th>
                                                     <th>{item.nama_tujuan}</th>
                                                     <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
                                                     <th>
                                                         <Button onClick={() => this.prosesOpenEdit(item.id)} className='mb-1 mr-1' color='success'>EDIT</Button>
-                                                        <Button onClick={() => this.deleteCart(item.id)} color='danger'>DELETE</Button>
+                                                        <Button onClick={() => this.prosesDelete(item.id)} color='danger'>DELETE</Button>
                                                     </th>
                                                 </tr>
                                                 )
@@ -1520,7 +1578,7 @@ class CartOps extends Component {
                 </Sidebar>
                 <Modal className='modalrinci' isOpen={this.state.modalAdd} size="xl">
                     <ModalHeader>
-                        Tambah Ajuan Operasional
+                        Tambah Ajuan Operasional {type_kasbon}
                     </ModalHeader>
                     <ModalBody>
                             <Formik
@@ -1544,13 +1602,15 @@ class CartOps extends Component {
                                 dpp: 0,
                                 ppn: 0,
                                 tgl_tagihanbayar: '',
-                                tipe_po: '',
-                                no_po: ''
+                                type_po: '',
+                                no_po: '',
+                                nilai_po: 0,
+                                nilai_pr: 0
                             }}
                             validationSchema = {addSchema}
-                            onSubmit={(values) => {this.addCartOps(values)}}
+                            onSubmit={(values) => {this.cekAdd(values)}}
                             >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                            {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                                 <>
                                 <div className="mainRinci3">
                                     <div className="rightRinci3">
@@ -1614,9 +1674,9 @@ class CartOps extends Component {
                                                                 type= "select" 
                                                                 className="inputRinci"
                                                                 disabled={this.state.idTrans === '' ? true : false}
-                                                                value={values.tipe_po}
-                                                                onBlur={handleBlur('tipe_po')}
-                                                                onChange={handleChange('tipe_po')}
+                                                                value={values.type_po}
+                                                                onBlur={handleBlur('type_po')}
+                                                                onChange={handleChange('type_po')}
                                                                 >
                                                                     <option value=''>Pilih</option>
                                                                     <option value="po">PO</option>
@@ -1624,14 +1684,14 @@ class CartOps extends Component {
                                                             </Input>
                                                         </Col>
                                                     </Row>
-                                                    {values.tipe_po === '' ? (
+                                                    {values.type_po === '' ? (
                                                         <text className={style.txtError}>must be filled</text>
                                                     ) : null}
                                                     <Row className="mb-2 rowRinci">
                                                         <Col md={3}>No PO</Col>
                                                         <Col md={9} className="colRinci">:  <Input
                                                             type= "text" 
-                                                            disabled={values.tipe_po === 'po' ? false : true}
+                                                            disabled={values.type_po === 'po' ? false : true}
                                                             className="inputRinci"
                                                             value={values.no_po}
                                                             onBlur={handleBlur("no_po")}
@@ -1639,7 +1699,35 @@ class CartOps extends Component {
                                                             />
                                                         </Col>
                                                     </Row>
-                                                    {values.tipe_po === 'po' && values.no_po === '' ? (
+                                                    {values.type_po === 'po' && values.no_po === '' ? (
+                                                        <text className={style.txtError}>must be filled</text>
+                                                    ) : null}
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>Nilai PO</Col>
+                                                        <Col md={9} className="colRinci">:
+                                                            <NumberInput
+                                                                disabled={values.type_po === 'po' ? false : true}
+                                                                className="inputRinci1"
+                                                                value={values.nilai_po}
+                                                                onValueChange={val => setFieldValue("nilai_po", val.floatValue)}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                    {values.type_po === 'po' && values.nilai_po === 0 ? (
+                                                        <div className='txtError'>must be filled</div>
+                                                    ) : null}
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>Nilai PR</Col>
+                                                        <Col md={9} className="colRinci">:
+                                                            <NumberInput
+                                                                disabled={values.type_po === 'po' ? false : true}
+                                                                className="inputRinci1"
+                                                                value={values.nilai_pr}
+                                                                onValueChange={val => setFieldValue("nilai_pr", val.floatValue)}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                    {values.type_po === 'po' && values.nilai_pr === 0 ? (
                                                         <text className={style.txtError}>must be filled</text>
                                                     ) : null}
                                                 </>
@@ -1840,7 +1928,7 @@ class CartOps extends Component {
                                                 <Col md={9} className="colRinci">:  
                                                     <Select
                                                         className="inputRinci2"
-                                                        isDisabled={this.state.tipePpn === "Ya" ? false : true}
+                                                        isDisabled={type_kasbon === 'kasbon' ? true : this.state.tipePpn === "Ya" ? false : true}
                                                         options={this.state.fakturList}
                                                         onChange={this.selectFaktur}
                                                         // onInputChange={e => this.inputFaktur(e)}
@@ -1949,7 +2037,8 @@ class CartOps extends Component {
                                                 <Col md={3}>Nilai Yang Diajukan</Col>
                                                 <Col md={9} className="colRinci">:  <NumberInput
                                                     disabled={
-                                                        this.state.idTrans === '' ? true 
+                                                        type_kasbon === 'kasbon' && this.state.idTrans !== '' ? false
+                                                        : this.state.idTrans === '' ? true 
                                                         : this.state.tipePpn === "Ya" || this.state.tipePpn === "" ? true
                                                         : false
                                                     }
@@ -2192,11 +2281,15 @@ class CartOps extends Component {
                                 dpp: idOps.dpp || 0,
                                 ppn: idOps.ppn || 0,
                                 tgl_tagihanbayar: idOps.tgl_tagihanbayar || '',
+                                type_po: idOps.type_po || '',
+                                no_po: idOps.no_po || '',
+                                nilai_po: idOps.nilai_po || 0,
+                                nilai_pr: idOps.nilai_pr || 0
                             }}
                             validationSchema = {addSchema}
-                            onSubmit={(values) => {this.editCartOps(values)}}
+                            onSubmit={(values) => {this.cekEdit(values)}}
                             >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                            {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                                 <>
                                 <div className="mainRinci3">
                                     <div className="rightRinci3">
@@ -2251,6 +2344,73 @@ class CartOps extends Component {
                                             {this.state.jenisTrans === '' ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
+                                            {type_kasbon === 'kasbon' && (
+                                                <>
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>Tipe PO</Col>
+                                                        <Col md={9} className="colRinci">: 
+                                                            <Input
+                                                                type= "select" 
+                                                                className="inputRinci"
+                                                                disabled={this.state.idTrans === '' ? true : false}
+                                                                value={values.type_po}
+                                                                onBlur={handleBlur('type_po')}
+                                                                onChange={handleChange('type_po')}
+                                                                >
+                                                                    <option value=''>Pilih</option>
+                                                                    <option value="po">PO</option>
+                                                                    <option value="non po">Non PO</option>
+                                                            </Input>
+                                                        </Col>
+                                                    </Row>
+                                                    {values.type_po === '' ? (
+                                                        <text className={style.txtError}>must be filled</text>
+                                                    ) : null}
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>No PO</Col>
+                                                        <Col md={9} className="colRinci">:  <Input
+                                                            type= "text" 
+                                                            disabled={values.type_po === 'po' ? false : true}
+                                                            className="inputRinci"
+                                                            value={values.no_po}
+                                                            onBlur={handleBlur("no_po")}
+                                                            onChange={handleChange('no_po')}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                    {values.type_po === 'po' && values.no_po === '' ? (
+                                                        <text className={style.txtError}>must be filled</text>
+                                                    ) : null}
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>Nilai PO</Col>
+                                                        <Col md={9} className="colRinci">:
+                                                            <NumberInput
+                                                                disabled={values.type_po === 'po' ? false : true}
+                                                                className="inputRinci1"
+                                                                value={values.nilai_po}
+                                                                onValueChange={val => setFieldValue("nilai_po", val.floatValue)}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                    {values.type_po === 'po' && values.nilai_po === 0 ? (
+                                                        <div className='txtError'>must be filled</div>
+                                                    ) : null}
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>Nilai PR</Col>
+                                                        <Col md={9} className="colRinci">:
+                                                            <NumberInput
+                                                                disabled={values.type_po === 'po' ? false : true}
+                                                                className="inputRinci1"
+                                                                value={values.nilai_pr}
+                                                                onValueChange={val => setFieldValue("nilai_pr", val.floatValue)}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                    {values.type_po === 'po' && values.nilai_pr === 0 ? (
+                                                        <text className={style.txtError}>must be filled</text>
+                                                    ) : null}
+                                                </>
+                                            )}
                                             <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Jenis Vendor</Col>
                                                 <Col md={9} className="colRinci">:  
@@ -2556,7 +2716,8 @@ class CartOps extends Component {
                                                 <Col md={3}>Nilai Yang Diajukan</Col>
                                                 <Col md={9} className="colRinci">:  <NumberInput
                                                     disabled={
-                                                        this.state.idTrans === '' ? true 
+                                                        type_kasbon === 'kasbon' && this.state.idTrans !== '' ? false
+                                                        : this.state.idTrans === '' ? true 
                                                         : this.state.tipePpn === "Ya" || this.state.tipePpn === "" ? true
                                                         : false
                                                     }
@@ -3087,6 +3248,21 @@ class CartOps extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
+                <Modal isOpen={this.state.modalDelete} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk delete data ajuan kasbon ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.deleteCart()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalDelete}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
                 <Modal isOpen={this.state.openApprove && (level === '5' || level === '6')} toggle={this.openModalApprove} centered={true}>
                     <ModalBody>
                         <div className={style.modalApprove}>
@@ -3413,6 +3589,13 @@ class CartOps extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Menyimpan Perubahan Data</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'delCart' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Menghapus Data</div>
+                            </div>
+                        </div>
                     ) : this.state.confirm === 'reject' ?(
                         <div>
                             <div className={style.cekUpdate}>
@@ -3441,6 +3624,22 @@ class CartOps extends Component {
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Mohon pilih ulang jenis transaksi</div>
                                 <div className={[style.sucUpdate, style.green]}>Pilihan jenis transaksi tidak tersedia</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'failEdit' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Edit Data</div>
+                                <div className={[style.sucUpdate, style.green]}>Pastikan nilai ajuan, nilai PO, dan nilai PR memiliki nilai yang sama</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'failAdd' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Add Data</div>
+                                <div className={[style.sucUpdate, style.green]}>Pastikan nilai ajuan, nilai PO, dan nilai PR memiliki nilai yang sama</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'failChek' ?(

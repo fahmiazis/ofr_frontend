@@ -4,9 +4,11 @@ import Sidebar from '../../components/Sidebar'
 import {VscAccount} from 'react-icons/vsc'
 import { Row, DropdownItem, UncontrolledDropdown, DropdownToggle, DropdownMenu, Button,
     Modal, ModalHeader, ModalBody, Input } from 'reactstrap'
-import {FiLogOut} from 'react-icons/fi'
-import {FaFileSignature} from 'react-icons/fa'
-import {BsBell, BsFillCircleFill} from 'react-icons/bs'
+import {FiLogOut, FiSend} from 'react-icons/fi'
+import {BiRevision} from 'react-icons/bi'
+import {MdAssignment, MdVerifiedUser} from 'react-icons/md'
+import {RiDraftFill} from 'react-icons/ri'
+import {HiOutlineDocumentReport} from 'react-icons/hi'
 import moment from 'moment'
 import {connect} from 'react-redux'
 import auth from '../../redux/actions/auth'
@@ -39,7 +41,11 @@ class NavOps extends Component {
         this.setState({modalChange: !this.state.modalChange})
     }
 
-    goRoute = (val) => {
+    goRoute(val) {
+        this.props.history.push(`/${val}`)
+    }
+
+    goProses(val) {
         localStorage.setItem('tipeKasbon', val.type)
         setTimeout(() => {
             this.props.history.push({
@@ -140,21 +146,79 @@ class NavOps extends Component {
                         </div>
                     </div>
                     <div>
-                        <div className="titHome">Menu draft ajuan operasional</div>
+                        <div className="titHome">Kasbon menu</div>
                         <div className="txtChoose">Please select an option</div>
                         <div className="mainBody">
-                            <>
-                                <button className="cardNav1" onClick={() => this.goRoute({route: 'cartops', type: 'kasbon'})}>
+                            {level === '5' ? (
+                                <>
+                                    <button className="cardNav1" onClick={() => this.goRoute('kasbon')}>
+                                        <FiSend size={220} className="picHome" />
+                                        <div className="titCard">
+                                            Pengajuan Kasbon
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('realkasbon')}>
+                                        <MdAssignment size={220} className="picHome" />
+                                        <div className="titCard">
+                                            Realisasi Kasbon
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revkasbon')}>
+                                        <BiRevision size={220} className="picHome" />
+                                        <div className="titCard">
+                                            Revisi Kasbon
+                                        </div>
+                                    </button>
+                                </>
+                            ): level === '2' ? (
+                                <>
+                                    <button className="cardNav1" onClick={() => this.goRoute('verifrealkasbon')}>
+                                        <MdVerifiedUser size={220} className="picHome" />
+                                        <div className="titCard">
+                                            Verifikasi Finance (Realisasi Kasbon)
+                                        </div>
+                                    </button>
+                                </>
+                            ) : level === '4' || level === '14' ? (
+                                <>
+                                    <button className="cardNav1" onClick={() => this.goProses({route: 'verifkasbon', type: 'kasbon'})}>
+                                        <MdVerifiedUser size={220} className="picHome" />
+                                        <div className="titCard">
+                                            Verifikasi Tax (Pengajuan Kasbon)
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goProses({route: 'verifrealkasbon', type: 'non kasbon'})}>
+                                        <MdVerifiedUser size={220} className="picHome" />
+                                        <div className="titCard">
+                                            Verifikasi Tax (Realisasi Kasbon)
+                                        </div>
+                                    </button>
+                                </>
+                            ) 
+                            // : level === '7' || level === '8' || level === '9' ? (
+                            //     <>
+                            //         <button className="cardNav1" onClick={() => this.goRoute('navlistops')}>
+                            //             <RiDraftFill size={220} className="picHome" />
+                            //             <div className="titCard">
+                            //                 List Ajuan Bayar
+                            //             </div>
+                            //         </button>
+                            //         <button className="cardNav1" onClick={() => this.goRoute('repops')}>
+                            //             <HiOutlineDocumentReport size={220} className="picHome" />
+                            //             <div className="titCard">
+                            //                 Report Operasional
+                            //             </div>
+                            //         </button>
+                            //     </>
+                            // ) 
+                            : (
+                                <button className="cardNav1" onClick={() => this.goRoute('kasbon')}>
+                                    <FiSend size={220} className="picHome" />
                                     <div className="titCard">
-                                        Ajuan Operasional Kasbon
+                                        Pengajuan Kasbon
                                     </div>
                                 </button>
-                                <button className="cardNav1" onClick={() => this.goRoute({route: 'cartops', type: 'non kasbon'})}>
-                                    <div className="titCard">
-                                        Ajuan Operasional Non Kasbon
-                                    </div>
-                                </button>
-                            </>
+                            )} 
                         </div>
                     </div>
                 </div>

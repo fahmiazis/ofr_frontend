@@ -39,6 +39,7 @@ const opsState = {
     isEdit: null,
     subRevisi: null,
     subVerif: null,
+    subRealisasi: null,
     subBayar: null,
     newOps: [],
     editVrf: null,
@@ -520,6 +521,29 @@ export default (state=opsState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'SUBMIT_REALISASI_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'SUBMIT_REALISASI_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    subRealisasi: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'SUBMIT_REALISASI_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    subRealisasi: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'SUBMIT_BAYAR_PENDING': {
                 return {
                     ...state,
@@ -753,6 +777,7 @@ export default (state=opsState, action) => {
                     isEdit: null,
                     subRevisi: null,
                     subVerif: null,
+                    subRealisasi: null,
                     editVrf: null,
                     subBayar: null,
                     isGetReport: null,

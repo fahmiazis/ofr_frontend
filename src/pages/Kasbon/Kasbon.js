@@ -16,7 +16,6 @@ import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
-import placeholder from  "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
 import moment from 'moment'
@@ -33,8 +32,14 @@ import {default as axios} from 'axios'
 import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
 import ops from '../../redux/actions/ops'
+import Tracking from '../../components/Ops/tracking'
+import TableRincian from '../../components/Ops/tableRincian'
 import dokumen from '../../redux/actions/dokumen'
-const {REACT_APP_BACKEND_URL} = process.env
+import email from '../../redux/actions/email'
+import Email from '../../components/Ops/Email'
+import FAA from '../../components/Ops/FAA'
+import FPD from '../../components/Ops/FPD'
+const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
 
 const stockSchema = Yup.object().shape({
     merk: Yup.string().required("must be filled"),
@@ -59,7 +64,7 @@ const alasanSchema = Yup.object().shape({
 });
 
 
-class ReportOps extends Component {
+class Kasbon extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -110,7 +115,7 @@ class ReportOps extends Component {
             month: moment().format('M'),
             dropOp: false,
             noAsset: null,
-            filter: 'all',
+            filter: 'available',
             newOps: [],
             totalfpd: 0,
             dataMenu: [],
@@ -119,9 +124,18 @@ class ReportOps extends Component {
             tipeCol: '',
             formDis: false,
             history: false,
+            upload: false,
+            openDraft: false,
+            message: '',
+            subject: '',
+            openAppDoc: false,
+            openRejDoc: false,
             time: 'pilih',
             time1: moment().startOf('week').format('YYYY-MM-DD'),
             time2: moment().format('YYYY-MM-DD'),
+            docHist: false,
+            detailDoc: {},
+            docCon: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -185,6 +199,16 @@ class ReportOps extends Component {
             data.append('document', e.target.files[0])
             this.props.uploadImage(token, dataId, data)
         }
+    }
+
+    uploadAlert = () => {
+        this.setState({upload: true, modalUpload: false })
+       
+         setTimeout(() => {
+            this.setState({
+                upload: false
+            })
+         }, 10000)
     }
 
     getApproveStock = async (value) => { 
@@ -299,6 +323,23 @@ class ReportOps extends Component {
         this.props.history.push(`/${val}`)
     }
 
+    goProses(val) {
+        localStorage.setItem('tipeKasbon', val.type)
+        setTimeout(() => {
+            this.props.history.push({
+                pathname: `/${val.route}`,
+                state: val
+            })
+         }, 200)
+    }
+
+    goRevisi = (val) => {
+        this.props.history.push({
+            pathname: `/${val.route}`,
+            state: val
+        })
+    }
+
     getDetailStock = async (value) => {
         const token = localStorage.getItem("token")
         this.setState({dataItem: value})
@@ -329,24 +370,39 @@ class ReportOps extends Component {
     }
 
     componentDidMount() {
-        // const level = localStorage.getItem('level')
-        this.getDataOps()
+        const dataCek = localStorage.getItem('docData')
+        const {item, type} = (this.props.location && this.props.location.state) || {}
+        if (type === 'approve') {
+            this.getDataOps()
+            this.prosesDetail(item)
+        } else if (dataCek !== undefined && dataCek !== null) {
+            const data = {
+                no_transaksi: dataCek
+            }
+            this.getDataOps()
+            this.prosesDocTab(data)
+        } else {
+            this.getDataOps()
+        }
     }
 
     componentDidUpdate() {
         const { isApprove, isReject } = this.props.ops
+        const { isSend } = this.props.email
         if (isApprove === false) {
             this.setState({confirm: 'rejApprove'})
             this.openConfirm()
             this.openModalApprove()
-            this.openModalRinci()
             this.props.resetOps()
         } else if (isReject === false) {
             this.setState({confirm: 'rejReject'})
             this.openConfirm()
             this.openModalReject()
-            this.openModalRinci()
             this.props.resetOps()
+        } else if (isSend === false) {
+            this.setState({confirm: 'rejSend'})
+            this.openConfirm()
+            this.props.resetEmail()
         }
     }
 
@@ -405,8 +461,9 @@ class ReportOps extends Component {
     }
 
     getDataOps = async (value) => {
+        const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('bayar')
+        this.changeFilter(level === '5' ? 'all' : 'available')
     }
 
     getDataList = async () => {
@@ -423,14 +480,23 @@ class ReportOps extends Component {
         const tempno = {
             no: val.no_transaksi
         }
+        const data = {
+            no: val.no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
         this.setState({listMut: []})
         await this.props.getDetail(token, tempno)
         await this.props.getApproval(token, tempno)
+        await this.props.getDocOps(token, data)
         this.openModalRinci()
     }
 
     openModalDok = () => {
         this.setState({opendok: !this.state.opendok})
+    }
+
+    printData = (val) => {
+        this.props.history.push(`/${val}`)
     }
 
     prosesTracking = async (val) => {
@@ -502,31 +568,36 @@ class ReportOps extends Component {
     }
 
     changeFilter = async (val) => {
+        const {dataOps, noDis} = this.props.ops
+        const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const status = val === 'reject' ? 6 : val === 'bayar' ? 8 : 7
+        const status = 2
+        const statusAll = 'all'
         const {time1, time2} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
+        const typeKasbon = 'kasbon'
         if (val === 'available') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
+            const newOps = []
+            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
+            this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
+            const newOps = []
+            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
+            this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
+            const newOps = []
+            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
+            this.setState({filter: val, newOps: newOps})
         } else {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
+            const newOps = []
+            await this.props.getOps(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
+            this.setState({filter: val, newOps: newOps})
         }
     }
 
     changeTime = async (val) => {
+        const token = localStorage.getItem("token")
         this.setState({time: val})
         if (val === 'all') {
             this.setState({time1: '', time2: ''})
@@ -541,12 +612,38 @@ class ReportOps extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter, time} = this.state
+        const typeKasbon = 'kasbon'
+        const {time1, time2, filter} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
-        const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
-        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+        const status = filter === 'all' ? 'all' : 2
+        await this.props.getOps(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
+    }
+    
+    cekDataDoc = () => {
+        const { dataDoc } = this.props.ops
+        const level = localStorage.getItem("level")
+        const tempdoc = []
+        for (let i = 0; i < dataDoc.length; i++) {
+            const arr = dataDoc[i]
+            const stat = arr.status
+            const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+            const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+            if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
+                tempdoc.push(arr)
+                console.log('masuk if')
+            } else {
+                console.log('masuk else')
+                console.log(cekLevel)
+            }
+        }
+        if (tempdoc.length === dataDoc.length) {
+            this.openModalApprove()
+        } else {
+            this.setState({confirm: 'appNotifDoc'})
+            this.openConfirm()
+        }
     }
 
     prosesSubmitPre = async () => {
@@ -555,18 +652,85 @@ class ReportOps extends Component {
         this.modalSubmitPre()
     }
 
+    updateTransaksi = async (val) => {
+        
+    }
+
     approveDataOps = async () => {
         const { detailOps } = this.props.ops
         const token = localStorage.getItem("token")
+        const level = localStorage.getItem("level")
         const tempno = {
             no: detailOps[0].no_transaksi
         }
         await this.props.approveOps(token, tempno)
+        // if (level === '12') {
+        //     this.getDataOps()
+        //     this.setState({confirm: 'isApprove'})
+        //     this.openConfirm()
+        //     this.openModalApprove()
+        //     this.openModalRinci()
+        // } else {
+        this.dataSendEmail()
+        // }
+    }
+
+    dataSendEmail = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailOps } = this.props.ops
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: detailOps[0].no_transaksi,
+            tipe: 'ops',
+        }
+        await this.props.sendEmail(token, tempno)
         this.getDataOps()
         this.setState({confirm: 'isApprove'})
         this.openConfirm()
+        this.openDraftEmail()
         this.openModalApprove()
         this.openModalRinci()
+    }
+
+    prepSendEmail = async () => {
+        const { detailOps } = this.props.ops
+        const token = localStorage.getItem("token")
+        const app = detailOps[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = tempApp.length === app.length-1 ? 'full approve' : 'approve'
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            kode: detailOps[0].kode_plant,
+            jenis: 'ops',
+            tipe: tipe,
+            menu: 'Pengajuan Operasional (Operasional)'
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.openDraftEmail()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val.message, subject: val.subject})
     }
 
     onSearch = async (e) => {
@@ -653,24 +817,95 @@ class ReportOps extends Component {
 
     openProsesModalDoc = async (val) => {
         const token = localStorage.getItem("token")
+        localStorage.removeItem('docData')
         const tempno = {
             no: val.no_transaksi,
             name: 'Draft Pengajuan Ops'
         }
         await this.props.getDocOps(token, tempno)
+        this.setState({docCon: false})
         this.openModalDoc()
     }
 
-    cekStatus = async (val) => {
+    prosesDocTab = async (val) => {
         const token = localStorage.getItem("token")
-        const { detailAsset } = this.props.asset
-        if (val === 'DIPINJAM SEMENTARA') {
-            await this.props.cekDokumen(token, detailAsset.no_asset)
+        const tempno = {
+            no: val.no_transaksi
         }
+        const sendDoc = {
+            no_transaksi: val.no_transaksi
+        }
+        const data = {
+            no: val.no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
+        this.setState({listMut: []})
+        await this.props.getDetail(token, tempno)
+        await this.props.getApproval(token, tempno)
+        await this.props.getDocOps(token, data)
+        this.openModalRinci()
+        this.openProsesModalDoc(sendDoc)
+    }
+
+    openDocNewTab = async (val) => {
+        localStorage.setItem('docData', val[0].no_transaksi)
+        const newWindow = window.open('kasbon', '_blank', 'noopener,noreferrer')
+        this.setState({docCon: false})
+        if (newWindow) {
+            newWindow.opener = null
+        }
+    }
+
+    openDocCon = () => {
+        this.setState({docCon: !this.state.docCon})
+    }
+
+    docHistory = (val) => {
+        this.setState({detailDoc: val})
+        this.setState({docHist: !this.state.docHist})
     }
 
     openModalDoc = () => {
         this.setState({modalDoc: !this.state.modalDoc})
+    }
+
+    approveDoc = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc} = this.state
+        const { detailOps } = this.props.ops
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
+        await this.props.approveDokumen(token, idDoc)
+        await this.props.getDocOps(token, tempno)
+        this.setState({confirm: 'isAppDoc'})
+        this.openConfirm()
+        this.openModalAppDoc()
+        
+    }
+
+    openModalAppDoc = () => {
+        this.setState({openAppDoc: !this.state.openAppDoc})
+    }
+
+    rejectDoc = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc} = this.state
+        const { detailOps } = this.props.ops
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
+        await this.props.rejectDokumen(token, idDoc)
+        await this.props.getDocOps(token, tempno)
+        this.setState({confirm: 'isRejDoc'})
+        this.openConfirm()
+        this.openModalRejDoc()
+    }
+
+    openModalRejDoc = () => {
+        this.setState({openRejDoc: !this.state.openRejDoc})
     }
 
     openModalAdd = () => {
@@ -788,12 +1023,12 @@ class ReportOps extends Component {
 
     prepareReject = async () => {
         const token = localStorage.getItem("token")
-        await this.props.getAllMenu(token, 'reject')
+        await this.props.getAllMenu(token, 'reject', 'Operasional')
         await this.props.getReason(token)
         const dataMenu = this.props.menu.dataAll
         const data = []
         dataMenu.map(item => {
-            return (item.kode_menu === 'Ops' && data.push(item))
+            return (item.kode_menu === 'Operasional' && data.push(item))
         })
         this.setState({dataMenu: dataMenu})
         this.openModalReject()
@@ -817,10 +1052,10 @@ class ReportOps extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
+        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, dataDoc, newOps, dataReport } = this.props.ops
+        const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -860,34 +1095,36 @@ class ReportOps extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Report Konsol Operasional</div>
+                                <div className={style.titleDashboard}>Pengajuan Kasbon</div>
                             </div>
-                            <div className={style.secEmail3}>
-                                <div className={style.headEmail2}>
-                                    <ReactHtmlToExcel
-                                        id="test-table-xls-button"
-                                        className="btn btn-success mr-2"
-                                        table="table-ops"
-                                        filename={`Report Operasional ${moment().format('DD MMMM YYYY')}`}
-                                        sheet="Report"
-                                        buttonText="Download"
-                                    />
-                                </div>
+                            <div className={[style.secEmail4]}>
+                                {(level === '5' || level === '6') ? (
+                                    <Button onClick={() => this.goProses({route: 'cartops', type: 'kasbon'})} color="info" size="lg">Create</Button>
+                                ) : (
+                                    <div className={style.searchEmail2}>
+                                        <text>Filter:  </text>
+                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                            <option value="all">{level === '5' ? 'Proses' : 'All'}</option>
+                                            <option value="reject">Reject</option>
+                                            {level !== '5' && (
+                                                <option value="available">Available Approve</option>
+                                            )}
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        </Input>
+                                    </div>
+                                )}
                                 <div className={style.searchEmail2}>
-                                    <text>Status:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="reject">Reject</option>
-                                        <option value="ready">Siap Bayar</option>
-                                        <option value="bayar">Telah Bayar</option>
-                                    </Input>
                                 </div>
                             </div>
                             <div className={[style.secEmail4]}>
-                                <div className={style.headEmail2}>
-                                    <Input className={style.filter2} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                        <option value="all">All</option>
-                                        <option value="pilih">Periode</option>
-                                    </Input>
+                                <div className='rowCenter'>
+                                    <div className='rowCenter'>
+                                        <text className='mr-4'>Time:</text>
+                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
+                                    </div>
                                     {this.state.time === 'pilih' ?  (
                                         <>
                                             <div className='rowCenter'>
@@ -900,9 +1137,9 @@ class ReportOps extends Component {
                                                 />
                                                 <text className='mr-1 ml-1'>To</text>
                                                 <Input
-                                                    type= "date"
-                                                    value={this.state.time2}
+                                                    type= "date" 
                                                     className="inputRinci"
+                                                    value={this.state.time2}
                                                     onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
                                                 />
                                                 <Button
@@ -927,109 +1164,107 @@ class ReportOps extends Component {
                                     </Input>
                                 </div>
                             </div>
-                            <div className='mb-4 mt-2' />
+                            {level === '5' || level === '6' ? (
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-ops">
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>PIC</th>
-                                                <th>NAMA</th>
-                                                <th>AREA</th>
-                                                <th>NOMOR FPD</th>
+                                                <th>NO.AJUAN</th>
                                                 <th>COST CENTRE</th>
-                                                <th>NO COA</th>
+                                                <th>AREA</th>
+                                                <th>NO.COA</th>
                                                 <th>NAMA COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
                                                 <th>TGL AJUAN</th>
-                                                <th>PERIODE (DDMMYY)</th>
-                                                <th>NILAI YANG DIAJUKAN</th>
-                                                <th>BANK</th>
-                                                <th>NOMOR REKENING</th>
-                                                <th>ATAS NAMA</th>
-                                                <th>MEMILIKI NPWP</th>
-                                                <th>NAMA SESUAI NPWP</th>
-                                                <th>NOMOR NPWP</th>
-                                                <th>NAMA SESUAI KTP</th>
-                                                <th>NIK</th>
-                                                <th>DPP</th>
-                                                <th>PPN</th>
-                                                <th>PPh</th>
-                                                <th>NILAI YANG DIBAYARKAN</th>
-                                                <th>PO</th>
-                                                <th>TANGGAL TRANSFER</th>
-                                                <th>KETERANGAN</th>
+                                                <th>TIPE KASBON</th>
                                                 <th>STATUS</th>
+                                                <th>OPSI</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {dataReport.map(item => {
+                                            {newOps.map(item => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{dataReport.indexOf(item) + 1}</th>
-                                                        <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
-                                                        <th>{item.area}</th>
-                                                        <th>{item.depo.channel}</th>
+                                                        <th>{newOps.indexOf(item) + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.cost_center}</th>
+                                                        <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                        <th>{item.bank_tujuan}</th>
-                                                        <th>{item.norek_ajuan}</th>
-                                                        <th>{item.nama_tujuan}</th>
-                                                        <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
-                                                        <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                                        <th>{item.dpp}</th>
-                                                        <th>{item.ppn}</th>
-                                                        <th>{item.nilai_utang}</th>
+                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
+                                                        <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
-                                                            {item.nilai_bayar !== null ? item.nilai_bayar : 
-                                                                (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi !== 'Ya' ? item.nilai_ajuan
-                                                                : item.jenis_pph !== 'Non PPh' && item.type_transaksi !== 'Ya' ? parseFloat(item.nilai_ajuan) - parseFloat(item.nilai_utang)
-                                                                : item.jenis_pph !== 'Non PPh' && item.type_transaksi === 'Ya' && parseFloat(item.nilai_ajuan) - parseFloat(item.nilai_utang)
-                                                            }
+                                                            <Button 
+                                                            size='sm' 
+                                                            onClick={() => item.status_reject === 1 ? this.goRevisi({route: 'revkasbon', type: 'revisi', item: item}) : this.prosesDetail(item)} 
+                                                            className='mb-1 mr-1' 
+                                                            color='success'>
+                                                                {item.status_reject === 1 ? 'Revisi' : 'Detail'}
+                                                            </Button>
+                                                            <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
-                                                        <th>{item.no_po}</th>
-                                                        <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : item.type_kasbon}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
                                                     </tr>
                                                 )
                                             })}
-                                            {dataReport.length > 0 && (
-                                                <tr>
-                                                    <th className='total' colSpan={11}>Total</th>
-                                                    <th>
-                                                        {dataReport.reduce((accumulator, object) => {
-                                                            return accumulator + parseInt(object.nilai_ajuan);
-                                                        }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                                                    </th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                </tr>
-                                            )}
                                         </tbody>
                                     </Table>
+                                    {newOps.length === 0 && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
+                                        </div>
+                                    )}
                                 </div>
+                            ) : (
+                                <div className={style.tableDashboard}>
+                                    <Table bordered responsive hover className={style.tab} id="table-ops">
+                                        <thead>
+                                            <tr>
+                                                <th>No</th>
+                                                <th>NO.AJUAN</th>
+                                                <th>COST CENTRE</th>
+                                                <th>AREA</th>
+                                                <th>NO.COA</th>
+                                                <th>NAMA COA</th>
+                                                <th>KETERANGAN TAMBAHAN</th>
+                                                <th>TGL AJUAN</th>
+                                                <th>TIPE KASBON</th>
+                                                <th>STATUS</th>
+                                                <th>OPSI</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {newOps.map(item => {
+                                                return (
+                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                        <th>{newOps.indexOf(item) + 1}</th>
+                                                        <th>{item.no_transaksi}</th>
+                                                        <th>{item.cost_center}</th>
+                                                        <th>{item.area}</th>
+                                                        <th>{item.no_coa}</th>
+                                                        <th>{item.nama_coa}</th>
+                                                        <th>{item.keterangan}</th>
+                                                        <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
+                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
+                                                        <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
+                                                        <th>
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                        </th>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </Table>
+                                    {newOps.length === 0 && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div>
                                 <div className={style.infoPageEmail1}>
                                     <text>Showing 1 of 1 pages</text>
@@ -1126,13 +1361,12 @@ class ReportOps extends Component {
                                         <th>MEMILIKI NPWP</th>
                                         <th>NAMA SESUAI NPWP</th>
                                         <th>NOMOR NPWP</th>
-                                        <th>NAMA SESUAI KTP</th>
-                                        <th>NOMOR KTP</th>
-                                        <th>PPU</th>
-                                        <th>PA</th>
-                                        <th>NOMINAL</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>TANGGAL TRANSFER</th>
+                                        <th>Jenis PPh</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -1157,16 +1391,15 @@ class ReportOps extends Component {
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
+                                                <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
-                                                <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                                <th>{item.ppu}</th>
-                                                <th>{item.pa}</th>
-                                                <th>{item.nilai_bayar}</th>
+                                                <th>{item.dpp}</th>
+                                                <th>{item.ppn}</th>
+                                                <th>{item.nilai_utang}</th>
                                                 <th>{item.nilai_bayar}</th>
                                                 <th>{item.tanggal_transfer}</th>
+                                                <th>{item.jenis_pph}</th>
                                                 <th>{item.isreject === 1 ? 'reject' : '-'}</th>
                                             </tr>
                                             )
@@ -1179,7 +1412,7 @@ class ReportOps extends Component {
                         <div className="btnFoot">
                             <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
                             <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>FAA</Button>
-                            <Button color="primary"  onClick={() => this.openProsesModalDoc(detailOps[0])}>Dokumen</Button>
+                            <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
                             {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
@@ -1189,7 +1422,7 @@ class ReportOps extends Component {
                                     <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
+                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
                                         Approve
                                     </Button>
                                 </>
@@ -1202,201 +1435,13 @@ class ReportOps extends Component {
                         FORM AJUAN AREA
                     </ModalHeader>
                     <ModalBody>
-                        <div>
-                            {/* <div className="stockTitle">form ajuan area (claim)</div> */}
-                            {/* <div className="ptStock">pt. pinus merah abadi</div> */}
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailOps.length > 0 ? detailOps[0].area : ''} className="ml-3"  /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>no ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailOps.length > 0 ? detailOps[0].no_transaksi : ''} className="ml-3" /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailOps.length > 0 ? moment(detailOps[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
-                            </Row>
-                        </div>
-                        <div className={style.tableDashboard}>
-                            <Table bordered responsive hover className={style.tab}>
-                                <thead>
-                                    <tr className='tbops'>
-                                        <th>NO</th>
-                                        <th>COST CENTRE</th>
-                                        <th>NO COA</th>
-                                        <th>NAMA COA</th>
-                                        <th>KETERANGAN TAMBAHAN</th>
-                                        <th>PERIODE</th>
-                                        <th>NILAI YANG DIAJUKAN</th>
-                                        <th>BANK</th>
-                                        <th>NOMOR REKENING</th>
-                                        <th>ATAS NAMA</th>
-                                        <th>MEMILIKI NPWP</th>
-                                        <th>NAMA SESUAI NPWP</th>
-                                        <th>NOMOR NPWP</th>
-                                        <th>PPU</th>
-                                        <th>PA</th>
-                                        <th>NOMINAL</th>
-                                        <th>NILAI YANG DIBAYARKAN</th>
-                                        <th>TANGGAL TRANSFER</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {detailOps.length !== 0 && detailOps.map(item => {
-                                        return (
-                                            <tr>
-                                                <th scope="row">{detailOps.indexOf(item) + 1}</th>
-                                                <th>{item.cost_center}</th>
-                                                <th>{item.no_coa}</th>
-                                                <th>{item.nama_coa}</th>
-                                                <th>{item.keterangan}</th>
-                                                <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
-                                                <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </Table>
-                        </div>
-                        <Table borderless responsive className="tabPreview mt-4">
-                           <thead>
-                               <tr>
-                                   <th className="buatPre">Dibuat oleh,</th>
-                                   <th className="buatPre">Diperiksa oleh,</th>
-                                   <th className="buatPre">Disetujui oleh,</th>
-                                   <th className="buatPre">Diketahui oleh,</th>
-                               </tr>
-                           </thead>
-                           <tbody className="tbodyPre">
-                               <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.mengetahui !== undefined && ttdOps.mengetahui.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.mengetahui !== undefined && ttdOps.mengetahui.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr>
-                           </tbody>
-                       </Table>
+                        <FAA />
                     </ModalBody>
                     <hr />
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('opsfaa')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -1406,157 +1451,15 @@ class ReportOps extends Component {
                         </div>
                     </div>
                 </Modal>
-                <Modal isOpen={this.state.modalFpd} toggle={this.openModalFpd} size="lg">
+                <Modal isOpen={this.state.modalFpd} toggle={this.openModalFpd} size="lg" >
                     <ModalBody>
-                        <div>
-                            <div className="fpdTit">FORM PERMINTAAN DANA</div>
-                            <div className='fpdTit'>cabang/depo : {detailOps.length > 0 ? detailOps[0].area : ''}</div>
-                            <div className='fpdTit'>no : {detailOps.length > 0 ? detailOps[0].no_transaksi : ''}</div>
-                        </div>
-                        <div className={style.tableDashboard}>
-                            <Row>
-                                <Col md={1} className='upper'>
-                                    <div className='liner2'>no</div>
-                                </Col>
-                                <Col md={8} className='upper'>
-                                    <div className='line'>keperluan / <br />keterangan</div>
-                                </Col>
-                                <Col md={3} className='upper'>
-                                    <div className='liner'>rupiah</div>
-                                </Col>
-                            </Row>
-                            {detailOps.length !== 0 && detailOps.map(item => {
-                                return (
-                                    <Row className='mt-4'>
-                                        <Col md={1} className='upper'>
-                                            <div className='line'>{detailOps.indexOf(item) + 1}</div>
-                                        </Col>
-                                        <Col md={8} className='upper'>
-                                            <div className='line2'>{item.keterangan}</div>
-                                            <div className='line mt-1'>NO REK {item.bank_tujuan} {item.norek_ajuan}</div>
-                                        </Col>
-                                        <Col md={3} className='upper'>
-                                            <div className='line'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>
-                                        </Col>
-                                    </Row>
-                                )
-                            })}
-                            <Row className='mt-4'>
-                                <Col md={1} className='upper'>
-                                </Col>
-                                <Col md={8} className='upper'>
-                                    <div className='line'>Total</div>
-                                </Col>
-                                <Col md={3} className='upper'>
-                                    <div className='line'>
-                                        {this.state.totalfpd.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                                    </div>
-                                </Col>
-                            </Row>
-                        </div>
-                        <div className='bold'>{detailOps.length > 0 ? detailOps[0].area : ''}, {moment(detailOps.length > 0 ? moment(detailOps[0].updatedAt).format('DD MMMM YYYY') : '').format('DD MMMM YYYY')}</div>
-                        <Table borderless responsive className="tabPreview mt-4">
-                           <thead>
-                               <tr>
-                                   <th className="buatPre">Dibuat oleh,</th>
-                                   <th className="buatPre">Diperiksa oleh,</th>
-                                   <th className="buatPre">Disetujui oleh,</th>
-                               </tr>
-                           </thead>
-                           <tbody className="tbodyPre">
-                               <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : ttdOps.pemeriksa !== undefined && ttdOps.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdOps.penyetuju !== undefined && ttdOps.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr>
-                           </tbody>
-                       </Table>
+                        <FPD totalfpd={this.state.totalfpd} />
                     </ModalBody>
                     <hr />
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
-                                {/* <TableStock /> */}
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('opsfpd')}>
                                 Download
                             </Button>
                             <Button color="success" onClick={this.openModalFpd}>
@@ -1622,7 +1525,7 @@ class ReportOps extends Component {
                                     )
                                 })}
                                 <div className={style.btnApprove}>
-                                    <Button color="primary" disabled={(values.alasan === '.' || values.alasan === '') && listReason.length === 0 ? true : false} onClick={handleSubmit}>Submit</Button>
+                                    <Button color="primary" disabled={(values.alasan === '.' || values.alasan === '') && (listReason.length === 0 || listMenu.length === 0) ? true : false} onClick={handleSubmit}>Submit</Button>
                                     <Button className='ml-2' color="secondary" onClick={this.openModalReject}>Close</Button>
                                 </div>
                             </div>
@@ -1630,7 +1533,7 @@ class ReportOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.ops.isLoading || this.props.menu.isLoading || this.props.reason.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1652,7 +1555,12 @@ class ReportOps extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveDataOps()}>Ya</Button>
+                                {/* {level === '12' ? (
+                                    <Button color="primary" onClick={() => this.approveDataOps()}>Ya</Button>
+                                ) : (
+                                    <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
+                                )} */}
+                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1710,14 +1618,42 @@ class ReportOps extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve dan Kirim Email</div>
                             </div>
+                        </div>
+                    ) : this.state.confirm === 'rejSend' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve dan Gagal Kirim Email</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'appNotifDoc' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                            <AiOutlineClose size={80} className={style.red} />
+                            <div className={[style.sucUpdate, style.green]}>Gagal Approve, Pastikan Dokumen Lampiran Telah Diapprove</div>
+                        </div>
                         </div>
                     ) : this.state.confirm === 'submit' ? (
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'isAppDoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'isRejDoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
                             </div>
                         </div>
                     ) : (
@@ -1737,24 +1673,27 @@ class ReportOps extends Component {
             </Modal>
             <Modal size="xl" isOpen={this.state.modalDoc} toggle={this.openModalDoc}>
                 <ModalHeader>
-                   Kelengkapan Dokumen
+                   Kelengkapan Dokumen {detailOps !== undefined && detailOps.length > 0 && detailOps[0].no_transaksi}
                 </ModalHeader>
                 <ModalBody>
-                <Container>
+                    <Container>
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
                                             <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
-                                            {x.status === 0 ? (
-                                                <AiOutlineClose size={20} />
-                                            ) : x.status === 3 ? (
-                                                <AiOutlineCheck size={20} />
-                                            ) : (
-                                                <BsCircle size={20} />
-                                            )}
+                                                {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
+                                                : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
+                                                : (
+                                                    <BsCircle size={20} />
+                                                )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+                                            <div>
+                                                <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
+                                            </div>
                                             {/* <div className="colDoc">
                                                 <input
                                                 className="ml-4"
@@ -1811,226 +1750,129 @@ class ReportOps extends Component {
                     </div>
                     <hr/>
                     <div className={style.foot}>
-                        <div>
-                            <Button color="success" onClick={() => this.downloadData()}>Download</Button>
+                        {this.state.filter === 'available' ? (
+                            <div>
+                                <Button color="success" onClick={() => this.openModalAppDoc()}>Approve</Button>
+                                <Button className='ml-1' color="danger" onClick={() => this.openModalRejDoc()}>Reject</Button>
+                            </div>
+                        ) : (
+                            <div></div>
+                        )}
+                        <div className='rowGeneral'>
+                            <Button color="primary" className='mr-1' onClick={() => this.downloadData()}>Download</Button>
+                            <Button color="secondary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                         </div>
-                        <Button color="primary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                     </div>
                 </ModalBody>
             </Modal>
-            <Modal isOpen={this.state.formDis} toggle={() => {this.openModalDis(); this.showCollap('close')}} size="xl">
-                    {/* <Alert color="danger" className={style.alertWrong} isOpen={detailOps.find(({status_transaksi}) => status_transaksi === 26) === undefined ? false : true}>
-                        <div>Data Penjualan Asset Sedang Dilengkapi oleh divisi purchasing</div>
-                    </Alert> */}
-                    <ModalBody>
-                        <Row className='trackTitle ml-4'>
-                            <Col>
-                                Tracking Pengajuan Ops
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub'>
-                            <Col md={3}>
-                                Area
-                            </Col>
-                            <Col md={9}>
-                            : {detailOps[0] === undefined ? '' : detailOps[0].area}
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub'>
-                            <Col md={3}>
-                            No Ajuan
-                            </Col>
-                            <Col md={9}>
-                            : {detailOps[0] === undefined ? '' : detailOps[0].no_transaksi}
-                            </Col>
-                        </Row>
-                        <Row className='ml-4 trackSub1'>
-                            <Col md={3}>
-                            Tanggal Ajuan
-                            </Col>
-                            <Col md={9}>
-                            : {detailOps[0] === undefined ? '' : moment(detailOps[0].start_ops === null ? detailOps[0].createdAt : detailOps[0].start_ops).locale('idn').format('DD MMMM YYYY ')}
-                            </Col>
-                        </Row>
-                        <Row className='mt-2 ml-4 m40'>
-                            <Col md={12}>
-                                <Button onClick={this.openHistory} size='sm' color='success'>History lengkap</Button>
-                            </Col>
-                        </Row>
-                        <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                            <div class="step completed">
-                                <div class="step-icon-wrap">
-                                <button class="step-icon" onClick={() => this.showCollap('Submit')} ><FiSend size={40} className="center1" /></button>
-                                </div>
-                                <h4 class="step-title">Submit Ops</h4>
-                            </div>
-                            <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 2 ? "step completed" : 'step'} >
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Proses Approval')}><MdAssignment size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Proses Approval</h4>
-                            </div>
-                            <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Verifikasi Finance')}><FiSettings size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Verifikasi Finance</h4>
-                            </div>
-                            <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon" onClick={() => this.showCollap('Verifikasi Ops')}><FiSettings size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Verifikasi Ops</h4>
-                            </div>
-                            <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi === 5 ? "step completed" : 'step'}>
-                                <div class="step-icon-wrap">
-                                    <button class="step-icon"><AiOutlineCheck size={40} className="center" /></button>
-                                </div>
-                                <h4 class="step-title">Selesai</h4>
-                            </div>
-                        </div>
-                        <Collapse isOpen={this.state.collap} className="collapBody">
-                            <Card className="cardCollap">
-                                <CardBody>
-                                    <div className='textCard1'>{this.state.tipeCol}</div>
-                                    {this.state.tipeCol === 'submit' ? (
-                                        <div>Tanggal submit : {detailOps[0] === undefined ? '' : moment(detailOps[0].start_ops === null ? detailOps[0].createdAt : detailOps[0].start_ops).locale('idn').format('DD MMMM YYYY ')}</div>
-                                    ) : (
-                                        <div></div>
-                                    )}
-                                    <div>Rincian Data:</div>
-                                    <Table striped bordered responsive hover className="tableDis mb-3">
-                                        <thead>
-                                            <tr>
-                                                <th>NO</th>
-                                                <th>COST CENTRE</th>
-                                                <th>NO COA</th>
-                                                <th>NAMA COA</th>
-                                                <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
-                                                <th>NILAI YANG DIAJUKAN</th>
-                                                <th>BANK</th>
-                                                <th>NOMOR REKENING</th>
-                                                <th>ATAS NAMA</th>
-                                                <th>MEMILIKI NPWP</th>
-                                                <th>NAMA SESUAI NPWP</th>
-                                                <th>NOMOR NPWP</th>
-                                                <th>PPU</th>
-                                                <th>PA</th>
-                                                <th>NOMINAL</th>
-                                                <th>NILAI YANG DIBAYARKAN</th>
-                                                <th>TANGGAL TRANSFER</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {detailOps.length !== 0 && detailOps.map(item => {
-                                                return (
-                                                    <tr>
-                                                        <th scope="row">{detailOps.indexOf(item) + 1}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
-                                                        <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                        <th>{item.bank_tujuan}</th>
-                                                        <th>{item.norek_ajuan}</th>
-                                                        <th>{item.nama_tujuan}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                        <th>{item.ppu}</th>
-                                                        <th>{item.pa}</th>
-                                                        <th>{item.nilai_bayar}</th>
-                                                        <th>{item.nilai_bayar}</th>
-                                                        <th>{item.tanggal_transfer}</th>
-                                                    </tr>
-                                                )
-                                            })}
-                                        </tbody>
-                                    </Table>
-                                    {detailOps[0] === undefined || this.state.tipeCol === 'Submit' ? (
-                                        <div></div>
-                                    ) : (
-                                        <div>
-                                            <div className="mb-4 mt-2">Tracking {this.state.tipeCol} :</div>
-                                            {this.state.tipeCol === 'Proses Approval' ? (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    {detailOps[0] !== undefined && detailOps[0].appForm.length && detailOps[0].appForm.slice(0).reverse().map(item => {
-                                                        return (
-                                                            <div class={item.status === '1' ? 'step completed' : item.status === '0' ? 'step reject' : 'step'}>
-                                                                <div class="step-icon-wrap">
-                                                                <button class="step-icon"><FaFileSignature size={30} className="center2" /></button>
-                                                                </div>
-                                                                <h4 class="step-title">{item.jabatan}</h4>
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
-                                            ) : this.state.tipeCol === 'Verifikasi Finance' ? (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Check Dokumen</h4>
-                                                    </div>
-                                                    <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 3 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Selesai</h4>
-                                                    </div>
-                                                </div>
-                                            ) : this.state.tipeCol === 'Verifikasi Ops' && (
-                                                <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                                    <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FiSettings size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Proses Kelengkapan Data</h4>
-                                                    </div>
-                                                    <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Check Dokumen</h4>
-                                                    </div>
-                                                    <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                                                        <div class="step-icon-wrap">
-                                                        <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
-                                                        </div>
-                                                        <h4 class="step-title">Selesai</h4>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </CardBody>
-                            </Card>
-                        </Collapse>
-                    </ModalBody>
-                    <hr />
-                    <div className="modalFoot ml-3">
-                        {/* <Button color="primary" onClick={() => this.openModPreview({nama: 'disposal pengajuan', no: detailOps[0] !== undefined && detailOps[0].no_disposal})}>Preview</Button> */}
+            <Modal isOpen={this.state.formDis} toggle={() => {this.openModalDis()}} size="xl">
+                <ModalBody>
+                    <Tracking />
+                </ModalBody>
+                <hr />
+                <div className="modalFoot ml-3">
+                    <div></div>
+                    <div className="btnFoot">
+                        <Button color="primary" onClick={() => {this.openModalDis()}}>
+                            Close
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+            <Modal isOpen={this.state.history} toggle={this.openHistory}>
+                <ModalBody>
+                    <div className='mb-4'>History Transaksi</div>
+                    <div className='history'>
+                        {detailOps.length > 0 && detailOps[0].history !== null && detailOps[0].history.split(',').map(item => {
+                            return (
+                                item !== null && item !== 'null' && 
+                                <Button className='mb-2' color='info'>{item}</Button>
+                            )
+                        })}
+                    </div>
+                </ModalBody>
+            </Modal>
+            <Modal toggle={this.openDraftEmail} isOpen={this.state.openDraft} size='xl'>
+                <ModalHeader>Email Pemberitahuan</ModalHeader>
+                <ModalBody>
+                    <Email handleData={this.getMessage}/>
+                    <div className={style.foot}>
                         <div></div>
-                        <div className="btnFoot">
-                            <Button color="primary" onClick={() => {this.openModalDis(); this.showCollap('close')}}>
-                                Close
+                        <div>
+                            <Button
+                                disabled={this.state.message === '' ? true : false} 
+                                className="mr-2"
+                                onClick={() => this.approveDataOps()} 
+                                color="primary"
+                            >
+                                Approve & Send Email
                             </Button>
+                            <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
                         </div>
                     </div>
-                </Modal>
-                <Modal isOpen={this.state.history} toggle={this.openHistory}>
+                </ModalBody>
+            </Modal>
+            <Modal isOpen={this.state.openAppDoc} toggle={this.openModalAppDoc} centered={true}>
                     <ModalBody>
-                        <div className='mb-4'>History Transaksi</div>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk approve     
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.approveDoc()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalAppDoc}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.openRejDoc} toggle={this.openModalRejDoc} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk reject     
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.rejectDoc()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalRejDoc}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.docHist} toggle={this.docHistory}>
+                    <ModalBody>
+                        <div className='mb-4'>History Dokumen</div>
                         <div className='history'>
-                            {detailOps.length > 0 && detailOps[0].history.split(',').map(item => {
+                            {detailDoc.status !== undefined && detailDoc.status !== null && detailDoc.status.split(',').map(item => {
                                 return (
                                     item !== null && item !== 'null' && 
                                     <Button className='mb-2' color='info'>{item}</Button>
                                 )
                             })}
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.docCon} toggle={this.openDocCon} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div className='btnDocCon'>
+                                <text>
+                                    Pilih Open Kelengkapan Dokumen
+                                </text>
+                            </div>
+                            <div className='btnDocCon mb-4'>
+                                <Button color="primary" className='mr-2' onClick={() => this.openProsesModalDoc(detailOps[0])}>Open Pop Up</Button>
+                                <Button color="success" className='ml-2' onClick={() => this.openDocNewTab(detailOps)}>Open New Tab</Button>
+                            </div>
                         </div>
                     </ModalBody>
                 </Modal>
@@ -2047,7 +1889,8 @@ const mapStateToProps = state => ({
     ops: state.ops,
     menu: state.menu,
     reason: state.reason,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    email: state.email,
 })
 
 const mapDispatchToProps = {
@@ -2056,7 +1899,7 @@ const mapDispatchToProps = {
     getDetailDepo: depo.getDetailDepo,
     getDepo: depo.getDepo,
     getRole: user.getRole,
-    getReport: ops.getReport,
+    getOps: ops.getOps,
     getDetail: ops.getDetail,
     getApproval: ops.getApproval,
     getDocOps: ops.getDocCart,
@@ -2065,8 +1908,13 @@ const mapDispatchToProps = {
     getReason: reason.getReason,
     rejectOps: ops.rejectOps,
     resetOps: ops.resetOps,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    resetEmail: email.resetError,
+    getDraftEmail: email.getDraftEmail,
+    sendEmail: email.sendEmail,
+    approveDokumen: dokumen.approveDokumen,
+    rejectDokumen: dokumen.rejectDokumen
     // notifStock: notif.notifStock
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(ReportOps)
+export default connect(mapStateToProps, mapDispatchToProps)(Kasbon)

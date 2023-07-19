@@ -38,7 +38,6 @@ import OpsFpd from './components/Ops/FPD'
 import ReportTaxOps from './pages/Ops/ReportTax'
 import NavAjuanOps from './pages/Ops/NavAjuanOps'
 import PayOps from './pages/Ops/PayOps'
-import NavKasbon from './pages/Ops/NavKasbon'
 
 //Ikk
 import NavIkk from './pages/IKK/NavIkk'
@@ -53,6 +52,14 @@ import IkkFpd from './components/Ikk/FPD'
 import ReportTaxIkk from './pages/IKK/ReportTax'
 import NavAjuanIkk from './pages/IKK/NavAjuanIkk'
 import PayIkk from './pages/IKK/PayIkk'
+
+//Kasbon
+import NavKasbon from './pages/Kasbon/NavKasbon'
+import Kasbon from './pages/Kasbon/Kasbon'
+import RealisasiKasbon from './pages/Kasbon/RealisasiKasbon'
+import RevisiKasbon from './pages/Kasbon/RevisiKasbon'
+import VerifTaxKasbon from './pages/Kasbon/VerifTaxKasbon'
+import VerifRealKasbon from './pages/Kasbon/VerifRealKasbon'
 
 //Master
 import MasterDepo from './pages/Master/MasterDepo'
@@ -179,8 +186,25 @@ class App extends Component {
                 <PrivateRoute path='/payops'>
                     <PayOps />
                 </PrivateRoute>
+
+                {/* Kasbon */}
                 <PrivateRoute path='/navkasbon'>
-                    <NavKasbon/>
+                    <NavKasbon />
+                </PrivateRoute>
+                <PrivateRoute path='/kasbon'>
+                    <Kasbon />
+                </PrivateRoute>
+                <PrivateRoute path='/realkasbon'>
+                    <RealisasiKasbon />
+                </PrivateRoute>
+                <PrivateRoute path='/revkasbon'>
+                    <RevisiKasbon />
+                </PrivateRoute>
+                <PrivateRoute path='/verifkasbon'>
+                    <VerifTaxKasbon />
+                </PrivateRoute>
+                <PrivateRoute path='/verifrealkasbon'>
+                    <VerifRealKasbon />
                 </PrivateRoute>
 
                 {/* IKK */}

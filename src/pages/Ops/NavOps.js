@@ -4,7 +4,11 @@ import Sidebar from '../../components/Sidebar'
 import {VscAccount} from 'react-icons/vsc'
 import { Row, DropdownItem, UncontrolledDropdown, DropdownToggle, DropdownMenu, Button,
     Modal, ModalHeader, ModalBody, Input } from 'reactstrap'
-import {FiLogOut} from 'react-icons/fi'
+import {FiLogOut, FiSend} from 'react-icons/fi'
+import {BiRevision} from 'react-icons/bi'
+import {MdAssignment, MdVerifiedUser} from 'react-icons/md'
+import {HiOutlineDocumentReport} from 'react-icons/hi'
+import {RiDraftFill} from 'react-icons/ri'
 import {FaFileSignature} from 'react-icons/fa'
 import {BsBell, BsFillCircleFill} from 'react-icons/bs'
 import moment from 'moment'
@@ -150,11 +154,13 @@ class NavStock extends Component {
                         {level === '5' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('ops')}>
+                                        <FiSend size={220} className="picHome" />
                                         <div className="titCard">
                                             Pengajuan Operasional
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('revops')}>
+                                        <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi Operasional
                                         </div>
@@ -163,21 +169,25 @@ class NavStock extends Component {
                             ) : level === '2' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('veriffintax')}>
+                                        <MdVerifiedUser size={220} className="picHome" />
                                         <div className="titCard">
                                             Verifikasi Finance
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('navlistops')}>
+                                        <RiDraftFill size={220} className="picHome" />
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('repops')}>
+                                        <HiOutlineDocumentReport size={220} className="picHome" />
                                         <div className="titCard">
                                             Report Operasional
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('revops')}>
+                                        <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi Operasional
                                         </div>
@@ -186,21 +196,25 @@ class NavStock extends Component {
                             ) : level === '4' || level === '14' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goProses({route: 'veriffintax', type: 'kasbon'})}>
+                                        <MdVerifiedUser size={220} className="picHome" />
                                         <div className="titCard">
                                             Verifikasi Tax (Kasbon)
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goProses({route: 'veriffintax', type: 'non kasbon'})}>
+                                    {/* <button className="cardNav1" onClick={() => this.goProses({route: 'veriffintax', type: 'non kasbon'})}>
+                                        <MdVerifiedUser size={220} className="picHome" />
                                         <div className="titCard">
                                             Verifikasi Tax (Non Kasbon)
                                         </div>
-                                    </button>
+                                    </button> */}
                                     <button className="cardNav1" onClick={() => this.goRoute('revops')}>
+                                        <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi Operasional
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('reptaxops')}>
+                                        <HiOutlineDocumentReport size={220} className="picHome" />
                                         <div className="titCard">
                                             Report Tax (Operasional)
                                         </div>
@@ -209,11 +223,13 @@ class NavStock extends Component {
                             ) : level === '7' || level === '8' || level === '9' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('navlistops')}>
+                                        <RiDraftFill size={220} className="picHome" />
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('repops')}>
+                                        <HiOutlineDocumentReport size={220} className="picHome" />
                                         <div className="titCard">
                                             Report Operasional
                                         </div>
@@ -221,6 +237,7 @@ class NavStock extends Component {
                                 </>
                             ) : (
                                 <button className="cardNav1" onClick={() => this.goRoute('ops')}>
+                                    <FiSend size={220} className="picHome" />
                                     <div className="titCard">
                                         Pengajuan Operasional
                                     </div>

@@ -511,9 +511,9 @@ class VerifOps extends Component {
 
     changeFilter = async (val) => {
         const {dataOps, noDis} = this.props.ops
-        const type = localStorage.getItem('tipeKasbon')
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
+        const type = level === '4' || level === '14' ? 'non kasbon' : 'undefined' 
         const status = level === '2' ? 3 : 4
         const statusAll = 'all'
         const {time1, time2} = this.state
@@ -556,11 +556,11 @@ class VerifOps extends Component {
 
     getDataTime = async () => {
         const {time1, time2, filter} = this.state
-        const type = localStorage.getItem('tipeKasbon')
+        const token = localStorage.getItem("token")
         const level = localStorage.getItem('level')
+        const type = level === '4' || level === '14' ? 'non kasbon' : 'undefined' 
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
-        const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
         await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type)
     }
@@ -1174,7 +1174,7 @@ class VerifOps extends Component {
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
-        const type = localStorage.getItem('tipeKasbon')
+        const type = level === '4' || level === '14' ? 'non kasbon' : 'undefined' 
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1214,7 +1214,7 @@ class VerifOps extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : `Tax ${type}`} (Operasional)</div>
+                                <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : `Tax Non Kasbon`} (Operasional)</div>
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.searchEmail2}>

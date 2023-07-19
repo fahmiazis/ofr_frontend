@@ -6,6 +6,8 @@ import { Row, DropdownItem, UncontrolledDropdown, DropdownToggle, DropdownMenu, 
     Modal, ModalHeader, ModalBody, Input } from 'reactstrap'
 import {FiLogOut} from 'react-icons/fi'
 import {FaFileSignature} from 'react-icons/fa'
+import {FaRupiahSign} from 'react-icons/fa6'
+import {MdAssignment} from 'react-icons/md'
 import {BsBell, BsFillCircleFill} from 'react-icons/bs'
 import moment from 'moment'
 import {connect} from 'react-redux'
@@ -139,11 +141,13 @@ class NavOps extends Component {
                         <div className="mainBody">
                             <>
                                 <button className="cardNav1" onClick={() => this.goRoute('listops')}>
+                                    <MdAssignment size={220} className="picHome" />
                                     <div className="titCard">
                                         Approval (List Ajuan Operasional)
                                     </div>
                                 </button>
                                 <button className="cardNav1" onClick={() => this.goRoute('payops')}>
+                                    <FaRupiahSign size={220} className="picHome" />
                                     <div className="titCard">
                                         Pembayaran (List Ajuan Operasional)
                                     </div>

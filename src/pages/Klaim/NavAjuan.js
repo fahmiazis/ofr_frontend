@@ -7,6 +7,8 @@ import { Row, DropdownItem, UncontrolledDropdown, DropdownToggle, DropdownMenu, 
 import {FiLogOut} from 'react-icons/fi'
 import {FaFileSignature} from 'react-icons/fa'
 import {BsBell, BsFillCircleFill} from 'react-icons/bs'
+import {FaRupiahSign} from 'react-icons/fa6'
+import {MdAssignment} from 'react-icons/md'
 import moment from 'moment'
 import {connect} from 'react-redux'
 import auth from '../../redux/actions/auth'
@@ -139,11 +141,13 @@ class NavKlaim extends Component {
                         <div className="mainBody">
                             <>
                                 <button className="cardNav1" onClick={() => this.goRoute('listklm')}>
+                                    <MdAssignment size={220} className="picHome" />
                                     <div className="titCard">
                                         Approval (List Ajuan Klaim)
                                     </div>
                                 </button>
                                 <button className="cardNav1" onClick={() => this.goRoute('payklm')}>
+                                    <FaRupiahSign size={220} className="picHome" />
                                     <div className="titCard">
                                         Pembayaran (List Ajuan Klaim)
                                     </div>

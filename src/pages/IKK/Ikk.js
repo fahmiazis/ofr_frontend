@@ -139,7 +139,9 @@ class IKK extends Component {
             subject: '',
             docHist: false,
             detailDoc: {},
-            docCon: false
+            docCon: false,
+            tipeEmail: '',
+            dataRej: {}
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -238,11 +240,12 @@ class IKK extends Component {
             menu: listMenu.toString()
         }
         await this.props.rejectIkk(token, data)
-        this.getDataIkk()
-        this.setState({confirm: 'reject'})
-        this.openConfirm()
-        this.openModalReject()
-        this.openModalRinci()
+        this.dataSendEmail('reject')
+    }
+
+    prepReject = (val) => {
+        this.prepSendEmail('reject')
+        this.setState({dataRej: val})
     }
 
     showCollap = (val) => {
@@ -662,7 +665,7 @@ class IKK extends Component {
         }
     }
 
-    dataSendEmail = async () => {
+    dataSendEmail = async (val) => {
         const token = localStorage.getItem("token")
         const { detailIkk } = this.props.ikk
         const { draftEmail } = this.props.email
@@ -682,15 +685,23 @@ class IKK extends Component {
             tipe: 'ikk',
         }
         await this.props.sendEmail(token, tempno)
-        this.getDataIkk()
-        this.setState({confirm: 'isApprove'})
-        this.openConfirm()
         this.openDraftEmail()
-        this.openModalApprove()
-        this.openModalRinci()
+        if (val === 'reject') {
+            this.getDataIkk()
+            this.setState({confirm: 'reject'})
+            this.openConfirm()
+            this.openModalReject()
+            this.openModalRinci()
+        } else {
+            this.getDataIkk()
+            this.setState({confirm: 'isApprove'})
+            this.openConfirm()
+            this.openModalApprove()
+            this.openModalRinci()
+        }
     }
 
-    prepSendEmail = async () => {
+    prepSendEmail = async (val) => {
         const { detailIkk } = this.props.ikk
         const token = localStorage.getItem("token")
         const app = detailIkk[0].appForm
@@ -700,7 +711,7 @@ class IKK extends Component {
                 item.status === '1' && tempApp.push(item)
             )
         })
-        const tipe = tempApp.length === app.length-1 ? 'full approve' : 'approve'
+        const tipe = val === 'reject' ? val : tempApp.length === app.length-1 ? 'full approve' : 'approve'
         const tempno = {
             no: detailIkk[0].no_transaksi,
             kode: detailIkk[0].kode_plant,
@@ -709,6 +720,7 @@ class IKK extends Component {
             menu: 'Pengajuan Ikk (IKK)'
         }
         await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: val})
         this.openDraftEmail()
     }
 
@@ -1059,7 +1071,7 @@ class IKK extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, listMut, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, listMut, listReason, dataMenu, listMenu, detailDoc, tipeEmail} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { draftEmail } = this.props.email
@@ -1523,7 +1535,7 @@ class IKK extends Component {
                     alasan: "",
                     }}
                     validationSchema={alasanSchema}
-                    onSubmit={(values) => {this.rejectIkk(values)}}
+                    onSubmit={(values) => {this.prepReject(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
@@ -1608,7 +1620,7 @@ class IKK extends Component {
                                 ) : (
                                     <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 )} */}
-                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepSendEmail('app')}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1836,10 +1848,10 @@ class IKK extends Component {
                             <Button
                                 disabled={this.state.message === '' ? true : false} 
                                 className="mr-2"
-                                onClick={() => this.approveDataIkk()} 
+                                onClick={() => tipeEmail === 'reject' ? this.rejectIkk(this.state.dataRej) : this.approveDataIkk()} 
                                 color="primary"
                             >
-                                Approve & Send Email
+                                {tipeEmail === 'reject' ? 'Reject' : 'Approve'} & Send Email
                             </Button>
                             <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
                         </div>

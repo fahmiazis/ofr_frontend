@@ -4,7 +4,11 @@ import Sidebar from '../../components/Sidebar'
 import {VscAccount} from 'react-icons/vsc'
 import { Row, DropdownItem, UncontrolledDropdown, DropdownToggle, DropdownMenu, Button,
     Modal, ModalHeader, ModalBody, Input } from 'reactstrap'
-import {FiLogOut} from 'react-icons/fi'
+import {FiLogOut, FiSend} from 'react-icons/fi'
+import {BiRevision} from 'react-icons/bi'
+import {MdAssignment, MdVerifiedUser} from 'react-icons/md'
+import {HiOutlineDocumentReport} from 'react-icons/hi'
+import {RiDraftFill} from 'react-icons/ri'
 import {FaFileSignature} from 'react-icons/fa'
 import {BsBell, BsFillCircleFill} from 'react-icons/bs'
 import moment from 'moment'
@@ -140,11 +144,13 @@ class NavIkk extends Component {
                             {level === '5' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('ikk')}>
+                                        <FiSend size={220} className="picHome" />
                                         <div className="titCard">
                                             Pengajuan IKK
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('revikk')}>
+                                        <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi IKK
                                         </div>
@@ -153,21 +159,25 @@ class NavIkk extends Component {
                             ) : level === '2' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('veriffinikk')}>
+                                        <MdVerifiedUser size={220} className="picHome" />
                                         <div className="titCard">
                                             Verifikasi Finance
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('navlistikk')}>
+                                        <RiDraftFill size={220} className="picHome" />
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
                                     </button>
-                                    {/* <button className="cardNav1" onClick={() => this.goRoute('revikk')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('revikk')}>
+                                        <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi IKK
                                         </div>
-                                    </button> */}
+                                    </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('repikk')}>
+                                        <HiOutlineDocumentReport size={220} className="picHome" />
                                         <div className="titCard">
                                             Report IKK
                                         </div>
@@ -176,11 +186,13 @@ class NavIkk extends Component {
                             ) : level === '7' || level === '8' || level === '9' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('navlistikk')}>
+                                        <RiDraftFill size={220} className="picHome" />
                                         <div className="titCard">
                                             List Ajuan Bayar
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('repikk')}>
+                                        <HiOutlineDocumentReport size={220} className="picHome" />
                                         <div className="titCard">
                                             Report IKK
                                         </div>
@@ -189,11 +201,13 @@ class NavIkk extends Component {
                             ) : level === '4' || level === '14' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('veriffinikk')}>
+                                        <MdVerifiedUser size={220} className="picHome" />
                                         <div className="titCard">
                                             Verifikasi Tax
                                         </div>
                                     </button>
                                     <button className="cardNav1" onClick={() => this.goRoute('reptaxikk')}>
+                                        <HiOutlineDocumentReport size={220} className="picHome" />
                                         <div className="titCard">
                                             Report Tax (IKK)
                                         </div>
@@ -201,6 +215,7 @@ class NavIkk extends Component {
                                 </>
                             ) : (
                                 <button className="cardNav1" onClick={() => this.goRoute('ikk')}>
+                                    <FiSend size={220} className="picHome" />
                                     <div className="titCard">
                                         Pengajuan IKK
                                     </div>

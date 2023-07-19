@@ -87,6 +87,10 @@ export default {
         type: 'SUBMIT_VERIF',
         payload: http(token).patch(`/ops/verif`, data)
     }),
+    submitRealisasi: (token, data) => ({
+        type: 'SUBMIT_REALISASI',
+        payload: http(token).patch(`/ops/realisasi`, data)
+    }),
     submitAjuanBayar: (token, data) => ({
         type: 'SUBMIT_BAYAR',
         payload: http(token).patch(`/ops/subbayar`, data)

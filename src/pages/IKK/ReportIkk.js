@@ -1019,7 +1019,7 @@ class ReportIkk extends Component {
                     c5: moment().format('DDMMYYYY'),
                     c6: '',
                     c7: 'SA',
-                    c8: item.appList.find(({sebagai}) => sebagai === "pembuat").nama,
+                    c8: item.finance.pic_console,
                     c9: 'IDR',
                     c10: iter + 1,
                     c11: item.finance.gl_kk,
@@ -1269,7 +1269,7 @@ class ReportIkk extends Component {
                                                             />
                                                         </th>
                                                         <th>{dataReport.indexOf(item) + 1}</th>
-                                                        <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                                        <th>{item.finance.pic_console}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.depo.channel}</th>
                                                         <th>{item.no_transaksi}</th>
@@ -1525,7 +1525,7 @@ class ReportIkk extends Component {
                                                             <th>{moment().format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                                            <th>{item.finance.pic_console}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
                                                             <th>{item.finance.gl_kk}</th>

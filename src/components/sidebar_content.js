@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import MaterialTitlePanel from "./material_title_panel";
 import { Collapse } from 'reactstrap';
 import logo from '../assets/img/logo.png'
-import { FaDatabase, FaHome, FaFileArchive, FaHandshake, FaRecycle, FaTasks, FaTicketAlt} from 'react-icons/fa'
+import { FaDatabase, FaHome, FaCashRegister, FaHandshake, FaRecycle, FaTasks, FaTicketAlt} from 'react-icons/fa'
 import { RiArrowLeftRightFill, RiMoneyDollarCircleFill } from 'react-icons/ri'
 import { HiOutlineDocumentText } from 'react-icons/hi'
 import {RiBankCardFill} from 'react-icons/ri'
@@ -88,6 +88,10 @@ const SidebarContent = props => {
         <button className={stile.btnSide} onClick={() => goHome('navklaim')}>
           <FaHandshake size={20} className="mr-2" />
           <text className={stile.txtSide}>Klaim</text>
+        </button>
+        <button className={stile.btnSide} onClick={() => goHome('navkasbon')}>
+          <FaCashRegister size={20} className="mr-2" />
+          <text className={stile.txtSide}>Kasbon</text>
         </button>
         <button className={stile.btnSide} onClick={() => goHome('navops')}>
            <FiTruck size={20} className="mr-2" />
