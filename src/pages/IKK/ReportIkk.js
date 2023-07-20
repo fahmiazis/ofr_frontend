@@ -838,21 +838,28 @@ class ReportIkk extends Component {
         const workbook = new ExcelJS.Workbook();
         const ws = workbook.addWorksheet('data ajuan')
 
+        // await ws.protect('F1n4NcePm4')
+
         const borderStyles = {
             top: {style:'thin'},
             left: {style:'thin'},
             bottom: {style:'thin'},
             right: {style:'thin'}
         }
+        
 
         ws.columns = [
             {header: 'NO', key: 'c1'},
-            {header: 'NO AJUAN', key: 'c22'},
-            {header: 'COST CENTRE', key: 'c2'}, 
+            {header: 'PIC', key: 'c23'},
+            {header: 'NAMA', key: 'c26'},
+            {header: 'AREA', key: 'c24'},
+            {header: 'NOMOR FPD', key: 'c22'},
+            {header: 'COST CENTRE', key: 'c2'},
             {header: 'NO COA', key: 'c3'},
             {header: 'NAMA COA', key: 'c4'},
             {header: 'KETERANGAN TAMBAHAN', key: 'c5'},
-            {header: 'PERIODE', key: 'c6'},
+            {header: 'TGL AJUAN', key: 'c25'},
+            {header: 'PERIODE (DDMMYY)', key: 'c6'},
             {header: 'NILAI YANG DIAJUKAN', key: 'c7'},
             {header: 'BANK', key: 'c8'},
             {header: 'NOMOR REKENING', key: 'c9'},
@@ -861,24 +868,21 @@ class ReportIkk extends Component {
             {header: 'NAMA SESUAI NPWP', key: 'c12'},
             {header: 'NOMOR NPWP', key: 'c13'},
             {header: 'NAMA SESUAI KTP', key: 'c14'},
-            {header: 'NOMOR KTP', key: 'c15'},
-            {header: 'DPP', key: 'c16'},
-            {header: 'PPN', key: 'c17'},
-            {header: 'PPh', key: 'c18'},
+            {header: 'NIK', key: 'c15'},
             {header: 'NILAI YANG DIBAYARKAN', key: 'c19'},
             {header: 'TANGGAL TRANSFER', key: 'c20'},
-            {header: 'Jenis PPh', key: 'c21'}
+            {header: 'KETERANGAN', key: 'c27'},
+            {header: 'STATUS', key: 'c28'}
         ]
 
         dataDownload.map((item, index) => { return ( ws.addRow(
             {
                 c1: index + 1,
-                c22: item.no_transaksi,
                 c2: item.cost_center,
                 c3: item.no_coa,
                 c4: item.nama_coa,
                 c5: item.uraian,
-                c6: `${moment(item.periode_awal).format('DD/MMMM/YYYY')} - ${moment(item.periode_akhir).format('DD/MMMM/YYYY')}`,
+                c6: `${moment(item.periode_awal).format('DD MMMM YYYY')} - ${moment(item.periode_akhir).format('DD MMMM YYYY')}`,
                 c7: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c8: item.bank_tujuan,
                 c9: item.norek_ajuan,
@@ -888,22 +892,61 @@ class ReportIkk extends Component {
                 c13: item.status_npwp === 0 ? '' : item.no_npwp,
                 c14: item.status_npwp === 0 ? item.nama_ktp : '',
                 c15: item.status_npwp === 0 ? item.no_ktp : '',
-                c16: item.dpp,
-                c17: item.ppn,
-                c18: item.nilai_utang,
                 c19: item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c20: item.tanggal_transfer !== null ? `${moment(item.tanggal_transfer).format('DD/MMMM/YYYY')}` : '-',
-                c21: item.jenis_pph,
+                c22: item.no_transaksi,
+                c26: item.area,
+                c25: `${moment(item.start_ikk).format('DD/MMMM/YYYY')}`,
+                c28: `${item.history.split(',').reverse()[0]}`,
+                c23: `${item.appList.find(({sebagai}) => sebagai === "pembuat").nama}`,
+                c24: `${item.depo.channel}`,
+                c27: '',
             }
         )
+
         ) })
+
+        ws.addRow(
+            {
+                c6: 'TOTAL :' ,
+                c7: dataDownload.reduce((accumulator, object) => {
+                    return accumulator + parseInt(object.nilai_ajuan);
+                }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c8: '',
+                c9: '',
+                c10: '',
+                c11: '',
+                c12: '',
+                c13: '',
+                c14: '',
+                c15: '',
+                c16: '',
+                c17: '',
+                c18: '',
+                c19: '',
+                c20: '',
+                c21: '',
+                c22: '',
+                c23: '',
+                c24: '',
+                c25: '',
+                c26: '',
+                c27: '',
+                c28: '',
+            }
+        )
 
         ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
             row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
               cell.border = borderStyles;
             })
           })
-          
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
 
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
@@ -1568,7 +1611,7 @@ class ReportIkk extends Component {
                         <div></div>
                         <div className="btnFoot">
                             {this.state.titleDownload === 'Konsol' ? (
-                                <Button className="mr-2" color='warning' >Download</Button>
+                                <Button className="mr-2" color='warning' onClick={this.downloadKonsol}>Download</Button>
                             ) : (
                                 <Button className="mr-2" color='warning' onClick={this.downloadJurnal} >Download</Button>
                             )}

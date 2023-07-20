@@ -34,6 +34,8 @@ import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
 import ops from '../../redux/actions/ops'
 import dokumen from '../../redux/actions/dokumen'
+import ExcelJS from "exceljs";
+import fs from "file-saver";
 const {REACT_APP_BACKEND_URL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -93,7 +95,6 @@ class ReportOps extends Component {
             modalConfirm: false,
             confirm: '',
             modalDoc: false,
-            listMut: [],
             listReason: [],
             modalStock: false,
             openPdf: false,
@@ -122,6 +123,10 @@ class ReportOps extends Component {
             time: 'pilih',
             time1: moment().startOf('week').format('YYYY-MM-DD'),
             time2: moment().format('YYYY-MM-DD'),
+            dataDownload: [],
+            modalDownload: false,
+            titleDownload: '',
+            listOps: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -193,7 +198,7 @@ class ReportOps extends Component {
     }
 
     rejectOps = async (val) => {
-        const {listMut, listReason, listMenu} = this.state
+        const {listOps, listReason, listMenu} = this.state
         const { detailOps } = this.props.ops
         const token = localStorage.getItem('token')
         const tempno = {
@@ -205,7 +210,7 @@ class ReportOps extends Component {
         }
         const data = {
             no: detailOps[0].no_transaksi,
-            list: listMut,
+            list: listOps,
             alasan: temp + val.alasan,
             menu: listMenu.toString()
         }
@@ -423,7 +428,7 @@ class ReportOps extends Component {
         const tempno = {
             no: val.no_transaksi
         }
-        this.setState({listMut: []})
+        this.setState({listOps: []})
         await this.props.getDetail(token, tempno)
         await this.props.getApproval(token, tempno)
         this.openModalRinci()
@@ -754,35 +759,178 @@ class ReportOps extends Component {
     }
 
     chekApp = (val) => {
-        const { listMut } = this.state
-        const {detailOps} = this.props.ops
+        const { listOps } = this.state
+        const {dataReport} = this.props.ops
         if (val === 'all') {
             const data = []
-            for (let i = 0; i < detailOps.length; i++) {
-                data.push(detailOps[i].id)
+            for (let i = 0; i < dataReport.length; i++) {
+                data.push(dataReport[i].id)
             }
-            this.setState({listMut: data})
+            this.setState({listOps: data})
         } else {
-            listMut.push(val)
-            this.setState({listMut: listMut})
+            listOps.push(val)
+            this.setState({listOps: listOps})
         }
     }
 
-    chekRej = (val) => {
-        const {listMut} = this.state
-        if (val === 'all') {
-            const data = []
-            this.setState({listMut: data})
-        } else {
-            const data = []
-            for (let i = 0; i < listMut.length; i++) {
-                if (listMut[i] === val) {
-                    data.push()
-                } else {
-                    data.push(listMut[i])
+    prosesDownload = (val) => {
+        const {listOps} = this.state
+        const {dataReport} = this.props.ops
+        const data = []
+        for (let i = 0; i < listOps.length; i++) {
+            for (let j = 0; j < dataReport.length; j++) {
+                if (dataReport[j].id === listOps[i]) {
+                    data.push(dataReport[j])
                 }
             }
-            this.setState({listMut: data})
+        }
+        this.setState({dataDownload: data, titleDownload: val})
+        this.openDownload()
+    }
+
+    openDownload = () => {
+        this.setState({modalDownload: !this.state.modalDownload})
+    }
+
+    downloadOps = async () => {
+        const { dataDownload } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data operasional')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+
+        ws.columns = [
+            {header: 'NO', key: 'c1'},
+            {header: 'PIC', key: 'c2'},
+            {header: 'NAMA', key: 'c3'},
+            {header: 'AREA', key: 'c4'},
+            {header: 'NOMOR FPD', key: 'c5'},
+            {header: 'COST CENTRE', key: 'c6'},
+            {header: 'NO COA', key: 'c7'},
+            {header: 'NAMA COA', key: 'c8'},
+            {header: 'KETERANGAN TAMBAHAN', key: 'c9'},
+            {header: 'TGL AJUAN', key: 'c10'},
+            {header: 'PERIODE (DDMMYY)', key: 'c11'},
+            {header: 'NILAI YANG DIAJUKAN', key: 'c12'},
+            {header: 'BANK', key: 'c13'},
+            {header: 'NOMOR REKENING', key: 'c14'},
+            {header: 'ATAS NAMA', key: 'c15'},
+            {header: 'MEMILIKI NPWP', key: 'c16'},
+            {header: 'NAMA SESUAI NPWP', key: 'c17'},
+            {header: 'NOMOR NPWP', key: 'c18'},
+            {header: 'NAMA SESUAI KTP', key: 'c19'},
+            {header: 'NIK', key: 'c20'},
+            {header: 'DPP', key: 'c21'},
+            {header: 'PPN', key: 'c22'},
+            {header: 'PPh', key: 'c23'},
+            {header: 'NILAI YANG DIBAYARKAN', key: 'c24'},
+            {header: 'TANGGAL TRANSFER', key: 'c25'},
+            {header: 'KETERANGAN', key: 'c26'},
+            {header: 'STATUS', key: 'c27'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: index + 1,
+                c2: `${item.appList.find(({sebagai}) => sebagai === "pembuat").nama}`,
+                c3: item.area,
+                c4: item.depo.channel,
+                c5: item.no_transaksi,
+                c6: item.cost_center,
+                c7: item.no_coa,
+                c8: item.nama_coa,
+                c9: item.keterangan,
+                c10: `${moment(item.start_ops).format('DD MMMM YYYY')}`,
+                c11: `${moment(item.periode_awal).format('DD MMMM YYYY')} - ${moment(item.periode_akhir).format('DD MMMM YYYY')}`,
+                c12: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c13: item.bank_tujuan,
+                c14: item.norek_ajuan,
+                c15: item.nama_tujuan,
+                c16: item.status_npwp === 0 ? 'Tidak' : 'Ya',
+                c17: item.status_npwp === 0 ? '' : item.nama_npwp,
+                c18: item.status_npwp === 0 ? '' : item.no_npwp,
+                c19: item.status_npwp === 0 ? item.nama_ktp : '',
+                c20: item.status_npwp === 0 ? item.no_ktp : '',
+                c21: item.dpp,
+                c22: item.ppn,
+                c23: item.nilai_utang,
+                c24: item.nilai_bayar,
+                c25: `${moment(item.tanggal_transfer).format('DD MMMM YYYY')}`,
+                c26: '',
+                c27: item.history.split(',').reverse()[0],
+            }
+        )
+        ) })
+
+        ws.addRow(
+            {
+                c11: 'TOTAL :',
+                c12: dataDownload.reduce((accumulator, object) => {
+                    return accumulator + parseInt(object.nilai_ajuan);
+                }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c13: '',
+                c14: '',
+                c15: '',
+                c16: '',
+                c17: '',
+                c18: '',
+                c19: '',
+                c20: '',
+                c21: '',
+                c22: '',
+                c23: '',
+                c24: '',
+                c25: '',
+                c26: '',
+                c27: '',
+                c28: '',
+            }
+        )
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Data Ajuan Operasional ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
+    }
+
+    chekRej = (val) => {
+        const {listOps} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listOps: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listOps.length; i++) {
+                if (listOps[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listOps[i])
+                }
+            }
+            this.setState({listOps: data})
         }
     }
 
@@ -817,7 +965,7 @@ class ReportOps extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
+        const {dataRinci, dropApp, dataItem, listOps, drop, listReason, dataMenu, listMenu, dataDownload} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, dataReport } = this.props.ops
@@ -863,16 +1011,7 @@ class ReportOps extends Component {
                                 <div className={style.titleDashboard}>Report Konsol Operasional</div>
                             </div>
                             <div className={style.secEmail3}>
-                                <div className={style.headEmail2}>
-                                    <ReactHtmlToExcel
-                                        id="test-table-xls-button"
-                                        className="btn btn-success mr-2"
-                                        table="table-ops"
-                                        filename={`Report Operasional ${moment().format('DD MMMM YYYY')}`}
-                                        sheet="Report"
-                                        buttonText="Download"
-                                    />
-                                </div>
+                                <Button className="mr-2" color='success' onClick={this.prosesDownload}>Download</Button>
                                 <div className={style.searchEmail2}>
                                     <text>Status:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
@@ -932,6 +1071,15 @@ class ReportOps extends Component {
                                     <Table bordered responsive hover className={style.tab} id="table-ops">
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                        className='mr-2'
+                                                        type='checkbox'
+                                                        checked={listOps.length === 0 ? false : listOps.length === dataReport.length ? true : false}
+                                                        onChange={() => listOps.length === dataReport.length ? this.chekRej('all') : this.chekApp('all')}
+                                                        />
+                                                    Select
+                                                </th>
                                                 <th>No</th>
                                                 <th>PIC</th>
                                                 <th>NAMA</th>
@@ -965,7 +1113,15 @@ class ReportOps extends Component {
                                         <tbody>
                                             {dataReport.map(item => {
                                                 return (
+                                                   
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                         <th>
+                                                            <input 
+                                                            type='checkbox'
+                                                            checked={listOps.find(element => element === item.id) !== undefined ? true : false}
+                                                            onChange={listOps.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                            />
+                                                        </th>
                                                         <th>{dataReport.indexOf(item) + 1}</th>
                                                         <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
                                                         <th>{item.area}</th>
@@ -1005,7 +1161,7 @@ class ReportOps extends Component {
                                             })}
                                             {dataReport.length > 0 && (
                                                 <tr>
-                                                    <th className='total' colSpan={11}>Total</th>
+                                                    <th className='total' colSpan={12}>Total</th>
                                                     <th>
                                                         {dataReport.reduce((accumulator, object) => {
                                                             return accumulator + parseInt(object.nilai_ajuan);
@@ -1055,6 +1211,116 @@ class ReportOps extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
+
+                 <Modal className='modalrinci' isOpen={this.state.modalDownload} toggle={this.openDownload} size="xl">
+                    <ModalHeader>
+                        Download Report
+                    </ModalHeader>
+                    <ModalBody>
+                        <Table bordered responsive hover className={style.tab}>
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>PIC</th>
+                                    <th>NAMA</th>
+                                    <th>AREA</th>
+                                    <th>NOMOR FPD</th>
+                                    <th>COST CENTRE</th>
+                                    <th>NO COA</th>
+                                    <th>NAMA COA</th>
+                                    <th>KETERANGAN TAMBAHAN</th>
+                                    <th>TGL AJUAN</th>
+                                    <th>PERIODE (DDMMYY)</th>
+                                    <th>NILAI YANG DIAJUKAN</th>
+                                    <th>BANK</th>
+                                    <th>NOMOR REKENING</th>
+                                    <th>ATAS NAMA</th>
+                                    <th>MEMILIKI NPWP</th>
+                                    <th>NAMA SESUAI NPWP</th>
+                                    <th>NOMOR NPWP</th>
+                                    <th>NAMA SESUAI KTP</th>
+                                    <th>NIK</th>
+                                    <th>DPP</th>
+                                    <th>PPN</th>
+                                    <th>PPh</th>
+                                    <th>NILAI YANG DIBAYARKAN</th>
+                                    <th>TANGGAL TRANSFER</th>
+                                    <th>KETERANGAN</th>
+                                    <th>STATUS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dataDownload.map(item => {
+                                    return (
+                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                            <th>{dataDownload.indexOf(item) + 1}</th>
+                                            <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                            <th>{item.area}</th>
+                                            <th>{item.depo.channel}</th>
+                                            <th>{item.no_transaksi}</th>
+                                            <th>{item.cost_center}</th>
+                                            <th>{item.no_coa}</th>
+                                            <th>{item.nama_coa}</th>
+                                            <th>{item.keterangan}</th>
+                                            <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
+                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
+                                            <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                            <th>{item.bank_tujuan}</th>
+                                            <th>{item.norek_ajuan}</th>
+                                            <th>{item.nama_tujuan}</th>
+                                            <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
+                                            <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                            <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                            <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
+                                            <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
+                                            <th>{item.dpp}</th>
+                                            <th>{item.ppn}</th>
+                                            <th>{item.nilai_utang}</th>
+                                            <th>{item.nilai_bayar}</th>
+                                            <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                            <th></th>
+                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                        </tr>
+                                    )
+                                })}
+                                {dataDownload.length > 0 && (
+                                    <tr>
+                                        <th className='total' colSpan={11}>Total</th>
+                                        <th>
+                                            {dataDownload.reduce((accumulator, object) => {
+                                                return accumulator + parseInt(object.nilai_ajuan);
+                                            }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                        </th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </Table>
+                    </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div></div>
+                        <div className="btnFoot">
+                            <Button color='warning' className='mb-4' onClick={this.downloadOps}>Download Report</Button>
+                            <Button color='success' className='mb-4 ml-3' onClick={this.openDownload}>Close</Button>
+                        </div>
+                    </div>
+                </Modal>                                        
+
                 <Modal isOpen={this.state.modalUpload} toggle={this.openModalUpload} size="lg">
                     <ModalHeader>
                         Upload gambar asset
@@ -1108,8 +1374,8 @@ class ReportOps extends Component {
                                             <input  
                                             className='mr-2'
                                             type='checkbox'
-                                            checked={listMut.length === 0 ? false : listMut.length === detailOps.length ? true : false}
-                                            onChange={() => listMut.length === detailOps.length ? this.chekRej('all') : this.chekApp('all')}
+                                            checked={listOps.length === 0 ? false : listOps.length === detailOps.length ? true : false}
+                                            onChange={() => listOps.length === detailOps.length ? this.chekRej('all') : this.chekApp('all')}
                                             />
                                             Select
                                         </th>
@@ -1143,8 +1409,8 @@ class ReportOps extends Component {
                                                 <th>
                                                     <input 
                                                     type='checkbox'
-                                                    checked={listMut.find(element => element === item.id) !== undefined ? true : false}
-                                                    onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                    checked={listOps.find(element => element === item.id) !== undefined ? true : false}
+                                                    onChange={listOps.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
                                                     />
                                                 </th>
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
@@ -1186,7 +1452,7 @@ class ReportOps extends Component {
                                 <div></div>
                             ) : (
                                 <>
-                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
+                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listOps.length > 0 ? false : this.state.filter !== 'available' ? true : listOps.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
                                     <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
@@ -1222,6 +1488,15 @@ class ReportOps extends Component {
                             <Table bordered responsive hover className={style.tab}>
                                 <thead>
                                     <tr className='tbops'>
+                                        <th>
+                                            <input  
+                                            className='mr-2'
+                                            type='checkbox'
+                                            checked={listOps.length === 0 ? false : listOps.length === detailOps.length ? true : false}
+                                            onChange={() => listOps.length === detailOps.length ? this.chekRej('all') : this.chekApp('all')}
+                                            />
+                                            Select
+                                        </th>
                                         <th>NO</th>
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>
@@ -1246,6 +1521,13 @@ class ReportOps extends Component {
                                     {detailOps.length !== 0 && detailOps.map(item => {
                                         return (
                                             <tr>
+                                                <th>
+                                                    <input 
+                                                    type='checkbox'
+                                                    checked={listOps.find(element => element === item.id) !== undefined ? true : false}
+                                                    onChange={listOps.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                    />
+                                                </th>
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
