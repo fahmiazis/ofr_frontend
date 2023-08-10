@@ -35,6 +35,8 @@ import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
 import klaim from '../../redux/actions/klaim'
 import dokumen from '../../redux/actions/dokumen'
+import Email from '../../components/Klaim/Email'
+import email from '../../redux/actions/email'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const klaimSchema = Yup.object().shape({
@@ -111,7 +113,10 @@ class Klaim extends Component {
             bankList: [],
             detail: {},
             bank: '',
-            digit: 0
+            digit: 0,
+            openDraft: false,
+            message: '',
+            subject: '',
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -251,12 +256,12 @@ class Klaim extends Component {
                 item.isreject === 1 && temp.push(item)
             )
         })
-        if (temp.length > 0) {
-            this.setState({confirm: 'rejSubmit'})
-            this.openConfirm()
-        } else {
+        // if (temp.length > 0) {
+        //     this.setState({confirm: 'rejSubmit'})
+        //     this.openConfirm()
+        // } else {
             this.openModalApprove()
-        }
+        // }
     }
 
     openPreview = async (val) => {
@@ -530,6 +535,84 @@ class Klaim extends Component {
         this.openModalRinci()
     }
 
+    prosesSubmitRevisi = async () => {
+        const {detailKlaim} = this.props.klaim
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: detailKlaim[0].no_transaksi
+        }
+        await this.props.submitRevisi(token, tempno)
+        this.dataSendEmail('approve')
+    }
+
+    dataSendEmail = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailKlaim } = this.props.klaim
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: detailKlaim[0].no_transaksi,
+            tipe: 'klaim',
+        }
+        await this.props.sendEmail(token, tempno)
+        if (val === 'reject') {
+            this.getDataKlaim()
+            this.setState({confirm: 'reject'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalReject()
+            this.openModalRinci()
+        } else {
+            this.getDataKlaim()
+            this.setState({confirm: 'submit'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalApprove()
+            this.openModalRinci()
+        }
+    }
+
+    prepSendEmail = async () => {
+        const { detailKlaim } = this.props.klaim
+        const token = localStorage.getItem("token")
+        const app = detailKlaim[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'revisi'
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            kode: detailKlaim[0].kode_plant,
+            jenis: 'klaim',
+            tipe: tipe,
+            menu: 'Revisi Area (Klaim)'
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'app'})
+        this.openDraftEmail()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val.message, subject: val.subject})
+    }
+
     onSearch = async (e) => {
         this.setState({search: e.target.value})
         const token = localStorage.getItem("token")
@@ -764,7 +847,7 @@ class Klaim extends Component {
 
     prepareReject = async () => {
         const token = localStorage.getItem("token")
-        await this.props.getAllMenu(token, 'reject')
+        await this.props.getAllMenu(token, 'reject', 'Klaim')
         await this.props.getReason(token)
         const dataMenu = this.props.menu.dataAll
         const data = []
@@ -785,21 +868,7 @@ class Klaim extends Component {
     openModalStock = () => {
         this.setState({modalStock: !this.state.modalStock})
     }
-
-    prosesSubmitRevisi = async () => {
-        const {detailKlaim} = this.props.klaim
-        const token = localStorage.getItem("token")
-        const tempno = {
-            no: detailKlaim[0].no_transaksi
-        }
-        await this.props.submitRevisi(token, tempno)
-        this.openModalRinci()
-        this.openModalApprove()
-        this.getDataKlaim()
-        this.setState({confirm: 'submit'})
-        this.openConfirm()
-    }
-
+    
     dropDown = () => {
         this.setState({drop: !this.state.drop})
     }
@@ -987,7 +1056,7 @@ class Klaim extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal isOpen={this.props.klaim.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.klaim.isLoading || this.props.email.isLoading} size="sm">
                     <ModalBody>
                     <div>
                         <div className={style.cekUpdate}>
@@ -1354,7 +1423,7 @@ class Klaim extends Component {
                                                 onClick={handleSubmit}>
                                                 Save
                                             </Button>
-                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
+                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalEdit()}>Close</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -1808,7 +1877,7 @@ class Klaim extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.prosesSubmitRevisi()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1981,6 +2050,26 @@ class Klaim extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal toggle={this.openDraftEmail} isOpen={this.state.openDraft} size='xl'>
+                <ModalHeader>Email Pemberitahuan</ModalHeader>
+                <ModalBody>
+                    <Email handleData={this.getMessage}/>
+                    <div className={style.foot}>
+                        <div></div>
+                        <div>
+                            <Button
+                                disabled={this.state.message === '' ? true : false} 
+                                className="mr-2"
+                                onClick={() => this.prosesSubmitRevisi()}
+                                color="primary"
+                            >
+                                Submit & Send Email
+                            </Button>
+                            <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
             </>
         )
     }
@@ -1994,7 +2083,8 @@ const mapStateToProps = state => ({
     menu: state.menu,
     reason: state.reason,
     bank: state.bank,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    email: state.email,
 })
 
 const mapDispatchToProps = {
@@ -2017,7 +2107,10 @@ const mapDispatchToProps = {
     appRevisi: klaim.appRevisi,
     getBank: bank.getBank,
     submitRevisi: klaim.submitRevisi,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    resetEmail: email.resetError,
+    getDraftEmail: email.getDraftEmail,
+    sendEmail: email.sendEmail,
     // notifStock: notif.notifStock
 }
 

@@ -243,11 +243,6 @@ class IKK extends Component {
         this.dataSendEmail('reject')
     }
 
-    prepReject = (val) => {
-        this.prepSendEmail('reject')
-        this.setState({dataRej: val})
-    }
-
     showCollap = (val) => {
         if (val === 'close') {
             this.setState({collap: false})
@@ -701,7 +696,7 @@ class IKK extends Component {
         }
     }
 
-    prepSendEmail = async (val) => {
+    prepApprove = async () => {
         const { detailIkk } = this.props.ikk
         const token = localStorage.getItem("token")
         const app = detailIkk[0].appForm
@@ -711,7 +706,7 @@ class IKK extends Component {
                 item.status === '1' && tempApp.push(item)
             )
         })
-        const tipe = val === 'reject' ? val : tempApp.length === app.length-1 ? 'full approve' : 'approve'
+        const tipe = tempApp.length === app.length-1 ? 'full approve' : 'approve'
         const tempno = {
             no: detailIkk[0].no_transaksi,
             kode: detailIkk[0].kode_plant,
@@ -720,7 +715,31 @@ class IKK extends Component {
             menu: 'Pengajuan Ikk (IKK)'
         }
         await this.props.getDraftEmail(token, tempno)
-        this.setState({tipeEmail: val})
+        this.setState({tipeEmail: 'app'})
+        this.openDraftEmail()
+    }
+
+    prepReject = async (val) => {
+        const { detailIkk } = this.props.ikk
+        const token = localStorage.getItem("token")
+        const app = detailIkk[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const tempno = {
+            no: detailIkk[0].no_transaksi,
+            kode: detailIkk[0].kode_plant,
+            jenis: 'ikk',
+            tipe: tipe,
+            menu: 'Pengajuan Ikk (IKK)'
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
         this.openDraftEmail()
     }
 
@@ -1618,9 +1637,9 @@ class IKK extends Component {
                                 {/* {level === '11' ? (
                                     <Button color="primary" onClick={() => this.approveDataIkk()}>Ya</Button>
                                 ) : (
-                                    <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
+                                    <Button color="primary" onClick={() => this.prepApprove()}>Ya</Button>
                                 )} */}
-                                <Button color="primary" onClick={() => this.prepSendEmail('app')}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepApprove()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1838,7 +1857,7 @@ class IKK extends Component {
                     )} */}
                 </ModalFooter>
             </Modal>
-            <Modal toggle={this.openDraftEmail} isOpen={this.state.openDraft} size='xl'>
+            <Modal isOpen={this.state.openDraft} size='xl'>
                 <ModalHeader>Email Pemberitahuan</ModalHeader>
                 <ModalBody>
                     <Email handleData={this.getMessage}/>

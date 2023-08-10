@@ -35,6 +35,7 @@ const opsState = {
     isApplist: null,
     isFinOps: null,
     isReject: null,
+    revKasbon: null,
     appRevisi: null,
     isEdit: null,
     subRevisi: null,
@@ -591,6 +592,29 @@ export default (state=opsState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'REVISI_KASBON_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'REVISI_KASBON_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    revKasbon: true,
+                    alertMsg: 'revisi kasbon Succesfully',
+                };
+            }
+            case 'REVISI_KASBON_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    revKasbon: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'REJECTLIST_OPS_PENDING': {
                 return {
                     ...state,
@@ -786,6 +810,7 @@ export default (state=opsState, action) => {
                     uploadBukti: null,
                     isDocBukti: null,
                     submitBukti: null,
+                    revKasbon: null
                 }
             }
             default: {

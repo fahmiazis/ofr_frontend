@@ -38,6 +38,7 @@ import OpsFpd from './components/Ops/FPD'
 import ReportTaxOps from './pages/Ops/ReportTax'
 import NavAjuanOps from './pages/Ops/NavAjuanOps'
 import PayOps from './pages/Ops/PayOps'
+import FormListOps from './components/Ops/FormList'
 
 //Ikk
 import NavIkk from './pages/IKK/NavIkk'
@@ -52,6 +53,7 @@ import IkkFpd from './components/Ikk/FPD'
 import ReportTaxIkk from './pages/IKK/ReportTax'
 import NavAjuanIkk from './pages/IKK/NavAjuanIkk'
 import PayIkk from './pages/IKK/PayIkk'
+import FormListIkk from './components/Ikk/FormList'
 
 //Kasbon
 import NavKasbon from './pages/Kasbon/NavKasbon'
@@ -80,6 +82,7 @@ import MasterFaktur from './pages/Master/MasterFaktur'
 import MasterKpp from './pages/Master/MasterKpp'
 import MasterFinance from './pages/Master/MasterFinance'
 import Reservoir from './pages/Master/Reservoir'
+import MasterTaxcode from './pages/Master/MasterTaxcode'
 
 //For Tes
 import Tes from './pages/Tes'
@@ -186,6 +189,9 @@ class App extends Component {
                 <PrivateRoute path='/payops'>
                     <PayOps />
                 </PrivateRoute>
+                <PrivateRoute path='/formlistops'>
+                    <FormListOps/>
+                </PrivateRoute>
 
                 {/* Kasbon */}
                 <PrivateRoute path='/navkasbon'>
@@ -198,7 +204,7 @@ class App extends Component {
                     <RealisasiKasbon />
                 </PrivateRoute>
                 <PrivateRoute path='/revkasbon'>
-                    <RevisiKasbon />
+                    <RevisiOps />
                 </PrivateRoute>
                 <PrivateRoute path='/verifkasbon'>
                     <VerifTaxKasbon />
@@ -243,6 +249,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/payikk'>
                     <PayIkk />
+                </PrivateRoute>
+                <PrivateRoute path='/formlistikk'>
+                    <FormListIkk/>
                 </PrivateRoute>
 
                 {/* Master */}
@@ -299,6 +308,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/reservoir'>
                     <Reservoir />
+                </PrivateRoute>
+                <PrivateRoute path='/taxcode'>
+                    <MasterTaxcode />
                 </PrivateRoute>
             </Switch>
         </BrowserRouter>

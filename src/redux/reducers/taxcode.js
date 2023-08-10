@@ -1,5 +1,5 @@
 /* eslint-disable import/no-anonymous-default-export */
-const reasonState = {
+const financeState = {
     isAdd: false,
     isAddDetail: false,
     isUpdate: false,
@@ -8,21 +8,21 @@ const reasonState = {
     isLoading: false,
     isError: false,
     alertMsg: '',
-    dataReason: [],
+    dataTaxcode: [],
     dataName: [],
     alertM: '',
     alertUpload: [],
     page: {},
     isExport: false,
-    detReason: {},
+    detTaxcode: {},
     link: '',
     dataAll: [],
-    arrReason: [],
     isAll: false,
-    isUpload: false
+    isUpload: false,
+    allTaxcode: []
 };
 
-export default (state=reasonState, action) => {
+export default (state=financeState, action) => {
         switch(action.type){
             case 'GET_ALL_PENDING': {
                 return {
@@ -37,7 +37,7 @@ export default (state=reasonState, action) => {
                     isLoading: false,
                     isAll: true,
                     dataAll: action.payload.data.result.rows,
-                    alertMsg: 'get reason Succesfully',
+                    alertMsg: 'get finance Succesfully',
                     page: action.payload.data.pageInfo
                 };
             }
@@ -46,27 +46,27 @@ export default (state=reasonState, action) => {
                     ...state,
                     isLoading: false,
                     isError: true,
-                    alertMsg: "Failed get data reason"
+                    alertMsg: "Failed get data finance"
                 };
             }
-            case 'GET_REASON_PENDING': {
+            case 'GET_TAXCODE_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_REASON_FULFILLED': {
+            case 'GET_TAXCODE_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    dataReason: action.payload.data.result,
-                    arrReason: action.payload.data.arrReason,
-                    alertMsg: 'get reason Succesfully'
+                    dataTaxcode: action.payload.data.result,
+                    allTaxcode: action.payload.data.length,
+                    alertMsg: 'get finance Succesfully'
                 };
             }
-            case 'GET_REASON_REJECTED': {
+            case 'GET_TAXCODE_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -74,23 +74,23 @@ export default (state=reasonState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'DETAIL_REASON_PENDING': {
+            case 'DETAIL_TAXCODE_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'DETAIL_REASON_FULFILLED': {
+            case 'DETAIL_TAXCODE_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    detReason: action.payload.data.result,
-                    alertMsg: 'get detail reason Succesfully',
+                    detTaxcode: action.payload.data.result,
+                    alertMsg: 'get detail finance Succesfully',
                 };
             }
-            case 'DETAIL_REASON_REJECTED': {
+            case 'DETAIL_TAXCODE_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -98,14 +98,14 @@ export default (state=reasonState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'NEXT_DATA_REASON_PENDING': {
+            case 'NEXT_DATA_TAXCODE_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'NEXT_DATA_REASON_FULFILLED': {
+            case 'NEXT_DATA_TAXCODE_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -115,7 +115,7 @@ export default (state=reasonState, action) => {
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'NEXT_DATA_REASON_REJECTED': {
+            case 'NEXT_DATA_TAXCODE_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -124,14 +124,14 @@ export default (state=reasonState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'UPDATE_REASON_PENDING': {
+            case 'UPDATE_TAXCODE_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting'
                 };
             }
-            case 'UPDATE_REASON_FULFILLED': {
+            case 'UPDATE_TAXCODE_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -139,7 +139,7 @@ export default (state=reasonState, action) => {
                     alertMsg: 'update user Succesfully'
                 };
             }
-            case 'UPDATE_REASON_REJECTED': {
+            case 'UPDATE_TAXCODE_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -148,14 +148,14 @@ export default (state=reasonState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'ADD_REASON_PENDING': {
+            case 'ADD_TAXCODE_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'ADD_REASON_FULFILLED': {
+            case 'ADD_TAXCODE_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -164,7 +164,7 @@ export default (state=reasonState, action) => {
                     alertMsg: 'add user Succesfully'
                 };
             }
-            case 'ADD_REASON_REJECTED': {
+            case 'ADD_TAXCODE_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -173,7 +173,55 @@ export default (state=reasonState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'RESET_REASON': {
+            case 'UPLOAD_TAXCODE_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting....'
+                };
+            }
+            case 'UPLOAD_TAXCODE_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpload: true,
+                    alertMsg: 'upload master Succesfully'
+                };
+            }
+            case 'UPLOAD_TAXCODE_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    alertMsg: action.payload.response.data.message,
+                    alertUpload: action.payload.response.data.result
+                };
+            }
+            case 'EXPORT_MASTER_TAXCODE_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'EXPORT_MASTER_TAXCODE_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isExport: true,
+                    link: action.payload.data.link,
+                    alertMsg: 'success export data'
+                };
+            }
+            case 'EXPORT_MASTER_TAXCODE_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    alertMsg: 'Failed export data'
+                };
+            }
+            case 'RESET_TAXCODE': {
                 return {
                     ...state,
                     isError: false,

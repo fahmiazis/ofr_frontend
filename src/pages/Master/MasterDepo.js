@@ -12,6 +12,7 @@ import {AiOutlineFileExcel, AiFillCheckCircle} from 'react-icons/ai'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
 import depo from '../../redux/actions/depo'
+import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
 import auth from '../../redux/actions/auth'
 import {default as axios} from 'axios'
@@ -43,7 +44,12 @@ const depoSchema = Yup.object().shape({
     manager_klaim: Yup.string().required('must be filled'),
     pic_tax: Yup.string().required('must be filled'),
     manager_tax: Yup.string().required('must be filled'),
+})
+
+const genSchema = Yup.object().shape({
+    level: Yup.number('must be filled').required('must be filled')
 });
+
 
 class MasterDepo extends Component {
     constructor(props) {
@@ -75,7 +81,9 @@ class MasterDepo extends Component {
             errMsg: '',
             fileUpload: '',
             limit: 10,
-            search: ''
+            search: '',
+            openModalGen: false,
+            colname: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -271,9 +279,34 @@ class MasterDepo extends Component {
         this.setState({ open });
     }
 
+    generateUser = async (val) => {
+        const token = localStorage.getItem("token")
+        const {colname} = this.state
+        const data = {
+            column: colname,
+            level: val.level
+        }
+        await this.props.generateUser(token, data)
+        this.setState({confirm: 'generate'})
+        this.openConfirm()
+        this.modalGen()
+    }
+
+    prosesGenerate = async (val) => {
+        const token = localStorage.getItem("token")
+        await this.props.getRole(token)
+        this.setState({colname: val})
+        this.modalGen()
+    }
+
+    modalGen = () => {
+        this.setState({openModalGen: !this.state.openModalGen})
+    }
+
     render() {
         const {dropOpen, detail, upload, errMsg} = this.state
         const {dataDepo, isGet, alertM, alertMsg, alertUpload, page} = this.props.depo
+        const {dataRole} = this.props.user
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
 
@@ -359,13 +392,14 @@ class MasterDepo extends Component {
                                         </Input>
                                     </div>
                                 </div>
-                                {dataDepo.length === 0 ? (
-                                    <div className={style.tableDashboard}>
+                                <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>Kode Plant</th>
+                                                <th onClick={() => this.prosesGenerate('aos')}>
+                                                    Kode Plant
+                                                </th>
                                                 <th>Nama Area</th>
                                                 <th>Channel</th>
                                                 <th>Distribution</th>
@@ -374,52 +408,41 @@ class MasterDepo extends Component {
                                                 <th>Cost Center</th>
                                                 <th>Kode SAP 1</th>
                                                 <th>Kode SAP 2</th>
-                                                <th>Nama NOM</th>
-                                                <th>Nama OM</th>
-                                                <th>Nama BM</th>
-                                                <th>Nama AOS</th>
-                                                <th>PIC FINANCE</th>
-                                                <th>SPV FINANCE</th>
-                                                <th>ASMAN FINANCE</th>
-                                                <th>MANAGER FINANCE</th>
-                                                <th>PIC KLAIM</th>
-                                                <th>MANAGER KLAIM</th>
-                                                <th>PIC TAX</th>
-                                                <th>MANAGER TAX</th>
-                                            </tr>
-                                        </thead>
-                                    </Table>
-                                    <div className={style.spin}>
-                                        Data tidak ditemukan
-                                    </div>
-                                    </div>
-                                ) : (
-                                    <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab}>
-                                        <thead>
-                                            <tr>
-                                            <th>No</th>
-                                                <th>Kode Plant</th>
-                                                <th>Nama Area</th>
-                                                <th>Channel</th>
-                                                <th>Distribution</th>
-                                                <th>Status Depo</th>
-                                                <th>Profit Center</th>
-                                                <th>Cost Center</th>
-                                                <th>Kode SAP 1</th>
-                                                <th>Kode SAP 2</th>
-                                                <th>Nama NOM</th>
-                                                <th>Nama OM</th>
-                                                <th>Nama BM</th>
-                                                <th>Nama AOS</th>
-                                                <th>PIC FINANCE</th>
-                                                <th>SPV FINANCE</th>
-                                                <th>ASMAN FINANCE</th>
-                                                <th>MANAGER FINANCE</th>
-                                                <th>PIC KLAIM</th>
-                                                <th>MANAGER KLAIM</th>
-                                                <th>PIC TAX</th>
-                                                <th>MANAGER TAX</th>
+                                                <th onClick={() => this.prosesGenerate('nom')}>
+                                                    Nama NOM
+                                                </th>
+                                                <th onClick={() => this.prosesGenerate('om')}>
+                                                    Nama OM
+                                                </th>
+                                                <th onClick={() => this.prosesGenerate('bm')}>
+                                                    Nama BM
+                                                </th>
+                                                <th onClick={() => this.prosesGenerate('aos')}>
+                                                    Nama AOS
+                                                </th>
+                                                <th onClick={() => this.prosesGenerate('pic_finance')}>
+                                                    PIC FINANCE
+                                                </th>
+                                                <th onClick={() => this.prosesGenerate('spv_finance')}>
+                                                    SPV FINANCE</th>
+                                                <th onClick={() => this.prosesGenerate('asman_finance')}>
+                                                    ASMAN FINANCE
+                                                </th>
+                                                <th onClick={() => this.prosesGenerate('manager_finance')}>
+                                                    MANAGER FINANCE
+                                                </th>
+                                                <th onClick={() => this.prosesGenerate('pic_klaim')}>
+                                                    PIC KLAIM
+                                                </th>
+                                                <th onClick={() => this.prosesGenerate('manager_klaim')}>
+                                                    MANAGER KLAIM
+                                                </th>
+                                                <th onClick={() => this.prosesGenerate('pic_tax')}>
+                                                    PIC TAX
+                                                </th>
+                                                <th onClick={() => this.prosesGenerate('manager_tax')}>
+                                                    MANAGER TAX
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -452,8 +475,12 @@ class MasterDepo extends Component {
                                                 )})}
                                         </tbody>
                                     </Table>
+                                    {dataDepo.length === 0 && (
+                                        <div className={style.spin}>
+                                            Data tidak ditemukan
+                                        </div>
+                                    )}
                                 </div>
-                                )}
                                 <div>
                                     <div className='infoPageEmail'>
                                         <text>Showing {page.currentPage} of {page.pages} pages</text>
@@ -467,8 +494,69 @@ class MasterDepo extends Component {
                         </div>
                     </MaterialTitlePanel>
                 </Sidebar>
+                <Modal toggle={this.modalGen} isOpen={this.state.openModalGen}>
+                    <ModalHeader>Generate User</ModalHeader>
+                    <Formik
+                    initialValues={{
+                    level: null
+                    }}
+                    validationSchema={genSchema}
+                    onSubmit={(values) => {this.generateUser(values)}}
+                    >
+                        {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                    <ModalBody>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Nama Kolom
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="text" 
+                                name="colname"
+                                disabled
+                                value={this.state.colname}
+                                />
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                User Level
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select" 
+                                name="level"
+                                disabled={this.state.colname === 'aos' ? true : false}
+                                value={this.state.colname === 'aos' ? 5 : values.level}
+                                onChange={handleChange("level")}
+                                onBlur={handleBlur("level")}
+                                >
+                                    <option>-Pilih Level-</option>
+                                    {dataRole.length !== 0 && dataRole.map(item => {
+                                        return (
+                                            <option value={item.level}>{item.name}</option>
+                                        )
+                                    })}
+                                </Input>
+                                {errors.level ? (
+                                    <text className={style.txtError}>{errors.level}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <hr/>
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button className="mr-2" disabled={values.level === null ? true : false} onClick={handleSubmit} color="primary">Generate</Button>
+                                <Button className="mr-3" onClick={this.modalGen}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                        )}
+                    </Formik>
+                </Modal>
                 <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd} size="lg">
-                    <ModalHeader toggle={this.openModalAdd}>Add Depo</ModalHeader>
+                    <ModalHeader>Add Depo</ModalHeader>
                     <Formik
                     initialValues={{
                         area: "",
@@ -1343,6 +1431,11 @@ class MasterDepo extends Component {
                                     <AiFillCheckCircle size={80} className={style.green} />
                                 <div className={style.sucUpdate}>Berhasil Menambahkan Depo</div>
                             </div>
+                        ) : this.state.confirm === 'generate' ? (
+                            <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={style.sucUpdate}>Berhasil generate user</div>
+                            </div>
                         ) : this.state.confirm === 'upload' ?(
                             <div>
                                 <div className={style.cekUpdate}>
@@ -1381,7 +1474,8 @@ class MasterDepo extends Component {
 }
 
 const mapStateToProps = state => ({
-    depo: state.depo
+    depo: state.depo,
+    user: state.user
 })
 
 const mapDispatchToProps = {
@@ -1392,7 +1486,9 @@ const mapDispatchToProps = {
     resetError: depo.resetError,
     uploadMaster: depo.uploadMaster,
     nextPage: depo.nextPage,
-    exportMaster: depo.exportMaster
+    exportMaster: depo.exportMaster,
+    getRole: user.getRole,
+    generateUser: user.generateUser
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(MasterDepo)

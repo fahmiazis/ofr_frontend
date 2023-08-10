@@ -121,7 +121,11 @@ class AjuanBayarIkk extends Component {
             openDraft: false,
             message: '',
             subject: '',
-            tipeTrans: ''
+            tipeTrans: '',
+            tipeEmail: '',
+            dataRej: {},
+            tipeReject: '',
+            emailReject: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -169,24 +173,6 @@ class AjuanBayarIkk extends Component {
         }
     }
 
-    uploadGambar = e => {
-        const {size, type} = e.target.files[0]
-        this.setState({fileUpload: e.target.files[0]})
-        if (size >= 20000000) {
-            this.setState({errMsg: "Maximum upload size 20 MB"})
-            this.uploadAlert()
-        } else if (type !== 'image/jpeg' && type !== 'image/png') {
-            this.setState({errMsg: 'Invalid file type. Only image files are allowed.'})
-            this.uploadAlert()
-        } else {
-            const { dataId } = this.state
-            const token = localStorage.getItem('token')
-            const data = new FormData()
-            data.append('document', e.target.files[0])
-            this.props.uploadImage(token, dataId, data)
-        }
-    }
-
     getApproveStock = async (value) => { 
         const token = localStorage.getItem('token')
         await this.props.getApproveStock(token, value.no, value.nama)
@@ -199,51 +185,53 @@ class AjuanBayarIkk extends Component {
             no: detailIkk[0].no_pembayaran
         }
         await this.props.approveListIkk(token, tempno)
-        this.prepSendEmail('approve')
+        this.dataSendEmail('approve')
     }
 
     rejectIkk = async (val) => {
-        const {listMut, listReason, listMenu} = this.state
+        const {listMut, listReason, listMenu, tipeReject} = this.state
         const { detailIkk } = this.props.ikk
         const token = localStorage.getItem('token')
-        const tempno = {
-            no: detailIkk[0].no_pembayaran
-        }
+        const noTrans = tipeReject === 'area' ? detailIkk[0].no_transaksi : detailIkk[0].no_pembayaran
         let temp = ''
         for (let i = 0; i < listReason.length; i++) {
             temp += listReason[i] + '. '
         }
         const data = {
-            no: detailIkk[0].no_pembayaran,
+            no: noTrans,
             list: listMut,
             alasan: temp + val.alasan,
             menu: listMenu.toString(),
             type: "verif"
         }
-        await this.props.rejectListIkk(token, data)
-        this.getDataIkk()
-        this.setState({confirm: 'reject'})
-        this.openConfirm()
-        this.openModalReject()
-        this.modalRinciAjuan()
+        if (tipeReject === 'area') {
+            await this.props.rejectIkk(token, data)
+            this.dataSendEmail('reject')
+        } else {
+            await this.props.rejectListIkk(token, data)
+            this.dataSendEmail('reject')
+        }
     }
 
     dataSendEmail = async (val) => {
         const token = localStorage.getItem("token")
         const { detailIkk } = this.props.ikk
         const { draftEmail } = this.props.email
-        const { message, subject, tipeTrans, dataDownload } = this.state
+        const { message, subject, tipeTrans, dataDownload, tipeReject } = this.state
         const dataTrans = tipeTrans === 'submit' ? dataDownload : detailIkk
         const noPemb = dataTrans.length === 0 ? null : dataTrans[0].no_pembayaran === undefined ? null : dataTrans[0].no_pembayaran
         const noTrans = tipeTrans === 'submit' ? this.state.no_transfer : noPemb
         const cc = draftEmail.cc
+        const to = draftEmail.to
         const tempcc = []
+        const tempto = []
         for (let i = 0; i < cc.length; i++) {
             tempcc.push(cc[i].email)
         }
+        to.length > 0 && to.map(item => { return (tempto.push(item.email)) })
         const tempno = {
             nameTo: draftEmail.to.username,
-            to: draftEmail.to.email,
+            to: val === 'reject' ? tempto.toString() : draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
             subject: subject,
@@ -259,6 +247,17 @@ class AjuanBayarIkk extends Component {
             this.openDraftEmail()
             this.openModalSubmit()
             this.modalSubmitPre()
+        } else if (val === 'reject') {
+            this.getDataIkk()
+            this.setState({confirm: 'reject'})
+            this.openConfirm()
+            this.openEmailReject()
+            this.openModalReject()
+            if (tipeReject === 'area') {
+                this.openModalRinci()
+            } else {
+                this.modalRinciAjuan()
+            }
         } else {
             this.getDataIkk()
             this.setState({confirm: 'isApprove'})
@@ -298,13 +297,76 @@ class AjuanBayarIkk extends Component {
             tipe: 'ajuan bayar'
         }
         this.setState({tipeTrans: val})
+        this.setState({tipeEmail: 'app'})
         await this.props.getDetail(token, draftno)
         await this.props.getDraftAjuan(token, tempno)
         this.openDraftEmail()
     }
 
+    prepRejectHo = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailIkk } = this.props.ikk
+        const dataTrans = detailIkk
+        const noPemb = dataTrans.length === 0 ? null : dataTrans[0].no_pembayaran === undefined ? null : dataTrans[0].no_pembayaran
+        const noTrans = noPemb
+        const app = dataTrans[0].appList
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const cekMenu = 'List Ajuan Bayar (IKK)'
+        const tempno = {
+            no: noTrans,
+            kode: dataTrans[0].kode_plant,
+            jenis: 'ikk',
+            tipe: tipe,
+            menu: cekMenu
+        }
+        const draftno = {
+            no: noTrans,
+            tipe: 'ajuan bayar'
+        }
+        await this.props.getDetail(token, draftno)
+        await this.props.getDraftAjuan(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
+        this.openEmailReject()
+    }
+
+    prepRejectArea = async (val) => {
+        const { detailIkk } = this.props.ikk
+        const token = localStorage.getItem("token")
+        const app = detailIkk[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const cekMenu = 'List Ajuan Bayar (IKK)'
+        const tempno = {
+            no: detailIkk[0].no_transaksi,
+            kode: detailIkk[0].kode_plant,
+            jenis: 'ikk',
+            tipe: tipe,
+            menu: cekMenu
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
+        this.openEmailReject()
+    }
+
     openDraftEmail = () => {
         this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    openEmailReject = () => {
+        this.setState({emailReject: !this.state.emailReject}) 
     }
 
     getMessage = (val) => {
@@ -501,8 +563,9 @@ class AjuanBayarIkk extends Component {
     }
 
     getDataIkk = async (value) => {
+        const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('available')
+        this.changeFilter(level === '2' ? 'verif' : 'available')
     }
 
     getDataList = async () => {
@@ -614,9 +677,9 @@ class AjuanBayarIkk extends Component {
         const {dataIkk, noDis} = this.props.ikk
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const status = level === '2'  && val === 'available' ? 5 : 6
+        const status = level === '2'  && val === 'verif' ? 5 : 6
         const statusAll = 'all'
-        const category = level === '2' && val === 'available' ? 'verif' : 'ajuan bayar'
+        const category = level === '2' && val === 'verif' ? 'verif' : 'ajuan bayar'
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newIkk = []
@@ -627,6 +690,10 @@ class AjuanBayarIkk extends Component {
             await this.props.getIkk(token, status, 'all', 'all', val, category)
             this.setState({filter: val, newIkk: newIkk})
         } else if (val === 'revisi') {
+            const newIkk = []
+            await this.props.getIkk(token, status, 'all', 'all', val, category)
+            this.setState({filter: val, newIkk: newIkk})
+        } else if (val === 'verif') {
             const newIkk = []
             await this.props.getIkk(token, status, 'all', 'all', val, category)
             this.setState({filter: val, newIkk: newIkk})
@@ -938,7 +1005,9 @@ class AjuanBayarIkk extends Component {
         if (val === 'all') {
             const data = []
             for (let i = 0; i < newIkk.length; i++) {
-                data.push(newIkk[i].no_transaksi)
+                if (newIkk[i].status_reject !== 1) {
+                    data.push(newIkk[i].no_transaksi)
+                }
             }
             this.setState({listIkk: data})
         } else {
@@ -965,7 +1034,7 @@ class AjuanBayarIkk extends Component {
         }
     }
 
-    prepareReject = async () => {
+    prepareReject = async (val) => {
         const token = localStorage.getItem("token")
         await this.props.getAllMenu(token, 'reject', 'IKK')
         await this.props.getReason(token)
@@ -974,7 +1043,7 @@ class AjuanBayarIkk extends Component {
         dataMenu.map(item => {
             return (item.kode_menu === 'Ikk' && data.push(item))
         })
-        this.setState({dataMenu: dataMenu})
+        this.setState({dataMenu: dataMenu, tipeReject: val})
         this.openModalReject()
     }
 
@@ -996,7 +1065,7 @@ class AjuanBayarIkk extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, listMut, listReason, dataMenu, listMenu, listIkk, dataDownload} = this.state
+        const {tipeTrans, tipeReject, dataRinci, listMut, listReason, dataMenu, listMenu, listIkk, dataDownload} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailIkk, ttdIkk, ttdIkkList, dataDoc, newIkk } = this.props.ikk
@@ -1039,38 +1108,14 @@ class AjuanBayarIkk extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>List Ajuan Bayar Ikk</div>
+                                <div className={style.titleDashboard}>Approval List Ajuan Bayar Ikk</div>
                             </div>
                             <div className={style.secEmail3}>
                                 {this.state.filter === 'available' && level !== '2' ? (
                                     null
                                 ) : (
-                                    <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="all">All</option>
-                                            {/* <option value="reject">Reject</option> */}
-                                            <option value="available">{level === '2' ? 'Verifikasi Ikk' : 'Available approve'}</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                        </Input>
-                                    </div>
-                                )}
-                                <div></div>
-                            </div>
-                            <div className={[style.secEmail4]}>
-                                {this.state.filter === 'available' && level !== '2' ? (
-                                    <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="all">All</option>
-                                            {/* <option value="reject">Reject</option> */}
-                                            <option value="available">{level === '2' ? 'Verifikasi Ikk' : 'Available approve'}</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                        </Input>
-                                    </div>
-                                ) : (
                                     <div className={style.headEmail2}>
-                                        {this.state.filter === 'available' && level === '2' ?  (
+                                        {this.state.filter === 'verif' && level === '2' ? (
                                             <>
                                                 <Button className='mr-1' onClick={this.prosesSubmit} color="primary" size="lg">Submit</Button>
                                                 {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button> */}
@@ -1079,6 +1124,18 @@ class AjuanBayarIkk extends Component {
                                         <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
                                     </div>
                                 )}
+                                <div></div>
+                            </div>
+                            <div className={[style.secEmail4]}>
+                                <div className={style.searchEmail2}>
+                                    <text>Filter:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value="all">All</option>
+                                        {/* <option value="reject">Reject</option> */}
+                                        <option value={level === '2' ? "verif" : 'available'}>{level === '2' ? 'Verifikasi Ikk' : 'Available approve'}</option>
+                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                    </Input>
+                                </div>
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 
@@ -1091,7 +1148,7 @@ class AjuanBayarIkk extends Component {
                                 </div>
                             </div>
                             <div className={style.tableDashboard}>
-                                {this.state.filter === 'available' && level === '2' ? (
+                                {this.state.filter === 'verif' && level === '2' ? (
                                     <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
                                             <tr>
@@ -1123,6 +1180,7 @@ class AjuanBayarIkk extends Component {
                                                         <th>
                                                             <input 
                                                             type='checkbox'
+                                                            isabled={item.status_reject === 1 ? true : false}
                                                             checked={listIkk.find(element => element === item.no_transaksi) !== undefined ? true : false}
                                                             onChange={listIkk.find(element => element === item.no_transaksi) === undefined ? () => this.chekAppList(item.no_transaksi) : () => this.chekRejList(item.no_transaksi)}
                                                             />
@@ -1225,6 +1283,15 @@ class AjuanBayarIkk extends Component {
                         <Table bordered responsive hover className={style.tab}>
                                 <thead>
                                     <tr>
+                                        <th>
+                                            <input  
+                                            className='mr-2'
+                                            type='checkbox'
+                                            checked={listMut.length === 0 ? false : listMut.length === detailIkk.length ? true : false}
+                                            onChange={() => listMut.length === detailIkk.length ? this.chekRej('all') : this.chekApp('all')}
+                                            />
+                                            Select
+                                        </th>
                                         <th>NO</th>
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>
@@ -1251,6 +1318,13 @@ class AjuanBayarIkk extends Component {
                                     {detailIkk.length !== 0 && detailIkk.map(item => {
                                         return (
                                             <tr>
+                                                <th>
+                                                    <input 
+                                                    type='checkbox'
+                                                    checked={listMut.find(element => element === item.id) !== undefined ? true : false}
+                                                    onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                    />
+                                                </th>
                                                 <th scope="row">{detailIkk.indexOf(item) + 1}</th>
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
@@ -1284,15 +1358,19 @@ class AjuanBayarIkk extends Component {
                             <Button color="primary"  onClick={() => this.openProsesModalDoc(detailIkk[0])}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
-                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
+                            {this.state.filter !== 'verif' && this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
                                 <div></div>
                             ) : (
                                 <>
-                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
+                                    <Button 
+                                    className="mr-2" 
+                                    disabled={
+                                        this.state.filter === 'revisi'  && listMut.length > 0 ? false 
+                                        : this.state.filter !== 'available' && this.state.filter !== 'verif' ? true 
+                                        : listMut.length === 0 ? true : false} 
+                                    color="danger" 
+                                    onClick={() => this.prepareReject('area')}>
                                         Reject
-                                    </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
-                                        Submit
                                     </Button>
                                 </>
                             )}
@@ -1452,7 +1530,7 @@ class AjuanBayarIkk extends Component {
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button color="warning mr-2" disabled={this.state.no_transfer === '' || this.state.tgl_transfer === null ? true : false} onClick={this.openModalSubmit}>
+                            <Button color="warning mr-2" disabled={dataDownload.length === 0 || this.state.no_transfer === '' || this.state.tgl_transfer === null ? true : false} onClick={this.openModalSubmit}>
                                 Submit
                             </Button>
                             <Button color="success" onClick={this.modalSubmitPre}>
@@ -1562,7 +1640,7 @@ class AjuanBayarIkk extends Component {
                                                         {ttdIkkList.pembuat !== undefined && ttdIkkList.pembuat.map(item => {
                                                             return (
                                                                 <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                    <div className="mb-3">{item.nama === null || item.status === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
                                                                     <div>{item.nama === null ? "-" : item.nama}</div>
                                                                 </th>
                                                             )
@@ -1587,7 +1665,7 @@ class AjuanBayarIkk extends Component {
                                                         {ttdIkkList.mengetahui !== undefined && ttdIkkList.mengetahui.map(item => {
                                                             return (
                                                                 <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                    <div className="mb-3">{item.nama === null || item.status === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
                                                                     <div>{item.nama === null ? "-" : item.nama}</div>
                                                                 </th>
                                                             )
@@ -1612,7 +1690,7 @@ class AjuanBayarIkk extends Component {
                                                         {ttdIkkList.penyetuju !== undefined && ttdIkkList.penyetuju.map(item => {
                                                             return (
                                                                 <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                    <div className="mb-3">{item.nama === null || item.status === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
                                                                     <div>{item.nama === null ? "-" : item.nama}</div>
                                                                 </th>
                                                             )
@@ -1656,7 +1734,7 @@ class AjuanBayarIkk extends Component {
                                     <Button 
                                     color="danger"
                                     disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} 
-                                    onClick={this.prepareReject}>
+                                    onClick={() => this.prepareReject('ho')}>
                                         Reject
                                     </Button>
                                 </>
@@ -2009,7 +2087,7 @@ class AjuanBayarIkk extends Component {
                     alasan: "",
                     }}
                     validationSchema={alasanSchema}
-                    onSubmit={(values) => {this.rejectIkk(values)}}
+                    onSubmit={(values) => {tipeReject === 'area' ? this.prepRejectArea(values) : this.prepRejectHo(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
@@ -2107,7 +2185,7 @@ class AjuanBayarIkk extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveIkk()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepSendEmail('approve')}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApplist}>Tidak</Button>
                             </div>
                         </div>
@@ -2324,12 +2402,36 @@ class AjuanBayarIkk extends Component {
                             <Button
                                 disabled={this.state.message === '' ? true : false} 
                                 className="mr-2"
-                                onClick={() => this.dataSendEmail()} 
+                                onClick={() => tipeTrans === 'submit' ? this.dataSendEmail('submit')
+                                : this.approveIkk()
+                                } 
                                 color="primary"
                             >
-                                Submit & Send Email
+                                {tipeTrans === 'submit' ? 'Send Email' : 'Approve & Send Email'}
                             </Button>
-                            {/* <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button> */}
+                            {tipeTrans === 'submit' ? null : (
+                                <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
+                            )}
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
+            <Modal isOpen={this.state.emailReject} size='xl'>
+                <ModalHeader>Email Pemberitahuan</ModalHeader>
+                <ModalBody>
+                    <Email handleData={this.getMessage}/>
+                    <div className={style.foot}>
+                        <div></div>
+                        <div>
+                            <Button
+                                disabled={this.state.message === '' ? true : false} 
+                                className="mr-2"
+                                onClick={() => this.rejectIkk(this.state.dataRej)} 
+                                color="primary"
+                            >
+                                Reject & Send Email
+                            </Button>
+                            <Button className="mr-3" onClick={this.openEmailReject}>Cancel</Button>
                         </div>
                     </div>
                 </ModalBody>

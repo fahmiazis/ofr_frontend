@@ -28,7 +28,7 @@ class TableRincian extends Component {
         const {detailKlaim} = this.props.klaim
         const cek = draftEmail.result
         const stat = detailKlaim[0].status_transaksi
-        const no = stat === 5 || stat === 6 || stat ===  7 ? detailKlaim[0].no_pembayaran : detailKlaim[0].no_transaksi
+        const no = (stat === 5 || stat === 6 || stat ===  7) && detailKlaim[0].no_pembayaran !== null ? detailKlaim[0].no_pembayaran : detailKlaim[0].no_transaksi
         const message = cek === undefined ? '' : cek.message
         const subject = cek === undefined ? '' : `${cek.type === 'submit' ? '' : cek.type} ${cek.menu} NO ${no}`
         this.setState({message: message, subject: subject})

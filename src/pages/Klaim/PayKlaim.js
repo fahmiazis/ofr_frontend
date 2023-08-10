@@ -1234,7 +1234,7 @@ class AjuanBayarKlaim extends Component {
 
     prepareReject = async () => {
         const token = localStorage.getItem("token")
-        await this.props.getAllMenu(token, 'reject')
+        await this.props.getAllMenu(token, 'reject', 'Klaim')
         await this.props.getReason(token)
         const dataMenu = this.props.menu.dataAll
         const data = []

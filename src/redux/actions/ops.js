@@ -35,9 +35,9 @@ export default {
         type: 'SUBMIT_OPSFINAL',
         payload: http(token).patch(`/ops/subfinops`, qs.stringify(no))
     }),
-    getOps: (token, status, reject, menu, type, category, data, time1, time2, kasbon) => ({
+    getOps: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi) => ({
         type: 'GET_OPS',
-        payload: http(token).get(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${kasbon}`),
+        payload: http(token).get(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${kasbon}&realisasi=${realisasi}`),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_OPS',
@@ -118,6 +118,10 @@ export default {
     getDocBayar: (token,  data) => ({
         type: 'DOC_BUKTIOPS',
         payload: http(token).patch(`/ops/getdocbayar`, qs.stringify(data))
+    }),
+    revisiKasbon: (token, data) => ({
+        type: 'REVISI_KASBON',
+        payload: http(token).patch(`/ops/revkasbon`, data)
     }),
     resetOps: () => ({
         type: 'RESET_OPS'

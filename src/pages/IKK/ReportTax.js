@@ -34,6 +34,8 @@ import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
 import ikk from '../../redux/actions/ikk'
 import dokumen from '../../redux/actions/dokumen'
+import ExcelJS from "exceljs";
+import fs from "file-saver";
 const {REACT_APP_BACKEND_URL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -118,7 +120,13 @@ class ReportIkk extends Component {
             collap: false,
             tipeCol: '',
             formDis: false,
-            history: false
+            history: false,
+            time: '',
+            time1: '',
+            time2: '',
+            listIkk: [],
+            dataDownload: [],
+            modalDownload: false,
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -128,6 +136,157 @@ class ReportIkk extends Component {
         const token = localStorage.getItem('token')
         await this.props.submitStock(token)
         this.getDataCart()
+    }
+
+    chekApp = (val) => {
+        const { listIkk } = this.state
+        const {dataReport} = this.props.ikk
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataReport.length; i++) {
+                data.push(dataReport[i].id)
+            }
+            this.setState({listIkk: data})
+        } else {
+            listIkk.push(val)
+            this.setState({listIkk: listIkk})
+        }
+    }
+
+    chekRej = (val) => {
+        const {listIkk} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listIkk: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listIkk.length; i++) {
+                if (listIkk[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listIkk[i])
+                }
+            }
+            this.setState({listIkk: data})
+        }
+    }
+
+    prosesDownload = (val) => {
+        const {listIkk} = this.state
+        const {dataReport} = this.props.ikk
+        const data = []
+        for (let i = 0; i < listIkk.length; i++) {
+            for (let j = 0; j < dataReport.length; j++) {
+                if (dataReport[j].id === listIkk[i]) {
+                    data.push(dataReport[j])
+                }
+            }
+        }
+        this.setState({dataDownload: data, titleDownload: val})
+        this.openDownload()
+    }
+
+    openDownload = () => {
+        this.setState({modalDownload: !this.state.modalDownload})
+    }
+
+    downloadIkk = async () => {
+        const { dataDownload } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data ikk')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+
+        ws.columns = [
+            {header:  'NO', key: 'c1'},
+            {header:  'Nomor Pengajuan Ikk', key: 'c2'},
+            {header:  'Tax Payable Document Number', key: 'c3'},
+            {header:  'Posting Date', key: 'c4'},
+            {header:  'Profit Center', key: 'c5'},
+            {header:  'Tax Office Code', key: 'c6'},
+            {header:  'Invoice Number', key: 'c7'},
+            {header:  'Invoice Date', key: 'c8'},
+            {header:  'Tax Invoice Number', key: 'c9'},
+            {header:  'Tax Invoice Date', key: 'c10'},
+            {header:  'Document Number Exp', key: 'c11'},
+            {header:  'GL Expense', key: 'c12'},
+            {header:  'Expense Desc.', key: 'c13'},
+            {header:  'Vendor Name', key: 'c14'},
+            {header:  'Tax Period', key: 'c15'},
+            {header:  'Fiscal Year', key: 'c16'},
+            {header:  'WHT Date', key: 'c17'},
+            {header:  'NPWP (Y/N)', key: 'c18'},
+            {header:  'NPWP Number', key: 'c19'},
+            {header:  'NIK', key: 'c20'},
+            {header:  'Jenis PPh', key: 'c21'},
+            {header:  'WHT Tax Type', key: 'c22'},
+            {header:  'WHT Tax Code', key: 'c23'},
+            {header:  'Tax Object Description', key: 'c24'},
+            {header:  'Gross Expense', key: 'c25'},
+            {header:  'Tax Base', key: 'c26'},
+            {header:  'PPh Amount', key: 'c27'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: index + 1,
+                c2: item.no_transaksi,
+                c3: '',
+                c4: moment(item.start_ikk).format('DD MMMM YYYY'),
+                c5: item.depo.profit_center,
+                c6: item.depo.kpp.npwp,
+                c7: '',
+                c8: moment(item.tgl_tagihanbayar).format('DD MMMM YYYY'),
+                c9: item.no_faktur,
+                c10: item.tgl_faktur !== null && item.tgl_faktur !== '' ? moment(item.tgl_faktur).format('DD MMMM YYYY') : '',
+                c11: '',
+                c12: item.sub_coa,
+                c13: item.sub_coa,
+                c14: item.nama_vendor,
+                c15: moment(item.start_ikk).format('MMMM'),
+                c16: moment(item.start_ikk).format('YYYY'),
+                c17: moment(item.start_ikk).format('DD'),
+                c18: item.status_npwp === 1 ? 'yes' : 'no',
+                c19: item.no_npwp,
+                c20: item.no_ktp,
+                c21: item.jenis_pph,
+                c22: item.veriftax !== null && item.veriftax.tax_type,
+                c23: item.veriftax !== null && item.veriftax.tax_code,
+                c24: item.veriftax !== null ? '' : item.veriftax.taxcode !== null && item.veriftax.taxcode.tax_objdesc,
+                c25: item.nilai_ajuan,
+                c26: item.nilai_buku,
+                c27: item.nilai_utang,
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Report Tax Ikk ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
     }
 
     onChangeUpload = e => {
@@ -500,7 +659,7 @@ class ReportIkk extends Component {
 
     changeFilter = async (val) => {
         const token = localStorage.getItem("token")
-        const status = 7
+        const status = 8
         const {time1, time2} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
@@ -751,39 +910,6 @@ class ReportIkk extends Component {
         }
     }
 
-    chekApp = (val) => {
-        const { listMut } = this.state
-        const {detailIkk} = this.props.ikk
-        if (val === 'all') {
-            const data = []
-            for (let i = 0; i < detailIkk.length; i++) {
-                data.push(detailIkk[i].id)
-            }
-            this.setState({listMut: data})
-        } else {
-            listMut.push(val)
-            this.setState({listMut: listMut})
-        }
-    }
-
-    chekRej = (val) => {
-        const {listMut} = this.state
-        if (val === 'all') {
-            const data = []
-            this.setState({listMut: data})
-        } else {
-            const data = []
-            for (let i = 0; i < listMut.length; i++) {
-                if (listMut[i] === val) {
-                    data.push()
-                } else {
-                    data.push(listMut[i])
-                }
-            }
-            this.setState({listMut: data})
-        }
-    }
-
     prepareReject = async () => {
         const token = localStorage.getItem("token")
         await this.props.getAllMenu(token, 'reject')
@@ -815,7 +941,7 @@ class ReportIkk extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu} = this.state
+        const {dataRinci, dropApp, dataDownload, listMut, drop, listReason, dataMenu, listMenu, listIkk} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailIkk, ttdIkk, dataDoc, newIkk, dataReport } = this.props.ikk
@@ -861,29 +987,13 @@ class ReportIkk extends Component {
                                 <div className={style.titleDashboard}>Report Tax (Ikhtisar Kas Kecil)</div>
                             </div>
                             <div className={style.secEmail3}>
-                                <div className={style.headEmail2}>
-                                    <ReactHtmlToExcel
-                                        id="test-table-xls-button"
-                                        className="btn btn-success mr-2"
-                                        table="table-ikk"
-                                        filename={`Report Ikk ${moment().format('DD MMMM YYYY')}`}
-                                        sheet="Report"
-                                        buttonText="Download"
-                                    />
-                                </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Status:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="reject">Reject</option>
-                                        <option value="all">Siap Bayar</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                    </Input>
-                                </div>
+                                <Button onClick={this.prosesDownload} className="btn btn-success mr-2">Download</Button>
+                                <div></div>
                             </div>
                             <div className={[style.secEmail4]}>
                                 <div className={style.headEmail2}>
                                     <Input className={style.filter2} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                        <option value="all">All</option>
+                                        <option value="all">Time (All)</option>
                                         <option value="pilih">Periode</option>
                                     </Input>
                                     {this.state.time === 'pilih' ?  (
@@ -913,6 +1023,27 @@ class ReportIkk extends Component {
                                     ) : null}
                                 </div>
                                 <div className={style.searchEmail2}>
+                                    <text>Status:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value="reject">Reject</option>
+                                        <option value="all">All</option>
+                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                    </Input>
+                                </div>
+                            </div>
+
+                            <div className={[style.secEmail4]}>
+                                <div className={style.searchEmail2}>
+                                    <text>Status:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.statKlaim} onChange={e => this.changeStatKlaim(e.target.value)}>
+                                        <option value='all'>All</option>
+                                        <option value={2} >Pengajuan Area</option>
+                                        <option value={3} >Verifikasi Finance</option>
+                                        <option value={4} >Verifikasi Tax</option>
+                                        <option value={7} >Transaksi Selesai</option>
+                                    </Input>
+                                </div>
+                                <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 
                                     className={style.search}
@@ -923,14 +1054,22 @@ class ReportIkk extends Component {
                                     </Input>
                                 </div>
                             </div>
+
                             <div className='mb-4 mt-2' />
                                 <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-ikk">
+                                    <Table bordered responsive hover className={style.tab} id="table-ops">
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listIkk.length === 0 ? false : listIkk.length === dataReport.length ? true : false}
+                                                    onChange={() => listIkk.length === dataReport.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    />
+                                                </th>
                                                 <th>No</th>
-                                                {/* <th>PIC</th> */}
-                                                <th>Nomor Pengajuan Kas Kecil</th>
+                                                <th>Nomor Pengajuan Ikk</th>
                                                 <th>Tax Payable Document Number</th>
                                                 <th>Posting Date</th>
                                                 <th>Profit Center</th>
@@ -950,43 +1089,54 @@ class ReportIkk extends Component {
                                                 <th>NPWP Number</th>
                                                 <th>NIK</th>
                                                 <th>Jenis PPh</th>
+                                                <th>WHT Tax Type</th>
+                                                <th>WHT Tax Code</th>
                                                 <th>Tax Object Description</th>
                                                 <th>Gross Expense</th>
                                                 <th>Tax Base</th>
                                                 <th>PPh Amount</th>
-                                                <th>STATUS</th>
+                                                {/* <th>STATUS</th> */}
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {dataReport.map(item => {
+                                            {dataReport.length > 0 && dataReport.map(item => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                        <th>
+                                                            <input 
+                                                            type='checkbox'
+                                                            checked={listIkk.find(element => element === item.id) !== undefined ? true : false}
+                                                            onChange={listIkk.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                            />
+                                                        </th>
                                                         <th>{dataReport.indexOf(item) + 1}</th>
-                                                        <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
-                                                        <th>{item.area}</th>
-                                                        <th>{item.depo.channel}</th>
                                                         <th>{item.no_transaksi}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.uraian}</th>
-                                                        <th>{moment(item.start_ikk).format('DD MMMM YYYY')}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                        <th>{item.bank_tujuan}</th>
-                                                        <th>{item.norek_ajuan}</th>
-                                                        <th>{item.nama_tujuan}</th>
-                                                        <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
-                                                        <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                                        <th>{item.ppu}</th>
-                                                        <th>{item.pa}</th>
-                                                        <th>{item.nominal}</th>
-                                                        <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
                                                         <th></th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
+                                                        <th>{moment(item.start_ikk).format('DD MMMM YYYY')}</th>
+                                                        <th>{item.depo.profit_center}</th>
+                                                        <th>{item.depo.kpp.npwp}</th>
+                                                        <th></th>
+                                                        <th>{moment(item.tgl_tagihanbayar).format('DD MMMM YYYY')}</th>
+                                                        <th>{item.no_faktur}</th>
+                                                        <th>{item.tgl_faktur !== null && item.tgl_faktur !== '' ? moment(item.tgl_faktur).format('DD MMMM YYYY') : ''}</th>
+                                                        <th></th>
+                                                        <th>{item.sub_coa}</th>
+                                                        <th>{item.sub_coa}</th>
+                                                        <th>{item.nama_vendor}</th>
+                                                        <th>{moment(item.start_ikk).format('MMMM')}</th>
+                                                        <th>{moment(item.start_ikk).format('YYYY')}</th>
+                                                        <th>{moment(item.start_ikk).format('DD')}</th>
+                                                        <th>{item.status_npwp === 1 ? 'yes' : 'no'}</th>
+                                                        <th>{item.no_npwp}</th>
+                                                        <th>{item.no_ktp}</th>
+                                                        <th>{item.jenis_pph}</th>
+                                                        <th>{item.veriftax !== null && item.veriftax.tax_type}</th>
+                                                        <th>{item.veriftax !== null && item.veriftax.tax_code}</th>
+                                                        <th>{item.veriftax !== null ? '' : item.veriftax.taxcode !== null && item.veriftax.taxcode.tax_objdesc}</th>
+                                                        <th>{item.nilai_ajuan}</th>
+                                                        <th>{item.nilai_buku}</th>
+                                                        <th>{item.nilai_utang}</th>
+                                                        {/* <th>{item.history.split(',').reverse()[0]}</th> */}
                                                     </tr>
                                                 )
                                             })}
@@ -1157,6 +1307,91 @@ class ReportIkk extends Component {
                                     </Button>
                                 </>
                             )}
+                        </div>
+                    </div>
+                </Modal>
+                <Modal className='modalrinci' isOpen={this.state.modalDownload} toggle={this.openDownload} size="xl">
+                    <ModalHeader>
+                        Download Report
+                    </ModalHeader>
+                    <ModalBody>
+                        <Table bordered responsive hover className={style.tab}>
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nomor Pengajuan Ikk</th>
+                                    <th>Tax Payable Document Number</th>
+                                    <th>Posting Date</th>
+                                    <th>Profit Center</th>
+                                    <th>Tax Office Code</th>
+                                    <th>Invoice Number</th>
+                                    <th>Invoice Date</th>
+                                    <th>Tax Invoice Number</th>
+                                    <th>Tax Invoice Date</th>
+                                    <th>Document Number Exp</th>
+                                    <th>GL Expense</th>
+                                    <th>Expense Desc.</th>
+                                    <th>Vendor Name</th>
+                                    <th>Tax Period</th>
+                                    <th>Fiscal Year</th>
+                                    <th>WHT Date</th>
+                                    <th>NPWP (Y/N)</th>
+                                    <th>NPWP Number</th>
+                                    <th>NIK</th>
+                                    <th>Jenis PPh</th>
+                                    <th>WHT Tax Type</th>
+                                    <th>WHT Tax Code</th>
+                                    <th>Tax Object Description</th>
+                                    <th>Gross Expense</th>
+                                    <th>Tax Base</th>
+                                    <th>PPh Amount</th>
+                                    {/* <th>STATUS</th> */}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dataDownload.map(item => {
+                                    return (
+                                        <tr>
+                                            <th>{dataReport.indexOf(item) + 1}</th>
+                                            <th>{item.no_transaksi}</th>
+                                            <th></th>
+                                            <th>{moment(item.start_ikk).format('DD MMMM YYYY')}</th>
+                                            <th>{item.depo.profit_center}</th>
+                                            <th>{item.depo.kpp.npwp}</th>
+                                            <th></th>
+                                            <th>{moment(item.tgl_tagihanbayar).format('DD MMMM YYYY')}</th>
+                                            <th>{item.no_faktur}</th>
+                                            <th>{item.tgl_faktur !== null && item.tgl_faktur !== '' ? moment(item.tgl_faktur).format('DD MMMM YYYY') : ''}</th>
+                                            <th></th>
+                                            <th>{item.sub_coa}</th>
+                                            <th>{item.sub_coa}</th>
+                                            <th>{item.nama_vendor}</th>
+                                            <th>{moment(item.start_ikk).format('MMMM')}</th>
+                                            <th>{moment(item.start_ikk).format('YYYY')}</th>
+                                            <th>{moment(item.start_ikk).format('DD')}</th>
+                                            <th>{item.status_npwp === 1 ? 'yes' : 'no'}</th>
+                                            <th>{item.no_npwp}</th>
+                                            <th>{item.no_ktp}</th>
+                                            <th>{item.jenis_pph}</th>
+                                            <th>{item.veriftax !== null && item.veriftax.tax_type}</th>
+                                            <th>{item.veriftax !== null && item.veriftax.tax_code}</th>
+                                            <th>{item.veriftax !== null ? '' : item.veriftax.taxcode !== null && item.veriftax.taxcode.tax_objdesc}</th>
+                                            <th>{item.nilai_ajuan}</th>
+                                            <th>{item.nilai_buku}</th>
+                                            <th>{item.nilai_utang}</th>
+                                            {/* <th>{item.history.split(',').reverse()[0]}</th> */}
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </Table>
+                    </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div></div>
+                        <div className="btnFoot">
+                            <Button color='warning' className='mb-4' onClick={this.downloadIkk}>Download Report</Button>
+                            <Button color='success' className='mb-4 ml-3' onClick={this.openDownload}>Close</Button>
                         </div>
                     </div>
                 </Modal>

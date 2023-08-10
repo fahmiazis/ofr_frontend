@@ -49,10 +49,12 @@ function Sidebar(props) {
                     <AiFillDashboard size={20} className="iconSide" />
                     <text className="txtMenu">Dashboard</text>
                 </button>
-                <button className="menuSides" onClick={() => goHome('navklaim')}>
-                    <FaHandshake size={20} className="iconSide" />
-                    <text className="txtMenu">Klaim</text>
-                </button>
+                {level !== '4' && level !== '14' && (
+                    <button className="menuSides" onClick={() => goHome('navklaim')}>
+                        <FaHandshake size={20} className="iconSide" />
+                        <text className="txtMenu">Klaim</text>
+                    </button>
+                )}
                 <button className="menuSides" onClick={() => goHome('navkasbon')}>
                     <FaCashRegister size={20} className="iconSide" />
                     <text className="txtMenu">Kasbon</text>
@@ -95,6 +97,10 @@ function Sidebar(props) {
                         <button onClick={() => goHome('kpp')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
                             Master KPP
+                        </button>
+                        <button onClick={() => goHome('taxcode')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Master Taxcode
                         </button>
                     </Collapse>
                 ) : level === '1' && (
@@ -162,6 +168,10 @@ function Sidebar(props) {
                         <button onClick={() => goHome('finance')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Finance
+                        </button>
+                        <button onClick={() => goHome('taxcode')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Master Taxcode
                         </button>
                         <button onClick={() => goHome('reservoir')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>

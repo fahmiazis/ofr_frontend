@@ -16,6 +16,9 @@ import Sidebar from "../../components/Header";
 import MaterialTitlePanel from "../../components/material_title_panel";
 import SidebarContent from "../../components/sidebar_content";
 import NavBar from '../../components/NavBar'
+import moment from 'moment'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 
 const userSchema = Yup.object().shape({
@@ -75,7 +78,8 @@ class MasterUser extends Component {
             modalReset: false,
             filter: null,
             filterName: 'All',
-            modalDel: false
+            modalDel: false,
+            listUser: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -340,8 +344,105 @@ class MasterUser extends Component {
         this.setState({modalDel: !this.state.modalDel})
     }
 
+    chekApp = (val) => {
+        const { listUser } = this.state
+        const {dataUser} = this.props.user
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataUser.length; i++) {
+                data.push(dataUser[i].id)
+            }
+            this.setState({listUser: data})
+        } else {
+            listUser.push(val)
+            this.setState({listUser: listUser})
+        }
+    }
+
+    chekRej = (val) => {
+        const {listUser} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listUser: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listUser.length; i++) {
+                if (listUser[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listUser[i])
+                }
+            }
+            this.setState({listUser: data})
+        }
+    }
+
+    downloadData = () => {
+        const {listUser} = this.state
+        const {dataUser} = this.props.user
+        const dataDownload = []
+        for (let i = 0; i < listUser.length; i++) {
+            for (let j = 0; j < dataUser.length; j++) {
+                if (dataUser[j].id === listUser[i]) {
+                    dataDownload.push(dataUser[j])
+                }
+            }
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data klaim')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+        
+
+        ws.columns = [
+            {header: 'User Name', key: 'c2'},
+            {header: 'Full Name', key: 'c3'},
+            {header: 'Kode Area', key: 'c4'},
+            {header: 'Email', key: 'c5'},
+            {header: 'User Level', key: 'c6'},
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c2: item.username,
+                c3: item.fullname,
+                c4: item.kode_plant === 0 ? "" : item.kode_plant,
+                c5: item.email,
+                c6: `${item.level}-${item.role.name}`,
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Master User ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
+    }
+
     render() {
-        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
+        const {isOpen, dropOpen, listUser, detail, level, upload, errMsg} = this.state
         const {dataUser, isGet, alertM, alertMsg, alertUpload, page, dataRole} = this.props.user
         const { dataDepo } = this.props.depo
         const levels = localStorage.getItem('level')
@@ -406,6 +507,7 @@ class MasterUser extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -448,7 +550,7 @@ class MasterUser extends Component {
                                     <div className={style.headEmail}>
                                         <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
                                         <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button>
+                                        <Button className='mr-1' onClick={this.downloadData} color="success" size="lg">Download</Button>
                                     </div>
                                     <div className={style.searchEmail}>
                                         <text>Search: </text>
@@ -462,57 +564,59 @@ class MasterUser extends Component {
                                         </Input>
                                     </div>
                                 </div>
-                                {isGet === false ? (
                                     <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab}>
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>User Name</th>
-                                                <th>Full Name</th>
-                                                <th>Kode Plant</th>
-                                                <th>Email</th>
-                                                <th>User Level</th>
-                                            </tr>
-                                        </thead>
-                                    </Table>
-                                        <div className={style.spin}>
-                                            <Spinner type="grow" color="primary"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="success"/>
-                                            <Spinner type="grow" color="warning"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="danger"/>
-                                            <Spinner type="grow" color="info"/>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab}>
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>User Name</th>
-                                                <th>Full Name</th>
-                                                <th>Kode Plant</th>
-                                                <th>Email</th>
-                                                <th>User Level</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        {dataUser.length !== 0 && dataUser.map(item => {
-                                                return (
-                                                <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
-                                                    <th scope="row">{(dataUser.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
-                                                    <td>{item.username}</td>
-                                                    <td>{item.fullname}</td>
-                                                    <td>{item.kode_plant === 0 ? "" : item.kode_plant}</td>
-                                                    <td>{item.email}</td>
-                                                    <td className='uppercase'>{item.role.name}</td>
+                                        <Table bordered responsive hover className={style.tab}>
+                                            <thead>
+                                                <tr>
+                                                    <th>
+                                                        <input  
+                                                        className='mr-2'
+                                                        type='checkbox'
+                                                        checked={listUser.length === 0 ? false : listUser.length === dataUser.length ? true : false}
+                                                        onChange={() => listUser.length === dataUser.length ? this.chekRej('all') : this.chekApp('all')}
+                                                        />
+                                                        {/* Select */}
+                                                    </th>
+                                                    <th>No</th>
+                                                    <th>User Name</th>
+                                                    <th>Full Name</th>
+                                                    <th>Kode Plant</th>
+                                                    <th>Email</th>
+                                                    <th>User Level</th>
+                                                    <th>Opsi</th>
                                                 </tr>
-                                                )})}
-                                        </tbody>
-                                    </Table>
-                                </div>  
-                                )}
+                                            </thead>
+                                            <tbody>
+                                            {dataUser.length !== 0 && dataUser.map(item => {
+                                                return (
+                                                    <tr>
+                                                        <th>
+                                                            <input 
+                                                            type='checkbox'
+                                                            checked={listUser.find(element => element === item.id) !== undefined ? true : false}
+                                                            onChange={listUser.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                            />
+                                                        </th>
+                                                        <th scope="row">{(dataUser.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
+                                                        <td>{item.username}</td>
+                                                        <td>{item.fullname}</td>
+                                                        <td>{item.kode_plant === 0 ? "" : item.kode_plant}</td>
+                                                        <td>{item.email}</td>
+                                                        <td className='uppercase'>{item.role === null ? '' : item.role.name}</td>
+                                                        <td>
+                                                            <Button onClick={()=>this.openModalEdit(this.setState({detail: item}))} color='primary'>Edit</Button>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                            </tbody>
+                                        </Table>
+                                        {dataUser.length === 0 && (
+                                            <div className={style.spin}>
+                                                Data tidak ditemukan
+                                            </div>
+                                        )}
+                                    </div>
                                 <div>
                                     <div className='infoPageEmail'>
                                         <text>Showing {page.currentPage} of {page.pages} pages</text>

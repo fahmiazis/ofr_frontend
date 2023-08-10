@@ -166,7 +166,16 @@ class CartOps extends Component {
         if (size >= 20000000) {
             this.setState({errMsg: "Maximum upload size 20 MB"})
             this.uploadAlert()
-        } else if (type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && type !== 'application/vnd.ms-excel' && type !== 'application/pdf' && type !== 'application/x-7z-compressed' && type !== 'application/vnd.rar' && type !== 'application/zip' && type !== 'application/x-zip-compressed' && type !== 'application/octet-stream' && type !== 'multipart/x-zip' && type !== 'application/x-rar-compressed') {
+        } else if (
+            type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && 
+            type !== 'application/vnd.ms-excel' && 
+            type !== 'application/pdf' && 
+            type !== 'application/x-7z-compressed' && 
+            type !== 'application/vnd.rar' && 
+            type !== 'application/zip' && type !== 'application/x-zip-compressed' && 
+            type !== 'application/octet-stream' && type !== 'multipart/x-zip' && 
+            type !== 'application/x-rar-compressed' && type !== 'image/jpeg' && type !== 'image/png'
+            ) {
             this.setState({errMsg: 'Invalid file type. Only excel, pdf, zip, and rar files are allowed.'})
             this.uploadAlert()
         } else {
@@ -666,9 +675,9 @@ class CartOps extends Component {
         const nilaiPo = parseFloat(val.nilai_po)
         const nilaiPr = parseFloat(val.nilai_pr)
         const cek = nilaiAjuan === nilaiPo && nilaiAjuan === nilaiPr ? true : false
-        if (type_kasbon === 'kasbon' && cek === true) {
+        if (type_kasbon === 'kasbon' && val.type_po !== 'po') {
             this.addCartOps(val)
-        } else if (type_kasbon === 'kasbon' && cek === false) {
+        } else if (type_kasbon === 'kasbon' && val.type_po === 'po' && cek === false) {
             this.setState({confirm: 'failAdd'})
             this.openConfirm()
         } else {
@@ -730,9 +739,9 @@ class CartOps extends Component {
         const nilaiPo = parseFloat(val.nilai_po)
         const nilaiPr = parseFloat(val.nilai_pr)
         const cek = nilaiAjuan === nilaiPo && nilaiAjuan === nilaiPr ? true : false
-        if (type_kasbon === 'kasbon' && cek === true) {
+        if (type_kasbon === 'kasbon' && val.type_po !== 'po') {
             this.editCartOps(val)
-        } else if (type_kasbon === 'kasbon' && cek === false) {
+        } else if (type_kasbon === 'kasbon' && val.type_po === 'po' && cek === false) {
             this.setState({confirm: 'failEdit'})
             this.openConfirm()
         } else {
@@ -1541,7 +1550,7 @@ class CartOps extends Component {
                                                     <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                     <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                     <th>{item.nama_tujuan}</th>
-                                                    <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
+                                                    <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
                                                     <th>
                                                         <Button onClick={() => this.prosesOpenEdit(item.id)} className='mb-1 mr-1' color='success'>EDIT</Button>
                                                         <Button onClick={() => this.prosesDelete(item.id)} color='danger'>DELETE</Button>
@@ -3253,7 +3262,7 @@ class CartOps extends Component {
                         <div className={style.modalApprove}>
                             <div>
                                 <text>
-                                    Anda yakin untuk delete data ajuan kasbon ?
+                                    Anda yakin untuk delete data ajuan ?
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
@@ -3569,6 +3578,7 @@ class CartOps extends Component {
                                 >
                                     Approve & Send Email
                                 </Button>
+                                <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
                             </div>
                         </div>
                     </ModalBody>

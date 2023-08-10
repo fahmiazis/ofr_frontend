@@ -126,6 +126,8 @@ class VerifIkk extends Component {
             openDraft: false,
             message: '',
             subject: '',
+            tipeEmail: '',
+            dataRej: {}
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -215,11 +217,7 @@ class VerifIkk extends Component {
             type: "verif"
         }
         await this.props.rejectIkk(token, data)
-        this.getDataIkk()
-        this.setState({confirm: 'reject'})
-        this.openConfirm()
-        this.openModalReject()
-        this.openModalRinci()
+        this.dataSendEmail('reject')
     }
 
     dropApp = () => {
@@ -573,12 +571,21 @@ class VerifIkk extends Component {
             tipe: 'ikk',
         }
         await this.props.sendEmail(token, tempno)
-        this.getDataIkk()
-        this.setState({confirm: 'isApprove'})
-        this.openConfirm()
-        this.openDraftEmail()
-        this.openModalApprove()
-        this.openModalRinci()
+        if (val === 'reject') {
+            this.getDataIkk()
+            this.setState({confirm: 'reject'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalReject()
+            this.openModalRinci()
+        } else {
+            this.getDataIkk()
+            this.setState({confirm: 'isApprove'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalApprove()
+            this.openModalRinci()
+        }
     }
 
     prepSendEmail = async () => {
@@ -602,6 +609,33 @@ class VerifIkk extends Component {
             menu: cekMenu 
         }
         await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'app'})
+        this.openDraftEmail()
+    }
+
+    prepReject = async (val) => {
+        const { detailIkk } = this.props.ikk
+        const level = localStorage.getItem("level")
+        const token = localStorage.getItem("token")
+        const app = detailIkk[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const cekMenu = level === '2' ? 'Verifikasi Finance (IKK)' : 'Verifikasi Tax (IKK)'
+        const tempno = {
+            no: detailIkk[0].no_transaksi,
+            kode: detailIkk[0].kode_plant,
+            jenis: 'ikk',
+            tipe: tipe,
+            menu: cekMenu 
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
         this.openDraftEmail()
     }
 
@@ -1075,7 +1109,7 @@ class VerifIkk extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listIkk} = this.state
+        const {dataRinci, dropApp, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listIkk} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailIkk, ttdIkk, dataDoc, newIkk } = this.props.ikk
@@ -1804,7 +1838,7 @@ class VerifIkk extends Component {
                     alasan: "",
                     }}
                     validationSchema={alasanSchema}
-                    onSubmit={(values) => {this.rejectIkk(values)}}
+                    onSubmit={(values) => {this.prepReject(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
@@ -2197,10 +2231,10 @@ class VerifIkk extends Component {
                                 <Button
                                     disabled={this.state.message === '' ? true : false} 
                                     className="mr-2"
-                                    onClick={() => this.approveDataIkk()} 
+                                    onClick={() => tipeEmail === 'reject' ? this.rejectIkk(this.state.dataRej) : this.approveDataIkk()} 
                                     color="primary"
                                 >
-                                    Submit & Send Email
+                                   {tipeEmail === 'reject' ? 'Reject' : 'Submit'} & Send Email
                                 </Button>
                                 <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
                             </div>

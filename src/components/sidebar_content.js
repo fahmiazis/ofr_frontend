@@ -85,10 +85,12 @@ const SidebarContent = props => {
             <AiFillDashboard size={20} className="mr-2"/>
             <text className={stile.txtSide}>Dashboard</text>
         </button>
-        <button className={stile.btnSide} onClick={() => goHome('navklaim')}>
-          <FaHandshake size={20} className="mr-2" />
-          <text className={stile.txtSide}>Klaim</text>
-        </button>
+        {level !== '4' && level !== '14' && (
+          <button className={stile.btnSide} onClick={() => goHome('navklaim')}>
+            <FaHandshake size={20} className="mr-2" />
+            <text className={stile.txtSide}>Klaim</text>
+          </button>
+        )}
         <button className={stile.btnSide} onClick={() => goHome('navkasbon')}>
           <FaCashRegister size={20} className="mr-2" />
           <text className={stile.txtSide}>Kasbon</text>
@@ -132,6 +134,10 @@ const SidebarContent = props => {
             <button onClick={() => goHome('kpp')} className={stile.btnSide}>
               <BsClipboardData size={20} className="mr-2"/>
               Master Kpp
+            </button>
+            <button onClick={() => goHome('taxcode')} className={stile.btnSide}>
+              <BsClipboardData size={20} className="mr-2"/>
+              Master Taxcode
             </button>
           </Collapse>
         ) : level === '1' && (
@@ -199,6 +205,10 @@ const SidebarContent = props => {
             <button onClick={() => goHome('finance')} className={stile.btnSide}>
               <BsClipboardData size={20} className="mr-2"/>
               Master Finance
+            </button>
+            <button onClick={() => goHome('taxcode')} className={stile.btnSide}>
+              <BsClipboardData size={20} className="mr-2"/>
+              Master Taxcode
             </button>
             <button onClick={() => goHome('reservoir')} className={stile.btnSide}>
               <BsClipboardData size={20} className="mr-2"/>

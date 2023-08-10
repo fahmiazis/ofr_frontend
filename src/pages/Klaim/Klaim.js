@@ -139,7 +139,9 @@ class Klaim extends Component {
             jurnalArea: false,
             jurnal: [1, 2],
             jurnalPPh: [1, 2, 3],
-            jurnalFull: [1, 2, 3, 4]
+            jurnalFull: [1, 2, 3, 4],
+            tipeEmail: '',
+            dataRej: {}
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -238,11 +240,7 @@ class Klaim extends Component {
             menu: listMenu.toString()
         }
         await this.props.rejectKlaim(token, data)
-        this.getDataKlaim()
-        this.setState({confirm: 'reject'})
-        this.openConfirm()
-        this.openModalReject()
-        this.openModalRinci()
+        this.dataSendEmail('reject')
     }
 
     showCollap = (val) => {
@@ -702,15 +700,24 @@ class Klaim extends Component {
             tipe: 'klaim',
         }
         await this.props.sendEmail(token, tempno)
-        this.getDataKlaim()
-        this.setState({confirm: 'isApprove'})
-        this.openConfirm()
-        this.openDraftEmail()
-        this.openModalApprove()
-        this.openModalRinci()
+        if (val === 'reject') {
+            this.getDataKlaim()
+            this.setState({confirm: 'reject'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalReject()
+            this.openModalRinci()
+        } else {
+            this.getDataKlaim()
+            this.setState({confirm: 'isApprove'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalApprove()
+            this.openModalRinci()
+        }
     }
 
-    prepSendEmail = async () => {
+    prepApprove = async () => {
         const { detailKlaim } = this.props.klaim
         const token = localStorage.getItem("token")
         const app = detailKlaim[0].appForm
@@ -729,6 +736,31 @@ class Klaim extends Component {
             menu: 'Pengajuan Klaim (Klaim)'
         }
         await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'app'})
+        this.openDraftEmail()
+    }
+
+    prepReject = async (val) => {
+        const { detailKlaim } = this.props.klaim
+        const token = localStorage.getItem("token")
+        const app = detailKlaim[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            jenis: 'klaim',
+            kode: detailKlaim[0].kode_plant,
+            tipe: tipe,
+            menu: 'Pengajuan Klaim (Klaim)'
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
         this.openDraftEmail()
     }
 
@@ -1004,7 +1036,7 @@ class Klaim extends Component {
 
     prepareReject = async () => {
         const token = localStorage.getItem("token")
-        await this.props.getAllMenu(token, 'reject')
+        await this.props.getAllMenu(token, 'reject', 'Klaim')
         await this.props.getReason(token)
         const dataMenu = this.props.menu.dataAll
         const data = []
@@ -1033,7 +1065,7 @@ class Klaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, jurnal, jurnalPPh, listMut, jurnalFull, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim } = this.props.klaim
@@ -1710,7 +1742,7 @@ class Klaim extends Component {
                     alasan: "",
                     }}
                     validationSchema={alasanSchema}
-                    onSubmit={(values) => {this.rejectKlaim(values)}}
+                    onSubmit={(values) => {this.prepReject(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
@@ -1793,9 +1825,9 @@ class Klaim extends Component {
                                 {/* {level === '12' ? (
                                     <Button color="primary" onClick={() => this.approveDataKlaim()}>Ya</Button>
                                 ) : (
-                                    <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
+                                    <Button color="primary" onClick={() => this.prepApprove()}>Ya</Button>
                                 )} */}
-                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepApprove()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -2101,10 +2133,10 @@ class Klaim extends Component {
                             <Button
                                 disabled={this.state.message === '' ? true : false} 
                                 className="mr-2"
-                                onClick={() => this.approveDataKlaim()} 
+                                onClick={() => tipeEmail === 'reject' ? this.rejectKlaim(this.state.dataRej) : this.approveDataKlaim()}  
                                 color="primary"
                             >
-                                Approve & Send Email
+                                {tipeEmail === 'reject' ? 'Reject' : 'Approve'} & Send Email
                             </Button>
                             <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
                         </div>

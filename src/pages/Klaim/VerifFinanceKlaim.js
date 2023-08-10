@@ -120,6 +120,8 @@ class VerifKlaim extends Component {
             time: 'pilih',
             time1: '',
             time2: '',
+            tipeEmail: '',
+            dataRej: {}
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -209,11 +211,7 @@ class VerifKlaim extends Component {
             type: "verif"
         }
         await this.props.rejectKlaim(token, data)
-        this.getDataKlaim()
-        this.setState({confirm: 'reject'})
-        this.openConfirm()
-        this.openModalReject()
-        this.openModalRinci()
+        this.dataSendEmail('reject')
     }
 
     dropApp = () => {
@@ -450,12 +448,35 @@ class VerifKlaim extends Component {
             }
         }
         if (tempdoc.length === dataDoc.length) {
-            this.openModalApprove()
+            this.cekDataKlaim()
         } else {
             this.setState({confirm: 'appNotifDoc'})
             this.openConfirm()
         }
         // }
+    }
+
+    cekDataKlaim = () => {
+        const { detailKlaim } = this.props.klaim
+        const level = localStorage.getItem("level")
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: detailKlaim[0].no_transaksi
+        }
+        if (level === '3' || level === '13') {
+            const cek = []
+            detailKlaim.map(item => {
+                return ((item.ppu !== null && item.pa !== null && item.nominal !== null && item.kode_vendor !== null) && cek.push(item))
+            })
+            if (cek.length === detailKlaim.length) {
+                this.openModalApprove()
+            } else {
+                this.setState({confirm: 'rejSubmit'})
+                this.openConfirm()
+            }
+        } else {
+            this.openModalApprove()
+        }
     }
 
     openModalDok = () => {
@@ -603,7 +624,7 @@ class VerifKlaim extends Component {
         if (level === '3' || level === '13') {
             const cek = []
             detailKlaim.map(item => {
-                return ((item.ppu !== null && item.pa !== null && item.nominal !== null) && cek.push(item))
+                return ((item.ppu !== null && item.pa !== null && item.nominal !== null && item.kode_vendor !== null) && cek.push(item))
             })
             if (cek.length === detailKlaim.length) {
                 await this.props.submitVerif(token, tempno)
@@ -639,12 +660,21 @@ class VerifKlaim extends Component {
             tipe: 'klaim',
         }
         await this.props.sendEmail(token, tempno)
-        this.getDataKlaim()
-        this.setState({confirm: 'submit'})
-        this.openConfirm()
-        this.openDraftEmail()
-        this.openModalApprove()
-        this.openModalRinci()
+        if (val === 'reject') {
+            this.getDataKlaim()
+            this.setState({confirm: 'reject'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalReject()
+            this.openModalRinci()
+        } else {
+            this.getDataKlaim()
+            this.setState({confirm: 'submit'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalApprove()
+            this.openModalRinci()
+        }
     }
 
     prepSendEmail = async () => {
@@ -668,6 +698,33 @@ class VerifKlaim extends Component {
             menu: cekMenu 
         }
         await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'app'})
+        this.openDraftEmail()
+    }
+
+    prepReject = async (val) => {
+        const { detailKlaim } = this.props.klaim
+        const level = localStorage.getItem("level")
+        const token = localStorage.getItem("token")
+        const app = detailKlaim[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const cekMenu = level === '2' ? 'Verifikasi Finance (Klaim)' : 'Verifikasi Klaim (Klaim)'
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            kode: detailKlaim[0].kode_plant,
+            jenis: 'klaim',
+            tipe: tipe,
+            menu: cekMenu 
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
         this.openDraftEmail()
     }
 
@@ -933,7 +990,7 @@ class VerifKlaim extends Component {
 
     prepareReject = async () => {
         const token = localStorage.getItem("token")
-        await this.props.getAllMenu(token, 'reject')
+        await this.props.getAllMenu(token, 'reject', 'Klaim')
         await this.props.getReason(token)
         const dataMenu = this.props.menu.dataAll
         const data = []
@@ -962,7 +1019,7 @@ class VerifKlaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, dropApp, tipeEmail, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim } = this.props.klaim
@@ -1914,7 +1971,7 @@ class VerifKlaim extends Component {
                                                 onClick={handleSubmit}>
                                                 Save
                                             </Button>
-                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
+                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalEdit()}>Close</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -1930,7 +1987,7 @@ class VerifKlaim extends Component {
                     alasan: "",
                     }}
                     validationSchema={alasanSchema}
-                    onSubmit={(values) => {this.rejectKlaim(values)}}
+                    onSubmit={(values) => {this.prepReject(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
@@ -2082,14 +2139,14 @@ class VerifKlaim extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, dan nominal telah diisi</div>
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, nominal, dan kode vendor telah diisi</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'rejSubmit' ?(
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, dan nominal telah diisi</div>
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, nominal, dan kode vendor telah diisi</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'appNotifDoc' ?(
@@ -2308,10 +2365,10 @@ class VerifKlaim extends Component {
                                 <Button
                                     disabled={this.state.message === '' ? true : false} 
                                     className="mr-2"
-                                    onClick={() => this.approveDataKlaim()} 
+                                    onClick={() => tipeEmail === 'reject' ? this.rejectKlaim(this.state.dataRej) : this.approveDataKlaim()}
                                     color="primary"
                                 >
-                                    Submit & Send Email
+                                    {tipeEmail === 'reject' ? 'Reject' : 'Submit'} & Send Email
                                 </Button>
                                 <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
                             </div>

@@ -186,19 +186,25 @@ class NavStock extends Component {
                                             Report Operasional
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revops')}>
+                                    {/* <button className="cardNav1" onClick={() => this.goRoute('revops')}>
                                         <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi Operasional
                                         </div>
-                                    </button>
+                                    </button> */}
                                 </>
                             ) : level === '4' || level === '14' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goProses({route: 'veriffintax', type: 'kasbon'})}>
                                         <MdVerifiedUser size={220} className="picHome" />
                                         <div className="titCard">
-                                            Verifikasi Tax (Kasbon)
+                                            Verifikasi Tax (Non Kasbon)
+                                        </div>
+                                    </button>
+                                    <button className="cardNav1" onClick={() => this.goRoute('reptaxops')}>
+                                        <HiOutlineDocumentReport size={220} className="picHome" />
+                                        <div className="titCard">
+                                            Report Tax (Operasional)
                                         </div>
                                     </button>
                                     {/* <button className="cardNav1" onClick={() => this.goProses({route: 'veriffintax', type: 'non kasbon'})}>
@@ -211,12 +217,6 @@ class NavStock extends Component {
                                         <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi Operasional
-                                        </div>
-                                    </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('reptaxops')}>
-                                        <HiOutlineDocumentReport size={220} className="picHome" />
-                                        <div className="titCard">
-                                            Report Tax (Operasional)
                                         </div>
                                     </button>
                                 </>

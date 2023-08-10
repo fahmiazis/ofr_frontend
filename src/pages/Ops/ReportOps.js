@@ -126,7 +126,9 @@ class ReportOps extends Component {
             dataDownload: [],
             modalDownload: false,
             titleDownload: '',
-            listOps: []
+            listOps: [],
+            jurnalMap: [1, 2],
+            isLoading: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -788,6 +790,25 @@ class ReportOps extends Component {
         this.openDownload()
     }
 
+    prosesJurnal = (val) => {
+        const {listOps} = this.state
+        const {dataReport} = this.props.ops
+        const data = []
+        for (let i = 0; i < listOps.length; i++) {
+            for (let j = 0; j < dataReport.length; j++) {
+                if (dataReport[j].id === listOps[i]) {
+                    data.push(dataReport[j])
+                }
+            }
+        }
+        this.setState({dataDownload: data, titleDownload: val})
+        this.openJurnal()
+    }
+
+    openJurnal = () => {
+        this.setState({modalJurnal: !this.state.modalJurnal})
+    }
+
     openDownload = () => {
         this.setState({modalDownload: !this.state.modalDownload})
     }
@@ -911,9 +932,168 @@ class ReportOps extends Component {
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
               new Blob([buffer], { type: "application/octet-stream" }),
-              `Data Ajuan Operasional ${moment().format('DD MMMM YYYY')}.xlsx`
+              `Report Konsol Operasional ${moment().format('DD MMMM YYYY')}.xlsx`
             );
           });
+    }
+
+    setLoading = (val) => {
+        this.setState({isLoading: val})
+    }
+
+    downloadJurnal = async () => {
+        this.setLoading(true)
+        const { dataDownload, jurnalMap } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('file upload operasional')
+        
+        // await ws.protect(REACT_APP_PASSWORD)
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+                {header: 'no', key: 'c1'},
+                {header: 'header_text', key: 'c2'},
+                {header: 'comp_code', key: 'c3'},
+                {header: 'doc_date', key: 'c4'},
+                {header: 'post_date', key: 'c5'},
+                {header: 'period', key: 'c6'},
+                {header: 'doc_type', key: 'c7'},
+                {header: 'ref_doc_no', key: 'c8'},
+                {header: 'curr', key: 'c9'},
+                {header: 'item_no', key: 'c10'},
+                {header: 'gl_acc', key: 'c11'},
+                {header: 'post_key', key: 'c12'},
+                {header: 'gl_indic', key: 'c13'},
+                {header: 'func_area', key: 'c14'},
+                {header: 'amount', key: 'c15'},
+                {header: 'tax_code', key: 'c16'},
+                {header: 'cost_ctr', key: 'c17'},
+                {header: 'wbs_elemnt', key: 'c18'},
+                {header: 'aufnr', key: 'c19'},
+                {header: 'item_text', key: 'c20'},
+                {header: 'valdate', key: 'c21'},
+                {header: 'bsldate', key: 'c22'},
+                {header: 'payterm', key: 'c23'},
+                {header: 'paymeth', key: 'c24'},
+                {header: 'parbank', key: 'c25'},
+                {header: 'houbank', key: 'c26'},
+                {header: 'prctr', key: 'c27'},
+                {header: 'gsber', key: 'c28'},
+                {header: 'vat_base', key: 'c29'},
+                {header: 'account_id', key: 'c30'},
+                {header: 'assignment', key: 'c31'},
+                {header: 'ref_key(head)', key: 'c32'},
+                {header: 'ref_key(head2)', key: 'c33'},
+                {header: 'ref_key 3', key: 'c34'},
+        ]
+
+        ws.addRow(
+            {
+                c1: 'No Identifikasi',
+                c2: 'Text Bebas',
+                c3: 'Kode',
+                c4: 'Tanggal Faktur',
+                c5: 'Tanggal Posting',
+                c6: '',
+                c7: 'Tipe Dokumen',
+                c8: 'No Dokumen Pendukung',
+                c9: 'Mata Uang',
+                c10: 'Nomor Item',
+                c11: 'Nomor Akun',
+                c12: 'Posting Key',
+                c13: 'Kode Special',
+                c14: 'Kosongi Saja',
+                c15: 'Jumlah',
+                c16: 'Kode PPN',
+                c17: 'Cost Center',
+                c18: 'No WBSt',
+                c19: 'Kode Order',
+                c20: 'Text Bebas',
+                c21: 'Kosongi',
+                c22: 'Tanggal',
+                c23: 'TOP',
+                c24: 'Metode',
+                c25: 'Kode Rekening',
+                c26: 'Kode Cabang',
+                c27: 'Profit Center',
+                c28: 'SBU',
+                c29: 'DPP PPN',
+                c30: 'Nomor ID',
+                c31: 'Untuk AP',
+                c32: 'Status Payment',
+                c33: 'Hanya diisi',
+                c34: 'Hanya diisi'
+            }
+        )
+
+        dataDownload.map((item, index) => { return (
+            jurnalMap.map((x, iter) => {
+                return (  ws.addRow({
+                    c1: index + 1,
+                    c2: item.no_transaksi,
+                    c3: 'PP01',
+                    c4: moment().format('DDMMYYYY'),
+                    c5: moment().format('DDMMYYYY'),
+                    c6: '',
+                    c7: 'SA',
+                    c8: item.finance.pic_console,
+                    c9: 'IDR',
+                    c10: iter + 1,
+                    c11: item.finance.gl_kk,
+                    c12: iter === 0 ? 40 : 50,
+                    c13: '',
+                    c14: '',
+                    c15: item.nilai_ajuan,
+                    c16: '',
+                    c17: item.cost_center,
+                    c18: '',
+                    c19: '',
+                    c20: `Kas Kecil ${item.area}`,
+                    c21: '',
+                    c22: '',
+                    c23: '',
+                    c24: '',
+                    c25: '',
+                    c26: '',
+                    c27: item.depo.profit_center,
+                    c28: '',
+                    c29: '',
+                    c30: '',
+                    c31: '',
+                    c32: '',
+                    c33: '',
+                    c34: '',
+                })
+                )
+            })
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+        })
+        
+        ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 2
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `FIle Upload Jurnal Operasional ${moment().format('DD MMMM YYYY')}.xlsx`
+            )
+        })
+        this.setLoading(false)
     }
 
     chekRej = (val) => {
@@ -965,7 +1145,7 @@ class ReportOps extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listOps, drop, listReason, dataMenu, listMenu, dataDownload} = this.state
+        const {dataRinci, dropApp, dataItem, listOps, jurnalMap, listReason, dataMenu, listMenu, dataDownload} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, dataReport } = this.props.ops
@@ -1011,7 +1191,15 @@ class ReportOps extends Component {
                                 <div className={style.titleDashboard}>Report Konsol Operasional</div>
                             </div>
                             <div className={style.secEmail3}>
-                                <Button className="mr-2" color='success' onClick={this.prosesDownload}>Download</Button>
+                                <div className={style.headEmail2}>
+                                    <Button className="mr-2" color='success' onClick={this.prosesDownload}>Download Konsol</Button>
+                                    <Button 
+                                        color='warning' 
+                                        className='mr-2' 
+                                        onClick={() => this.prosesJurnal('Jurnal')}>
+                                            Download Jurnal
+                                    </Button>
+                                </div>
                                 <div className={style.searchEmail2}>
                                     <text>Status:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
@@ -1154,7 +1342,7 @@ class ReportOps extends Component {
                                                         </th>
                                                         <th>{item.no_po}</th>
                                                         <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : item.type_kasbon}</th>
+                                                        <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
                                                         <th>{item.history.split(',').reverse()[0]}</th>
                                                     </tr>
                                                 )
@@ -1319,8 +1507,7 @@ class ReportOps extends Component {
                             <Button color='success' className='mb-4 ml-3' onClick={this.openDownload}>Close</Button>
                         </div>
                     </div>
-                </Modal>                                        
-
+                </Modal>
                 <Modal isOpen={this.state.modalUpload} toggle={this.openModalUpload} size="lg">
                     <ModalHeader>
                         Upload gambar asset
@@ -1912,7 +2099,7 @@ class ReportOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.ops.isLoading || this.state.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2099,6 +2286,148 @@ class ReportOps extends Component {
                         <Button color="primary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                     </div>
                 </ModalBody>
+            </Modal>
+            <Modal size="xl" className='modalrinci' isOpen={this.state.modalJurnal} toggle={this.openJurnal}>
+                <ModalHeader>
+                    Download Jurnal
+                </ModalHeader>
+                <ModalBody>
+                    <div className={style.tableDashboard}>
+                        <Table bordered responsive hover className='tabjurnal'>
+                            <thead>
+                                <tr>
+                                    <th>no</th>
+                                    <th>header_text</th>
+                                    <th>comp_code</th>
+                                    <th>doc_date</th>
+                                    <th>post_date</th>
+                                    <th>period</th>
+                                    <th>doc_type</th>
+                                    <th>ref_doc_no</th>
+                                    <th>curr</th>
+                                    <th>item_no</th>
+                                    <th>gl_acc</th>
+                                    <th>post_key</th>
+                                    <th>gl_indic</th>
+                                    <th>func_area</th>
+                                    <th>amount</th>
+                                    <th>tax_code</th>
+                                    <th>cost_ctr</th>
+                                    <th>wbs_elemnt</th>
+                                    <th>aufnr</th>
+                                    <th>item_text</th>
+                                    <th>valdate</th>
+                                    <th>bsldate</th>
+                                    <th>payterm</th>
+                                    <th>paymeth</th>
+                                    <th>parbank</th>
+                                    <th>houbank</th>
+                                    <th>prctr</th>
+                                    <th>gsber</th>
+                                    <th>vat_base</th>
+                                    <th>account_id</th>
+                                    <th>assignment</th>
+                                    <th>ref_key(head)</th>
+                                    <th>ref_key(head2)</th>
+                                    <th>ref_key 3</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th>No Identifikasi</th>
+                                    <th>Text Bebas</th>
+                                    <th>Kode</th>
+                                    <th>Tanggal Faktur</th>
+                                    <th>Tanggal Posting</th>
+                                    <th></th>
+                                    <th>Tipe Dokumen</th>
+                                    <th>No Dokumen Pendukung</th>
+                                    <th>Mata Uang</th>
+                                    <th>Nomor Item</th>
+                                    <th>Nomor Akun</th>
+                                    <th>Posting Key</th>
+                                    <th>Kode Special</th>
+                                    <th>Kosongi Saja</th>
+                                    <th>Jumlah</th>
+                                    <th>Kode PPN</th>
+                                    <th>Cost Center</th>
+                                    <th>No WBSt</th>
+                                    <th>Kode Order</th>
+                                    <th>Text Bebas</th>
+                                    <th>Kosongi</th>
+                                    <th>Tanggal</th>
+                                    <th>TOP</th>
+                                    <th>Metode</th>
+                                    <th>Kode Rekening</th>
+                                    <th>Kode Cabang</th>
+                                    <th>Profit Center</th>
+                                    <th>SBU</th>
+                                    <th>DPP PPN</th>
+                                    <th>Nomor ID</th>
+                                    <th>Untuk AP</th>
+                                    <th>Status Payment</th>
+                                    <th>Hanya diisi</th>
+                                    <th>Hanya diisi</th>
+                                </tr>
+                                {dataDownload.length !== 0 && dataDownload.map((item, index) => {
+                                    return (
+                                        jurnalMap.map((x, iter) => {
+                                            return (
+                                                <tr>
+                                                    <th>{index + 1}</th>
+                                                    <th>{item.no_transaksi}</th>
+                                                    <th>PP01</th>
+                                                    <th>{moment().format('DDMMYYYY')}</th>
+                                                    <th>{moment().format('DDMMYYYY')}</th>
+                                                    <th></th>
+                                                    <th>SA</th>
+                                                    <th>{item.finance.pic_console}</th>
+                                                    <th>IDR</th>
+                                                    <th>{iter + 1}</th>
+                                                    <th>{item.finance.gl_kk}</th>
+                                                    <th>{iter === 0 ? 40 : 50}</th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th>{item.nilai_ajuan}</th>
+                                                    <th></th>
+                                                    <th>{item.cost_center}</th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th>{item.keterangan}</th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th>{item.depo.profit_center}</th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                    <th></th>
+                                                </tr>
+                                            )
+                                        })
+                                        
+                                        )
+                                    })}
+                            </tbody>
+                        </Table>
+                    </div>
+                </ModalBody>
+                <hr />
+                <div className="modalFoot ml-3">
+                    <div></div>
+                    <div className="btnFoot">
+                        <Button className="mr-2" color='warning' onClick={this.downloadJurnal} >Download</Button>
+                        <Button color="success" onClick={this.openJurnal}>
+                            Close
+                        </Button>
+                    </div>
+                </div>
             </Modal>
             <Modal isOpen={this.state.formDis} toggle={() => {this.openModalDis(); this.showCollap('close')}} size="xl">
                     {/* <Alert color="danger" className={style.alertWrong} isOpen={detailOps.find(({status_transaksi}) => status_transaksi === 26) === undefined ? false : true}>

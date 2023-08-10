@@ -1783,7 +1783,7 @@ class AjuanBayarIkk extends Component {
                             <Button color="primary" onClick={() => this.prosesModalMcm()}>
                                 Download MCM
                             </Button>
-                            <Button color="success ml-1" onClick={() => this.printData('formlistklm')}>
+                            <Button color="success ml-1" onClick={() => this.printData('formlistikk')}>
                                 Download Form
                             </Button>
                         </div>
@@ -1942,8 +1942,8 @@ class AjuanBayarIkk extends Component {
                                                 <th >{item.no_transaksi.slice(0, 19)}</th>
                                                 <th ></th>
                                                 <th className='tabRep'>{item.bank_tujuan === 'Bank Mandiri' ? 'IBU' : 'LBU'}</th>
-                                                <th className='tabRep'>{item.bank_tujuan === 'Bank Mandiri' ? '' : ''}</th>
-                                                <th >{item.bank_tujuan === 'Bank Mandiri' ? '' : item.bank_tujuan}</th>
+                                                <th className='tabRep'>{item.bank_tujuan === 'Bank Mandiri' ? '' : item.kliring.sandi_kliring !== undefined ? item.kliring.sandi_kliring : ''}</th>
+                                                <th >{item.bank_tujuan === 'Bank Mandiri' ? '' : item.bank_tujuan }</th>
                                                 <th ></th>
                                                 <th ></th>
                                                 <th ></th>

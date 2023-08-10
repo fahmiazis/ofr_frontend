@@ -65,7 +65,7 @@ class JurnalArea extends Component {
                                     <th>{index === 1 ? `Utang ${item.jenis_pph}` : index === 2 ? 'Kas Kecil' : ''}</th>
                                     <th></th>
                                     <th></th>
-                                    <th>{index === 0 ? item.nilai_buku : ''}</th>
+                                    <th>{index === 0 ? item.nilai_ajuan : ''}</th>
                                     <th>{index === 1 ? item.nilai_utang : index === 2 ? item.nilai_bayar: ''}</th>
                                 </tr>
                                 )

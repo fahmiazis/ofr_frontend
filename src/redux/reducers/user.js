@@ -21,8 +21,9 @@ const userState = {
     link: '',
     isChange: null,
     isReset: false,
-    isUpimage: null
-};
+    isUpimage: null,
+    genUser: null
+}
 
 export default (state=userState, action) => {
         switch(action.type){
@@ -309,6 +310,29 @@ export default (state=userState, action) => {
                     alertMsg: 'unable connect to server',
                 };
             }
+            case 'GENERATE_USER_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GENERATE_USER_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    genUser: true,
+                    alertMsg: 'reset pw succesfully'
+                };
+            }
+            case 'GENERATE_USER_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    genUser: false,
+                    alertMsg: 'unable connect to server',
+                };
+            }
             case 'RESET': {
                 return {
                     ...state,
@@ -318,7 +342,8 @@ export default (state=userState, action) => {
                     isUpdate: null,
                     isChange: null,
                     isReset: false,
-                    isUpimage: null
+                    isUpimage: null,
+                    genUser: null
                 }
             }
             // case 'USERS_LOADED': {

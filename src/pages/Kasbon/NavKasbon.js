@@ -163,12 +163,12 @@ class NavOps extends Component {
                                             Realisasi Kasbon
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revkasbon')}>
+                                    {/* <button className="cardNav1" onClick={() => this.goRoute('revkasbon')}>
                                         <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi Kasbon
                                         </div>
-                                    </button>
+                                    </button> */}
                                 </>
                             ): level === '2' ? (
                                 <>

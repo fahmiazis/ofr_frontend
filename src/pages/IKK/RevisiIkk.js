@@ -35,6 +35,14 @@ import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
 import ikk from '../../redux/actions/ikk'
 import dokumen from '../../redux/actions/dokumen'
+import pagu from '../../redux/actions/pagu'
+import faktur from '../../redux/actions/faktur'
+import vendor from '../../redux/actions/vendor'
+import rekening from '../../redux/actions/rekening'
+import coa from '../../redux/actions/coa'
+import NumberInput from '../../components/NumberInput'
+import Email from '../../components/Ikk/Email'
+import email from '../../redux/actions/email'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const ikkSchema = Yup.object().shape({
@@ -111,7 +119,51 @@ class RevisiIkk extends Component {
             bankList: [],
             detail: {},
             bank: '',
-            digit: 0
+            digit: 0,
+            docHist: false,
+            detailDoc: {},
+            docCon: false,
+            listIkk: [],
+            modalDownload: false,
+            dataDownload: [],
+            no_coa: '',
+            nama_coa: '',
+            rekList: [],
+            norek: '',
+            tiperek: '',
+            tujuan_tf: '',
+            transList: [],
+            jenisTrans: '',
+            idTrans: '',
+            jenisVendor: '',
+            status_npwp: '',
+            dataTrans: {},
+            nominal: 0,
+            nilai_ajuan: 0,
+            nilai_buku: 0,
+            nilai_utang: 0,
+            nilai_vendor: 0,
+            tipeVendor: '',
+            nilai_dpp: 0,
+            nilai_ppn: 0,
+            tipePpn: '',
+            listNpwp: [],
+            listNik: [],
+            dataList: {},
+            fakturList: [],
+            dataSelFaktur: { no_faktur: '' },
+            noNpwp: '',
+            noNik: '',
+            nama: '',
+            alamat: '',
+            tgl_faktur: '',
+            isLoading: false,
+            typeniknpwp: '',
+            type_kasbon: 'kasbon',
+            modalRev: false,
+            openDraft: false,
+            message: '',
+            subject: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -251,12 +303,12 @@ class RevisiIkk extends Component {
                 item.isreject === 1 && temp.push(item)
             )
         })
-        if (temp.length > 0) {
-            this.setState({confirm: 'rejSubmit'})
-            this.openConfirm()
-        } else {
+        // if (temp.length > 0) {
+        //     this.setState({confirm: 'rejSubmit'})
+        //     this.openConfirm()
+        // } else {
             this.openModalApprove()
-        }
+        // }
     }
 
     openPreview = async (val) => {
@@ -530,6 +582,84 @@ class RevisiIkk extends Component {
         this.openModalRinci()
     }
 
+    prosesSubmitRevisi = async () => {
+        const {detailIkk} = this.props.ikk
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: detailIkk[0].no_transaksi
+        }
+        await this.props.submitRevisi(token, tempno)
+        this.dataSendEmail('approve')
+    }
+
+    dataSendEmail = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailIkk } = this.props.ikk
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: detailIkk[0].no_transaksi,
+            tipe: 'ikk',
+        }
+        await this.props.sendEmail(token, tempno)
+        if (val === 'reject') {
+            this.getDataIkk()
+            this.setState({confirm: 'reject'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalReject()
+            this.openModalRinci()
+        } else {
+            this.getDataIkk()
+            this.setState({confirm: 'submit'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalApprove()
+            this.openModalRinci()
+        }
+    }
+
+    prepSendEmail = async () => {
+        const { detailIkk } = this.props.ikk
+        const token = localStorage.getItem("token")
+        const app = detailIkk[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'revisi'
+        const tempno = {
+            no: detailIkk[0].no_transaksi,
+            kode: detailIkk[0].kode_plant,
+            jenis: 'ikk',
+            tipe: tipe,
+            menu: 'Revisi Area (IKK)'
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'app'})
+        this.openDraftEmail()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    getMessage = (val) => {
+        this.setState({message: val.message, subject: val.subject})
+    }
+
     onSearch = async (e) => {
         this.setState({search: e.target.value})
         const token = localStorage.getItem("token")
@@ -786,20 +916,6 @@ class RevisiIkk extends Component {
         this.setState({modalStock: !this.state.modalStock})
     }
 
-    prosesSubmitRevisi = async () => {
-        const {detailIkk} = this.props.ikk
-        const token = localStorage.getItem("token")
-        const tempno = {
-            no: detailIkk[0].no_transaksi
-        }
-        await this.props.submitRevisi(token, tempno)
-        this.openModalRinci()
-        this.openModalApprove()
-        this.getDataIkk()
-        this.setState({confirm: 'submit'})
-        this.openConfirm()
-    }
-
     dropDown = () => {
         this.setState({drop: !this.state.drop})
     }
@@ -903,7 +1019,7 @@ class RevisiIkk extends Component {
                                                         <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
+                                                        <th>{item.uraian}</th>
                                                         <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
                                                         <th>{item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 2 ? 'Proses Approval' : ''}</th>
                                                         <th>{item.reason}</th>
@@ -947,7 +1063,7 @@ class RevisiIkk extends Component {
                                                             <th>{item.area}</th>
                                                             <th>{item.no_coa}</th>
                                                             <th>{item.nama_coa}</th>
-                                                            <th>{item.keterangan}</th>
+                                                            <th>{item.uraian}</th>
                                                             <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
                                                             <th>{item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 2 ? 'Proses Approval' : ''}</th>
                                                             <th>{item.reason}</th>
@@ -987,7 +1103,7 @@ class RevisiIkk extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal isOpen={this.props.ikk.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.ikk.isLoading || this.props.email.isLoading} size="sm">
                     <ModalBody>
                     <div>
                         <div className={style.cekUpdate}>
@@ -1061,7 +1177,7 @@ class RevisiIkk extends Component {
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
-                                                <th>{item.keterangan}</th>
+                                                <th>{item.uraian}</th>
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.bank_tujuan}</th>
@@ -1416,7 +1532,7 @@ class RevisiIkk extends Component {
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
-                                                <th>{item.keterangan}</th>
+                                                <th>{item.uraian}</th>
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.bank_tujuan}</th>
@@ -1598,7 +1714,7 @@ class RevisiIkk extends Component {
                                             <div className='line'>{detailIkk.indexOf(item) + 1}</div>
                                         </Col>
                                         <Col md={8} className='upper'>
-                                            <div className='line2'>{item.keterangan}</div>
+                                            <div className='line2'>{item.uraian}</div>
                                             <div className='line mt-1'>NO REK {item.bank_tujuan} {item.norek_ajuan}</div>
                                         </Col>
                                         <Col md={3} className='upper'>
@@ -1808,7 +1924,7 @@ class RevisiIkk extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.prosesSubmitRevisi()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1981,6 +2097,26 @@ class RevisiIkk extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal toggle={this.openDraftEmail} isOpen={this.state.openDraft} size='xl'>
+                    <ModalHeader>Email Pemberitahuan</ModalHeader>
+                    <ModalBody>
+                        <Email handleData={this.getMessage}/>
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button
+                                    disabled={this.state.message === '' ? true : false} 
+                                    className="mr-2"
+                                    onClick={() => this.prosesSubmitRevisi()}
+                                    color="primary"
+                                >
+                                    Submit & Send Email
+                                </Button>
+                                <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     }
@@ -1994,7 +2130,12 @@ const mapStateToProps = state => ({
     menu: state.menu,
     reason: state.reason,
     bank: state.bank,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    email: state.email,
+    pagu: state.pagu,
+    faktur: state.faktur,
+    rekening: state.rekening,
+    coa: state.coa
 })
 
 const mapDispatchToProps = {
@@ -2015,9 +2156,18 @@ const mapDispatchToProps = {
     uploadDocIkk: ikk.uploadDocCart,
     editIkk: ikk.editIkk,
     appRevisi: ikk.appRevisi,
-    getBank: bank.getBank,
     submitRevisi: ikk.submitRevisi,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    getRek: rekening.getRek,
+    getPagu: pagu.getPagu,
+    getVendor: vendor.getVendor,
+    getFaktur: faktur.getFaktur,
+    getBank: bank.getBank,
+    getDetailId: ikk.getDetailId,
+    getCoa: coa.getCoa,
+    resetEmail: email.resetError,
+    getDraftEmail: email.getDraftEmail,
+    sendEmail: email.sendEmail,
     // notifStock: notif.notifStock
 }
 

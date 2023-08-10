@@ -898,7 +898,7 @@ class ReportIkk extends Component {
                 c26: item.area,
                 c25: `${moment(item.start_ikk).format('DD/MMMM/YYYY')}`,
                 c28: `${item.history.split(',').reverse()[0]}`,
-                c23: `${item.appList.find(({sebagai}) => sebagai === "pembuat").nama}`,
+                c23: `${item.finance.pic_console}`,
                 c24: `${item.depo.channel}`,
                 c27: '',
             }
@@ -951,7 +951,7 @@ class ReportIkk extends Component {
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
               new Blob([buffer], { type: "application/octet-stream" }),
-              `Data Ajuan IKK ${moment().format('DD MMMM YYYY')}.xlsx`
+              `Report Konsol IKK ${moment().format('DD MMMM YYYY')}.xlsx`
             );
           });
     }
@@ -1065,13 +1065,13 @@ class ReportIkk extends Component {
                     c8: item.finance.pic_console,
                     c9: 'IDR',
                     c10: iter + 1,
-                    c11: item.finance.gl_kk,
+                    c11: iter === 0 ? (item.spending.gl_kk === undefined ? item.finance.gl_kk : item.spending.gl_kk) : '11010401',
                     c12: iter === 0 ? 40 : 50,
                     c13: '',
                     c14: '',
                     c15: item.nilai_ajuan,
                     c16: '',
-                    c17: item.cost_center,
+                    c17: '',
                     c18: '',
                     c19: '',
                     c20: `Kas Kecil ${item.area}`,
@@ -1081,7 +1081,7 @@ class ReportIkk extends Component {
                     c24: '',
                     c25: '',
                     c26: '',
-                    c27: item.depo.profit_center,
+                    c27: iter === 0 ? (item.spending.profit_center === undefined ? item.depo.profit_center : item.spending.profit_center) : 'P01H000001',
                     c28: '',
                     c29: '',
                     c30: '',
@@ -1429,7 +1429,7 @@ class ReportIkk extends Component {
                                             return (
                                                 <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                     <th>{dataDownload.indexOf(item) + 1}</th>
-                                                    <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                                    <th>{item.finance.pic_console}</th>
                                                     <th>{item.area}</th>
                                                     <th>{item.depo.channel}</th>
                                                     <th>{item.no_transaksi}</th>
@@ -1571,13 +1571,13 @@ class ReportIkk extends Component {
                                                             <th>{item.finance.pic_console}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{item.finance.gl_kk}</th>
+                                                            <th>{iter === 0 ? (item.spending.gl_kk === undefined ? item.finance.gl_kk : item.spending.gl_kk) : '11010401'}</th>
                                                             <th>{iter === 0 ? 40 : 50}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{item.nilai_ajuan}</th>
                                                             <th></th>
-                                                            <th>{item.cost_center}</th>
+                                                            <th></th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>Kas Kecil {item.area}</th>
@@ -1587,7 +1587,7 @@ class ReportIkk extends Component {
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th>{item.depo.profit_center}</th>
+                                                            <th>{iter === 0 ? (item.spending.profit_center === undefined ? item.depo.profit_center : item.spending.profit_center) : 'P01H000001'}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>

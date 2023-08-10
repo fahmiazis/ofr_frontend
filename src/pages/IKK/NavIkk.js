@@ -170,12 +170,12 @@ class NavIkk extends Component {
                                             List Ajuan Bayar
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revikk')}>
+                                    {/* <button className="cardNav1" onClick={() => this.goRoute('revikk')}>
                                         <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi IKK
                                         </div>
-                                    </button>
+                                    </button> */}
                                     <button className="cardNav1" onClick={() => this.goRoute('repikk')}>
                                         <HiOutlineDocumentReport size={220} className="picHome" />
                                         <div className="titCard">

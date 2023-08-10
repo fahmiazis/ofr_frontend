@@ -121,7 +121,11 @@ class AjuanBayarOps extends Component {
             openDraft: false,
             message: '',
             subject: '',
-            tipeTrans: ''
+            tipeTrans: '',
+            tipeEmail: '',
+            dataRej: {},
+            tipeReject: '',
+            emailReject: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -169,24 +173,6 @@ class AjuanBayarOps extends Component {
         }
     }
 
-    uploadGambar = e => {
-        const {size, type} = e.target.files[0]
-        this.setState({fileUpload: e.target.files[0]})
-        if (size >= 20000000) {
-            this.setState({errMsg: "Maximum upload size 20 MB"})
-            this.uploadAlert()
-        } else if (type !== 'image/jpeg' && type !== 'image/png') {
-            this.setState({errMsg: 'Invalid file type. Only image files are allowed.'})
-            this.uploadAlert()
-        } else {
-            const { dataId } = this.state
-            const token = localStorage.getItem('token')
-            const data = new FormData()
-            data.append('document', e.target.files[0])
-            this.props.uploadImage(token, dataId, data)
-        }
-    }
-
     getApproveStock = async (value) => { 
         const token = localStorage.getItem('token')
         await this.props.getApproveStock(token, value.no, value.nama)
@@ -199,51 +185,53 @@ class AjuanBayarOps extends Component {
             no: detailOps[0].no_pembayaran
         }
         await this.props.approveListOps(token, tempno)
-        this.prepSendEmail('approve')
+        this.dataSendEmail('approve')
     }
 
     rejectOps = async (val) => {
-        const {listMut, listReason, listMenu} = this.state
+        const {listMut, listReason, listMenu, tipeReject} = this.state
         const { detailOps } = this.props.ops
         const token = localStorage.getItem('token')
-        const tempno = {
-            no: detailOps[0].no_pembayaran
-        }
+        const noTrans = tipeReject === 'area' ? detailOps[0].no_transaksi : detailOps[0].no_pembayaran
         let temp = ''
         for (let i = 0; i < listReason.length; i++) {
             temp += listReason[i] + '. '
         }
         const data = {
-            no: detailOps[0].no_pembayaran,
+            no: noTrans,
             list: listMut,
             alasan: temp + val.alasan,
             menu: listMenu.toString(),
             type: "verif"
         }
-        await this.props.rejectListOps(token, data)
-        this.getDataOps()
-        this.setState({confirm: 'reject'})
-        this.openConfirm()
-        this.openModalReject()
-        this.modalRinciAjuan()
+        if (tipeReject === 'area') {
+            await this.props.rejectOps(token, data)
+            this.dataSendEmail('reject')
+        } else {
+            await this.props.rejectListOps(token, data)
+            this.dataSendEmail('reject')
+        }
     }
 
     dataSendEmail = async (val) => {
         const token = localStorage.getItem("token")
         const { detailOps } = this.props.ops
         const { draftEmail } = this.props.email
-        const { message, subject, tipeTrans, dataDownload } = this.state
+        const { message, subject, tipeTrans, dataDownload, tipeReject } = this.state
         const dataTrans = tipeTrans === 'submit' ? dataDownload : detailOps
         const noPemb = dataTrans.length === 0 ? null : dataTrans[0].no_pembayaran === undefined ? null : dataTrans[0].no_pembayaran
         const noTrans = tipeTrans === 'submit' ? this.state.no_transfer : noPemb
         const cc = draftEmail.cc
+        const to = draftEmail.to
         const tempcc = []
+        const tempto = []
         for (let i = 0; i < cc.length; i++) {
             tempcc.push(cc[i].email)
         }
+        to.length > 0 && to.map(item => { return (tempto.push(item.email)) })
         const tempno = {
             nameTo: draftEmail.to.username,
-            to: draftEmail.to.email,
+            to: val === 'reject' ? tempto.toString() : draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
             subject: subject,
@@ -259,6 +247,17 @@ class AjuanBayarOps extends Component {
             this.openDraftEmail()
             this.openModalSubmit()
             this.modalSubmitPre()
+        } else if (val === 'reject') {
+            this.getDataOps()
+            this.setState({confirm: 'reject'})
+            this.openConfirm()
+            this.openEmailReject()
+            this.openModalReject()
+            if (tipeReject === 'area') {
+                this.openModalRinci()
+            } else {
+                this.modalRinciAjuan()
+            }
         } else {
             this.getDataOps()
             this.setState({confirm: 'isApprove'})
@@ -298,13 +297,76 @@ class AjuanBayarOps extends Component {
             tipe: 'ajuan bayar'
         }
         this.setState({tipeTrans: val})
+        this.setState({tipeEmail: 'app'})
         await this.props.getDetail(token, draftno)
         await this.props.getDraftAjuan(token, tempno)
         this.openDraftEmail()
     }
 
+    prepRejectHo = async (val) => {
+        const token = localStorage.getItem("token")
+        const { detailOps } = this.props.ops
+        const dataTrans = detailOps
+        const noPemb = dataTrans.length === 0 ? null : dataTrans[0].no_pembayaran === undefined ? null : dataTrans[0].no_pembayaran
+        const noTrans = noPemb
+        const app = dataTrans[0].appList
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const cekMenu = 'List Ajuan Bayar (Operasional)'
+        const tempno = {
+            no: noTrans,
+            kode: dataTrans[0].kode_plant,
+            jenis: 'ops',
+            tipe: tipe,
+            menu: cekMenu
+        }
+        const draftno = {
+            no: noTrans,
+            tipe: 'ajuan bayar'
+        }
+        await this.props.getDetail(token, draftno)
+        await this.props.getDraftAjuan(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
+        this.openEmailReject()
+    }
+
+    prepRejectArea = async (val) => {
+        const { detailOps } = this.props.ops
+        const token = localStorage.getItem("token")
+        const app = detailOps[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const cekMenu = 'List Ajuan Bayar (Operasional)'
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            kode: detailOps[0].kode_plant,
+            jenis: 'ops',
+            tipe: tipe,
+            menu: cekMenu
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
+        this.openEmailReject()
+    }
+
     openDraftEmail = () => {
         this.setState({openDraft: !this.state.openDraft}) 
+    }
+
+    openEmailReject = () => {
+        this.setState({emailReject: !this.state.emailReject}) 
     }
 
     getMessage = (val) => {
@@ -501,8 +563,9 @@ class AjuanBayarOps extends Component {
     }
 
     getDataOps = async (value) => {
+        const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('available')
+        this.changeFilter(level === '2' ? 'verif' : 'available')
     }
 
     getDataList = async () => {
@@ -516,7 +579,6 @@ class AjuanBayarOps extends Component {
 
     prosesDetail = async (val, tipe) => {
         const token = localStorage.getItem("token")
-        const level = localStorage.getItem('level')
         if (tipe === 'detail') {
             const tempno = {
                 no: val.no_transaksi
@@ -614,9 +676,9 @@ class AjuanBayarOps extends Component {
         const {dataOps, noDis} = this.props.ops
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const status = level === '2'  && val === 'available' ? 5 : 6
+        const status = level === '2'  && val === 'verif' ? 5 : 6
         const statusAll = 'all'
-        const category = level === '2' && val === 'available' ? 'verif' : 'ajuan bayar'
+        const category = level === '2' && val === 'verif' ? 'verif' : 'ajuan bayar'
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newOps = []
@@ -627,6 +689,10 @@ class AjuanBayarOps extends Component {
             await this.props.getOps(token, status, 'all', 'all', val, category)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
+            const newOps = []
+            await this.props.getOps(token, status, 'all', 'all', val, category)
+            this.setState({filter: val, newOps: newOps})
+        } else if (val === 'verif') {
             const newOps = []
             await this.props.getOps(token, status, 'all', 'all', val, category)
             this.setState({filter: val, newOps: newOps})
@@ -938,7 +1004,9 @@ class AjuanBayarOps extends Component {
         if (val === 'all') {
             const data = []
             for (let i = 0; i < newOps.length; i++) {
-                data.push(newOps[i].no_transaksi)
+                if (newOps[i].status_reject !== 1) {
+                    data.push(newOps[i].no_transaksi)
+                }
             }
             this.setState({listOps: data})
         } else {
@@ -965,7 +1033,7 @@ class AjuanBayarOps extends Component {
         }
     }
 
-    prepareReject = async () => {
+    prepareReject = async (val) => {
         const token = localStorage.getItem("token")
         await this.props.getAllMenu(token, 'reject', 'Operasional')
         await this.props.getReason(token)
@@ -974,7 +1042,7 @@ class AjuanBayarOps extends Component {
         dataMenu.map(item => {
             return (item.kode_menu === 'Ops' && data.push(item))
         })
-        this.setState({dataMenu: dataMenu})
+        this.setState({dataMenu: dataMenu, tipeReject: val})
         this.openModalReject()
     }
 
@@ -996,7 +1064,7 @@ class AjuanBayarOps extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, listMut, listReason, dataMenu, listMenu, listOps, dataDownload} = this.state
+        const {tipeTrans, dataRinci, listMut, listReason, dataMenu, listMenu, listOps, dataDownload, tipeReject} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps } = this.props.ops
@@ -1039,11 +1107,11 @@ class AjuanBayarOps extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>List Ajuan Bayar Operasional</div>
+                                <div className={style.titleDashboard}>Approval List Ajuan Bayar Operasional</div>
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.headEmail2}>
-                                    {this.state.filter === 'available' && level === '2' ?  (
+                                    {this.state.filter === 'verif' && level === '2' ?  (
                                         <>
                                             <Button className='mr-1' onClick={this.prosesSubmit} color="primary" size="lg">Submit</Button>
                                             {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button> */}
@@ -1059,7 +1127,7 @@ class AjuanBayarOps extends Component {
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                         <option value="all">All</option>
                                         {/* <option value="reject">Reject</option> */}
-                                        <option value="available">{level === '2' ? 'Verifikasi Tax' : 'Available approve'}</option>
+                                        <option value={level === '2' ? "verif" : 'available'}>{level === '2' ? 'Verifikasi Tax' : 'Available approve'}</option>
                                         {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                     </Input>
                                 </div>
@@ -1075,7 +1143,7 @@ class AjuanBayarOps extends Component {
                                 </div>
                             </div>
                             <div className={style.tableDashboard}>
-                                {this.state.filter === 'available' && level === '2' ? (
+                                {this.state.filter === 'verif' && level === '2' ? (
                                     <Table bordered responsive hover className={style.tab} id="table-ops">
                                         <thead>
                                             <tr>
@@ -1107,6 +1175,7 @@ class AjuanBayarOps extends Component {
                                                         <th>
                                                             <input 
                                                             type='checkbox'
+                                                            disabled={item.status_reject === 1 ? true : false}
                                                             checked={listOps.find(element => element === item.no_transaksi) !== undefined ? true : false}
                                                             onChange={listOps.find(element => element === item.no_transaksi) === undefined ? () => this.chekAppList(item.no_transaksi) : () => this.chekRejList(item.no_transaksi)}
                                                             />
@@ -1206,7 +1275,80 @@ class AjuanBayarOps extends Component {
                                 <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailOps.length > 0 ? moment(detailOps[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
                             </Row>
                         </div>
-                        <TableRincian />
+                        <div className={style.tableDashboard}>
+                            <Table bordered responsive hover className={style.tab}>
+                                <thead>
+                                    <tr className='tbklaim'>
+                                        <th>
+                                            <input  
+                                            className='mr-2'
+                                            type='checkbox'
+                                            checked={listMut.length === 0 ? false : listMut.length === detailOps.length ? true : false}
+                                            onChange={() => listMut.length === detailOps.length ? this.chekRej('all') : this.chekApp('all')}
+                                            />
+                                            Select
+                                        </th>
+                                        <th>NO</th>
+                                        <th>COST CENTRE</th>
+                                        <th>NO COA</th>
+                                        <th>NAMA COA</th>
+                                        <th>KETERANGAN TAMBAHAN</th>
+                                        <th>PERIODE</th>
+                                        <th>NILAI YANG DIAJUKAN</th>
+                                        <th>BANK</th>
+                                        <th>NOMOR REKENING</th>
+                                        <th>ATAS NAMA</th>
+                                        <th>MEMILIKI NPWP</th>
+                                        <th>NAMA SESUAI NPWP</th>
+                                        <th>NOMOR NPWP</th>
+                                        <th>NAMA SESUAI KTP</th>
+                                        <th>NOMOR KTP</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
+                                        <th>NILAI YANG DIBAYARKAN</th>
+                                        <th>TANGGAL TRANSFER</th>
+                                        <th>JENIS PPh</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {detailOps.length !== 0 && detailOps.map(item => {
+                                        return (
+                                            <tr>
+                                                <th>
+                                                    <input 
+                                                    type='checkbox'
+                                                    checked={listMut.find(element => element === item.id) !== undefined ? true : false}
+                                                    onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                    />
+                                                </th>
+                                                <th scope="row">{detailOps.indexOf(item) + 1}</th>
+                                                <th>{item.cost_center}</th>
+                                                <th>{item.no_coa}</th>
+                                                <th>{item.nama_coa}</th>
+                                                <th>{item.keterangan}</th>
+                                                <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
+                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.bank_tujuan}</th>
+                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.nama_tujuan}</th>
+                                                <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
+                                                <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
+                                                <th>{item.dpp}</th>
+                                                <th>{item.ppn}</th>
+                                                <th>{item.nilai_utang}</th>
+                                                <th>{item.nilai_bayar}</th>
+                                                <th>{item.tanggal_transfer}</th>
+                                                <th>{item.jenis_pph}</th>
+                                            </tr>
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
+                        </div>
                     </ModalBody>
                     <div className="modalFoot ml-3">
                         <div className="btnFoot">
@@ -1215,19 +1357,20 @@ class AjuanBayarOps extends Component {
                             <Button color="primary"  onClick={() => this.openProsesModalDoc(detailOps[0])}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
-                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
+                            {this.state.filter !== 'verif' && this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
                                 <div></div>
                             ) : (
-                                level === '2' ? null : (
-                                    <>
-                                        <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
-                                            Reject
-                                        </Button>
-                                        <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.openModalApprove}>
-                                            Submit
-                                        </Button>
-                                    </>
-                                )
+                                <Button 
+                                className="mr-2" 
+                                disabled={
+                                this.state.filter === 'revisi' && listMut.length > 0 ? false 
+                                : this.state.filter !== 'available' && this.state.filter !== 'verif' ? true 
+                                : listMut.length === 0 ? true : false
+                                } 
+                                color="danger" 
+                                onClick={() => this.prepareReject('area')}>
+                                    Reject
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -1383,7 +1526,7 @@ class AjuanBayarOps extends Component {
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button color="warning mr-2" disabled={this.state.no_transfer === '' || this.state.tgl_transfer === null ? true : false} onClick={this.openModalSubmit}>
+                            <Button color="warning mr-2" disabled={dataDownload.length === 0 || this.state.no_transfer === '' || this.state.tgl_transfer === null ? true : false} onClick={this.openModalSubmit}>
                                 Submit
                             </Button>
                             <Button color="success" onClick={this.modalSubmitPre}>
@@ -1587,7 +1730,7 @@ class AjuanBayarOps extends Component {
                                     <Button 
                                     color="danger"
                                     disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} 
-                                    onClick={this.prepareReject}>
+                                    onClick={() => this.prepareReject('ho')}>
                                         Reject
                                     </Button>
                                 </>
@@ -1943,7 +2086,7 @@ class AjuanBayarOps extends Component {
                     alasan: "",
                     }}
                     validationSchema={alasanSchema}
-                    onSubmit={(values) => {this.rejectOps(values)}}
+                    onSubmit={(values) => {tipeReject === 'area' ? this.prepRejectArea(values) : this.prepRejectHo(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
@@ -2041,7 +2184,7 @@ class AjuanBayarOps extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveOps()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepSendEmail('approve')}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApplist}>Tidak</Button>
                             </div>
                         </div>
@@ -2258,12 +2401,36 @@ class AjuanBayarOps extends Component {
                             <Button
                                 disabled={this.state.message === '' ? true : false} 
                                 className="mr-2"
-                                onClick={() => this.dataSendEmail()} 
+                                onClick={() => tipeTrans === 'submit' ? this.dataSendEmail('submit')
+                                : this.approveOps()
+                                } 
                                 color="primary"
                             >
-                                Submit & Send Email
+                                {tipeTrans === 'submit' ? 'Send Email' : 'Approve & Send Email'}
                             </Button>
-                            {/* <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button> */}
+                            {tipeTrans === 'submit' ? null : (
+                                <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
+                            )}
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
+            <Modal isOpen={this.state.emailReject} size='xl'>
+                <ModalHeader>Email Pemberitahuan</ModalHeader>
+                <ModalBody>
+                    <Email handleData={this.getMessage}/>
+                    <div className={style.foot}>
+                        <div></div>
+                        <div>
+                            <Button
+                                disabled={this.state.message === '' ? true : false} 
+                                className="mr-2"
+                                onClick={() => this.rejectOps(this.state.dataRej)} 
+                                color="primary"
+                            >
+                                Reject & Send Email
+                            </Button>
+                            <Button className="mr-3" onClick={this.openEmailReject}>Cancel</Button>
                         </div>
                     </div>
                 </ModalBody>

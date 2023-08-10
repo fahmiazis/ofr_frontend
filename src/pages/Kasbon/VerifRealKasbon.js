@@ -179,7 +179,8 @@ class VerifKasbon extends Component {
             time2: moment().format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
-            docCon: false
+            docCon: false,
+            stat_kasbon: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -252,23 +253,28 @@ class VerifKasbon extends Component {
 
     rejectOps = async (val) => {
         const {listMut, listReason, listMenu} = this.state
+        const {arrReason} = this.props.reason
         const { detailOps } = this.props.ops
         const token = localStorage.getItem('token')
-        const tempno = {
-            no: detailOps[0].no_transaksi
-        }
         let temp = ''
+        let resStat = ''
         for (let i = 0; i < listReason.length; i++) {
-            temp += listReason[i] + '. '
+            const findReason = arrReason.find(({id}) => id === listReason[i])
+            if (findReason !== undefined) {
+                temp += findReason.desc + '. '
+                resStat += findReason.id
+            } else {
+                temp += listReason[i] + '. '
+            }
         }
         const data = {
             no: detailOps[0].no_transaksi,
             list: listMut,
             alasan: temp + val.alasan,
-            menu: listMenu.toString(),
-            type: "verif"
+            type: "verif",
+            stat_kasbon: resStat === '' ? 'open' : resStat
         }
-        await this.props.rejectOps(token, data)
+        await this.props.revisiKasbon(token, data)
         this.getDataOps()
         this.setState({confirm: 'reject'})
         this.openConfirm()
@@ -1158,7 +1164,7 @@ class VerifKasbon extends Component {
     }
 
     reasonApp = (val) => {
-        const { listReason } = this.state
+        const { listReason, stat_kasbon } = this.state
         const {dataReason} = this.props.reason
         if (val === 'all') {
             const data = []
@@ -1166,9 +1172,17 @@ class VerifKasbon extends Component {
                 data.push(dataReason[i].id)
             }
             this.setState({listReason: data})
+        } else if (val === 'open' && stat_kasbon === 'close') {
+            const temp = listReason.filter(e => e !== 'close')
+            temp.push(val)
+            this.setState({listReason: temp, stat_kasbon: val})
+        } else if (val === 'close' && stat_kasbon === 'open') {
+            const temp = listReason.filter(e => e !== 'open')
+            temp.push(val)
+            this.setState({listReason: temp, stat_kasbon: val})
         } else {
             listReason.push(val)
-            this.setState({listReason: listReason})
+            this.setState({listReason: listReason, stat_kasbon: val === 'open' || val === 'close' ? val : stat_kasbon !== '' ? stat_kasbon : ''})
         }
     }
 
@@ -1264,9 +1278,9 @@ class VerifKasbon extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dataTrans, type_kasbon, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
+        const {dataRinci, type_kasbon, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
         const { detailDepo, dataDepo } = this.props.depo
-        const { dataReason } = this.props.reason
+        const { dataReason, arrReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, idOps } = this.props.ops
         // const pages = this.props.depo.page
 
@@ -1410,6 +1424,7 @@ class VerifKasbon extends Component {
                                                 <th>TGL AJUAN</th>
                                                 <th>TIPE KASBON</th>
                                                 <th>STATUS</th>
+                                                <th>Keterangan</th>
                                                 <th>OPSI</th>
                                             </tr>
                                         </thead>
@@ -1435,6 +1450,7 @@ class VerifKasbon extends Component {
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
                                                         <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
+                                                        <th>{item.stat_kasbon === null ? 'Open' : 'Close'}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -2083,6 +2099,18 @@ class VerifKasbon extends Component {
                                     </div>
                                     )
                                 })}
+                                {arrReason.length > 0 && arrReason.map(item => {
+                                    return (
+                                    <div className="ml-2">
+                                        <Input
+                                        addon
+                                        type="checkbox"
+                                        checked= {listReason.find(element => element === item.id) !== undefined ? true : false}
+                                        onClick={listReason.find(element => element === item.id) === undefined ? () => this.reasonApp(item.id) : () => this.reasonRej(item.id)}
+                                        />  {item.desc}
+                                    </div>
+                                    )
+                                })}
                                 <div className={style.alasan}>
                                     <text className='ml-2'>
                                         Lainnya
@@ -2510,7 +2538,7 @@ const mapDispatchToProps = {
     approveOps: ops.approveOps,
     getAllMenu: menu.getAllMenu,
     getReason: reason.getReason,
-    rejectOps: ops.rejectOps,
+    revisiKasbon: ops.revisiKasbon,
     resetOps: ops.resetOps,
     submitRealisasi: ops.submitRealisasi,
     editVerif: ops.editVerif,

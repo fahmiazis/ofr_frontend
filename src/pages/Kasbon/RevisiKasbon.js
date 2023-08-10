@@ -857,7 +857,7 @@ class RevisiOps extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Revisi Operasional</div>
+                                <div className={style.titleDashboard}>Revisi Operasional (Kasbon / Non Kasbon)</div>
                             </div>
                             <div className={style.secEmail3}>
                             </div>

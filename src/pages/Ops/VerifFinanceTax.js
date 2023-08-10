@@ -126,7 +126,9 @@ class VerifOps extends Component {
             time2: moment().format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
-            docCon: false
+            docCon: false,
+            tipeEmail: '',
+            dataRej: {}
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -216,11 +218,7 @@ class VerifOps extends Component {
             type: "verif"
         }
         await this.props.rejectOps(token, data)
-        this.getDataOps()
-        this.setState({confirm: 'reject'})
-        this.openConfirm()
-        this.openModalReject()
-        this.openModalRinci()
+        this.dataSendEmail('reject')
     }
 
     dropApp = () => {
@@ -634,12 +632,21 @@ class VerifOps extends Component {
             tipe: 'ops',
         }
         await this.props.sendEmail(token, tempno)
-        this.getDataOps()
-        this.setState({confirm: 'isApprove'})
-        this.openConfirm()
-        this.openDraftEmail()
-        this.openModalApprove()
-        this.openModalRinci()
+        if (val === 'reject') {
+            this.getDataOps()
+            this.setState({confirm: 'reject'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalReject()
+            this.openModalRinci()
+        } else {
+            this.getDataOps()
+            this.setState({confirm: 'isApprove'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalApprove()
+            this.openModalRinci()
+        }
     }
 
     prepSendEmail = async () => {
@@ -663,6 +670,33 @@ class VerifOps extends Component {
             menu: cekMenu 
         }
         await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'app'})
+        this.openDraftEmail()
+    }
+
+    prepReject = async (val) => {
+        const { detailOps } = this.props.ops
+        const level = localStorage.getItem("level")
+        const token = localStorage.getItem("token")
+        const app = detailOps[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const cekMenu = level === '2' ? 'Verifikasi Finance (Operasional)' : 'Verifikasi Tax (Operasional)'
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            kode: detailOps[0].kode_plant,
+            jenis: 'ops',
+            tipe: tipe,
+            menu: cekMenu 
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
         this.openDraftEmail()
     }
 
@@ -1170,7 +1204,7 @@ class VerifOps extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
+        const {dataRinci, dropApp, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
@@ -1341,7 +1375,7 @@ class VerifOps extends Component {
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
+                                                        <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -1972,7 +2006,7 @@ class VerifOps extends Component {
                     alasan: "",
                     }}
                     validationSchema={alasanSchema}
-                    onSubmit={(values) => {this.rejectOps(values)}}
+                    onSubmit={(values) => {this.prepReject(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
@@ -2372,10 +2406,10 @@ class VerifOps extends Component {
                                 <Button
                                     disabled={this.state.message === '' ? true : false} 
                                     className="mr-2"
-                                    onClick={() => this.approveDataOps()} 
+                                    onClick={() => tipeEmail === 'reject' ? this.rejectOps(this.state.dataRej) : this.approveDataOps()}
                                     color="primary"
                                 >
-                                    Submit & Send Email
+                                    {tipeEmail === 'reject' ? 'Reject' : 'Submit'} & Send Email
                                 </Button>
                                 <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
                             </div>

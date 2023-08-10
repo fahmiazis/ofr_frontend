@@ -840,10 +840,6 @@ class AjuanBayarOps extends Component {
         this.openDraftEmail()
     }
 
-    openDraftEmail = () => {
-        this.setState({openDraft: !this.state.openDraft}) 
-    }
-
     dataSendEmail = async (val) => {
         const token = localStorage.getItem("token")
         const { detailOps } = this.props.ops
@@ -875,6 +871,10 @@ class AjuanBayarOps extends Component {
         this.openModalSubmit()
         this.modalRinciAjuan()
         this.modalBukti()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
     }
 
     openModalDoc = () => {
@@ -1783,7 +1783,7 @@ class AjuanBayarOps extends Component {
                             <Button color="primary" onClick={() => this.prosesModalMcm()}>
                                 Download MCM
                             </Button>
-                            <Button color="success ml-1" onClick={() => this.printData('formlistklm')}>
+                            <Button color="success ml-1" onClick={() => this.printData('formlistops')}>
                                 Download Form
                             </Button>
                         </div>

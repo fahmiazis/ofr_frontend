@@ -176,12 +176,12 @@ class NavKlaim extends Component {
                                             Report Klaim
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
+                                    {/* <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
                                         <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi Klaim
                                         </div>
-                                    </button>
+                                    </button> */}
                                 </>
                             ) : level === '3' || level === '13'? (
                                 <>

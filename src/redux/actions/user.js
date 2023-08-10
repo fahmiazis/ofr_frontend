@@ -51,6 +51,10 @@ export default {
         type: 'RESET_PW',
         payload: http(token).patch(`/user/reset/${id}`, qs.stringify(data))
     }),
+    generateUser: (token, data) => ({
+        type: 'GENERATE_USER',
+        payload: http(token).patch('/user/generate', qs.stringify(data))
+    }),
     resetError: () => ({
         type: 'RESET'
     })

@@ -175,7 +175,8 @@ class Kasbon extends Component {
             tgl_faktur: '',
             isLoading: false,
             typeniknpwp: '',
-            type_kasbon: 'kasbon'
+            type_kasbon: 'kasbon',
+            modalRev: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -387,6 +388,24 @@ class Kasbon extends Component {
         this.openModalRinci()
     }
 
+    prosesSubmitRevisi = async () => {
+        const {detailOps} = this.props.ops
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: detailOps[0].no_transaksi
+        }
+        await this.props.submitRevisi(token, tempno)
+        this.openModalRinci()
+        this.openModalRev()
+        this.getDataOps()
+        this.setState({confirm: 'submit'})
+        this.openConfirm()
+    }
+
+    openModalRev = () => {
+        this.setState({modalRev: !this.state.modalRev})
+    }
+
     deleteStock = async (value) => {
         const token = localStorage.getItem("token")
         await this.props.deleteStock(token, value.id)
@@ -549,7 +568,7 @@ class Kasbon extends Component {
         const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
         this.prepareSelect()
-        this.changeFilter(level === '5' ? 'available' : 'all')
+        this.changeFilter(level === '5' ? 'all' : 'all')
     }
 
     getDataList = async () => {
@@ -663,21 +682,22 @@ class Kasbon extends Component {
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const typeKasbon = 'kasbon'
+        const realisasi = 'realisasi'
         if (val === 'available') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, typeKasbon)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, typeKasbon, realisasi)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, typeKasbon)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, typeKasbon, realisasi)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, typeKasbon)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, typeKasbon, realisasi)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, typeKasbon)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, typeKasbon, realisasi)
             this.setState({filter: val, newOps: newOps})
         }
     }
@@ -703,8 +723,9 @@ class Kasbon extends Component {
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
+        const realisasi = 'realisasi'
         const status = filter === 'all' ? 'all' : 8
-        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, typeKasbon)
+        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, typeKasbon, realisasi)
     }
     
     cekDataDoc = () => {
@@ -1451,7 +1472,7 @@ class Kasbon extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dataTrans, type_kasbon, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, dataTrans, type_kasbon, listMut, listReason, dataMenu, listMenu, detailDoc} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, idOps } = this.props.ops
@@ -1575,6 +1596,7 @@ class Kasbon extends Component {
                                                 <th>TGL AJUAN</th>
                                                 <th>TIPE KASBON</th>
                                                 <th>STATUS</th>
+                                                <th>KETERANGAN</th>
                                                 <th>OPSI</th>
                                             </tr>
                                         </thead>
@@ -1591,11 +1613,17 @@ class Kasbon extends Component {
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
                                                         <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
+                                                        <th>{item.stat_kasbon === null ? 'Open' : 'Close'}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button 
                                                             size='sm' 
-                                                            onClick={() => item.status_reject === 1 ? this.goRevisi({route: 'revkasbon', type: 'revisi', item: item}) : this.prosesDetail(item)} 
+                                                            onClick={
+                                                                () => 
+                                                                item.status_reject === 1 ? 
+                                                                // this.goRevisi({route: 'revkasbon', type: 'revisi', item: item})
+                                                                this.prosesDetail(item)
+                                                                : this.prosesDetail(item)} 
                                                             className='mb-1 mr-1' 
                                                             color='success'>
                                                                 {item.status_reject === 1 ? 'Revisi' : this.state.filter === 'available' ? 'Proses' : 'Detail'}
@@ -1628,6 +1656,7 @@ class Kasbon extends Component {
                                                 <th>TGL AJUAN</th>
                                                 <th>TIPE KASBON</th>
                                                 <th>STATUS</th>
+                                                <th>KETERANGAN</th>
                                                 <th>OPSI</th>
                                             </tr>
                                         </thead>
@@ -1644,6 +1673,7 @@ class Kasbon extends Component {
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
                                                         <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
+                                                        <th>{item.stat_kasbon === null ? 'Open' : 'Close'}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -1796,6 +1826,11 @@ class Kasbon extends Component {
                             <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
+                            {detailOps[0].status_reject === 1 && (
+                                <Button color="success" onClick={this.openModalRev}>
+                                    Submit Revisi
+                                </Button>
+                            )}
                             {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
                                 <div></div>
                             ) : (
@@ -1960,6 +1995,24 @@ class Kasbon extends Component {
                             </div>
                             <div className={style.btnApprove}>
                                 <Button color="primary" onClick={() => this.submitAset()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalSub}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.modalRev} toggle={this.openModalRev} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk submit revisi    
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.prosesSubmitRevisi()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalSub}>Tidak</Button>
                             </div>
                         </div>
@@ -2988,6 +3041,7 @@ const mapDispatchToProps = {
     getBank: bank.getBank,
     getDetailId: ops.getDetailId,
     getCoa: coa.getCoa,
+    submitRevisi: ops.submitRevisi,
     // notifStock: notif.notifStock
 }
 

@@ -445,13 +445,13 @@ class ReportKlaim extends Component {
                 c2: 'PP01',
                 c3: moment().format('DDMMYYYY'),
                 c4: 'IDR',
-                c5: item.appList.find(({sebagai}) => sebagai === "pembuat").nama,
+                c5: item.finance.pic_console,
                 c6: item.no_transaksi,
-                c7: '',
-                c8: item.finance.gl_kk,
+                c7: item.pa,
+                c8: '11010401',
                 c9: item.nilai_ajuan,
-                c10: item.depo.profit_center,
-                c11: item.no_transaksi,
+                c10: 'P01H000001',
+                c11: item.dn_area,
                 c12: '',
                 c13: item.kode_vendor,
                 c14: '',
@@ -474,7 +474,7 @@ class ReportKlaim extends Component {
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
               new Blob([buffer], { type: "application/octet-stream" }),
-              `FIle Upload Jurnal Ikk ${moment().format('DD MMMM YYYY')}.xlsx`
+              `FIle Upload Jurnal Klaim ${moment().format('DD MMMM YYYY')}.xlsx`
             )
         })
         this.setLoading(false)
@@ -1017,7 +1017,7 @@ class ReportKlaim extends Component {
         dataDownload.map((item, index) => { return ( ws.addRow(
             {
                 c1: index + 1,
-                c2: `${item.appList.find(({sebagai}) => sebagai === "pembuat").nama}`,
+                c2: `${item.finance.pic_console}`,
                 c3: item.area,
                 c4: item.depo.channel,
                 c5: item.no_transaksi,
@@ -1084,7 +1084,7 @@ class ReportKlaim extends Component {
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
               new Blob([buffer], { type: "application/octet-stream" }),
-              `Data Ajuan Klaim ${moment().format('DD MMMM YYYY')}.xlsx`
+              `Report Konsol Klaim ${moment().format('DD MMMM YYYY')}.xlsx`
             );
           });
     }
@@ -1139,16 +1139,7 @@ class ReportKlaim extends Component {
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.headEmail2}>
-                                    {/* <ReactHtmlToExcel
-                                        id="test-table-xls-button"
-                                        className="btn btn-success mr-2"
-                                        table="table-klaim"
-                                        filename={`Report Klaim ${moment().format('DD MMMM YYYY')}`}
-                                        sheet="Report"
-                                        buttonText="Download"
-                                    /> */}
-                                    <Button onClick={this.prosesDownload} color='success' className='mr-2'>Download</Button>
-                                    <Button onClick={() => this.prosesDownload()} color='success' className='mr-2'>Download</Button>
+                                    <Button onClick={() => this.prosesDownload()} color='success' className='mr-2'>Download Konsol</Button>
                                     <Button 
                                         color='warning' 
                                         className='mr-2' 
@@ -1265,7 +1256,7 @@ class ReportKlaim extends Component {
                                                             />
                                                         </th>
                                                         <th>{dataReport.indexOf(item) + 1}</th>
-                                                        <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                                        <th>{item.finance.pic_console}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.depo.channel}</th>
                                                         <th>{item.no_transaksi}</th>
@@ -1413,7 +1404,7 @@ class ReportKlaim extends Component {
                                     return (
                                         <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                             <th>{dataDownload.indexOf(item) + 1}</th>
-                                            <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                            <th>{item.finance.pic_console}</th>
                                             <th>{item.area}</th>
                                             <th>{item.depo.channel}</th>
                                             <th>{item.no_transaksi}</th>
@@ -1529,13 +1520,13 @@ class ReportKlaim extends Component {
                                                 <th>PP01</th>
                                                 <th>{moment().format('DDMMYYYY')}</th>
                                                 <th>IDR</th>
-                                                <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                                <th>{item.finance.pic_console}</th>
                                                 <th>{item.no_transaksi}</th>
-                                                <th></th>
-                                                <th>{item.finance.gl_kk}</th>
+                                                <th>{item.pa}</th>
+                                                <th>11010401</th>
                                                 <th>{item.nilai_ajuan}</th>
-                                                <th>{item.depo.profit_center}</th>
-                                                <th>{item.no_transaksi}</th>
+                                                <th>P01H000001</th>
+                                                <th>{item.dn_area}</th>
                                                 <th></th>
                                                 <th>{item.kode_vendor}</th>
                                                 <th></th>
@@ -2093,7 +2084,7 @@ class ReportKlaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading ? true : false} size="sm">
+                <Modal isOpen={this.props.klaim.isLoading || this.state.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>

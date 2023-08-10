@@ -149,7 +149,8 @@ class CartIkk extends Component {
             subject: '',
             message: '',
             isLoading: false,
-            typeniknpwp: ''
+            typeniknpwp: '',
+            dataDelete: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -161,7 +162,16 @@ class CartIkk extends Component {
         if (size >= 20000000) {
             this.setState({errMsg: "Maximum upload size 20 MB"})
             this.uploadAlert()
-        } else if (type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && type !== 'application/vnd.ms-excel' && type !== 'application/pdf' && type !== 'application/x-7z-compressed' && type !== 'application/vnd.rar' && type !== 'application/zip' && type !== 'application/x-zip-compressed' && type !== 'application/octet-stream' && type !== 'multipart/x-zip' && type !== 'application/x-rar-compressed') {
+        } else if (
+            type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && 
+            type !== 'application/vnd.ms-excel' && 
+            type !== 'application/pdf' && 
+            type !== 'application/x-7z-compressed' && 
+            type !== 'application/vnd.rar' && 
+            type !== 'application/zip' && type !== 'application/x-zip-compressed' && 
+            type !== 'application/octet-stream' && type !== 'multipart/x-zip' && 
+            type !== 'application/x-rar-compressed' && type !== 'image/jpeg' && type !== 'image/png'
+            ) {
             this.setState({errMsg: 'Invalid file type. Only excel, pdf, zip, and rar files are allowed.'})
             this.uploadAlert()
         } else {
@@ -672,8 +682,21 @@ class CartIkk extends Component {
 
     deleteCart = async (val) => {
         const token = localStorage.getItem("token")
-        await this.props.deleteCart(token, val)
+        const {dataDelete} = this.state
+        await this.props.deleteCart(token, dataDelete)
         await this.props.getCart(token)
+        this.setState({confirm: 'delCart'})
+        this.openConfirm()
+        this.openModalDelete()
+    }
+
+    prosesDelete = (val) => {
+        this.setState({dataDelete: val})
+        this.openModalDelete()
+    }
+
+    openModalDelete = () => {
+        this.setState({modalDelete: !this.state.modalDelete})
     }
 
     addCartIkk = async (val) => {
@@ -1520,7 +1543,7 @@ class CartIkk extends Component {
                                                     <th>{item.nama_tujuan}</th>
                                                     <th>
                                                         <Button onClick={() => this.prosesOpenEdit(item.id)} className='mb-1 mr-1' color='success'>EDIT</Button>
-                                                        <Button onClick={() => this.deleteCart(item.id)} color='danger'>DELETE</Button>
+                                                        <Button onClick={() => this.prosesDelete(item.id)} color='danger'>DELETE</Button>
                                                     </th>
                                                 </tr>
                                                 )
@@ -1552,6 +1575,21 @@ class CartIkk extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
+                <Modal isOpen={this.state.modalDelete} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk delete data ajuan ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.deleteCart()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalDelete}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
                 <Modal className='modalrinci' isOpen={this.state.modalAdd} size="xl">
                     <ModalHeader>
                         Tambah Ajuan IKK
@@ -3400,6 +3438,13 @@ class CartIkk extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Pastikan pengisian program dan periode sesuai dengan SOP</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'delCart' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Menghapus Data</div>
+                            </div>
+                        </div>
                     ) : this.state.confirm === 'isApprove' ? (
                         <div>
                             <div className={style.cekUpdate}>
@@ -3434,6 +3479,7 @@ class CartIkk extends Component {
                             >
                                 Approve & Send Email
                             </Button>
+                            <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
                         </div>
                     </div>
                 </ModalBody>
