@@ -144,7 +144,7 @@ class Account extends Component {
         <>
             <UncontrolledDropdown>
                 <DropdownToggle nav className='accName'>
-                    {detailUser.image === null ? (
+                    {detailUser.image === null || detailUser.image === undefined ? (
                         <VscAccount size={30} className={color === undefined ? 'mr-2 white' : `mr-2 ${color}`} />
                     ) : (
                         <img className="pictTask mr-2" src={`${REACT_APP_BACKEND_URL}/${detailUser.image}`} alt="profile1" />

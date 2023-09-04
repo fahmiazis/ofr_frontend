@@ -121,8 +121,8 @@ class ReportOps extends Component {
             formDis: false,
             history: false,
             time: 'pilih',
-            time1: moment().startOf('week').format('YYYY-MM-DD'),
-            time2: moment().format('YYYY-MM-DD'),
+            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time2: moment().endOf('month').format('YYYY-MM-DD'),
             dataDownload: [],
             modalDownload: false,
             titleDownload: '',
@@ -548,7 +548,7 @@ class ReportOps extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter, time} = this.state
+        const {time1, time2, filter} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
@@ -578,9 +578,13 @@ class ReportOps extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
+        const {time1, time2, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
+        const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
         if(e.key === 'Enter'){
-            await this.props.getAssetAll(token, 10, e.target.value, 1)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, undefined, e.target.value)
         }
     }
 
@@ -862,7 +866,7 @@ class ReportOps extends Component {
         dataDownload.map((item, index) => { return ( ws.addRow(
             {
                 c1: index + 1,
-                c2: `${item.appList.find(({sebagai}) => sebagai === "pembuat").nama}`,
+                c2: item.finance.pic_console,
                 c3: item.area,
                 c4: item.depo.channel,
                 c5: item.no_transaksi,
@@ -1039,23 +1043,23 @@ class ReportOps extends Component {
                     c1: index + 1,
                     c2: item.no_transaksi,
                     c3: 'PP01',
-                    c4: moment().format('DDMMYYYY'),
-                    c5: moment().format('DDMMYYYY'),
+                    c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                    c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                     c6: '',
                     c7: 'SA',
                     c8: item.finance.pic_console,
                     c9: 'IDR',
                     c10: iter + 1,
-                    c11: item.finance.gl_kk,
+                    c11: iter === 0 ? item.finance.gl_kk : '11010401',
                     c12: iter === 0 ? 40 : 50,
                     c13: '',
                     c14: '',
                     c15: item.nilai_ajuan,
                     c16: '',
-                    c17: item.cost_center,
+                    c17: '',
                     c18: '',
                     c19: '',
-                    c20: `Kas Kecil ${item.area}`,
+                    c20: item.keterangan,
                     c21: '',
                     c22: '',
                     c23: '',
@@ -1066,7 +1070,7 @@ class ReportOps extends Component {
                     c28: '',
                     c29: '',
                     c30: '',
-                    c31: '',
+                    c31: item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`,
                     c32: '',
                     c33: '',
                     c34: '',
@@ -1261,12 +1265,11 @@ class ReportOps extends Component {
                                             <tr>
                                                 <th>
                                                     <input  
-                                                        className='mr-2'
-                                                        type='checkbox'
-                                                        checked={listOps.length === 0 ? false : listOps.length === dataReport.length ? true : false}
-                                                        onChange={() => listOps.length === dataReport.length ? this.chekRej('all') : this.chekApp('all')}
-                                                        />
-                                                    Select
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listOps.length === 0 ? false : listOps.length === dataReport.length ? true : false}
+                                                    onChange={() => listOps.length === dataReport.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    />
                                                 </th>
                                                 <th>No</th>
                                                 <th>PIC</th>
@@ -1311,7 +1314,7 @@ class ReportOps extends Component {
                                                             />
                                                         </th>
                                                         <th>{dataReport.indexOf(item) + 1}</th>
-                                                        <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                                        <th>{item.finance.pic_console}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.depo.channel}</th>
                                                         <th>{item.no_transaksi}</th>
@@ -1442,7 +1445,7 @@ class ReportOps extends Component {
                                     return (
                                         <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                             <th>{dataDownload.indexOf(item) + 1}</th>
-                                            <th>{item.appList.find(({sebagai}) => sebagai === "pembuat").nama}</th>
+                                            <th>{item.finance.pic_console}</th>
                                             <th>{item.area}</th>
                                             <th>{item.depo.channel}</th>
                                             <th>{item.no_transaksi}</th>
@@ -2377,20 +2380,20 @@ class ReportOps extends Component {
                                                     <th>{index + 1}</th>
                                                     <th>{item.no_transaksi}</th>
                                                     <th>PP01</th>
-                                                    <th>{moment().format('DDMMYYYY')}</th>
-                                                    <th>{moment().format('DDMMYYYY')}</th>
+                                                    <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                    <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                     <th></th>
                                                     <th>SA</th>
                                                     <th>{item.finance.pic_console}</th>
                                                     <th>IDR</th>
                                                     <th>{iter + 1}</th>
-                                                    <th>{item.finance.gl_kk}</th>
+                                                    <th>{iter === 0 ? item.finance.gl_kk : '11010401'}</th>
                                                     <th>{iter === 0 ? 40 : 50}</th>
                                                     <th></th>
                                                     <th></th>
                                                     <th>{item.nilai_ajuan}</th>
                                                     <th></th>
-                                                    <th>{item.cost_center}</th>
+                                                    <th></th>
                                                     <th></th>
                                                     <th></th>
                                                     <th>{item.keterangan}</th>
@@ -2400,11 +2403,11 @@ class ReportOps extends Component {
                                                     <th></th>
                                                     <th></th>
                                                     <th></th>
-                                                    <th>{item.depo.profit_center}</th>
+                                                    <th>{iter === 0 ? item.depo.profit_center : 'P01H000001'}</th>
                                                     <th></th>
                                                     <th></th>
                                                     <th></th>
-                                                    <th></th>
+                                                    <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th>
                                                     <th></th>
                                                     <th></th>
                                                     <th></th>

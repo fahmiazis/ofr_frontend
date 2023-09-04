@@ -446,15 +446,19 @@ class MasterMenu extends Component {
                                                     <th>No</th>
                                                     <th>Nama Menu</th>
                                                     <th>Tipe</th>
+                                                    <th>Opsi</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {dataName.length !== 0 && dataName.map(item => {
                                                     return (
-                                                    <tr onClick={() => this.getDataDetailMenu(item)}>
+                                                    <tr>
                                                         <th scope="row">{(dataName.indexOf(item) + 1)}</th>
                                                         <td>{item.name}</td>
                                                         <td>{item.type}</td>
+                                                        <td>
+                                                            <Button color='primary' onClick={() => this.getDataDetailMenu(item)}>Detail</Button>
+                                                        </td>
                                                     </tr>
                                                 )})}
                                             </tbody>

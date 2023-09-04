@@ -56,6 +56,9 @@ const ikkState = {
     isDocBukti: null,
     docBukti: [],
     submitBukti: null,
+    detailReport: [],
+    isDetRep: false,
+    updateNilai: null
 };
 
 export default (state=ikkState, action) => {
@@ -160,6 +163,31 @@ export default (state=ikkState, action) => {
                     isLoading: false,
                     isError: true,
                     isDetIkk: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'DETAIL_REPORT_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DETAIL_REPORT_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDetRep: true,
+                    detailReport: action.payload.data.result,
+                    alertMsg: 'get coa Succesfully'
+                };
+            }
+            case 'DETAIL_REPORT_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    isDetRep: false,
                     alertMsg: "Unable connect to server"
                 };
             }
@@ -714,6 +742,29 @@ export default (state=ikkState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'UPDATE_NILAIIKK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPDATE_NILAIIKK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    updateNilai: true,
+                    alertMsg: 'upload bukti Succesfully',
+                };
+            }
+            case 'UPDATE_NILAIIKK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    updateNilai: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'CONFIRM_IDENTIKK_PENDING': {
                 return {
                     ...state,
@@ -762,6 +813,8 @@ export default (state=ikkState, action) => {
                     uploadBukti: null,
                     isDocBukti: null,
                     submitBukti: null,
+                    isDetRep: null,
+                    updateNilai: null
                 }
             }
             default: {

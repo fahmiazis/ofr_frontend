@@ -39,6 +39,7 @@ import TableRincian from '../../components/Klaim/tableRincian'
 import dokumen from '../../redux/actions/dokumen'
 import FAA from '../../components/Klaim/FAA'
 import FPD from '../../components/Klaim/FPD'
+import Countdown from 'react-countdown'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -129,9 +130,9 @@ class Klaim extends Component {
             message: '',
             openAppDoc: false,
             openRejDoc: false,
-            time: '',
-            time1: '',
-            time2: '',
+            time: 'pilih',
+            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time2: moment().endOf('month').format('YYYY-MM-DD'),
             subject: '',
             docHist: false,
             detailDoc: {},
@@ -141,10 +142,36 @@ class Klaim extends Component {
             jurnalPPh: [1, 2, 3],
             jurnalFull: [1, 2, 3, 4],
             tipeEmail: '',
-            dataRej: {}
+            dataRej: {},
+            tipeNilai: 'all',
+            modalNilai: false,
+            nilai_verif: 0
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    updateData = async (val) => {
+        const data = {
+            [val.target.name]: val.target.value
+        }
+        console.log(data)
+        this.setState(data)
+    }
+
+    openConfirm = (val) => {
+        if (val === false) {
+            this.setState({modalConfirm: false})
+        } else {
+            this.setState({modalConfirm: true})
+            setTimeout(() => {
+                this.setState({modalConfirm: false})
+             }, 3000)
+        }
+    }
+
+    rendererTime = ({ hours, minutes, seconds, completed }) => {
+        return <span>{seconds}</span>
     }
 
     submitStock = async () => {
@@ -577,27 +604,19 @@ class Klaim extends Component {
         const {dataKlaim, noDis} = this.props.klaim
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const status = 2
+        const status = val === 'bayar' || val === 'completed' ? 8 : 2
         const statusAll = 'all'
         const {time1, time2} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const role = localStorage.getItem('role')
-        if (val === 'available') {
+        if (val === 'all') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'reject') {
-            const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'revisi') {
-            const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
+            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newKlaim: newKlaim})
         } else {
             const newKlaim = []
-            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newKlaim: newKlaim})
         }
     }
@@ -622,8 +641,8 @@ class Klaim extends Component {
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
-        const status = filter === 'all' ? 'all' : 2
-        await this.props.getKlaim(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2)
+        const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8 : 2
+        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2)
     }
 
     prosesSubmitPre = async () => {
@@ -773,10 +792,14 @@ class Klaim extends Component {
     }
 
     onSearch = async (e) => {
-        this.setState({search: e.target.value})
+        const {time1, time2, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
+        const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8 : 2
+        this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            await this.props.getAssetAll(token, 10, e.target.value, 1)
+            await this.props.getKlaim(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, e.target.value)
         }
     }
 
@@ -1034,6 +1057,45 @@ class Klaim extends Component {
         }
     }
 
+    selTipe = (val) => {
+        this.setState({tipeNilai: val})
+    }
+
+    openNilaiVerif = () => {
+        this.setState({modalNilai: !this.state.modalNilai})
+    }
+
+    updateNilai = async (val) => {
+        const token = localStorage.getItem('token')
+        const {tipeNilai, nilai_verif} = this.state
+        const {detailKlaim} = this.props.klaim
+        const tempno = {
+            no: detailKlaim[0].no_transaksi
+        }
+        const data = {
+            type: tipeNilai,
+            nilai: nilai_verif,
+            id: tipeNilai === 'all' ? detailKlaim[0].id : val,
+            no: detailKlaim[0].no_transaksi
+        }
+        await this.props.updateNilaiVerif(token, data)
+        if (tipeNilai === 'all') {
+            await this.props.getDetail(token, tempno)
+            this.setState({confirm: 'inputVerif', nilai_verif: 0})
+            this.openConfirm()
+            this.openNilaiVerif()
+            this.getDataKlaim()
+        } else {
+            await this.props.getDetail(token, tempno)
+            this.setState({confirm: 'inputVerif', nilai_verif: 0})
+            this.openConfirm()
+            this.getDataKlaim()
+        }
+        
+    }
+
+
+
     prepareReject = async () => {
         const token = localStorage.getItem("token")
         await this.props.getAllMenu(token, 'reject', 'Klaim')
@@ -1065,7 +1127,7 @@ class Klaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc, filter} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim } = this.props.klaim
@@ -1112,93 +1174,75 @@ class Klaim extends Component {
                             </div>
                             <div className={[style.secEmail4]}>
                                 {(level === '5' || level === '6') ? (
-                                    <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Create</Button>
-                                ) : (
-                                    <div className='rowCenter'>
-                                        <div className='rowCenter'>
-                                            <text className='mr-4'>Time:</text>
-                                            <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                    <>
+                                        <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Create</Button>
+                                        <div className={style.searchEmail2}>
+                                            <text>Filter:  </text>
+                                            <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
                                                 <option value="all">All</option>
-                                                <option value="pilih">Periode</option>
+                                                <option value="bayar">Telah Bayar</option>
+                                                <option value="completed">Selesai</option>
+                                                <option value="reject">Reject</option>
+                                                {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                             </Input>
                                         </div>
-                                        {this.state.time === 'pilih' ?  (
-                                            <>
-                                                <div className='rowCenter'>
-                                                    <text className='bold'>:</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
-                                                    />
-                                                    <text className='mr-1 ml-1'>To</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                    />
-                                                    <Button
-                                                    disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
-                                                    color='primary' 
-                                                    onClick={this.getDataTime} 
-                                                    className='ml-1'>
-                                                        Go
-                                                    </Button>
-                                                </div>
-                                            </>
-                                        ) : null}
-                                    </div>
-                                )}
-                                <div className={style.searchEmail2}>
-                                </div>
-                            </div>
-                            <div className={[style.secEmail4]}>
-                                {(level === '5' || level === '6') ? (
-                                    <div className='rowCenter'>
-                                        <div className='rowCenter'>
-                                            <text className='mr-4'>Time:</text>
-                                            <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                                <option value="all">All</option>
-                                                <option value="pilih">Periode</option>
-                                            </Input>
-                                        </div>
-                                        {this.state.time === 'pilih' ?  (
-                                            <>
-                                                <div className='rowCenter'>
-                                                    <text className='bold'>:</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
-                                                    />
-                                                    <text className='mr-1 ml-1'>To</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                    />
-                                                    <Button
-                                                    disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
-                                                    color='primary' 
-                                                    onClick={this.getDataTime} 
-                                                    className='ml-1'>
-                                                        Go
-                                                    </Button>
-                                                </div>
-                                            </>
-                                        ) : null}
-                                    </div>
+                                    </>
                                 ) : (
+                                    <>
+                                    <div className={style.searchEmail2}>
+                                    </div>
                                     <div className={style.searchEmail2}>
                                         <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
                                             <option value="all">All</option>
                                             <option value="reject">Reject</option>
                                             <option value="available">Available Approve</option>
+                                            <option value="bayar">Telah Bayar</option>
+                                            <option value="completed">Selesai</option>
                                             {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                         </Input>
                                     </div>
+                                    
+                                    </>
                                 )}
+                            </div>
+                            <div className={[style.secEmail4]}>
+                                    <div className='rowCenter'>
+                                        <div className='rowCenter'>
+                                            {/* <text className='mr-4'>Time:</text> */}
+                                            <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                                <option value="all">Time (All)</option>
+                                                <option value="pilih">Periode</option>
+                                            </Input>
+                                        </div>
+                                        {this.state.time === 'pilih' ?  (
+                                            <>
+                                                <div className='rowCenter'>
+                                                    <text className='bold'>:</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        value={this.state.time1}
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                    />
+                                                    <text className='mr-1 ml-1'>To</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        value={this.state.time2}
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                    />
+                                                    <Button
+                                                    disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                    color='primary' 
+                                                    onClick={this.getDataTime} 
+                                                    className='ml-1'>
+                                                        Go
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : null}
+                                    </div>
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 
@@ -1228,10 +1272,10 @@ class Klaim extends Component {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newKlaim.map(item => {
+                                            {newKlaim.length > 0 && newKlaim.filter(({ end_klaim }) => (filter !== 'bayar' && filter !== 'completed') || (filter === 'completed' && end_klaim !== null) || (filter === 'bayar' && end_klaim === null)).map((item, index) => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{newKlaim.indexOf(item) + 1}</th>
+                                                        <th>{index + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.cost_center}</th>
                                                         <th>{item.area}</th>
@@ -1241,7 +1285,7 @@ class Klaim extends Component {
                                                         <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Detail</Button>
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>{filter === 'bayar' ? 'Proses' : 'Detail'}</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
@@ -1249,7 +1293,7 @@ class Klaim extends Component {
                                             })}
                                         </tbody>
                                     </Table>
-                                    {newKlaim.length === 0 && (
+                                    {(newKlaim.length === 0 || (filter === 'completed' && newKlaim.find(({end_klaim}) => end_klaim !== null) === undefined) || (filter === 'bayar' && newKlaim.find(({end_klaim}) => end_klaim === null) === undefined)) && (
                                         <div className={style.spin}>
                                             <text className='textInfo'>Data ajuan tidak ditemukan</text>
                                         </div>
@@ -1273,10 +1317,10 @@ class Klaim extends Component {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newKlaim.map(item => {
+                                            {newKlaim.length > 0 && newKlaim.filter(({ end_klaim }) => (filter !== 'bayar' && filter !== 'completed') || (filter === 'completed' && end_klaim !== null) || (filter === 'bayar' && end_klaim === null)).map((item, index) => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{newKlaim.indexOf(item) + 1}</th>
+                                                        <th>{index + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.cost_center}</th>
                                                         <th>{item.area}</th>
@@ -1294,7 +1338,7 @@ class Klaim extends Component {
                                             })}
                                         </tbody>
                                     </Table>
-                                    {newKlaim.length === 0 && (
+                                    {(newKlaim.length === 0 || (filter === 'completed' && newKlaim.find(({end_klaim}) => end_klaim !== null) === undefined) || (filter === 'bayar' && newKlaim.find(({end_klaim}) => end_klaim === null) === undefined)) && (
                                         <div className={style.spin}>
                                             <text className='textInfo'>Data ajuan tidak ditemukan</text>
                                         </div>
@@ -1649,14 +1693,17 @@ class Klaim extends Component {
                             <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
-                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
-                                <div></div>
+                            {filter !== 'available' && filter !== 'revisi' ? (
+                                (filter === 'bayar' || filter === 'completed') &&
+                                <Button className="mr-2"  color="danger" onClick={this.openNilaiVerif}>
+                                    Input Nilai Diterima
+                                </Button>
                             ) : (
                                 <>
-                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
+                                    <Button className="mr-2" disabled={filter === 'revisi'  && listMut.length > 0 ? false : filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
-                                    <Button color="success" disabled={this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
+                                    <Button color="success" disabled={filter === 'revisi'  ? false : filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
                                         Approve
                                     </Button>
                                 </>
@@ -1800,6 +1847,86 @@ class Klaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
+                <Modal size="xl" className='modalrinci' isOpen={this.state.modalNilai}>
+                    <ModalBody>
+                        <div>
+                            <div className="stockTitle">INPUT NILAI YANG DITERIMA</div>
+                        </div>
+                        <div className='rowGeneral'>
+                            <Button onClick={() => this.selTipe('all')} color={this.state.tipeNilai === 'all' ? 'primary' : 'secondary'}>Input Nilai Total</Button>
+                            <Button className='ml-2' onClick={() => this.selTipe('parcial')} color={this.state.tipeNilai === 'all' ? 'secondary' : 'primary'}>Input Nilai Parcial</Button>
+                        </div>
+                        <Row className="ptStock inputStock">
+                            <Col md={3} xl={3} sm={3}>Nilai Total Diterima</Col>
+                            <Col md={4} xl={4} sm={4} className="inputStock">:
+                                <Input 
+                                name='nilai_verif'
+                                disabled={this.state.tipeNilai !== 'all' || filter === 'completed'}
+                                onChange={e => this.updateData({target: e.target, key: e.key})} 
+                                // value = {detailKlaim[0].type_nilaiverif === 'all' ? detailKlaim[0].nilai_verif : }
+                                className="ml-3" />
+                                <Button className='ml-2' color='primary' disabled={this.state.nilai_verif === 0 || this.state.tipeNilai !== 'all'} onClick={this.updateNilai} >Update</Button>
+                            </Col>
+                        </Row>
+                        <div className={style.tableDashboard}>
+                            <Table bordered responsive hover className={style.tab} id="table-to-xls">
+                                <thead>
+                                    <tr className='tbklaim'>
+                                        <th>NO</th>
+                                        <th>NO.AJUAN</th>
+                                        <th>COST CENTRE</th>
+                                        <th>AREA</th>
+                                        <th>NO.COA</th>
+                                        <th>NAMA COA</th>
+                                        <th>KETERANGAN TAMBAHAN</th>
+                                        <th>DN Area</th>
+                                        <th>Nilai Ajuan</th>
+                                        <th>Nilai Bayar</th>
+                                        <th>Nilai Diterima</th>
+                                        <th>Opsi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {detailKlaim.length !== 0 && detailKlaim.map(item => {
+                                        return (
+                                            <tr>
+                                                <th scope="row">{detailKlaim.indexOf(item) + 1}</th>
+                                                <th>{item.no_transaksi}</th>
+                                                <th>{item.cost_center}</th>
+                                                <th>{item.area}</th>
+                                                <th>{item.no_coa}</th>
+                                                <th>{item.nama_coa}</th>
+                                                <th>{item.keterangan}</th>
+                                                <th>{item.dn_area}</th>
+                                                <th>{item.nilai_ajuan}</th>
+                                                <th>{item.nominal}</th>
+                                                <th>
+                                                    <Input 
+                                                    name='nilai_verif'
+                                                    disabled={this.state.tipeNilai === 'all' || filter === 'completed'}
+                                                    value={item.nilai_verif}
+                                                    onChange={e => this.updateData({target: e.target, key: e.key})} 
+                                                    // value = {detailKlaim[0].type_nilaiverif === 'all' ? detailKlaim[0].nilai_verif : }
+                                                    />
+                                                </th>
+                                                <th><Button onClick={() => this.updateNilai(item.id)} color='primary' disabled={this.state.tipeNilai === 'all' || this.state.nilai_verif === 0}>Update</Button></th>
+                                            </tr>
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
+                        </div>
+                    </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div></div>
+                        <div className="btnFoot">
+                            <Button color="success" onClick={this.openNilaiVerif}>
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
                 <Modal isOpen={this.props.klaim.isLoading || this.props.menu.isLoading || this.props.reason.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading} size="sm">
                         <ModalBody>
                         <div>
@@ -1902,8 +2029,9 @@ class Klaim extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
-            <Modal isOpen={this.state.modalConfirm} toggle={this.openConfirm}>
+            <Modal isOpen={this.state.modalConfirm} toggle={() => this.openConfirm(false)}>
                 <ModalBody>
+                {/* <Countdown renderer={this.rendererTime} date={Date.now() + 3000} /> */}
                     {this.state.confirm === 'approve' ? (
                         <div>
                             <div className={style.cekUpdate}>
@@ -1959,6 +2087,20 @@ class Klaim extends Component {
                             <AiOutlineClose size={80} className={style.red} />
                             <div className={[style.sucUpdate, style.green]}>Gagal Approve, Pastikan Dokumen Lampiran Telah Diapprove</div>
                         </div>
+                        </div>
+                    ) : this.state.confirm === 'inputVerif' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Update Nilai Yang Diterima</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'falseInputVerif' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Pastikan Semua Data Telah Diisi</div>
+                            </div>
                         </div>
                     ) : this.state.confirm === 'isAppDoc' ? (
                         <div>
@@ -2068,7 +2210,7 @@ class Klaim extends Component {
                     </div>
                     <hr/>
                     <div className={style.foot}>
-                        {this.state.filter === 'available' ? (
+                        {filter === 'available' ? (
                             <div>
                                 <Button color="success" onClick={() => this.openModalAppDoc()}>Approve</Button>
                                 <Button className='ml-1' color="danger" onClick={() => this.openModalRejDoc()}>Reject</Button>
@@ -2180,7 +2322,8 @@ const mapDispatchToProps = {
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
     approveDokumen: dokumen.approveDokumen,
-    rejectDokumen: dokumen.rejectDokumen
+    rejectDokumen: dokumen.rejectDokumen,
+    updateNilaiVerif: klaim.updateNilaiVerif
     // notifStock: notif.notifStock
 }
 

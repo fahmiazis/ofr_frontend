@@ -38,6 +38,7 @@ import dokumen from '../../redux/actions/dokumen'
 import email from '../../redux/actions/email'
 import Email from '../../components/Klaim/Email'
 import NumberInput from '../../components/NumberInput'
+import Countdown from 'react-countdown'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const addSchema = Yup.object().shape({
@@ -128,6 +129,21 @@ class CartKlaim extends Component {
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    openConfirm = (val) => {
+        if (val === false) {
+            this.setState({modalConfirm: false})
+        } else {
+            this.setState({modalConfirm: true})
+            setTimeout(() => {
+                this.setState({modalConfirm: false})
+             }, 3000)
+        }
+    }
+
+    rendererTime = ({ hours, minutes, seconds, completed }) => {
+        return <span>{seconds}</span>
     }
 
     submitStock = async () => {
@@ -480,10 +496,6 @@ class CartKlaim extends Component {
         });
     }
 
-    openConfirm = () => {
-        this.setState({modalConfirm: !this.state.modalConfirm})
-    }
-
     dropOpen = async (val) => {
         if (this.state.dropOp === false) {
             const token = localStorage.getItem("token")
@@ -757,6 +769,7 @@ class CartKlaim extends Component {
         }
         const {idKlaim} = this.props.klaim
         await this.props.editKlaim(token, idKlaim.id, data)
+        this.openModalEdit()
     }
 
     updateNewAsset = async (value) => {
@@ -1838,7 +1851,7 @@ class CartKlaim extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {values.status_npwp === 'Ya' && values.no_npwp.length <= 15  ? (
+                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
@@ -2526,86 +2539,87 @@ class CartKlaim extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.state.modalConfirm} toggle={this.openConfirm}>
-                <ModalBody>
-                    {this.state.confirm === 'addcart' ? (
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Menambahkan Data</div>
+                <Modal isOpen={this.state.modalConfirm} toggle={() => this.openConfirm(false)}>
+                    <ModalBody>
+                        <Countdown renderer={this.rendererTime} date={Date.now() + 3000} />
+                        {this.state.confirm === 'addcart' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Menambahkan Data</div>
+                                </div>
                             </div>
-                        </div>
-                    ) : this.state.confirm === 'delCart' ? (
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Menghapus Data</div>
+                        ) : this.state.confirm === 'delCart' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Menghapus Data</div>
+                                </div>
                             </div>
-                        </div>
-                    ) : this.state.confirm === 'editcart' ? (
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Menyimpan Perubahan Data</div>
+                        ) : this.state.confirm === 'editcart' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Menyimpan Perubahan Data</div>
+                                </div>
                             </div>
-                        </div>
-                    ) : this.state.confirm === 'reject' ?(
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
+                        ) : this.state.confirm === 'reject' ?(
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
+                                </div>
                             </div>
-                        </div>
-                    ) : this.state.confirm === 'rejApprove' ?(
-                        <div>
-                            <div className={style.cekUpdate}>
-                            <AiOutlineClose size={80} className={style.red} />
-                            <div className={[style.sucUpdate, style.green]}>Gagal Approve</div>
-                        </div>
-                        </div>
-                    ) : this.state.confirm === 'verifdoc' ?(
-                        <div>
-                            <div className={style.cekUpdate}>
+                        ) : this.state.confirm === 'rejApprove' ?(
+                            <div>
+                                <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal Submit Klaim</div>
-                                <div className={[style.sucUpdate, style.green]}>Pastikan seluruh dokumen lampiran telah diupload</div>
+                                <div className={[style.sucUpdate, style.green]}>Gagal Approve</div>
                             </div>
-                        </div>
-                    ) : this.state.confirm === 'rejCart' ?(
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal Menambahkan Data</div>
-                                <div className={[style.sucUpdate, style.green]}>{this.props.klaim.alertMsg}</div>
                             </div>
-                        </div>
-                    ) : this.state.confirm === 'rejCartAdd' ?(
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal Menambahkan Data</div>
-                                <div className={[style.sucUpdate, style.green]}>Maximal 1 data dalam satu ajuan klaim</div>
+                        ) : this.state.confirm === 'verifdoc' ?(
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Submit Klaim</div>
+                                    <div className={[style.sucUpdate, style.green]}>Pastikan seluruh dokumen lampiran telah diupload</div>
+                                </div>
                             </div>
-                        </div>
-                    ) : this.state.confirm === 'isApprove' ? (
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                        ) : this.state.confirm === 'rejCart' ?(
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Menambahkan Data</div>
+                                    <div className={[style.sucUpdate, style.green]}>{this.props.klaim.alertMsg}</div>
+                                </div>
                             </div>
-                        </div>
-                    ) : this.state.confirm === 'submit' ? (
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
+                        ) : this.state.confirm === 'rejCartAdd' ?(
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Menambahkan Data</div>
+                                    <div className={[style.sucUpdate, style.green]}>Maximal 1 data dalam satu ajuan klaim</div>
+                                </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div></div>
-                    )}
-                </ModalBody>
-            </Modal>
+                        ) : this.state.confirm === 'isApprove' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'submit' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div></div>
+                        )}
+                    </ModalBody>
+                </Modal>
             <Modal isOpen={this.state.alert} size="sm">
                 <ModalBody>
                     <div>

@@ -740,7 +740,7 @@ class MasterUser extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Depo
+                                Area
                             </text>
                             <div className="col-md-9">
                             <Input 

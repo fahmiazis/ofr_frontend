@@ -105,6 +105,10 @@ function Sidebar(props) {
                     </Collapse>
                 ) : level === '1' && (
                     <Collapse isOpen={isOpen} className="ml-5 mt-3">
+                        <button onClick={() => goHome('approval')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Setting Approval
+                        </button>
                         <button onClick={() => goHome('depo')} className={stile.btnSide}>
                             <BsHouseDoor size={20} className="mr-2"/>
                             Master Depo

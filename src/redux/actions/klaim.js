@@ -35,9 +35,9 @@ export default {
         type: 'SUBMIT_KLAIMFINAL',
         payload: http(token).patch(`/klaim/subfinklaim`, qs.stringify(no))
     }),
-    getKlaim: (token, status, reject, menu, type, category, data, time1, time2) => ({
+    getKlaim: (token, status, reject, menu, type, category, data, time1, time2, search) => ({
         type: 'GET_KLAIM',
-        payload: http(token).get(`/klaim/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}`),
+        payload: http(token).get(`/klaim/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&search=${search === undefined ? '' : search}`),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_KLAIM',
@@ -95,9 +95,9 @@ export default {
         type: 'REJECTLIST_KLAIM',
         payload: http(token).patch(`/klaim/rejectlist`, data)
     }),
-    getReport: (token, status, reject, menu, time1, time2, type) => ({
+    getReport: (token, status, reject, menu, time1, time2, type, search) => ({
         type: 'REPORT_KLAIM',
-        payload: http(token).get(`/klaim/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}&type=${type}`),
+        payload: http(token).get(`/klaim/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}&type=${type}&search=${search === undefined ? '' : search}`),
     }),
     uploadBuktiBayar: (token, id, data) => ({
         type: 'UPLOAD_BUKTI',
@@ -110,6 +110,10 @@ export default {
     getDocBayar: (token,  data) => ({
         type: 'DOC_BUKTI',
         payload: http(token).patch(`/klaim/getdocbayar`, qs.stringify(data))
+    }),
+    updateNilaiVerif: (token, data) => ({
+        type: 'UPDATE_NILAIKLAIM',
+        payload: http(token).patch(`/klaim/upniverif`, qs.stringify(data))
     }),
     resetKlaim: () => ({
         type: 'RESET_KLAIM'

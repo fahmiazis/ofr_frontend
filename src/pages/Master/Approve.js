@@ -9,11 +9,12 @@ import { Container, Collapse, Nav, Navbar,
 import logo from "../../assets/img/logo.png"
 import style from '../../assets/css/input.module.css'
 import {FaSearch, FaUserCircle, FaBars} from 'react-icons/fa'
-import {AiOutlineFileExcel, AiFillCheckCircle} from 'react-icons/ai'
+import {AiOutlineFileExcel, AiFillCheckCircle, AiOutlineClose} from 'react-icons/ai'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
 import approve from '../../redux/actions/approve'
 import user from '../../redux/actions/user'
+import depo from '../../redux/actions/depo'
 import {connect} from 'react-redux'
 import moment from 'moment'
 import auth from '../../redux/actions/auth'
@@ -33,7 +34,9 @@ const approveSchema = Yup.object().shape({
 });
 
 const nameSchema = Yup.object().shape({
-    name: Yup.string().required("must be filled")
+    name: Yup.string().required("must be filled"),
+    tipe: Yup.string().required("must be filled"),
+    kode_plant: Yup.string().required("must be filled")
 })
 
 class Approve extends Component {
@@ -70,7 +73,8 @@ class Approve extends Component {
             fileUpload: '',
             limit: 10,
             search: '',
-            namaApprove: ''
+            namaApprove: {},
+            editModalName: false,
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -78,6 +82,16 @@ class Approve extends Component {
 
     openApproveName = () => {
         this.setState({approveName: !this.state.approveName})
+    }
+
+    prosesOpenEdit = async (val) => {
+        const token = localStorage.getItem("token")
+        await this.props.getDetailId(token, val.id)
+        this.openEditAppName()
+    }
+
+    openEditAppName = () => {
+        this.setState({editModalName: !this.state.editModalName})
     }
 
     openModalApprove = () => {
@@ -136,6 +150,9 @@ class Approve extends Component {
     openModalAdd = () => {
         this.setState({modalAdd: !this.state.modalAdd})
     }
+    openModalAddName = () => {
+        this.setState({modalAdd: !this.state.modalAdd})
+    }
     openModalEdit = () => {
         this.setState({modalEdit: !this.state.modalEdit})
     }
@@ -149,44 +166,63 @@ class Approve extends Component {
     deleteDataApprove = async (values) => {
         const token = localStorage.getItem("token")
         await this.props.deleteApprove(token, values)
-        await this.props.getDetailApprove(token, this.state.namaApprove)
+        await this.props.getDetailApprove(token, this.state.namaApprove.name, this.state.namaApprove.kode_plant)
     }
 
     addApproval = async (values) => {
         const token = localStorage.getItem("token")
         const data = {
-            nama_approve: this.state.namaApprove,
             jabatan: values.jabatan,
             jenis: values.jenis,
             sebagai: values.sebagai,
-            kategori: values.kategori
+            kategori: values.kategori,
+            nama_approve: this.state.namaApprove.name,
+            tipe: this.state.namaApprove.tipe,
+            kode_plant: this.state.namaApprove.kode_plant
         }
         await this.props.createApprove(token, data)
-        await this.props.getDetailApprove(token, this.state.namaApprove)
+        await this.props.getDetailApprove(token, this.state.namaApprove.name, this.state.namaApprove.kode_plant)
         this.openModalAdd()
     }
 
     addApproveName = async (value) => {
         const token = localStorage.getItem("token")
-        await this.props.createNameApprove(token, value) 
+        await this.props.createNameApprove(token, value)
+        this.openApproveName()
+        this.getDataApprove()
+        this.setState({confirm: 'addname'})
+        this.openConfirm()
+    }
+
+    
+    editApproveName = async (value) => {
+        const {idName} = this.props.approve
+        const token = localStorage.getItem("token")
+        await this.props.updateNameApprove(token, value, idName.id)
+        this.openEditAppName()
+        this.getDataApprove()
+        this.setState({confirm: 'editname'})
+        this.openConfirm()
     }
 
     editApproval = async (values, id) => {
         const token = localStorage.getItem("token")
         const data = {
-            nama_approve: this.state.namaApprove,
             jabatan: values.jabatan,
             jenis: values.jenis,
             sebagai: values.sebagai,
-            kategori: values.kategori
+            kategori: values.kategori,
+            nama_approve: this.state.namaApprove.name,
+            tipe: this.state.namaApprove.tipe,
+            kode_plant: this.state.namaApprove.kode_plant
         }
         await this.props.updateApprove(token, id, data)
-        await this.props.getDetailApprove(token, this.state.namaApprove)
+        await this.props.getDetailApprove(token,  this.state.namaApprove.name, this.state.namaApprove.kode_plant)
         this.openModalEdit()
     }
 
     componentDidUpdate() {
-        const {isError, isUpload, isExport, isAdd} = this.props.approve
+        const {isError, isUpload, isEditName, isAdd} = this.props.approve
         if (isError) {
             this.showAlert()
             this.props.resetError()
@@ -198,17 +234,14 @@ class Approve extends Component {
              setTimeout(() => {
                 this.getDataApprove()
              }, 2100)
-        } else if (isExport) {
+        } else if (isEditName === false) {
             this.props.resetError()
-            this.DownloadMaster()
-        } else if (isAdd) {
-            setTimeout(() => {
-                this.props.resetError()
-                this.setState({approveName: false})
-             }, 1000)
-             setTimeout(() => {
-                this.getDataApprove()
-             }, 1100)
+            this.setState({confirm: 'falEditName'})
+            this.openConfirm()
+        } else if (isAdd === false) {
+            this.props.resetError()
+            this.setState({confirm: 'falAddName'})
+            this.openConfirm()
         }
     }
 
@@ -221,6 +254,13 @@ class Approve extends Component {
 
     componentDidMount() {
         this.getDataApprove()
+        this.getDataDepo()
+    }
+
+    getDataDepo = async () => {
+        const token = localStorage.getItem("token")
+        await this.props.getDepo(token, 1000, '')
+        // const { dataDepo } = this.props.depo
     }
 
     getDataApprove = async (value) => {
@@ -230,10 +270,10 @@ class Approve extends Component {
         this.setState({limit: value === undefined ? 10 : value.limit})
     }
 
-    getDataDetailApprove = async (value) => {
-        this.setState({namaApprove: value})
+    getDataDetailApprove = async (val) => {
+        this.setState({namaApprove: val})
         const token = localStorage.getItem("token")
-        await this.props.getDetailApprove(token, value)
+        await this.props.getDetailApprove(token, val.name, val.kode_plant)
         this.openModalApprove()
     }
 
@@ -246,10 +286,19 @@ class Approve extends Component {
         this.setState({ open });
     }
 
+    delName = async (val) => {
+        const token = localStorage.getItem("token")
+        await this.props.deleteNameApprove(token, val.id)
+        this.getDataApprove()
+        this.setState({confirm: 'delname'})
+        this.openConfirm()
+    }
+
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, alert, upload, errMsg} = this.state
-        const {dataApprove, dataName, isGet, alertM, alertMsg, alertUpload, page, detailApp} = this.props.approve
+        const {dataApprove, dataName, isGet, alertM, alertMsg, alertUpload, page, detailApp, idName} = this.props.approve
         const { dataRole } = this.props.user
+        const { dataDepo } = this.props.depo
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
 
@@ -317,7 +366,7 @@ class Approve extends Component {
                                         <text className={style.textEntries}>entries</text>
                                     </div>
                                 </div> */}
-                                <div className={style.secEmail}>
+                                <div className={style.secEmail4}>
                                     <div className={style.headEmail}>
                                         <Button color="success" size="lg" onClick={() => this.openApproveName()}>Add</Button>
                                     </div>
@@ -335,28 +384,51 @@ class Approve extends Component {
                                 </div>
                                 {dataName.length === 0 ? (
                                     <div className={style.tableDashboard}>
-                                        <div>Tidak Ada Data Approve</div>
-                                    </div>                    
+                                        <Table bordered responsive hover className={style.tab}>
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Nama Approval</th>
+                                                    <th>Tipe</th>
+                                                    <th>Kode Plant</th>
+                                                    <th>Opsi</th>
+                                                </tr>
+                                            </thead>
+                                        </Table>
+                                        <div className={style.spin}>
+                                            Data tidak ditemukan
+                                        </div> 
+                                    </div>              
                                 ) : (
-                                    <Row className="bodyDispos">
-                                        {dataName.length !== 0 && dataName.map(item => {
-                                            return (
-                                                <div className="bodyCard">
-                                                    <button className="btnDispos">
-                                                        <img src={sign} className="imgCard" />
-                                                        <div className="txtApprove mt-4 mb-2">
-                                                            {item.name}
-                                                        </div>
-                                                    </button>
-                                                    <Row className="footCard">
-                                                        <Col md={12} xl={12}>
-                                                            <Button className="btnSell" color="info" onClick={() => this.getDataDetailApprove(item.name)}>Detail</Button>
-                                                        </Col>
-                                                    </Row>
-                                                </div>
-                                            )
-                                        })}
-                                    </Row>
+                                    <div className={style.tableDashboard}>
+                                        <Table bordered responsive hover className={style.tab}>
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Nama Approval</th>
+                                                    <th>Tipe</th>
+                                                    <th>Kode Plant</th>
+                                                    <th>Opsi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {dataName.length !== 0 && dataName.map(item => {
+                                                    return (
+                                                    <tr>
+                                                        <th scope="row">{(dataName.indexOf(item) + 1)}</th>
+                                                        <td>{item.name}</td>
+                                                        <td>{item.tipe}</td>
+                                                        <td>{item.kode_plant}</td>
+                                                        <td className='rowGeneral'>
+                                                            <Button color="info" onClick={() => this.getDataDetailApprove(item)}>Detail</Button>
+                                                            <Button onClick={() => this.prosesOpenEdit(item)} className='ml-2' color="success">Update</Button>
+                                                            <Button onClick={() => this.delName(item)} className='ml-2' color="danger">Delete</Button>
+                                                        </td>
+                                                    </tr>
+                                                )})}
+                                            </tbody>
+                                        </Table>
+                                    </div>
                                 )}
                                 <div>
                                     <div className={style.infoPageEmail}>
@@ -372,10 +444,12 @@ class Approve extends Component {
                     </MaterialTitlePanel>
                 </Sidebar>
                 <Modal toggle={this.openApproveName} isOpen={this.state.approveName} size="lg">
-                    <ModalHeader toggle={this.openApproveName}>Add Master Approve</ModalHeader>
+                    <ModalHeader toggle={this.openApproveName}>Add Master Approval</ModalHeader>
                     <Formik
                     initialValues={{
                         name: "",
+                        kode_plant: '',
+                        tipe: ''
                     }}
                     validationSchema={nameSchema}
                     onSubmit={(values) => {this.addApproveName(values)}}
@@ -383,10 +457,10 @@ class Approve extends Component {
                     {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
-                            <text className="col-md-4">
-                                Nama Template Approve
+                            <text className="col-md-3">
+                                Nama Approval
                             </text>
-                            <div className="col-md-8">
+                            <div className="col-md-9">
                                 <Input 
                                 type="text" 
                                 name="namec"
@@ -395,7 +469,63 @@ class Approve extends Component {
                                 onBlur={handleBlur("name")}
                                 />
                                 {errors.name ? (
-                                    <text className={style.txtError}>{errors.name}</text>
+                                    <text className={style.txtError}>Must Be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Tipe Approval
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select"
+                                name="tipe"
+                                value={values.tipe}
+                                onChange={handleChange("tipe")}
+                                onBlur={handleBlur("tipe")}
+                                >
+                                    <option>-Pilih Tipe Approval-</option>
+                                    <option value='all'>All</option>
+                                    <option value='area'>Area</option>
+                                </Input>
+                                {errors.tipe ? (
+                                    <text className={style.txtError}>Must Be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Area
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select"
+                                name="select"
+                                value={values.kode_plant}
+                                onChange={handleChange("kode_plant")}
+                                onBlur={handleBlur("kode_plant")}
+                                >
+                                    <option>-Pilih Area-</option>
+                                    <option 
+                                    color={values.tipe === "all" ? 'primary' : 'danger'} 
+                                    disabled={values.tipe === "all" ? false : true} 
+                                    value='all'>
+                                        All
+                                    </option>
+                                    {dataDepo.length !== 0 && dataDepo.map(item => {
+                                        return (
+                                            <option 
+                                            color={values.tipe === "area" ? 'primary' : 'danger'} 
+                                            disabled={values.tipe === "area" ? false : true} 
+                                            value={item.kode_plant}>
+                                                {item.kode_plant + '-' + item.area}
+                                            </option>
+                                        )
+                                    })}
+                                </Input>
+                                {errors.kode_plant ? (
+                                    <text className={style.txtError}>Must Be filled</text>
                                 ) : null}
                             </div>
                         </div>
@@ -404,7 +534,105 @@ class Approve extends Component {
                             <div></div>
                             <div>
                                 <Button className="mr-2" onClick={handleSubmit} color="primary">Save</Button>
-                                <Button className="mr-5" onClick={this.openModalAdd}>Cancel</Button>
+                                <Button className="" onClick={this.openApproveName}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                    )}
+                    </Formik>
+                </Modal>
+                <Modal toggle={this.openEditAppName} isOpen={this.state.editModalName} size="lg">
+                    <ModalHeader>Edit Master Approval</ModalHeader>
+                    <Formik
+                    initialValues={{
+                        name: idName.name,
+                        kode_plant: idName.kode_plant,
+                        tipe: idName.tipe
+                    }}
+                    validationSchema={nameSchema}
+                    onSubmit={(values) => {this.editApproveName(values)}}
+                    >
+                    {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                    <ModalBody>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Nama Approval
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="text" 
+                                name="namec"
+                                value={values.name}
+                                onChange={handleChange("name")}
+                                onBlur={handleBlur("name")}
+                                />
+                                {errors.name ? (
+                                    <text className={style.txtError}>Must Be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Tipe Approval
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select"
+                                name="tipe"
+                                value={values.tipe}
+                                onChange={handleChange("tipe")}
+                                onBlur={handleBlur("tipe")}
+                                >
+                                    <option>-Pilih Tipe Approval-</option>
+                                    <option value='all'>All</option>
+                                    <option value='area'>Area</option>
+                                </Input>
+                                {errors.tipe ? (
+                                    <text className={style.txtError}>Must Be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Area
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select"
+                                name="kode_plant"
+                                value={values.kode_plant}
+                                onChange={handleChange("kode_plant")}
+                                onBlur={handleBlur("kode_plant")}
+                                >
+                                    <option>-Pilih Area-</option>
+                                    <option 
+                                    color={values.tipe === "all" ? 'primary' : 'danger'} 
+                                    disabled={values.tipe === "all" ? false : true} 
+                                    value='all'>
+                                        All
+                                    </option>
+                                    {dataDepo.length !== 0 && dataDepo.map(item => {
+                                        return (
+                                            <option 
+                                            color={values.tipe === "area" ? 'primary' : 'danger'} 
+                                            disabled={values.tipe === "area" ? false : true} 
+                                            value={item.kode_plant}>
+                                                {item.kode_plant + '-' + item.area}
+                                            </option>
+                                        )
+                                    })}
+                                </Input>
+                                {errors.kode_plant ? (
+                                    <text className={style.txtError}>Must Be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <hr/>
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button className="mr-2" onClick={handleSubmit} color="primary">Save</Button>
+                                <Button className="" onClick={this.openEditAppName}>Cancel</Button>
                             </div>
                         </div>
                     </ModalBody>
@@ -688,6 +916,52 @@ class Approve extends Component {
                     )}
                     </Formik>
                 </Modal>
+                <Modal isOpen={this.state.modalConfirm} toggle={this.openConfirm} size="sm">
+                    <ModalBody>
+                        {this.state.confirm === 'editname' ? (
+                        <div className={style.cekUpdate}>
+                            <AiFillCheckCircle size={80} className={style.green} />
+                            <div className={style.sucUpdate}>Berhasil Memperbarui Nama Approval</div>
+                        </div>
+                        ) : this.state.confirm === 'falEditName' ? (
+                            <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                <div className={style.sucUpdate}>Gagal Memperbarui Nama Approval, Nama Approval Telah Terdaftar</div>
+                            </div>
+                        )  : this.state.confirm === 'falAddName' ? (
+                            <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                <div className={style.sucUpdate}>Gagal Menambahkan Nama Approval, Nama Approval Telah Terdaftar</div>
+                            </div>
+                        ) : this.state.confirm === 'addname' ? (
+                            <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={style.sucUpdate}>Berhasil Menambahkan Nama Approval</div>
+                            </div>
+                        ) : this.state.confirm === 'delname' ? (
+                            <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={style.sucUpdate}>Berhasil Menghapus Nama Approval</div>
+                            </div>
+                        ) : this.state.confirm === 'upload' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={style.sucUpdate}>Berhasil Mengupload Master Approval</div>
+                            </div>
+                            </div>
+                        ) : this.state.confirm === 'reset' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={style.sucUpdate}>Berhasil Mereset Password</div>
+                            </div>
+                            </div>
+                        ) : (
+                            <div></div>
+                        )}
+                    </ModalBody>
+                </Modal>
                 <Modal isOpen={this.props.approve.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
@@ -705,7 +979,8 @@ class Approve extends Component {
 
 const mapStateToProps = state => ({
     approve: state.approve,
-    user: state.user
+    user: state.user,
+    depo: state.depo
 })
 
 const mapDispatchToProps = {
@@ -718,7 +993,11 @@ const mapDispatchToProps = {
     getNameApprove: approve.getNameApprove,
     deleteApprove: approve.deleteApprove,
     updateApprove: approve.updateApprove,
-    getRole: user.getRole
+    getRole: user.getRole,
+    getDepo: depo.getDepo,
+    updateNameApprove: approve.updateNameApprove,
+    getDetailId: approve.getDetailId,
+    deleteNameApprove: approve.deleteNameApprove
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Approve)

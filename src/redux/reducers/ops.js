@@ -56,7 +56,8 @@ const opsState = {
     uploadBukti: null,
     isDocBukti: null,
     docBukti: [],
-    submitBukti: null
+    submitBukti: null,
+    updateNilai: null
 };
 
 export default (state=opsState, action) => {
@@ -784,6 +785,29 @@ export default (state=opsState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'UPDATE_NILAIOPS_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPDATE_NILAIOPS_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    updateNilai: true,
+                    alertMsg: 'upload bukti Succesfully',
+                };
+            }
+            case 'UPDATE_NILAIOPS_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    updateNilai: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'RESET_OPS': {
                 return {
                     ...state,
@@ -810,7 +834,8 @@ export default (state=opsState, action) => {
                     uploadBukti: null,
                     isDocBukti: null,
                     submitBukti: null,
-                    revKasbon: null
+                    revKasbon: null,
+                    updateNilai: null
                 }
             }
             default: {

@@ -76,95 +76,107 @@ class FPD extends Component {
             <Table borderless responsive className="tabPreview mt-4">
                 <thead>
                     <tr>
-                        <th className="buatPre">Dibuat oleh,</th>
-                        <th className="buatPre">Diperiksa oleh,</th>
-                        <th className="buatPre">Disetujui oleh,</th>
+                        {ttdIkk.pembuat !== undefined && ttdIkk.pembuat.length > 0 && (
+                            <th className="buatPre">Dibuat oleh,</th>
+                        )}
+                        {ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.length > 0 && (
+                            <th className="buatPre">Diperiksa oleh,</th>
+                        )}
+                        {ttdIkk.penyetuju !== undefined && ttdIkk.penyetuju.length > 0 && (
+                            <th className="buatPre">Disetujui oleh,</th>
+                        )}
                     </tr>
                 </thead>
                 <tbody className="tbodyPre">
                     <tr>
-                        <td className="restTable">
-                            <Table bordered responsive className="divPre">
-                                <thead>
-                                    <tr>
+                        {ttdIkk.pembuat !== undefined && ttdIkk.pembuat.length > 0 && (
+                            <td className="restTable">
+                                <Table bordered responsive className="divPre">
+                                    <thead>
+                                        <tr>
+                                            {ttdIkk.pembuat !== undefined && ttdIkk.pembuat.map(item => {
+                                                return (
+                                                    <th className="headPre">
+                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                    </th>
+                                                )
+                                            })}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
                                         {ttdIkk.pembuat !== undefined && ttdIkk.pembuat.map(item => {
                                             return (
-                                                <th className="headPre">
-                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                    <div>{item.nama === null ? "-" : item.nama}</div>
-                                                </th>
-                                            )
-                                        })}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                    {ttdIkk.pembuat !== undefined && ttdIkk.pembuat.map(item => {
-                                        return (
-                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                        )
-                                    })}
-                                    </tr>
-                                </tbody>
-                            </Table>
-                        </td>
-                        <td className="restTable">
-                            <Table bordered responsive className="divPre">
-                                <thead>
-                                    <tr>
-                                        {ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.length === 0 ? (
-                                            <th className="headPre">
-                                                <div className="mb-2">-</div>
-                                                <div>-</div>
-                                            </th>
-                                        ) : ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.map(item => {
-                                            return (
-                                                <th className="headPre">
-                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                    <div>{item.nama === null ? "-" : item.nama}</div>
-                                                </th>
-                                            )
-                                        })}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        {ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.length === 0 ? (
-                                            <td className="footPre">-</td>
-                                        ) : ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.map(item => {
-                                            return (
                                                 <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
                                             )
                                         })}
-                                    </tr>
-                                </tbody>
-                            </Table>
-                        </td>
-                        <td className="restTable">
-                            <Table bordered responsive className="divPre">
-                                <thead>
-                                    <tr>
-                                        {ttdIkk.penyetuju !== undefined && ttdIkk.penyetuju.map(item => {
-                                            return (
+                                        </tr>
+                                    </tbody>
+                                </Table>
+                            </td>
+                        )}
+                        {ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.length > 0 && (
+                            <td className="restTable">
+                                <Table bordered responsive className="divPre">
+                                    <thead>
+                                        <tr>
+                                            {ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.length === 0 ? (
                                                 <th className="headPre">
-                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                    <div>{item.nama === null ? "-" : item.nama}</div>
+                                                    <div className="mb-2">-</div>
+                                                    <div>-</div>
                                                 </th>
-                                            )
-                                        })}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        {ttdIkk.penyetuju !== undefined && ttdIkk.penyetuju.map(item => {
-                                            return (
-                                                <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                            )
-                                        })}
-                                    </tr>
-                                </tbody>
-                            </Table>
-                        </td>
+                                            ) : ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.map(item => {
+                                                return (
+                                                    <th className="headPre">
+                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                    </th>
+                                                )
+                                            })}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            {ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.length === 0 ? (
+                                                <td className="footPre">-</td>
+                                            ) : ttdIkk.pemeriksa !== undefined && ttdIkk.pemeriksa.map(item => {
+                                                return (
+                                                    <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                )
+                                            })}
+                                        </tr>
+                                    </tbody>
+                                </Table>
+                            </td>
+                        )}
+                        {ttdIkk.penyetuju !== undefined && ttdIkk.penyetuju.length > 0 && (
+                            <td className="restTable">
+                                <Table bordered responsive className="divPre">
+                                    <thead>
+                                        <tr>
+                                            {ttdIkk.penyetuju !== undefined && ttdIkk.penyetuju.map(item => {
+                                                return (
+                                                    <th className="headPre">
+                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                    </th>
+                                                )
+                                            })}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            {ttdIkk.penyetuju !== undefined && ttdIkk.penyetuju.map(item => {
+                                                return (
+                                                    <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                )
+                                            })}
+                                        </tr>
+                                    </tbody>
+                                </Table>
+                            </td>
+                        )}
                     </tr>
                 </tbody>
             </Table>

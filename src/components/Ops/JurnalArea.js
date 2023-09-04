@@ -15,16 +15,16 @@ class JurnalArea extends Component {
     }
 
     componentDidMount() {
-        const {detailIkk} = this.props.ikk
+        const {detailOps} = this.props.ops
         let total = 0
-        for (let i = 0; i < detailIkk.length; i++) {
-            total += parseInt(detailIkk[i].nilai_buku)
+        for (let i = 0; i < detailOps.length; i++) {
+            total += parseInt(detailOps[i].nilai_buku)
         }
         this.setState({totalfpd: total})
     }
 
   render() {
-    const {detailIkk, ttdIkk} = this.props.ikk
+    const {detailOps, ttdOps} = this.props.ops
     const {jurnal, jurnalPPh, jurnalFull} = this.state
 
     return (
@@ -33,7 +33,7 @@ class JurnalArea extends Component {
         <Table bordered responsive hover>
             <thead>
                 <tr>
-                    <th>{detailIkk.length > 0 ? detailIkk[0].depo.status_area : ''}</th>
+                    <th>{detailOps.length > 0 ? detailOps[0].depo.status_area : ''}</th>
                     <th></th>
                     <th></th>
                     <th></th>
@@ -42,7 +42,7 @@ class JurnalArea extends Component {
                 </tr>
             </thead>
             <tbody>
-                {detailIkk.length > 0 && detailIkk.map(item => {
+                {detailOps.length > 0 && detailOps.map(item => {
                     return (
                         (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi !== 'Ya' ? (
                             jurnal.map((e, index) => {
@@ -53,7 +53,7 @@ class JurnalArea extends Component {
                                     <th></th>
                                     <th></th>
                                     <th>{index === 0 ? item.nilai_buku !== null && item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ''}</th>
-                                    <th>{index === 1 ? item.nilai_buku !== null && item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ''}</th>
+                                    <th>{index === 1 ? item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ''}</th>
                                 </tr>
                                 )
                             })
@@ -99,7 +99,7 @@ const mapStateToProps = state => ({
     depo: state.depo,
     user: state.user,
     notif: state.notif,
-    ikk: state.ikk,
+    ops: state.ops,
     menu: state.menu,
     reason: state.reason
 })

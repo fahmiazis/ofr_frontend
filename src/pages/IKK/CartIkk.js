@@ -41,6 +41,7 @@ import faktur from '../../redux/actions/faktur'
 import email from '../../redux/actions/email'
 import Email from '../../components/Ikk/Email'
 import NumberInput from '../../components/NumberInput'
+import Countdown from 'react-countdown'
 const {REACT_APP_BACKEND_URL} = process.env
 const nonObject = 'Non Object PPh'
 
@@ -515,8 +516,19 @@ class CartIkk extends Component {
         });
     }
 
-    openConfirm = () => {
-        this.setState({modalConfirm: !this.state.modalConfirm})
+    openConfirm = (val) => {
+        if (val === false) {
+            this.setState({modalConfirm: false})
+        } else {
+            this.setState({modalConfirm: true})
+            setTimeout(() => {
+                this.setState({modalConfirm: false})
+             }, 3000)
+        }
+    }
+
+    rendererTime = ({ hours, minutes, seconds, completed }) => {
+        return <span>{seconds}</span>
     }
 
     dropOpen = async (val) => {
@@ -787,6 +799,7 @@ class CartIkk extends Component {
             typeniknpwp: typeniknpwp
         }
         await this.props.editIkk(token, idIkk.id, dataTrans.id, data )
+        this.openModalEdit()
     }
 
     prosesModalFpd = () => {
@@ -1340,24 +1353,24 @@ class CartIkk extends Component {
             if (tipePpn === 'Ya') {
                 if (tipe === 'PMA') {
                     const nilai_buku = nilai_dpp
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph) / 100)
+                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph))
                     const nilai_vendor = Math.ceil((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 } else if (tipe === 'Vendor') {
                     const nilai_buku = nilai_dpp
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph) / 100)
+                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph))
                     const nilai_vendor = Math.ceil((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 }
             } else {
                 if (tipe === 'PMA') {
-                    const nilai_buku = Math.ceil(parseFloat(nilai) / parseFloat(dataTrans.dpp_grossup) * 100)
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph) / 100)
+                    const nilai_buku = Math.ceil(parseFloat(nilai) / parseFloat(dataTrans.dpp_grossup))
+                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph))
                     const nilai_vendor = nilai
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 } else if (tipe === 'Vendor') {
                     const nilai_buku = nilai
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph) / 100)
+                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph))
                     const nilai_vendor = Math.ceil(parseFloat(nilai) - parseFloat(nilai_utang))
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 }
@@ -1761,7 +1774,7 @@ class CartIkk extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {this.state.status_npwp === 'Ya' && this.state.typeniknpwp === 'manual' && this.state.noNpwp.length <= 15 && this.state.noNpwp.length >= 15  ? (
+                                        {this.state.status_npwp === 'Ya' && this.state.typeniknpwp === 'manual' && this.state.noNpwp.length < 15 && this.state.noNpwp.length > 15  ? (
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
                                         ) : null}
                                         {/* <Row className="mb-2 rowRinci">
@@ -1803,7 +1816,7 @@ class CartIkk extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {this.state.status_npwp === 'Tidak' && this.state.typeniknpwp === 'manual' && this.state.noNik.length <= 16 && this.state.noNik.length >= 16 ? (
+                                        {this.state.status_npwp === 'Tidak' && this.state.typeniknpwp === 'manual' && this.state.noNik.length < 16 && this.state.noNik.length > 16 ? (
                                             <text className={style.txtError}>must be filled with 16 digits characters</text>
                                         ) : null}
                                         {/* <Row className="mb-2 rowRinci">
@@ -2404,7 +2417,7 @@ class CartIkk extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {this.state.status_npwp === 'Ya' && this.state.typeniknpwp === 'manual' && this.state.noNpwp.length <= 15 && this.state.noNpwp.length >= 15  ? (
+                                        {this.state.status_npwp === 'Ya' && this.state.typeniknpwp === 'manual' && this.state.noNpwp.length < 15 && this.state.noNpwp.length > 15  ? (
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
                                         ) : null}
                                         {/* <Row className="mb-2 rowRinci">
@@ -2446,7 +2459,7 @@ class CartIkk extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {this.state.status_npwp === 'Tidak' && this.state.typeniknpwp === 'manual' && this.state.noNik.length <= 16 && this.state.noNik.length >= 16 ? (
+                                        {this.state.status_npwp === 'Tidak' && this.state.typeniknpwp === 'manual' && this.state.noNik.length < 16 && this.state.noNik.length > 16 ? (
                                             <text className={style.txtError}>must be filled with 16 digits characters</text>
                                         ) : null}
                                         {/* <Row className="mb-2 rowRinci">
@@ -3368,8 +3381,9 @@ class CartIkk extends Component {
                         </div>
                     </div>
                 </Modal>
-                <Modal isOpen={this.state.modalConfirm} toggle={this.openConfirm}>
+                <Modal isOpen={this.state.modalConfirm} toggle={() => this.openConfirm(false)}>
                 <ModalBody>
+                <Countdown renderer={this.rendererTime} date={Date.now() + 3000} />
                     {this.state.confirm === 'addcart' ? (
                         <div>
                             <div className={style.cekUpdate}>

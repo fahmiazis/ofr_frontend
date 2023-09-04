@@ -125,7 +125,10 @@ class AjuanBayarOps extends Component {
             tipeEmail: '',
             dataRej: {},
             tipeReject: '',
-            emailReject: false
+            emailReject: false,
+            time: 'pilih',
+            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time2: moment().endOf('month').format('YYYY-MM-DD'),
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -674,6 +677,9 @@ class AjuanBayarOps extends Component {
 
     changeFilter = async (val) => {
         const {dataOps, noDis} = this.props.ops
+        const {time1, time2, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const status = level === '2'  && val === 'verif' ? 5 : 6
@@ -682,25 +688,52 @@ class AjuanBayarOps extends Component {
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'verif') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, category, status)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, category, status, cekTime1, cekTime2)
             this.setState({filter: val, newOps: newOps})
         }
+    }
+
+    changeTime = async (val) => {
+        const token = localStorage.getItem("token")
+        this.setState({time: val})
+        if (val === 'all') {
+            this.setState({time1: '', time2: ''})
+            setTimeout(() => {
+                this.getDataTime()
+             }, 500)
+        }
+    }
+
+    selectTime = (val) => {
+        this.setState({[val.type]: val.val})
+    }
+
+    getDataTime = async () => {
+        const typeKasbon = 'non kasbon'
+        const level = localStorage.getItem('level')
+        const {time1, time2, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = level === '2'  && filter === 'verif' ? 5 : 6
+        const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2)
     }
 
     prosesSubmit = async () => {
@@ -739,9 +772,15 @@ class AjuanBayarOps extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
+        const level = localStorage.getItem('level')
+        const {time1, time2, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
+        const status = level === '2'  && filter === 'verif' ? 5 : 6
+        const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
         if(e.key === 'Enter'){
-            await this.props.getAssetAll(token, 10, e.target.value, 1)
+            await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, undefined, undefined, e.target.value)
         }
     }
 
@@ -1110,6 +1149,15 @@ class AjuanBayarOps extends Component {
                                 <div className={style.titleDashboard}>Approval List Ajuan Bayar Operasional</div>
                             </div>
                             <div className={style.secEmail3}>
+                                <div className={style.searchEmail2}>
+                                    <text>Filter:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value="all">All</option>
+                                        {/* <option value="reject">Reject</option> */}
+                                        <option value={level === '2' ? "verif" : 'available'}>{level === '2' ? 'Verifikasi Tax' : 'Available approve'}</option>
+                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                    </Input>
+                                </div>
                                 <div className={style.headEmail2}>
                                     {this.state.filter === 'verif' && level === '2' ?  (
                                         <>
@@ -1122,14 +1170,41 @@ class AjuanBayarOps extends Component {
                                 <div></div>
                             </div>
                             <div className={[style.secEmail4]}>
-                                <div className={style.searchEmail2}>
-                                    <text>Filter:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="all">All</option>
-                                        {/* <option value="reject">Reject</option> */}
-                                        <option value={level === '2' ? "verif" : 'available'}>{level === '2' ? 'Verifikasi Tax' : 'Available approve'}</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                    </Input>
+                                <div className='rowCenter'>
+                                    <div className='rowCenter'>
+                                        <text className='mr-4'>Time:</text>
+                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
+                                    </div>
+                                    {this.state.time === 'pilih' ?  (
+                                        <>
+                                            <div className='rowCenter'>
+                                                <text className='bold'>:</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time1}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                />
+                                                <text className='mr-1 ml-1'>To</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time2}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                color='primary' 
+                                                onClick={this.getDataTime} 
+                                                className='ml-1'>
+                                                    Go
+                                                </Button>
+                                            </div>
+                                        </>
+                                    ) : null}
                                 </div>
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>

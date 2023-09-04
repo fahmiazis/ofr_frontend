@@ -39,6 +39,7 @@ import email from '../../redux/actions/email'
 import Email from '../../components/Ops/Email'
 import FAA from '../../components/Ops/FAA'
 import FPD from '../../components/Ops/FPD'
+import JurnalArea from '../../components/Ops/JurnalKasbon'
 const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -135,7 +136,10 @@ class Kasbon extends Component {
             time2: moment().format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
-            docCon: false
+            docCon: false,
+            tipeEmail: '',
+            dataRej: {},
+            jurnalArea: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -519,6 +523,19 @@ class Kasbon extends Component {
         this.openModalDok()
     }
 
+    prosesJurnalArea = async (val) => {
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: val.no_transaksi
+        }
+        await this.props.getDetail(token, tempno)
+        this.openJurnalArea()
+    }
+
+    openJurnalArea = () => {
+        this.setState({jurnalArea: !this.state.jurnalArea})
+    }
+
     addStock = async (val) => {
         const token = localStorage.getItem("token")
         const dataAsset = this.props.asset.assetAll
@@ -725,6 +742,30 @@ class Kasbon extends Component {
         this.openDraftEmail()
     }
 
+    prepReject = async (val) => {
+        const { detailOps } = this.props.ops
+        const token = localStorage.getItem("token")
+        const app = detailOps[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            kode: detailOps[0].kode_plant,
+            jenis: 'ops',
+            tipe: tipe,
+            menu: 'Pengajuan Operasional (Operasional)'
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
+        this.openDraftEmail()
+    }
+
     openDraftEmail = () => {
         this.setState({openDraft: !this.state.openDraft}) 
     }
@@ -735,9 +776,14 @@ class Kasbon extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
+        const typeKasbon = 'kasbon'
+        const {time1, time2, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
+        const status = filter === 'all' ? 'all' : 2
         if(e.key === 'Enter'){
-            await this.props.getAssetAll(token, 10, e.target.value, 1)
+            await this.props.getOps(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, e.target.value)
         }
     }
 
@@ -1251,6 +1297,7 @@ class Kasbon extends Component {
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            <Button size='sm' className='mb-1 mr-1' onClick={() => this.prosesJurnalArea(item)} color='primary'>Jurnal Area</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
@@ -1290,6 +1337,22 @@ class Kasbon extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
+
+                <Modal size="lg" isOpen={this.state.jurnalArea} toggle={this.openJurnalArea}>
+                    <ModalBody>
+                        <JurnalArea />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button className="mr-2" color="warning" onClick={() => this.printData('klmfpd')}>
+                            {/* <TableStock /> */}
+                            Download
+                        </Button>
+                        <Button color="success" onClick={this.openJurnalArea}>
+                            Close
+                        </Button>
+                    </ModalFooter>
+                </Modal>
+
                 <Modal isOpen={this.state.modalUpload} toggle={this.openModalUpload} size="lg">
                     <ModalHeader>
                         Upload gambar asset
@@ -1416,7 +1479,7 @@ class Kasbon extends Component {
                         </div>
                         <div className="btnFoot">
                             {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
-                                <div></div>
+                                <Button className='' onClick={() => this.prosesJurnalArea(detailOps[0])} color='success'>Jurnal</Button>
                             ) : (
                                 <>
                                     <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>

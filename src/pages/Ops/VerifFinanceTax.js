@@ -122,8 +122,8 @@ class VerifOps extends Component {
             message: '',
             subject: '',
             time: 'pilih',
-            time1: moment().startOf('week').format('YYYY-MM-DD'),
-            time2: moment().format('YYYY-MM-DD'),
+            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time2: moment().endOf('month').format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
             docCon: false,
@@ -843,9 +843,15 @@ class VerifOps extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
+        const {time1, time2, filter} = this.state
         const token = localStorage.getItem("token")
+        const level = localStorage.getItem('level')
+        const type = level === '4' || level === '14' ? 'non kasbon' : 'undefined' 
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
         if(e.key === 'Enter'){
-            await this.props.getAssetAll(token, 10, e.target.value, 1)
+            await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, e.target.value)
         }
     }
 

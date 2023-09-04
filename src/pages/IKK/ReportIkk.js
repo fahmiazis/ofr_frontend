@@ -126,8 +126,8 @@ class ReportIkk extends Component {
             modalDownload: false,
             titleDownload: '',
             time: 'pilih',
-            time1: moment().startOf('week').format('YYYY-MM-DD'),
-            time2: moment().format('YYYY-MM-DD'),
+            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time2: moment().endOf('month').format('YYYY-MM-DD'),
             jurnalMap: [1, 2],
             isLoading: false
         }
@@ -565,9 +565,13 @@ class ReportIkk extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
+        const {time1, time2, filter, time} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
+        const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
         if(e.key === 'Enter'){
-            await this.props.getAssetAll(token, 10, e.target.value, 1)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, filter, e.target.value)
         }
     }
 
@@ -813,17 +817,25 @@ class ReportIkk extends Component {
         }
     }
 
-    prosesDownload = (val) => {
+    prosesDownload = async (val) => {
         const {listIkk} = this.state
+        const token = localStorage.getItem("token")
         const {dataReport} = this.props.ikk
         const data = []
+        const list = []
         for (let i = 0; i < listIkk.length; i++) {
             for (let j = 0; j < dataReport.length; j++) {
                 if (dataReport[j].id === listIkk[i]) {
                     data.push(dataReport[j])
+                    list.push(dataReport[j].no_transaksi)
                 }
             }
         }
+        const dataSend = {
+            list: list
+        }
+        await this.props.getDetailReport(token, dataSend)
+        const {detailReport} = this.props.ikk
         this.setState({dataDownload: data, titleDownload: val})
         this.openDownload()
     }
@@ -1058,8 +1070,8 @@ class ReportIkk extends Component {
                     c1: index + 1,
                     c2: item.no_transaksi,
                     c3: 'PP01',
-                    c4: moment().format('DDMMYYYY'),
-                    c5: moment().format('DDMMYYYY'),
+                    c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                    c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                     c6: '',
                     c7: 'SA',
                     c8: item.finance.pic_console,
@@ -1085,7 +1097,7 @@ class ReportIkk extends Component {
                     c28: '',
                     c29: '',
                     c30: '',
-                    c31: '',
+                    c31: item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`,
                     c32: '',
                     c33: '',
                     c34: '',
@@ -1272,7 +1284,6 @@ class ReportIkk extends Component {
                                                     checked={listIkk.length === 0 ? false : listIkk.length === dataReport.length ? true : false}
                                                     onChange={() => listIkk.length === dataReport.length ? this.chekRejList('all') : this.chekAppList('all')}
                                                     />
-                                                    Select
                                                 </th>
                                                 <th>No</th>
                                                 <th>PIC</th>
@@ -1564,8 +1575,8 @@ class ReportIkk extends Component {
                                                             <th>{index + 1}</th>
                                                             <th>{item.no_transaksi}</th>
                                                             <th>PP01</th>
-                                                            <th>{moment().format('DDMMYYYY')}</th>
-                                                            <th>{moment().format('DDMMYYYY')}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
                                                             <th>{item.finance.pic_console}</th>
@@ -1591,7 +1602,7 @@ class ReportIkk extends Component {
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th></th>
+                                                            <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
@@ -1660,7 +1671,6 @@ class ReportIkk extends Component {
                                             checked={listMut.length === 0 ? false : listMut.length === detailIkk.length ? true : false}
                                             onChange={() => listMut.length === detailIkk.length ? this.chekRej('all') : this.chekApp('all')}
                                             />
-                                            Select
                                         </th>
                                         <th>NO</th>
                                         <th>COST CENTRE</th>
@@ -2428,7 +2438,8 @@ const mapDispatchToProps = {
     getReason: reason.getReason,
     rejectIkk: ikk.rejectIkk,
     resetIkk: ikk.resetIkk,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    getDetailReport: ikk.getDetailReport
     // notifStock: notif.notifStock
 }
 

@@ -76,13 +76,20 @@ class FPD extends Component {
             <Table borderless responsive className="tabPreview mt-4">
                 <thead>
                     <tr>
-                        <th className="buatPre">Dibuat oleh,</th>
-                        <th className="buatPre">Diperiksa oleh,</th>
-                        <th className="buatPre">Disetujui oleh,</th>
+                        {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.length > 0 && (
+                            <th className="buatPre">Dibuat oleh,</th>
+                        )}
+                        {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length > 0 && (
+                            <th className="buatPre">Diperiksa oleh,</th>
+                        )}
+                        {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.length > 0 && (
+                            <th className="buatPre">Disetujui oleh,</th>
+                        )}
                     </tr>
                 </thead>
                 <tbody className="tbodyPre">
                     <tr>
+                        {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.length > 0 && (
                         <td className="restTable">
                             <Table bordered responsive className="divPre">
                                 <thead>
@@ -108,6 +115,8 @@ class FPD extends Component {
                                 </tbody>
                             </Table>
                         </td>
+                        )}
+                        {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length > 0 && (
                         <td className="restTable">
                             <Table bordered responsive className="divPre">
                                 <thead>
@@ -140,6 +149,8 @@ class FPD extends Component {
                                 </tbody>
                             </Table>
                         </td>
+                        )}
+                        {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.length > 0 && (
                         <td className="restTable">
                             <Table bordered responsive className="divPre">
                                 <thead>
@@ -165,6 +176,7 @@ class FPD extends Component {
                                 </tbody>
                             </Table>
                         </td>
+                        )}
                     </tr>
                 </tbody>
             </Table>

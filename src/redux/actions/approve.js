@@ -11,13 +11,21 @@ export default {
         type: 'CREATE_NAME',
         payload: http(token).post(`/approve/add`, qs.stringify(data))
     }),
+    updateNameApprove: (token, data, id) => ({
+        type: 'UPDATE_NAMEAPP',
+        payload: http(token).patch(`/approve/name/edit/${id}`, qs.stringify(data))
+    }),
     getApprove: (token) => ({
         type: 'GET_APPROVE',
         payload: http(token).get(`/approve/get`)
     }),
-    getDetailApprove: (token, nama) => ({
+    getDetailApprove: (token, nama, kode) => ({
         type: 'GET_DETAIL',
-        payload: http(token).get(`/approve/detail/${nama}`)
+        payload: http(token).get(`/approve/detail?nama=${nama}&kode=${kode}`)
+    }),
+    getDetailId: (token, id) => ({
+        type: 'GET_DETAILID',
+        payload: http(token).get(`/approve/detail/name/${id}`)
     }),
     getNameApprove: (token) => ({
         type: 'GET_NAME',
@@ -30,6 +38,10 @@ export default {
     deleteApprove: (token, id) => ({
         type: 'DELETE_APPROVE',
         payload: http(token).delete(`/approve/delete/${id}`)
+    }),
+    deleteNameApprove: (token, id) => ({
+        type: 'DELETE_NAMEAPPROVE',
+        payload: http(token).delete(`/approve/delete/name/${id}`)
     }),
     resetError: () => ({
         type: 'RESET_APPROVE'

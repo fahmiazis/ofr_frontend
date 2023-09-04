@@ -39,6 +39,9 @@ import email from '../../redux/actions/email'
 import Email from '../../components/Ops/Email'
 import FAA from '../../components/Ops/FAA'
 import FPD from '../../components/Ops/FPD'
+import Countdown from 'react-countdown'
+import JurnalArea from '../../components/Ops/JurnalArea'
+import NumberInput from '../../components/NumberInput'
 const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -61,6 +64,10 @@ const addStockSchema = Yup.object().shape({
 
 const alasanSchema = Yup.object().shape({
     alasan: Yup.string()
+});
+
+const nilaiSchema = Yup.object().shape({
+    nilai_verif: Yup.string()
 });
 
 
@@ -131,16 +138,35 @@ class Ops extends Component {
             openAppDoc: false,
             openRejDoc: false,
             time: 'pilih',
-            time1: moment().startOf('week').format('YYYY-MM-DD'),
-            time2: moment().format('YYYY-MM-DD'),
+            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time2: moment().endOf('month').format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
             docCon: false,
             tipeEmail: '',
-            dataRej: {}
+            dataRej: {},
+            jurnalArea: false,
+            tipeNilai: 'all',
+            modalNilai: false,
+            nilai_verif: 0
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    openConfirm = (val) => {
+        if (val === false) {
+            this.setState({modalConfirm: false})
+        } else {
+            this.setState({modalConfirm: true})
+            setTimeout(() => {
+                this.setState({modalConfirm: false})
+             }, 3000)
+        }
+    }
+
+    rendererTime = ({ hours, minutes, seconds, completed }) => {
+        return <span>{seconds}</span>
     }
 
     submitStock = async () => {
@@ -562,27 +588,19 @@ class Ops extends Component {
         const {dataOps, noDis} = this.props.ops
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const status = 2
+        const status = val === 'bayar' || val === 'completed' ? 8 : 2
         const statusAll = 'all'
         const {time1, time2} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const typeKasbon = 'non kasbon'
-        if (val === 'available') {
+        if (val === 'all') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
-            this.setState({filter: val, newOps: newOps})
-        } else if (val === 'reject') {
-            const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
-            this.setState({filter: val, newOps: newOps})
-        } else if (val === 'revisi') {
-            const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
+            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
             this.setState({filter: val, newOps: newOps})
         }
     }
@@ -608,8 +626,8 @@ class Ops extends Component {
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
-        const status = filter === 'all' ? 'all' : 2
-        await this.props.getOps(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
+        const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8: 2
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon)
     }
     
     cekDataDoc = () => {
@@ -760,9 +778,14 @@ class Ops extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
+        const typeKasbon = 'non kasbon'
+        const {time1, time2, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
+        const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8 : 2
         if(e.key === 'Enter'){
-            await this.props.getAssetAll(token, 10, e.target.value, 1)
+            await this.props.getOps(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, e.target.value)
         }
     }
 
@@ -939,8 +962,12 @@ class Ops extends Component {
 
     getRincian = async (val) => {
         const token = localStorage.getItem("token")
-        this.setState({dataRinci: val})
-        await this.props.getDetailAsset(token, val.no_asset)
+        const {detailOps} = this.props.ops
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            id: val.id
+        }
+        await this.props.getDetailId(token, val.id)
         this.openModalEdit()
     }
 
@@ -1074,13 +1101,72 @@ class Ops extends Component {
         this.setState({drop: !this.state.drop})
     }
 
+    prosesJurnalArea = async (val) => {
+        const token = localStorage.getItem("token")
+        const tempno = {
+            no: val.no_transaksi
+        }
+        await this.props.getDetail(token, tempno)
+        this.openJurnalArea()
+    }
+
+    openJurnalArea = () => {
+        this.setState({jurnalArea: !this.state.jurnalArea})
+    }
+
+    selTipe = (val) => {
+        this.setState({tipeNilai: val})
+    }
+
+    openNilaiVerif = () => {
+        this.setState({modalNilai: !this.state.modalNilai})
+    }
+
+    updateNilai = async (val) => {
+        const token = localStorage.getItem('token')
+        const {tipeNilai, nilai_verif} = this.state
+        const {detailOps} = this.props.ops
+        const tempno = {
+            no: detailOps[0].no_transaksi
+        }
+        const data = {
+            type: tipeNilai,
+            nilai: tipeNilai === 'all' ? nilai_verif : val.nilai_verif,
+            id: tipeNilai === 'all' ? detailOps[0].id : val.id,
+            no: detailOps[0].no_transaksi
+        }
+        await this.props.updateNilaiVerif(token, data)
+        if (tipeNilai === 'all') {
+            await this.props.getDetail(token, tempno)
+            this.setState({confirm: 'inputVerif', nilai_verif: 0})
+            this.openConfirm()
+            this.openNilaiVerif()
+            this.getDataOps()
+        } else {
+            await this.props.getDetail(token, tempno)
+            this.setState({confirm: 'inputVerif', nilai_verif: 0})
+            this.openConfirm()
+            this.openModalEdit()
+            this.getDataOps()
+        }
+        
+    }
+
+    updateData = async (val) => {
+        const data = {
+            [val.target.name]: val.target.value
+        }
+        console.log(data)
+        this.setState(data)
+    }
+
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, dropApp, dataItem, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc, filter} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
+        const { noDis, detailOps, ttdOps, dataDoc, newOps, idOps } = this.props.ops
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1124,29 +1210,42 @@ class Ops extends Component {
                             </div>
                             <div className={[style.secEmail4]}>
                                 {(level === '5' || level === '6') ? (
-                                    <Button onClick={() => this.goProses({route: 'cartops', type: 'non kasbon'})} color="info" size="lg">Create</Button>
+                                    <>
+                                        <Button onClick={() => this.goProses({route: 'cartops', type: 'non kasbon'})} color="info" size="lg">Create</Button>                                    
+                                        <div className={style.searchEmail2}>
+                                            <text>Filter:  </text>
+                                            <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="bayar">Telah Bayar</option>
+                                                <option value="completed">Selesai</option>
+                                                <option value="reject">Reject</option>
+                                                {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                            </Input>
+                                        </div>
+                                    </>
                                 ) : (
-                                    <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="all">{level === '5' ? 'Proses' : 'All'}</option>
-                                            <option value="reject">Reject</option>
-                                            {level !== '5' && (
+                                    <>
+                                        <div className={style.searchEmail2}>
+                                        </div>
+                                        <div className={style.searchEmail2}>
+                                            <text>Filter:  </text>
+                                            <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="reject">Reject</option>
                                                 <option value="available">Available Approve</option>
-                                            )}
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                        </Input>
-                                    </div>
+                                                <option value="bayar">Telah Bayar</option>
+                                                <option value="completed">Selesai</option>
+                                                {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                            </Input>
+                                        </div>
+                                    </>
                                 )}
-                                <div className={style.searchEmail2}>
-                                </div>
                             </div>
                             <div className={[style.secEmail4]}>
                                 <div className='rowCenter'>
                                     <div className='rowCenter'>
-                                        <text className='mr-4'>Time:</text>
                                         <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                            <option value="all">All</option>
+                                            <option value="all">Time (All)</option>
                                             <option value="pilih">Periode</option>
                                         </Input>
                                     </div>
@@ -1208,10 +1307,10 @@ class Ops extends Component {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newOps.map(item => {
+                                            {newOps.length > 0 && newOps.filter(({ end_ops }) => (filter !== 'bayar' && filter !== 'completed') || (filter === 'completed' && end_ops !== null) || (filter === 'bayar' && end_ops === null)).map((item, index)=> {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{newOps.indexOf(item) + 1}</th>
+                                                        <th>{index + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.cost_center}</th>
                                                         <th>{item.area}</th>
@@ -1222,7 +1321,7 @@ class Ops extends Component {
                                                         <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Detail</Button>
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>{filter === 'bayar' ? 'Proses' : 'Detail'}</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
@@ -1230,7 +1329,7 @@ class Ops extends Component {
                                             })}
                                         </tbody>
                                     </Table>
-                                    {newOps.length === 0 && (
+                                    {(newOps.length === 0 || (filter === 'completed' && newOps.find(({end_ops}) => end_ops !== null) === undefined) || (filter === 'bayar' && newOps.find(({end_ops}) => end_ops === null) === undefined)) && (
                                         <div className={style.spin}>
                                             <text className='textInfo'>Data ajuan tidak ditemukan</text>
                                         </div>
@@ -1255,7 +1354,7 @@ class Ops extends Component {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newOps.map(item => {
+                                            {newOps.length > 0 && newOps.filter(({ end_ops }) => (filter !== 'bayar' && filter !== 'completed') || (filter === 'completed' && end_ops !== null) || (filter === 'bayar' && end_ops === null)).map(item => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>{newOps.indexOf(item) + 1}</th>
@@ -1270,6 +1369,7 @@ class Ops extends Component {
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            <Button size='sm' className='mb-1 mr-1' onClick={() => this.prosesJurnalArea(item)} color='primary'>Jurnal Area</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
@@ -1277,7 +1377,7 @@ class Ops extends Component {
                                             })}
                                         </tbody>
                                     </Table>
-                                    {newOps.length === 0 && (
+                                    {(newOps.length === 0 || (filter === 'completed' && newOps.find(({end_ops}) => end_ops !== null) === undefined) || (filter === 'bayar' && newOps.find(({end_ops}) => end_ops === null) === undefined)) && (
                                         <div className={style.spin}>
                                             <text className='textInfo'>Data ajuan tidak ditemukan</text>
                                         </div>
@@ -1309,33 +1409,223 @@ class Ops extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal isOpen={this.state.modalUpload} toggle={this.openModalUpload} size="lg">
+
+                <Modal size="lg" isOpen={this.state.jurnalArea} toggle={this.openJurnalArea}>
+                    <ModalBody>
+                        <JurnalArea />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button className="mr-2" color="warning" onClick={() => this.printData('klmfpd')}>
+                            {/* <TableStock /> */}
+                            Download
+                        </Button>
+                        <Button color="success" onClick={this.openJurnalArea}>
+                            Close
+                        </Button>
+                    </ModalFooter>
+                </Modal>
+
+                <Modal size="xl" className='modalrinci' isOpen={this.state.modalNilai}>
+                    <ModalBody>
+                        <div>
+                            <div className="stockTitle">INPUT NILAI YANG DITERIMA</div>
+                        </div>
+                        <div className='rowGeneral'>
+                            <Button onClick={() => this.selTipe('all')} color={this.state.tipeNilai === 'all' ? 'primary' : 'secondary'}>Input Total</Button>
+                            <Button className='ml-2' onClick={() => this.selTipe('parcial')} color={this.state.tipeNilai === 'all' ? 'secondary' : 'primary'}>Input Detail</Button>
+                        </div>
+                        <Row className="ptStock inputStock">
+                            <Col md={3} xl={3} sm={3}>Nilai Total Diterima</Col>
+                            <Col md={4} xl={4} sm={4} className="inputStock">:
+                                <Input 
+                                name='nilai_verif'
+                                disabled={this.state.tipeNilai !== 'all'}
+                                onChange={e => this.updateData({target: e.target, key: e.key})} 
+                                // value = {detailOps[0].type_nilaiverif === 'all' ? detailOps[0].nilai_verif : }
+                                className="ml-3" />
+                                <Button className='ml-2' color='primary' disabled={this.state.nilai_verif === 0 || this.state.tipeNilai !== 'all'} onClick={this.updateNilai} >Update</Button>
+                            </Col>
+                        </Row>
+                        <div className={style.tableDashboard}>
+                            <Table bordered responsive hover className={style.tab} id="table-to-xls">
+                                <thead>
+                                    <tr className='tbklaim'>
+                                        <th>NO</th>
+                                        <th>NO.AJUAN</th>
+                                        <th>COST CENTRE</th>
+                                        <th>AREA</th>
+                                        <th>NO.COA</th>
+                                        <th>NAMA COA</th>
+                                        <th>KETERANGAN TAMBAHAN</th>
+                                        <th>Nilai Ajuan</th>
+                                        <th>Nilai Bayar</th>
+                                        <th>Nilai Diterima</th>
+                                        <th>Opsi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {detailOps.length !== 0 && detailOps.map(item => {
+                                        return (
+                                            <tr>
+                                                <th scope="row">{detailOps.indexOf(item) + 1}</th>
+                                                <th>{item.no_transaksi}</th>
+                                                <th>{item.cost_center}</th>
+                                                <th>{item.area}</th>
+                                                <th>{item.no_coa}</th>
+                                                <th>{item.nama_coa}</th>
+                                                <th>{item.keterangan}</th>
+                                                <th>{item.nilai_ajuan !== null && item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nilai_bayar === null ? item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>
+                                                    {/* <Input 
+                                                    name='nilai_verif'
+                                                    disabled
+                                                    value={item.nilai_verif}
+                                                    onChange={e => this.updateData({target: e.target, key: e.key})} 
+                                                    // value = {detailOps[0].type_nilaiverif === 'all' ? detailOps[0].nilai_verif : }
+                                                    /> */}
+                                                    {item.nilai_verif !== null && item.nilai_verif.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                                </th>
+                                                <th><Button onClick={() => this.getRincian(item)} color='primary' disabled={this.state.tipeNilai === 'all'}>Update</Button></th>
+                                            </tr>
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
+                        </div>
+                    </ModalBody>
+                    <hr />
+                    <div className="modalFoot ml-3">
+                        <div></div>
+                        <div className="btnFoot">
+                            <Button color="success" onClick={this.openNilaiVerif}>
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+                <Modal isOpen={this.state.modalEdit} size="lg">
                     <ModalHeader>
-                        Upload gambar asset
+                        Input Detail Nilai Diterima
                     </ModalHeader>
                     <ModalBody>
                         <div className="mainRinci2">
-                            <div className="leftRinci2 mb-5">
-                                <div className="titRinci">{dataRinci.nama_asset}</div>
-                                {/* <img src={detRinci.img === undefined || detRinci.img.length === 0 ? placeholder : `${REACT_APP_BACKEND_URL}/${detRinci.img[detRinci.img.length - 1].path}`} className="imgRinci" /> */}
-                                <Input type="file" className='mt-2' onChange={this.uploadGambar}>Upload Picture</Input>
-                            </div>
+                            <Formik
+                            initialValues = {{
+                                id: idOps.id,
+                                keterangan: idOps.keterangan || '',
+                                periode_awal: idOps.periode_awal || '',
+                                periode_akhir: idOps.periode_akhir || '',
+                                nilai_ajuan: parseFloat(idOps.nilai_ajuan) || 0,
+                                no_transaksi: idOps.no_transaksi || '',
+                                nama_tujuan: idOps.nama_tujuan || '',
+                                status_npwp: idOps.status_npwp === 0 ? 'Tidak' : idOps.status_npwp === 1 && 'Ya',
+                                nama_npwp: idOps.nama_npwp || '',
+                                no_coa: idOps.no_coa || '',
+                                nama_coa: idOps.nama_coa || '',
+                                nama_ktp: idOps.nama_ktp || '',
+                                no_surkom: idOps.no_surkom || '',
+                                nilai_verif: idOps.nilai_verif || 0,
+                                nilai_bayar: idOps.nilai_bayar === null ? parseFloat(idOps.nilai_ajuan) : parseFloat(idOps.nilai_bayar)
+                            }}
+                            validationSchema = {nilaiSchema}
+                            onSubmit={(values) => {this.updateNilai(values)}}
+                            >
+                            {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                                <div className="rightRinci2">
+                                    <div>
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>No Ajuan</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.no_transaksi}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>No COA</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.no_coa}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nama COA</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.nama_coa}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Keterangan</Col>
+                                            <Col md={9} className="colRinci">:  <Input
+                                                disabled
+                                                type= "text" 
+                                                className="inputRinci"
+                                                value={values.keterangan}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nilai Yang Diajukan</Col>
+                                            <Col md={9} className="colRinci">:  <NumberInput 
+                                                    disabled
+                                                    value={values.nilai_ajuan}
+                                                    className="inputRinci1"
+                                                />
+                                            </Col>
+                                        </Row>
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nilai Yang Dibayarkan</Col>
+                                            <Col md={9} className="colRinci">:  <NumberInput 
+                                                    disabled
+                                                    value={values.nilai_bayar === null ? values.nilai_ajuan : values.nilai_bayar}
+                                                    className="inputRinci1"
+                                                />
+                                            </Col>
+                                        </Row>
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Nilai Yang Diterima</Col>
+                                            <Col md={9} className="colRinci">:  <NumberInput 
+                                                    value={values.nilai_verif}
+                                                    className="inputRinci1"
+                                                    onValueChange={val => setFieldValue("nilai_verif", val.floatValue)}
+                                                />
+                                            </Col>
+                                        </Row>
+                                        {values.nilai_verif === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
+                                    </div>
+                                    <div className="modalFoot mt-3">
+                                        <div></div>
+                                        <div className='btnfoot'>
+                                            <Button 
+                                                className="mr-3" 
+                                                size="md" 
+                                                disabled={values.nilai_verif === 0}
+                                                color="primary" 
+                                                onClick={handleSubmit}>
+                                                Update
+                                            </Button>
+                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalEdit()}>Close</Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            </Formik>
                         </div>
                     </ModalBody>
-                    <ModalFooter>
-                        <Button color='primary' onClick={this.openModalUpload}>Done</Button>
-                    </ModalFooter>
                 </Modal>
-                <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
-                    <ModalHeader>
-                        Rincian
-                    </ModalHeader>
-                </Modal>
-                <Modal isOpen={this.state.modalStock} toggle={this.openModalStock} size="lg">
-                    <ModalHeader>
-                        Rincian
-                    </ModalHeader>
-                </Modal>
+
                 <Modal isOpen={this.state.modalRinci} className='modalrinci'  toggle={this.openModalRinci} size="xl">
                     <ModalBody>
                         <div>
@@ -1384,6 +1674,7 @@ class Ops extends Component {
                                         <th>PPN</th>
                                         <th>PPh</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
+                                        <th>NILAI YANG DITERIMA</th>
                                         <th>TANGGAL TRANSFER</th>
                                         <th>Jenis PPh</th>
                                         <th>Status</th>
@@ -1413,10 +1704,11 @@ class Ops extends Component {
                                                 <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                <th>{item.dpp}</th>
-                                                <th>{item.ppn}</th>
-                                                <th>{item.nilai_utang}</th>
-                                                <th>{item.nilai_bayar}</th>
+                                                <th>{item.dpp !== null && item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nilai_bayar === null ? item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nilai_verif !== null && item.nilai_verif.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.tanggal_transfer}</th>
                                                 <th>{item.jenis_pph}</th>
                                                 <th>{item.isreject === 1 ? 'reject' : '-'}</th>
@@ -1435,7 +1727,14 @@ class Ops extends Component {
                         </div>
                         <div className="btnFoot">
                             {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
-                                <div></div>
+                                <>
+                                    {(filter === 'bayar' || filter === 'completed') && (
+                                        <Button className="mr-2"  color="danger" onClick={this.openNilaiVerif}>
+                                            Input Nilai Diterima
+                                        </Button>
+                                    )}
+                                    <Button className='' onClick={() => this.prosesJurnalArea(detailOps[0])} color='success'>Jurnal</Button>
+                                </>
                             ) : (
                                 <>
                                     <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
@@ -1603,8 +1902,9 @@ class Ops extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
-            <Modal isOpen={this.state.modalConfirm} toggle={this.openConfirm}>
+            <Modal isOpen={this.state.modalConfirm} toggle={() => this.openConfirm(false)}>
                 <ModalBody>
+                    {/* <Countdown renderer={this.rendererTime} date={Date.now() + 3000} /> */}
                     {this.state.confirm === 'approve' ? (
                         <div>
                             <div className={style.cekUpdate}>
@@ -1673,6 +1973,13 @@ class Ops extends Component {
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'inputVerif' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Update Nilai Yang Diterima</div>
                             </div>
                         </div>
                     ) : (
@@ -1932,7 +2239,9 @@ const mapDispatchToProps = {
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
     approveDokumen: dokumen.approveDokumen,
-    rejectDokumen: dokumen.rejectDokumen
+    rejectDokumen: dokumen.rejectDokumen,
+    getDetailId: ops.getDetailId,
+    updateNilaiVerif: ops.updateNilaiVerif
     // notifStock: notif.notifStock
 }
 

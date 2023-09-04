@@ -125,16 +125,12 @@ class ReportKlaim extends Component {
             dataDownload: [],
             modalDownload: false,
             titleDownload: '',
-            listKlaim: [],
             time: 'pilih',
-            time1: moment().startOf('week').format('YYYY-MM-DD'),
-            time2: moment().format('YYYY-MM-DD'),
-            openDown: false,
+            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time2: moment().endOf('month').format('YYYY-MM-DD'),
             isLoading: false,
-            dataDownload: [],
-            titleDownload: '',
-            modalJurnal: false,
-            modalDownload: false
+            tipeJurnal: 1,
+            jurnalMap: [1, 2],
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -385,12 +381,167 @@ class ReportKlaim extends Component {
         this.setState({isLoading: val})
     }
 
+    downloadJurnalFirst = async () => {
+        this.setLoading(true)
+        const { dataDownload, jurnalMap } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('file upload klaim')
+        
+        // await ws.protect(REACT_APP_PASSWORD)
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+                {header: 'no', key: 'c1'},
+                {header: 'header_text', key: 'c2'},
+                {header: 'comp_code', key: 'c3'},
+                {header: 'doc_date', key: 'c4'},
+                {header: 'post_date', key: 'c5'},
+                {header: 'period', key: 'c6'},
+                {header: 'doc_type', key: 'c7'},
+                {header: 'ref_doc_no', key: 'c8'},
+                {header: 'curr', key: 'c9'},
+                {header: 'item_no', key: 'c10'},
+                {header: 'gl_acc', key: 'c11'},
+                {header: 'post_key', key: 'c12'},
+                {header: 'gl_indic', key: 'c13'},
+                {header: 'func_area', key: 'c14'},
+                {header: 'amount', key: 'c15'},
+                {header: 'tax_code', key: 'c16'},
+                {header: 'cost_ctr', key: 'c17'},
+                {header: 'wbs_elemnt', key: 'c18'},
+                {header: 'aufnr', key: 'c19'},
+                {header: 'item_text', key: 'c20'},
+                {header: 'valdate', key: 'c21'},
+                {header: 'bsldate', key: 'c22'},
+                {header: 'payterm', key: 'c23'},
+                {header: 'paymeth', key: 'c24'},
+                {header: 'parbank', key: 'c25'},
+                {header: 'houbank', key: 'c26'},
+                {header: 'prctr', key: 'c27'},
+                {header: 'gsber', key: 'c28'},
+                {header: 'vat_base', key: 'c29'},
+                {header: 'account_id', key: 'c30'},
+                {header: 'assignment', key: 'c31'},
+                {header: 'ref_key(head)', key: 'c32'},
+                {header: 'ref_key(head2)', key: 'c33'},
+                {header: 'ref_key 3', key: 'c34'},
+        ]
+
+        ws.addRow(
+            {
+                c1: 'No Identifikasi',
+                c2: 'Text Bebas',
+                c3: 'Kode',
+                c4: 'Tanggal Faktur',
+                c5: 'Tanggal Posting',
+                c6: '',
+                c7: 'Tipe Dokumen',
+                c8: 'No Dokumen Pendukung',
+                c9: 'Mata Uang',
+                c10: 'Nomor Item',
+                c11: 'Nomor Akun',
+                c12: 'Posting Key',
+                c13: 'Kode Special',
+                c14: 'Kosongi Saja',
+                c15: 'Jumlah',
+                c16: 'Kode PPN',
+                c17: 'Cost Center',
+                c18: 'No WBSt',
+                c19: 'Kode Order',
+                c20: 'Text Bebas',
+                c21: 'Kosongi',
+                c22: 'Tanggal',
+                c23: 'TOP',
+                c24: 'Metode',
+                c25: 'Kode Rekening',
+                c26: 'Kode Cabang',
+                c27: 'Profit Center',
+                c28: 'SBU',
+                c29: 'DPP PPN',
+                c30: 'Nomor ID',
+                c31: 'Untuk AP',
+                c32: 'Status Payment',
+                c33: 'Hanya diisi',
+                c34: 'Hanya diisi'
+            }
+        )
+
+        dataDownload.map((item, index) => { return (
+            jurnalMap.map((x, iter) => {
+                return (  ws.addRow({
+                    c1: index + 1,
+                    c2: item.no_transaksi,
+                    c3: 'PP01',
+                    c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                    c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                    c6: '',
+                    c7: 'SA',
+                    c8: item.finance.pic_console,
+                    c9: 'IDR',
+                    c10: iter + 1,
+                    c11: iter === 0 ? item.finance.gl_kk : '11010401',
+                    c12: iter === 0 ? 40 : 50,
+                    c13: '',
+                    c14: '',
+                    c15: item.nilai_ajuan,
+                    c16: '',
+                    c17: '',
+                    c18: '',
+                    c19: '',
+                    c20: item.keterangan,
+                    c21: '',
+                    c22: '',
+                    c23: '',
+                    c24: '',
+                    c25: '',
+                    c26: '',
+                    c27: item.depo.profit_center,
+                    c28: '',
+                    c29: '',
+                    c30: '',
+                    c31: '',
+                    c32: '',
+                    c33: '',
+                    c34: '',
+                })
+                )
+            })
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+        })
+        
+        ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 2
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `FIle Upload Jurnal Klaim ${moment().format('DD MMMM YYYY')}.xlsx`
+            )
+        })
+        this.setLoading(false)
+    }
+
     downloadJurnal = async () => {
         this.setLoading(true)
         const { dataDownload, jurnalMap } = this.state
 
         const workbook = new ExcelJS.Workbook();
-        const ws = workbook.addWorksheet('file upload ikk')
+        const ws = workbook.addWorksheet('file upload klaim')
         
         // await ws.protect(REACT_APP_PASSWORD)
 
@@ -441,9 +592,9 @@ class ReportKlaim extends Component {
 
         dataDownload.map((item, index) => { return (
             ws.addRow({
-                c1: moment().format('DDMMYYYY'),
+                c1: moment(item.tanggal_transfer).format('DDMMYYYY'),
                 c2: 'PP01',
-                c3: moment().format('DDMMYYYY'),
+                c3: moment(item.tanggal_transfer).format('DDMMYYYY'),
                 c4: 'IDR',
                 c5: item.finance.pic_console,
                 c6: item.no_transaksi,
@@ -653,10 +804,9 @@ class ReportKlaim extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter, time} = this.state
+        const {time1, time2, filter} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
-        console.log(cekTime1)
         const token = localStorage.getItem("token")
         const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
         await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, filter)
@@ -684,9 +834,13 @@ class ReportKlaim extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
+        const {time1, time2, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
+        const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
         if(e.key === 'Enter'){
-            await this.props.getAssetAll(token, 10, e.target.value, 1)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, filter, e.target.value)
         }
     }
 
@@ -969,6 +1123,10 @@ class ReportKlaim extends Component {
         this.setState({modalDownload: !this.state.modalDownload})
     }
 
+    selTipe = (val) => {
+        this.setState({tipeJurnal: val})
+    }
+
     downloadKlaim = async () => {
         const { dataDownload } = this.state
 
@@ -1092,7 +1250,7 @@ class ReportKlaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listKlaim, drop, listReason, dataMenu, listMenu, dataDownload} = this.state
+        const {dataRinci, jurnalMap, dropApp, dataItem, listKlaim, drop, listReason, dataMenu, listMenu, dataDownload} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim, dataReport } = this.props.klaim
@@ -1474,7 +1632,12 @@ class ReportKlaim extends Component {
                         Download Jurnal
                     </ModalHeader>
                     <ModalBody>
+                        <div className='rowGeneral'>
+                            <Button onClick={() => this.selTipe(1)} color={this.state.tipeJurnal === 1 ? 'primary' : 'secondary'}>Tipe 1</Button>
+                            <Button className='ml-2' onClick={() => this.selTipe(2)} color={this.state.tipeJurnal === 1 ? 'secondary' : 'primary'}>Tipe 2</Button>
+                        </div>
                         <div className={style.tableDashboard}>
+                            {this.state.tipeJurnal === 1 ? (
                             <Table bordered responsive hover className='tabjurnal'>
                                 <thead>
                                     <tr>
@@ -1516,9 +1679,9 @@ class ReportKlaim extends Component {
                                     {dataDownload.length !== 0 && dataDownload.map((item, index) => {
                                         return (
                                             <tr>
-                                                <th>{moment().format('DDMMYYYY')}</th>
+                                                <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                 <th>PP01</th>
-                                                <th>{moment().format('DDMMYYYY')}</th>
+                                                <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                 <th>IDR</th>
                                                 <th>{item.finance.pic_console}</th>
                                                 <th>{item.no_transaksi}</th>
@@ -1536,13 +1699,138 @@ class ReportKlaim extends Component {
                                         })}
                                 </tbody>
                             </Table>
+                            ) : (
+                                <Table bordered responsive hover className='tabjurnal'>
+                                <thead>
+                                    <tr>
+                                        <th>no</th>
+                                        <th>header_text</th>
+                                        <th>comp_code</th>
+                                        <th>doc_date</th>
+                                        <th>post_date</th>
+                                        <th>period</th>
+                                        <th>doc_type</th>
+                                        <th>ref_doc_no</th>
+                                        <th>curr</th>
+                                        <th>item_no</th>
+                                        <th>gl_acc</th>
+                                        <th>post_key</th>
+                                        <th>gl_indic</th>
+                                        <th>func_area</th>
+                                        <th>amount</th>
+                                        <th>tax_code</th>
+                                        <th>cost_ctr</th>
+                                        <th>wbs_elemnt</th>
+                                        <th>aufnr</th>
+                                        <th>item_text</th>
+                                        <th>valdate</th>
+                                        <th>bsldate</th>
+                                        <th>payterm</th>
+                                        <th>paymeth</th>
+                                        <th>parbank</th>
+                                        <th>houbank</th>
+                                        <th>prctr</th>
+                                        <th>gsber</th>
+                                        <th>vat_base</th>
+                                        <th>account_id</th>
+                                        <th>assignment</th>
+                                        <th>ref_key(head)</th>
+                                        <th>ref_key(head2)</th>
+                                        <th>ref_key 3</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <th>No Identifikasi</th>
+                                        <th>Text Bebas</th>
+                                        <th>Kode</th>
+                                        <th>Tanggal Faktur</th>
+                                        <th>Tanggal Posting</th>
+                                        <th></th>
+                                        <th>Tipe Dokumen</th>
+                                        <th>No Dokumen Pendukung</th>
+                                        <th>Mata Uang</th>
+                                        <th>Nomor Item</th>
+                                        <th>Nomor Akun</th>
+                                        <th>Posting Key</th>
+                                        <th>Kode Special</th>
+                                        <th>Kosongi Saja</th>
+                                        <th>Jumlah</th>
+                                        <th>Kode PPN</th>
+                                        <th>Cost Center</th>
+                                        <th>No WBSt</th>
+                                        <th>Kode Order</th>
+                                        <th>Text Bebas</th>
+                                        <th>Kosongi</th>
+                                        <th>Tanggal</th>
+                                        <th>TOP</th>
+                                        <th>Metode</th>
+                                        <th>Kode Rekening</th>
+                                        <th>Kode Cabang</th>
+                                        <th>Profit Center</th>
+                                        <th>SBU</th>
+                                        <th>DPP PPN</th>
+                                        <th>Nomor ID</th>
+                                        <th>Untuk AP</th>
+                                        <th>Status Payment</th>
+                                        <th>Hanya diisi</th>
+                                        <th>Hanya diisi</th>
+                                    </tr>
+                                    {dataDownload.length !== 0 && dataDownload.map((item, index) => {
+                                        return (
+                                            jurnalMap.map((x, iter) => {
+                                                return (
+                                                    <tr>
+                                                        <th>{index + 1}</th>
+                                                        <th>{item.no_transaksi}</th>
+                                                        <th>PP01</th>
+                                                        <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                        <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                        <th></th>
+                                                        <th>SA</th>
+                                                        <th>{item.finance.pic_console}</th>
+                                                        <th>IDR</th>
+                                                        <th>{iter + 1}</th>
+                                                        <th>{iter === 0 ? item.finance.gl_kk : '11010401'}</th>
+                                                        <th>{iter === 0 ? 40 : 50}</th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th>{item.nilai_ajuan}</th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th>{item.keterangan}</th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th>{iter === 0 ? item.depo.profit_center : 'P01H000001'}</th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                    </tr>
+                                                )
+                                            })
+                                            
+                                            )
+                                        })}
+                                </tbody>
+                            </Table>
+                            )}
                         </div>
                     </ModalBody>
                     <hr />
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color='warning' onClick={this.downloadJurnal} >Download</Button>
+                            <Button className="mr-2" color='warning' onClick={this.state.tipeJurnal === 1 ? this.downloadJurnal : this.downloadJurnalFirst} >Download</Button>
                             <Button color="success" onClick={this.openJurnal}>
                                 Close
                             </Button>

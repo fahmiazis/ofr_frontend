@@ -121,9 +121,9 @@ class ReportIkk extends Component {
             tipeCol: '',
             formDis: false,
             history: false,
-            time: '',
-            time1: '',
-            time2: '',
+            time: 'pilih',
+            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time2: moment().endOf('month').format('YYYY-MM-DD'),
             listIkk: [],
             dataDownload: [],
             modalDownload: false,
@@ -259,12 +259,12 @@ class ReportIkk extends Component {
                 c19: item.no_npwp,
                 c20: item.no_ktp,
                 c21: item.jenis_pph,
-                c22: item.veriftax !== null && item.veriftax.tax_type,
-                c23: item.veriftax !== null && item.veriftax.tax_code,
-                c24: item.veriftax !== null ? '' : item.veriftax.taxcode !== null && item.veriftax.taxcode.tax_objdesc,
-                c25: item.nilai_ajuan,
-                c26: item.nilai_buku,
-                c27: item.nilai_utang,
+                c22: item.tax_type,
+                c23: item.tax_code,
+                c24: item.taxcode !== null && item.taxcode.tax_objdesc,
+                c25: item.nilai_ajuan !== null && item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c26: item.nilai_buku !== null && item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c27: item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
             }
         )
         ) })
@@ -697,12 +697,11 @@ class ReportIkk extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter, time} = this.state
+        const {time1, time2, filter} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
-        console.log(cekTime1)
         const token = localStorage.getItem("token")
-        const status = filter === 'reject' ? 6 : 7
+        const status = filter === 'reject' ? 6 : 8
         await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
     }
 
@@ -727,10 +726,13 @@ class ReportIkk extends Component {
     }
 
     onSearch = async (e) => {
-        this.setState({search: e.target.value})
+        const {time1, time2, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
+        const status = filter === 'reject' ? 6 : 8
         if(e.key === 'Enter'){
-            await this.props.getAssetAll(token, 10, e.target.value, 1)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, e.target.value)
         }
     }
 
@@ -941,7 +943,7 @@ class ReportIkk extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataDownload, listMut, drop, listReason, dataMenu, listMenu, listIkk} = this.state
+        const {dataRinci, filter, dataDownload, listMut, drop, listReason, dataMenu, listMenu, listIkk} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailIkk, ttdIkk, dataDoc, newIkk, dataReport } = this.props.ikk
@@ -986,10 +988,33 @@ class ReportIkk extends Component {
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Report Tax (Ikhtisar Kas Kecil)</div>
                             </div>
-                            <div className={style.secEmail3}>
+                            {/* <div className={style.secEmail3}>
                                 <Button onClick={this.prosesDownload} className="btn btn-success mr-2">Download</Button>
                                 <div></div>
+                            </div> */}
+                            <div className={[style.secEmail4]}>
+                                <div className={style.searchEmail2}>
+                                    <Button onClick={this.prosesDownload} className="btn btn-success mr-2">Download</Button>
+                                    {/* <text>Status:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value="reject">Reject</option>
+                                        <option value="all">All</option>
+                                        <option value="revisi">Available Reapprove (Revisi)</option>
+                                    </Input> */}
+                                </div>
+                                <div className={style.searchEmail2}>
+                                    <text>Filter:  </text>
+                                    <Input className={style.filter} type="select" value={this.state.statKlaim} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value='all'>All</option>
+                                        {/* <option value={2} >Pengajuan Area</option>
+                                        <option value={3} >Verifikasi Finance</option>
+                                        <option value={4} >Verifikasi Tax</option> */}
+                                        <option value="reject">Reject</option>
+                                        <option value='selesai'>Transaksi Selesai</option>
+                                    </Input>
+                                </div>
                             </div>
+
                             <div className={[style.secEmail4]}>
                                 <div className={style.headEmail2}>
                                     <Input className={style.filter2} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
@@ -1003,12 +1028,14 @@ class ReportIkk extends Component {
                                                 <Input
                                                     type= "date" 
                                                     className="inputRinci"
+                                                    value={this.state.time1}
                                                     onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
                                                 />
                                                 <text className='mr-1 ml-1'>To</text>
                                                 <Input
                                                     type= "date" 
                                                     className="inputRinci"
+                                                    value={this.state.time2}
                                                     onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
                                                 />
                                                 <Button
@@ -1022,27 +1049,7 @@ class ReportIkk extends Component {
                                         </>
                                     ) : null}
                                 </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Status:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="reject">Reject</option>
-                                        <option value="all">All</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                    </Input>
-                                </div>
-                            </div>
-
-                            <div className={[style.secEmail4]}>
-                                <div className={style.searchEmail2}>
-                                    <text>Status:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.statKlaim} onChange={e => this.changeStatKlaim(e.target.value)}>
-                                        <option value='all'>All</option>
-                                        <option value={2} >Pengajuan Area</option>
-                                        <option value={3} >Verifikasi Finance</option>
-                                        <option value={4} >Verifikasi Tax</option>
-                                        <option value={7} >Transaksi Selesai</option>
-                                    </Input>
-                                </div>
+                                
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 
@@ -1095,7 +1102,7 @@ class ReportIkk extends Component {
                                                 <th>Gross Expense</th>
                                                 <th>Tax Base</th>
                                                 <th>PPh Amount</th>
-                                                {/* <th>STATUS</th> */}
+                                                <th>Status</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1130,18 +1137,24 @@ class ReportIkk extends Component {
                                                         <th>{item.no_npwp}</th>
                                                         <th>{item.no_ktp}</th>
                                                         <th>{item.jenis_pph}</th>
-                                                        <th>{item.veriftax !== null && item.veriftax.tax_type}</th>
-                                                        <th>{item.veriftax !== null && item.veriftax.tax_code}</th>
-                                                        <th>{item.veriftax !== null ? '' : item.veriftax.taxcode !== null && item.veriftax.taxcode.tax_objdesc}</th>
-                                                        <th>{item.nilai_ajuan}</th>
-                                                        <th>{item.nilai_buku}</th>
-                                                        <th>{item.nilai_utang}</th>
+                                                        <th>{item.tax_type}</th>
+                                                        <th>{item.tax_code}</th>
+                                                        <th>{item.taxcode !== null && item.taxcode.tax_objdesc}</th>
+                                                        <th>{item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                        <th>{item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                        <th>{item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                        <th>{item.status_transaksi === 8 ? 'Transaksi selesai' : item.status_transaksi === 4 ? 'Verifikasi Finance' : item.status_transaksi === 5 ? 'Verifikasi Tax' : item.status_transaksi === 2 ? 'Approval Area' : filter === 'reject' && 'Reject'}</th>
                                                         {/* <th>{item.history.split(',').reverse()[0]}</th> */}
                                                     </tr>
                                                 )
                                             })}
                                         </tbody>
                                     </Table>
+                                    {dataReport.length === 0  && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data tidak ditemukan</text>
+                                        </div>
+                                    )}
                                 </div>
                             <div>
                                 <div className={style.infoPageEmail1}>
@@ -1224,7 +1237,6 @@ class ReportIkk extends Component {
                                             checked={listMut.length === 0 ? false : listMut.length === detailIkk.length ? true : false}
                                             onChange={() => listMut.length === detailIkk.length ? this.chekRej('all') : this.chekApp('all')}
                                             />
-                                            Select
                                         </th>
                                         <th>NO</th>
                                         <th>COST CENTRE</th>
@@ -1277,8 +1289,8 @@ class ReportIkk extends Component {
                                                 <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
                                                 <th>{item.ppu}</th>
                                                 <th>{item.pa}</th>
-                                                <th>{item.nominal}</th>
-                                                <th>{item.nilai_bayar}</th>
+                                                <th>{item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.tanggal_transfer}</th>
                                                 <th>{item.isreject === 1 ? 'reject' : '-'}</th>
                                             </tr>
@@ -1345,7 +1357,6 @@ class ReportIkk extends Component {
                                     <th>Gross Expense</th>
                                     <th>Tax Base</th>
                                     <th>PPh Amount</th>
-                                    {/* <th>STATUS</th> */}
                                 </tr>
                             </thead>
                             <tbody>
@@ -1373,12 +1384,12 @@ class ReportIkk extends Component {
                                             <th>{item.no_npwp}</th>
                                             <th>{item.no_ktp}</th>
                                             <th>{item.jenis_pph}</th>
-                                            <th>{item.veriftax !== null && item.veriftax.tax_type}</th>
-                                            <th>{item.veriftax !== null && item.veriftax.tax_code}</th>
-                                            <th>{item.veriftax !== null ? '' : item.veriftax.taxcode !== null && item.veriftax.taxcode.tax_objdesc}</th>
-                                            <th>{item.nilai_ajuan}</th>
-                                            <th>{item.nilai_buku}</th>
-                                            <th>{item.nilai_utang}</th>
+                                            <th>{item.tax_type}</th>
+                                            <th>{item.tax_code}</th>
+                                            <th>{item.taxcode !== null && item.taxcode.tax_objdesc}</th>
+                                            <th>{item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                            <th>{item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                            <th>{item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                             {/* <th>{item.history.split(',').reverse()[0]}</th> */}
                                         </tr>
                                     )
