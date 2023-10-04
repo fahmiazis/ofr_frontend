@@ -991,7 +991,6 @@ class RevisiIkk extends Component {
                                     </Input>
                                 </div>
                             </div>
-                            {level === '5' ? (
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
@@ -1031,53 +1030,12 @@ class RevisiIkk extends Component {
                                             })}
                                         </tbody>
                                     </Table>
+                                    {newIkk.length === 0 && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data revisi tidak ditemukan</text>
+                                        </div>
+                                    )}
                                 </div>
-                            ) : (
-                                noDis.length === 0 ? (
-                                    <div></div>
-                                ) : (
-                                    <div className={style.tableDashboard}>
-                                        <Table bordered responsive hover className={style.tab} id="table-klaim">
-                                            <thead>
-                                                <tr>
-                                                    <th>No</th>
-                                                    <th>NO.AJUAN</th>
-                                                    <th>COST CENTRE</th>
-                                                    <th>AREA</th>
-                                                    <th>NO.COA</th>
-                                                    <th>NAMA COA</th>
-                                                    <th>KETERANGAN TAMBAHAN</th>
-                                                    <th>PERIODE</th>
-                                                    <th>STATUS</th>
-                                                    <th>ALASAN</th>
-                                                    <th>OPSI</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {newIkk.map(item => {
-                                                    return (
-                                                        <tr>
-                                                            <th>{newIkk.indexOf(item) + 1}</th>
-                                                            <th>{item.no_transaksi}</th>
-                                                            <th>{item.cost_center}</th>
-                                                            <th>{item.area}</th>
-                                                            <th>{item.no_coa}</th>
-                                                            <th>{item.nama_coa}</th>
-                                                            <th>{item.uraian}</th>
-                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
-                                                            <th>{item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 2 ? 'Proses Approval' : ''}</th>
-                                                            <th>{item.reason}</th>
-                                                            <th>
-                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
-                                                            </th>
-                                                        </tr>
-                                                    )
-                                                })}
-                                            </tbody>
-                                        </Table>
-                                    </div>
-                                )
-                            )}
                             <div>
                                 <div className={style.infoPageEmail1}>
                                     <text>Showing 1 of 1 pages</text>

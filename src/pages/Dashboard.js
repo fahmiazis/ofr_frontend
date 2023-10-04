@@ -138,7 +138,16 @@ class Klaim extends Component {
             typeTrans: '',
             statKlaim: 'all',
             statOps: 'all',
-            statIkk: 'all'
+            statIkk: 'all',
+            timeKlaim: 'pilih',
+            time1Klaim: moment().startOf('month').format('YYYY-MM-DD'),
+            time2Klaim: moment().endOf('month').format('YYYY-MM-DD'),
+            timeOps: 'pilih',
+            time1Ops: moment().startOf('month').format('YYYY-MM-DD'),
+            time2Ops: moment().endOf('month').format('YYYY-MM-DD'),
+            timeIkk: 'pilih',
+            time1Ikk: moment().startOf('month').format('YYYY-MM-DD'),
+            time2Ikk: moment().endOf('month').format('YYYY-MM-DD'),
 
         }
         this.onSetOpen = this.onSetOpen.bind(this);
@@ -441,24 +450,27 @@ class Klaim extends Component {
     }
 
     changeFilterKlaim = async (val) => {
-        const {statKlaim} = this.state
+        const {time1Klaim, time2Klaim, statKlaim} = this.state
+        const cekTime1 = time1Klaim === '' ? 'undefined' : time1Klaim
+        const cekTime2 = time2Klaim === '' ? 'undefined' : time2Klaim
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const status = statKlaim
         const tipe = status === '3' || status === '4' ? 'verif' : status === '6' ? 'ajuan bayar' : 'approve'
-        console.log(tipe)
         const newKlaim = []
-        await this.props.getKlaim(token, status, 'all', 'all', val, tipe)
+        await this.props.getKlaim(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2)
         this.setState({filter: val, newKlaim: newKlaim})
     }
 
     changeStatKlaim = async (val) => {
-        const {filter} = this.state
+        const {time1Klaim, time2Klaim, filter} = this.state
+        const cekTime1 = time1Klaim === '' ? 'undefined' : time1Klaim
+        const cekTime2 = time2Klaim === '' ? 'undefined' : time2Klaim
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const tipe = val === '3' || val === '4' ? 'verif' : val === '6' ? 'ajuan bayar' : 'approve'
         const status = val
-        await this.props.getKlaim(token, status, 'all', 'all', filter, tipe)
+        await this.props.getKlaim(token, status, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2)
         this.setState({statKlaim: val})
     }
 
@@ -468,25 +480,29 @@ class Klaim extends Component {
     }
 
     changeFilterIkk = async (val) => {
-        const {statIkk} = this.state
+        const {statIkk, time1Ikk, time2Ikk} = this.state
+        const cekTime1 = time1Ikk === '' ? 'undefined' : time1Ikk
+        const cekTime2 = time2Ikk === '' ? 'undefined' : time2Ikk
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const status = statIkk
         const tipe = status === '3' || status === '4' ? 'verif' : status === '6' ? 'ajuan bayar' : 'approve'
         const newIkk = []
-        await this.props.getIkk(token, status, 'all', 'all', val, tipe)
+        await this.props.getIkk(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2)
         this.setState({filterIkk: val, newIkk: newIkk})
     }
 
     changeStatIkk = async (val) => {
-        const {filterIkk} = this.state
+        const {filterIkk, time1Ikk, time2Ikk} = this.state
+        const cekTime1 = time1Ikk === '' ? 'undefined' : time1Ikk
+        const cekTime2 = time2Ikk === '' ? 'undefined' : time2Ikk
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const tipe = val === '3' || val === '4' ? 'verif' : val === '6' ? 'ajuan bayar' : 'approve'
         const status = val
         console.log(typeof status)
         console.log(tipe, filterIkk, status)
-        await this.props.getIkk(token, status, 'all', 'all', filterIkk, tipe)
+        await this.props.getIkk(token, status, 'all', 'all', filterIkk, tipe, 'undefined', cekTime1, cekTime2)
         this.setState({statIkk: val})
     }
 
@@ -496,23 +512,27 @@ class Klaim extends Component {
     }
 
     changeFilterOps = async (val) => {
-        const {statOps} = this.state
+        const {statOps, time1Ops, time2Ops} = this.state
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
+        const cekTime1 = time1Ops === '' ? 'undefined' : time1Ops
+        const cekTime2 = time2Ops === '' ? 'undefined' : time2Ops
         const status = statOps
         const tipe = status === '3' || status === '4' ? 'verif' : status === '6' ? 'ajuan bayar' : 'approve'
         const newOps = []
-        await this.props.getOps(token, status, 'all', 'all', val, tipe)
+        await this.props.getOps(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2)
         this.setState({filterOps: val, newOps: newOps})
     }
 
     changeStatOps = async (val) => {
-        const {filterOps} = this.state
+        const {filterOps, time1Ops, time2Ops} = this.state
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
+        const cekTime1 = time1Ops === '' ? 'undefined' : time1Ops
+        const cekTime2 = time2Ops === '' ? 'undefined' : time2Ops
         const tipe = val === '3' || val === '4' ? 'verif' : val === '6' ? 'ajuan bayar' : 'approve'
         const status = val
-        await this.props.getOps(token, status, 'all', 'all', filterOps, tipe)
+        await this.props.getOps(token, status, 'all', 'all', filterOps, tipe, 'undefined', cekTime1, cekTime2)
         this.setState({statOps: val})
     }
 
@@ -891,6 +911,85 @@ class Klaim extends Component {
         this.setState({drop: !this.state.drop})
     }
 
+    changeTimeKlaim = async (val) => {
+        const token = localStorage.getItem("token")
+        this.setState({timeKlaim: val})
+        if (val === 'all') {
+            this.setState({time1Klaim: '', time2Klaim: ''})
+            setTimeout(() => {
+                this.getDataTimeKlaim()
+             }, 500)
+        }
+    }
+
+    selectTimeKlaim = (val) => {
+        this.setState({[val.type]: val.val})
+    }
+
+    getDataTimeKlaim = async () => {
+        const {time1Klaim, time2Klaim, filter, statKlaim} = this.state
+        const cekTime1 = time1Klaim === '' ? 'undefined' : time1Klaim
+        const cekTime2 = time2Klaim === '' ? 'undefined' : time2Klaim
+        const token = localStorage.getItem("token")
+        const statNow = statKlaim
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' ? 'ajuan bayar' : 'approve'
+        const status = statKlaim
+        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2)
+    }
+
+    changeTimeOps = async (val) => {
+        const token = localStorage.getItem("token")
+        this.setState({timeOps: val})
+        if (val === 'all') {
+            this.setState({time1Ops: '', time2Ops: ''})
+            setTimeout(() => {
+                this.getDataTimeOps()
+             }, 500)
+        }
+    }
+
+    selectTimeOps = (val) => {
+        this.setState({[val.type]: val.val})
+    }
+
+    getDataTimeOps = async () => {
+        const {time1Ops, time2Ops, filterOps, statOps} = this.state
+        const cekTime1 = time1Ops === '' ? 'undefined' : time1Ops
+        const cekTime2 = time2Ops === '' ? 'undefined' : time2Ops
+        const statNow = statOps
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' ? 'ajuan bayar' : 'approve'
+        const token = localStorage.getItem("token")
+        const status = statOps
+        await this.props.getOps(token, filterOps === 'all' ? 'all' : status, 'all', 'all', filterOps, tipe, 'undefined', cekTime1, cekTime2)
+    }
+
+    changeTimeIkk = async (val) => {
+        const token = localStorage.getItem("token")
+        this.setState({timeIkk: val})
+        if (val === 'all') {
+            this.setState({time1Ikk: '', time2Ikk: ''})
+            setTimeout(() => {
+                this.getDataTimeIkk()
+             }, 500)
+        }
+    }
+
+    selectTimeIkk = (val) => {
+        this.setState({[val.type]: val.val})
+    }
+
+    getDataTimeIkk = async () => {
+        const {time1Ikk, time2Ikk, filterIkk, statIkk} = this.state
+        const cekTime1 = time1Ikk === '' ? 'undefined' : time1Ikk
+        const cekTime2 = time2Ikk === '' ? 'undefined' : time2Ikk
+        const token = localStorage.getItem("token")
+        const statNow = statIkk
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' ? 'ajuan bayar' : 'approve'
+        const status = statIkk
+        await this.props.getIkk(token, filterIkk === 'all' ? 'all' : status, 'all', 'all', filterIkk, tipe, 'undefined', cekTime1, cekTime2)
+    }
+
+
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
@@ -947,6 +1046,53 @@ class Klaim extends Component {
                             <div className='boxDash'>
                                 <div className='subtitle'>Klaim</div>
                                 <div className={style.secEmail3}>
+                                    <Button color='primary' onClick={() => this.goRoute('klaim')}>More Data</Button>
+                                    <div className={style.searchEmail2}>
+                                        <text>Filter:  </text>
+                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilterKlaim(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                        </Input>
+                                    </div>
+                                </div>
+                                <div className={[style.secEmail4]}>
+                                    <div className='rowCenter'>
+                                        <div className='rowCenter'>
+                                            {/* <text className='mr-4'>Time:</text> */}
+                                            <Input className={style.filter3} type="select" value={this.state.timeKlaim} onChange={e => this.changeTimeKlaim(e.target.value)}>
+                                                <option value="all">Time (All)</option>
+                                                <option value="pilih">Periode</option>
+                                            </Input>
+                                        </div>
+                                        {this.state.timeKlaim === 'pilih' ?  (
+                                            <>
+                                                <div className='rowCenter'>
+                                                    <text className='bold'>:</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        value={this.state.time1Klaim}
+                                                        onChange={e => this.selectTimeKlaim({val: e.target.value, type: 'time1Klaim'})}
+                                                    />
+                                                    <text className='mr-1 ml-1'>To</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        value={this.state.time2Klaim}
+                                                        onChange={e => this.selectTimeKlaim({val: e.target.value, type: 'time2Klaim'})}
+                                                    />
+                                                    <Button
+                                                    disabled={this.state.time1Klaim === '' || this.state.time2Klaim === '' ? true : false} 
+                                                    color='primary' 
+                                                    onClick={this.getDataTimeKlaim} 
+                                                    className='ml-1'>
+                                                        Go
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : null}
+                                    </div>
                                     <div className={style.searchEmail2}>
                                         <text>Status:  </text>
                                         <Input className={style.filter} type="select" value={this.state.statKlaim} onChange={e => this.changeStatKlaim(e.target.value)}>
@@ -957,18 +1103,6 @@ class Klaim extends Component {
                                             <option value={4} >Verifikasi Klaim</option>
                                         </Input>
                                     </div>
-                                    <div></div>
-                                </div>
-                                <div className={[style.secEmail4]}>
-                                    <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilterKlaim(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="reject">Reject</option>
-                                            <option value="available">Available Approve</option>
-                                        </Input>
-                                    </div>
-                                    <Button color='primary' onClick={() => this.goRoute('klaim')}>More Data</Button>
                                 </div>
                                 <div className={style.tableDashboard}>
                                     <TblHead tagBody={
@@ -1005,11 +1139,64 @@ class Klaim extends Component {
                                             <Spinner type="grow" color="info"/>
                                         </div>
                                     )}
+                                    {(newKlaim.length === 0 || (this.state.filter === 'completed' && newKlaim.find(({end_klaim}) => end_klaim !== null) === undefined) || (this.state.filter === 'bayar' && newKlaim.find(({end_klaim}) => end_klaim === null) === undefined)) && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className='boxDash'>
                                 <div className='subtitle'>Operasional</div>
                                 <div className={style.secEmail3}>
+                                    <Button color='primary' onClick={() => this.goRoute('ops')}>More Data</Button>
+                                    <div className={style.searchEmail2}>
+                                        <text>Filter:  </text>
+                                        <Input className={style.filter} type="select" value={this.state.filterOps} onChange={e => this.changeFilterOps(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        </Input>
+                                    </div>
+                                </div>
+                                <div className={[style.secEmail4]}>
+                                    <div className='rowCenter'>
+                                        <div className='rowCenter'>
+                                            {/* <text className='mr-4'>Time:</text> */}
+                                            <Input className={style.filter3} type="select" value={this.state.timeOps} onChange={e => this.changeTimeOps(e.target.value)}>
+                                                <option value="all">Time (All)</option>
+                                                <option value="pilih">Periode</option>
+                                            </Input>
+                                        </div>
+                                        {this.state.timeOps === 'pilih' ?  (
+                                            <>
+                                                <div className='rowCenter'>
+                                                    <text className='bold'>:</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        value={this.state.time1Ops}
+                                                        onChange={e => this.selectTimeOps({val: e.target.value, type: 'time1Ops'})}
+                                                    />
+                                                    <text className='mr-1 ml-1'>To</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        value={this.state.time2Ops}
+                                                        onChange={e => this.selectTimeOps({val: e.target.value, type: 'time2Ops'})}
+                                                    />
+                                                    <Button
+                                                    disabled={this.state.time1Ops === '' || this.state.time2Ops === '' ? true : false} 
+                                                    color='primary' 
+                                                    onClick={this.getDataTimeOps} 
+                                                    className='ml-1'>
+                                                        Go
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : null}
+                                    </div>
                                     <div className={style.searchEmail2}>
                                         <text>Status:  </text>
                                         <Input className={style.filter} type="select" value={this.state.statOps} onChange={e => this.changeStatOps(e.target.value)}>
@@ -1020,19 +1207,6 @@ class Klaim extends Component {
                                             <option value={4} >Verifikasi Tax</option>
                                         </Input>
                                     </div>
-                                    <div></div>
-                                </div>
-                                <div className={[style.secEmail4]}>
-                                    <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filterOps} onChange={e => this.changeFilterOps(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="reject">Reject</option>
-                                            <option value="available">Available Approve</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                        </Input>
-                                    </div>
-                                    <Button color='primary' onClick={() => this.goRoute('ops')}>More Data</Button>
                                 </div>
                                 <div className={style.tableDashboard}>
                                     <TblHead tagBody={
@@ -1069,11 +1243,64 @@ class Klaim extends Component {
                                             <Spinner type="grow" color="info"/>
                                         </div>
                                     )}
+                                    {(newOps.length === 0 || (this.state.filterOps === 'completed' && newOps.find(({end_ops}) => end_ops !== null) === undefined) || (this.state.filterOps === 'bayar' && newOps.find(({end_ops}) => end_ops === null) === undefined)) && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className='boxDash mb-4'>
                                 <div className='subtitle'>Ikhtisar Kas Kecil</div>
                                 <div className={style.secEmail3}>
+                                    <Button color='primary' onClick={() => this.goRoute('ikk')}>More Data</Button>
+                                    <div className={style.searchEmail2}>
+                                        <text>Filter:  </text>
+                                        <Input className={style.filter} type="select" value={this.state.filterIkk} onChange={e => this.changeFilterIkk(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        </Input>
+                                    </div>
+                                </div>
+                                <div className={[style.secEmail4]}>
+                                    <div className='rowCenter'>
+                                        <div className='rowCenter'>
+                                            {/* <text className='mr-4'>Time:</text> */}
+                                            <Input className={style.filter3} type="select" value={this.state.timeIkk} onChange={e => this.changeTimeIkk(e.target.value)}>
+                                                <option value="all">Time (All)</option>
+                                                <option value="pilih">Periode</option>
+                                            </Input>
+                                        </div>
+                                        {this.state.timeIkk === 'pilih' ?  (
+                                            <>
+                                                <div className='rowCenter'>
+                                                    <text className='bold'>:</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        value={this.state.time1Ikk}
+                                                        onChange={e => this.selectTimeIkk({val: e.target.value, type: 'time1Ikk'})}
+                                                    />
+                                                    <text className='mr-1 ml-1'>To</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        value={this.state.time2Ikk}
+                                                        onChange={e => this.selectTimeIkk({val: e.target.value, type: 'time2Ikk'})}
+                                                    />
+                                                    <Button
+                                                    disabled={this.state.time1Ikk === '' || this.state.time2Ikk === '' ? true : false} 
+                                                    color='primary' 
+                                                    onClick={this.getDataTimeIkk} 
+                                                    className='ml-1'>
+                                                        Go
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : null}
+                                    </div>
                                     <div className={style.searchEmail2}>
                                         <text>Status:  </text>
                                         <Input className={style.filter} type="select" value={this.state.statIkk} onChange={e => this.changeStatIkk(e.target.value)}>
@@ -1084,19 +1311,6 @@ class Klaim extends Component {
                                             <option value={4} >Verifikasi Tax</option>
                                         </Input>
                                     </div>
-                                    <div></div>
-                                </div>
-                                <div className={[style.secEmail4]}>
-                                    <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filterIkk} onChange={e => this.changeFilterIkk(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="reject">Reject</option>
-                                            <option value="available">Available Approve</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                        </Input>
-                                    </div>
-                                    <Button color='primary' onClick={() => this.goRoute('ikk')}>More Data</Button>
                                 </div>
                                 <div className={style.tableDashboard}>
                                     <TblHead tagBody={
@@ -1145,6 +1359,11 @@ class Klaim extends Component {
                                             <Spinner type="grow" color="warning"/>
                                             <Spinner type="grow" className="mr-3 ml-3" color="danger"/>
                                             <Spinner type="grow" color="info"/>
+                                        </div>
+                                    )}
+                                    {(newIkk.length === 0 || (this.state.filterIkk === 'completed' && newIkk.find(({end_ikk}) => end_ikk !== null) === undefined) || (this.state.filterIkk === 'bayar' && newIkk.find(({end_ikk}) => end_ikk === null) === undefined)) && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
                                         </div>
                                     )}
                                 </div>

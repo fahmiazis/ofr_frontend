@@ -390,8 +390,9 @@ class RevisiOps extends Component {
     async componentDidMount() {
         // const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
+        const type = localStorage.getItem('tipeKasbon')
         await this.props.getBank(token)
-        await this.props.getCoa(token, 'kasbon')
+        await this.props.getCoa(token, type === 'kasbon' ? 'kasbon' :'ops')
         await this.props.getVendor(token)
         this.getDataOps()
     }

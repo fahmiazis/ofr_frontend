@@ -1021,16 +1021,18 @@ class VerifIkk extends Component {
         } else {
             const tempdoc = []
             for (let i = 0; i < dataDoc.length; i++) {
-                const arr = dataDoc[i]
-                const stat = arr.status
-                const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
-                const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
-                if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
-                    tempdoc.push(arr)
-                    console.log('masuk if')
-                } else {
-                    console.log('masuk else')
-                    console.log(cekLevel)
+                if (dataDoc[i].path !== null) {
+                    const arr = dataDoc[i]
+                    const stat = arr.status
+                    const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+                    const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+                    if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
+                        tempdoc.push(arr)
+                        console.log('masuk if')
+                    } else {
+                        console.log('masuk else')
+                        console.log(cekLevel)
+                    }
                 }
             }
             if (tempdoc.length === dataDoc.length) {
@@ -2135,17 +2137,18 @@ class VerifIkk extends Component {
                                             </div> */}
                                         </Col>
                                     ) : (
-                                        <Col md={6} lg={6} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
-                                            <div className="colDoc">
-                                                <input
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                            </div>
-                                            <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
-                                        </Col>
+                                        // <Col md={6} lg={6} className="colDoc">
+                                        //     <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
+                                        //     <div className="colDoc">
+                                        //         <input
+                                        //         type="file"
+                                        //         onClick={() => this.setState({detail: x})}
+                                        //         onChange={this.onChangeUpload}
+                                        //         />
+                                        //     </div>
+                                        //     <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                        // </Col>
+                                        <div></div>
                                     )}
                                 </Row>
                             )

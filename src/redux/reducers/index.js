@@ -26,6 +26,8 @@ import taxcode from './taxcode'
 import klaim from './klaim'
 import ikk from './ikk'
 import ops from './ops'
+//notif
+import notif from './notif'
 
 export default combineReducers({
   auth,
@@ -50,5 +52,6 @@ export default combineReducers({
   kliring,
   finance,
   reservoir,
-  taxcode
+  taxcode,
+  notif
 })

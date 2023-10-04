@@ -9,7 +9,7 @@ import placeholder from  "../assets/img/placeholder.png"
 import stockPicture from '../assets/img/stock.svg'
 import {Formik} from 'formik'
 import user from '../redux/actions/user'
-// import notif from '../redux/actions/notif'
+import notif from '../redux/actions/notif'
 import * as Yup from 'yup'
 import {VscAccount} from 'react-icons/vsc'
 import logo from "../assets/img/logo.png"
@@ -146,12 +146,13 @@ class Home extends Component {
         }
     }
 
-    componentDidMount() {
+    async componentDidMount() {
+        const token = localStorage.getItem('token')
         const email = localStorage.getItem('email')
         const fullname = localStorage.getItem('fullname')
         const id = localStorage.getItem('id')
         const level = localStorage.getItem('level')
-        // this.getNotif()
+        await this.props.getAllNotif(token)
         if (email === 'null' || email === '' || fullname === 'null' || fullname === '') {
             if (id !== null && level !== '5') {
                 this.openModalEdit()
@@ -182,8 +183,7 @@ class Home extends Component {
         const {dataNull} = this.state
         const id = localStorage.getItem('id')
         const { alertM, alertMsg } = this.props.user
-        // const dataNotif = this.props.notif.data
-        const dataNotif = []
+        const {dataAllNotif} = this.props.notif
         return (
             <>
             <div className="bodyHome">
@@ -194,7 +194,7 @@ class Home extends Component {
                     <div className="bodyAkun">
                         <div></div>
                         <div className="akun">
-                            <Bell dataNotif={dataNotif} color={"black"}/>
+                            <Bell dataNotif={dataAllNotif} color={"black"}/>
                             <Account color={"black"}/>
                         </div>
                     </div>
@@ -399,7 +399,7 @@ class Home extends Component {
 const mapStateToProps = state => ({
     auth: state.auth,
     user: state.user,
-    // notif: state.notif
+    notif: state.notif
 })
 
 const mapDispatchToProps = {
@@ -407,7 +407,7 @@ const mapDispatchToProps = {
     reset: user.resetError,
     logout: auth.logout,
     changePassword: user.changePassword,
-    // getNotif: notif.getNotif,
+    getAllNotif: notif.getAllNotif,
     // upNotif: notif.upNotif
 }
 

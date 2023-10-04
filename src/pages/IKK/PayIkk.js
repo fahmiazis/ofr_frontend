@@ -1137,9 +1137,9 @@ class AjuanBayarIkk extends Component {
                 c7: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c8: item.no_transaksi.slice(0, 19),
                 c9: '',
-                c10: item.bank_tujuan === 'Bank Mandiri' ? 'IBU' : 'LBU',
-                c11: item.bank_tujuan === 'Bank Mandiri' ? '' : '',
-                c12: item.bank_tujuan === 'Bank Mandiri' ? '' : item.bank_tujuan,
+                c10: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
+                c11: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : '',
+                c12: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.bank_tujuan,
                 c13: '',
                 c14: '',
                 c15: '',
@@ -1211,9 +1211,9 @@ class AjuanBayarIkk extends Component {
                 item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 item.no_transaksi.slice(0, 19),
                 "",
-                item.bank_tujuan === 'Bank Mandiri' ? 'IBU' : 'LBU',
-                item.bank_tujuan === 'Bank Mandiri' ? '' : '',
-                item.bank_tujuan === 'Bank Mandiri' ? '' : item.bank_tujuan,
+                item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
+                item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : '',
+                item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.bank_tujuan,
                 "",
                 "",
                 "",
@@ -2016,9 +2016,9 @@ class AjuanBayarIkk extends Component {
                                                 <th className='tabRep'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th >{item.no_transaksi.slice(0, 19)}</th>
                                                 <th ></th>
-                                                <th className='tabRep'>{item.bank_tujuan === 'Bank Mandiri' ? 'IBU' : 'LBU'}</th>
-                                                <th className='tabRep'>{item.bank_tujuan === 'Bank Mandiri' ? '' : item.kliring.sandi_kliring !== undefined ? item.kliring.sandi_kliring : ''}</th>
-                                                <th >{item.bank_tujuan === 'Bank Mandiri' ? '' : item.bank_tujuan }</th>
+                                                <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU'}</th>
+                                                <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.sandi_kliring !== undefined ? item.kliring.sandi_kliring : ''}</th>
+                                                <th >{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.bank_tujuan }</th>
                                                 <th ></th>
                                                 <th ></th>
                                                 <th ></th>

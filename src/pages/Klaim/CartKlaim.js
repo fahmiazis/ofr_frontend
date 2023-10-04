@@ -1399,8 +1399,8 @@ class CartKlaim extends Component {
                                                 type= "text" 
                                                 className="inputRinci"
                                                 disabled={this.state.digit === 0 ? true : false}
-                                                minLength={this.state.digit}
-                                                maxLength={this.state.digit}
+                                                minLength={this.state.digit === null ? 10 : this.state.digit}
+                                                maxLength={this.state.digit === null ? 16 : this.state.digit}
                                                 value={values.norek_ajuan}
                                                 onBlur={handleBlur("norek_ajuan")}
                                                 onChange={handleChange("norek_ajuan")}
@@ -1408,7 +1408,9 @@ class CartKlaim extends Component {
                                             )}
                                             </Col>
                                         </Row>
-                                        {(errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit) && this.state.tujuan_tf !== 'PMA'? (
+                                        {this.state.digit !== null && values.norek_ajuan.length !== this.state.digit && this.state.tujuan_tf !== 'PMA'? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : this.state.digit === null && (values.norek_ajuan.length < 10 || values.norek_ajuan.length > 16) && this.state.tujuan_tf !== 'PMA'? (
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                         ) : this.state.tujuan_tf === 'PMA' && this.state.norek.length !== this.state.digit ? (
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
@@ -1774,8 +1776,8 @@ class CartKlaim extends Component {
                                                 type= "text" 
                                                 className="inputRinci"
                                                 disabled={this.state.digit === 0 ? true : false}
-                                                minLength={this.state.digit}
-                                                maxLength={this.state.digit}
+                                                minLength={this.state.digit === null ? 10 : this.state.digit}
+                                                maxLength={this.state.digit === null ? 16 : this.state.digit}
                                                 value={values.norek_ajuan}
                                                 onBlur={handleBlur("norek_ajuan")}
                                                 onChange={handleChange("norek_ajuan")}
@@ -1783,7 +1785,9 @@ class CartKlaim extends Component {
                                             )}
                                             </Col>
                                         </Row>
-                                        {(errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit) && this.state.tujuan_tf !== 'PMA'? (
+                                        {this.state.digit !== null && values.norek_ajuan.length !== this.state.digit && this.state.tujuan_tf !== 'PMA'? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : this.state.digit === null && (values.norek_ajuan.length < 10 || values.norek_ajuan.length > 16) && this.state.tujuan_tf !== 'PMA'? (
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                         ) : this.state.tujuan_tf === 'PMA' && this.state.norek.length !== this.state.digit ? (
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>

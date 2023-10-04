@@ -94,8 +94,7 @@ class NavBar extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        // const { data } = this.props.notif
-        const data = []
+        const { dataAllNotif } = this.props.notif
         const id = localStorage.getItem('id')
         return (
             <>
@@ -105,7 +104,7 @@ class NavBar extends Component {
                 </marquee>
                 <div className={style.textLogo}>
                     {/* <Button onClick={() => this.cek('king')}>klik guys</Button> */}
-                    <Bell dataNotif={data} />
+                    <Bell dataNotif={dataAllNotif} />
                     <Account />
                 </div>
             </div>

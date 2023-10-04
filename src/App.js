@@ -7,7 +7,7 @@ import PrivateRoute from './components/PrivateRoute'
 
 import Login from './pages/Login'
 import Home from './pages/Home'
-import Notif from './pages/Notif'
+import Notif from './pages/Master/Notif'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 

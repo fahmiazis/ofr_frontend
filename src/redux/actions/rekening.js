@@ -3,9 +3,9 @@ import http from '../../helpers/http'
 import qs from 'qs'
 
 export default {
-    getRek: (token) => ({
+    getRek: (token, tipe) => ({
         type: 'GET_REKENING',
-        payload: http(token).get(`/rekening/all`),
+        payload: http(token).get(`/rekening/all?tipe=${tipe}`),
     }),
     getAllRek: (token, limit, search, page) => ({
         type: 'GET_ALL_REKENING',

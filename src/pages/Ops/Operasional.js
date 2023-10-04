@@ -42,6 +42,8 @@ import FPD from '../../components/Ops/FPD'
 import Countdown from 'react-countdown'
 import JurnalArea from '../../components/Ops/JurnalArea'
 import NumberInput from '../../components/NumberInput'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -148,10 +150,30 @@ class Ops extends Component {
             jurnalArea: false,
             tipeNilai: 'all',
             modalNilai: false,
-            nilai_verif: 0
+            nilai_verif: 0,
+            dataZip: [],
+            listReject: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    rejectApp = (val) => {
+        const data = [val]
+        this.setState({listReject: data})
+    }
+
+    rejectRej = (val) => {
+        const {listReject} = this.state
+        const data = []
+        for (let i = 0; i < listReject.length; i++) {
+            if (listReject[i] === val) {
+                data.push()
+            } else {
+                data.push(listReject[i])
+            }
+        }
+        this.setState({listReject: data})
     }
 
     openConfirm = (val) => {
@@ -163,6 +185,61 @@ class Ops extends Component {
                 this.setState({modalConfirm: false})
              }, 3000)
         }
+    }
+
+    checkDoc = (val) => {
+        const { dataZip } = this.state
+        const {dataDoc} = this.props.ops
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataDoc.length; i++) {
+                data.push(dataDoc[i].id)
+            }
+            this.setState({dataZip: data})
+        } else {
+            dataZip.push(val)
+            this.setState({dataZip: dataZip})
+        }
+    }
+
+    unCheckDoc = (val) => {
+        const {dataZip} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({dataZip: data})
+        } else {
+            const data = []
+            for (let i = 0; i < dataZip.length; i++) {
+                if (dataZip[i] === val) {
+                    data.push()
+                } else {
+                    data.push(dataZip[i])
+                }
+            }
+            this.setState({dataZip: data})
+        }
+    }
+
+    downloadDataZip = () => {
+        const {dataZip} = this.state
+        const {dataDoc} = this.props.ops
+        let zip = new JSZip();
+    
+        const remoteZips = dataDoc.map(async (item) => {
+            const cekData = dataZip.find(e => e === item.id)
+            if (cekData !== undefined) {
+                const response = await fetch(`${REACT_APP_BACKEND_URL}/show/doc/${item.id}`);
+                const data = await response.blob();
+                zip.file(`${item.desc} ~ ${item.history}`, data);
+                return data;
+            }
+        })
+
+        Promise.all(remoteZips).then(() => {
+            zip.generateAsync({ type: "blob" }).then((content) => {
+              saveAs(content, `Dokumen Lampiran ${dataDoc[0].no_transaksi} ${moment().format('DDMMYYYY h:mm:ss')}.zip`);
+            })
+          })
     }
 
     rendererTime = ({ hours, minutes, seconds, completed }) => {
@@ -246,6 +323,7 @@ class Ops extends Component {
 
     rejectOps = async (val) => {
         const {listMut, listReason, listMenu} = this.state
+        const { listReject } = this.state
         const { detailOps } = this.props.ops
         const token = localStorage.getItem('token')
         const tempno = {
@@ -259,7 +337,8 @@ class Ops extends Component {
             no: detailOps[0].no_transaksi,
             list: listMut,
             alasan: temp + val.alasan,
-            menu: listMenu.toString()
+            menu: listMenu.toString(),
+            type_reject: listReject[0]
         }
         await this.props.rejectOps(token, data)
         this.dataSendEmail('reject')
@@ -634,20 +713,22 @@ class Ops extends Component {
         const { dataDoc } = this.props.ops
         const level = localStorage.getItem("level")
         const tempdoc = []
+        const arrDoc = []
         for (let i = 0; i < dataDoc.length; i++) {
-            const arr = dataDoc[i]
-            const stat = arr.status
-            const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
-            const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
-            if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
-                tempdoc.push(arr)
-                console.log('masuk if')
-            } else {
-                console.log('masuk else')
-                console.log(cekLevel)
+            if (dataDoc[i].path !== null) {
+                const arr = dataDoc[i]
+                const stat = arr.status
+                const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+                const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+                if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
+                    tempdoc.push(arr)
+                    arrDoc.push(arr)
+                } else {
+                    arrDoc.push(arr)
+                }
             }
         }
-        if (tempdoc.length === dataDoc.length) {
+        if (tempdoc.length === arrDoc.length) {
             this.openModalApprove()
         } else {
             this.setState({confirm: 'appNotifDoc'})
@@ -746,6 +827,7 @@ class Ops extends Component {
 
     prepReject = async (val) => {
         const { detailOps } = this.props.ops
+        const { listReject } = this.state
         const token = localStorage.getItem("token")
         const app = detailOps[0].appForm
         const tempApp = []
@@ -760,6 +842,7 @@ class Ops extends Component {
             kode: detailOps[0].kode_plant,
             jenis: 'ops',
             tipe: tipe,
+            typeReject: listReject[0],
             menu: 'Pengajuan Operasional (Operasional)'
         }
         await this.props.getDraftEmail(token, tempno)
@@ -914,7 +997,7 @@ class Ops extends Component {
     }
 
     openModalDoc = () => {
-        this.setState({modalDoc: !this.state.modalDoc})
+        this.setState({modalDoc: !this.state.modalDoc, dataZip: []})
     }
 
     approveDoc = async () => {
@@ -1163,7 +1246,7 @@ class Ops extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc, filter} = this.state
+        const {listReject, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc, filter, dataZip} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, idOps } = this.props.ops
@@ -1368,7 +1451,7 @@ class Ops extends Component {
                                                         <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>{filter === 'available' ? 'Proses' : 'Detail'}</Button>
                                                             <Button size='sm' className='mb-1 mr-1' onClick={() => this.prosesJurnalArea(item)} color='primary'>Jurnal Area</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
@@ -1798,7 +1881,29 @@ class Ops extends Component {
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
                                 <div className='mb-2 quest'>Anda yakin untuk reject ?</div>
-                                <div className='mb-2 titStatus'>Pilih alasan :</div>
+                                <div className='mb-2 titStatus'>Pilih reject :</div>
+                                    <div className="ml-2">
+                                        <Input
+                                        addon
+                                        type="checkbox"
+                                        checked= {listReject.find(element => element === 'perbaikan') !== undefined ? true : false}
+                                        onClick={listReject.find(element => element === 'perbaikan') === undefined ? () => this.rejectApp('perbaikan') : () => this.rejectRej('perbaikan')}
+                                        />  Perbaikan
+                                    </div>
+                                    <div className="ml-2">
+                                        <Input
+                                        addon
+                                        type="checkbox"
+                                        checked= {listReject.find(element => element === 'pembatalan') !== undefined ? true : false}
+                                        onClick={listReject.find(element => element === 'pembatalan') === undefined ? () => this.rejectApp('pembatalan') : () => this.rejectRej('pembatalan')}
+                                        />  Pembatalan
+                                    </div>
+                                <div className='ml-2'>
+                                    {listReject.length === 0 ? (
+                                        <text className={style.txtError}>Must be filled</text>
+                                    ) : null}
+                                </div>
+                                <div className='mb-2 mt-3 titStatus'>Pilih alasan :</div>
                                 {dataReason.length > 0 && dataReason.map(item => {
                                     return (
                                     <div className="ml-2">
@@ -1825,7 +1930,7 @@ class Ops extends Component {
                                 onBlur={handleBlur('alasan')}
                                 />
                                 <div className='ml-2'>
-                                    {listReason.length === 0 ? (
+                                    {listReason.length === 0 && (values.alasan === '.' || values.alasan === '')? (
                                         <text className={style.txtError}>Must be filled</text>
                                     ) : null}
                                 </div>
@@ -1842,8 +1947,16 @@ class Ops extends Component {
                                     </div>
                                     )
                                 })}
+                                <div className='ml-2'>
+                                    {listMenu.length === 0 ? (
+                                        <text className={style.txtError}>Must be filled</text>
+                                    ) : null}
+                                </div>
                                 <div className={style.btnApprove}>
-                                    <Button color="primary" disabled={(values.alasan === '.' || values.alasan === '') && (listReason.length === 0 || listMenu.length === 0) ? true : false} onClick={handleSubmit}>Submit</Button>
+                                    <Button 
+                                    color="primary" 
+                                    disabled={((values.alasan === '.' || values.alasan === '') && listReason.length === 0) || (listMenu.length === 0 || listReject.length === 0) ? true : false}
+                                    onClick={handleSubmit}>Submit</Button>
                                     <Button className='ml-2' color="secondary" onClick={this.openModalReject}>Close</Button>
                                 </div>
                             </div>
@@ -2003,12 +2116,34 @@ class Ops extends Component {
                 </ModalHeader>
                 <ModalBody>
                     <Container>
-                        {dataDoc !== undefined && dataDoc.map(x => {
+                        {dataDoc.length >= 0 && (
+                            <Row className="mt-3 mb-4">
+                                <Col md={12} lg={12} className='mb-2' >
+                                    <div className="btnDocIo mb-2 ml-4" >
+                                        <Input 
+                                            type='checkbox'
+                                            checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
+                                            onChange={() => dataZip.length === dataDoc.length ? this.unCheckDoc('all') : this.checkDoc('all')}
+                                        />
+                                        Ceklis All
+                                    </div>
+                                </Col>
+                            </Row>
+                        )}
+
+                        {dataDoc.length !== 0 && dataDoc.map(x => {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
-                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
+                                            <div className="btnDocIo mb-2 ml-4" >
+                                                <Input 
+                                                    type='checkbox'
+                                                    checked={dataZip.find(element => element === x.id) !== undefined ? true : false}
+                                                    onChange={dataZip.find(element => element === x.id) === undefined ? () => this.checkDoc(x.id) : () => this.unCheckDoc(x.id)}
+                                                />
+                                                {x.desc === null ? 'Lampiran' : x.desc}
+                                            </div>
                                                 {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
                                                 x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
                                                 : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
@@ -2031,17 +2166,18 @@ class Ops extends Component {
                                             </div> */}
                                         </Col>
                                     ) : (
-                                        <Col md={6} lg={6} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
-                                            <div className="colDoc">
-                                                <input
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                            </div>
-                                            <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
-                                        </Col>
+                                        // <Col md={6} lg={6} className="colDoc">
+                                        //     <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
+                                        //     <div className="colDoc">
+                                        //         <input
+                                        //         type="file"
+                                        //         onClick={() => this.setState({detail: x})}
+                                        //         onChange={this.onChangeUpload}
+                                        //         />
+                                        //     </div>
+                                        //     <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                        // </Col>
+                                        <div></div>
                                     )}
                                 </Row>
                             )

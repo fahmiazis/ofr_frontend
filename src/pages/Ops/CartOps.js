@@ -380,7 +380,7 @@ class CartOps extends Component {
         const type = localStorage.getItem('tipeKasbon')
         const token = localStorage.getItem("token")
         this.setState({type_kasbon: type})
-        await this.props.getCoa(token, type === 'kasbon' ? 'kasbon' :'ikk')
+        await this.props.getCoa(token, type === 'kasbon' ? 'kasbon' :'ops')
         await this.props.getBank(token)
         await this.props.getVendor(token)
         this.getDataCart()
@@ -714,11 +714,11 @@ class CartOps extends Component {
             nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : val.nama_tujuan,
             tujuan_tf: this.state.tujuan_tf,
             tiperek: this.state.tiperek,
-            status_npwp: status_npwp === 'Tidak' ? 0 : status_npwp === 'Ya' && 1,
-            nama_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' && nama,
-            no_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' && noNpwp,
-            nama_ktp: status_npwp === 'Tidak' ? nama : status_npwp === 'Ya' && '',
-            no_ktp: status_npwp === 'Tidak' ? noNik : status_npwp === 'Ya' && '',
+            status_npwp: status_npwp === 'Tidak' ? 0 : status_npwp === 'Ya' ? 1 : 2,
+            nama_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' ? nama : '',
+            no_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' ? noNpwp : '',
+            nama_ktp: status_npwp === 'Tidak' ? nama : status_npwp === 'Ya' ? '' : '',
+            no_ktp: status_npwp === 'Tidak' ? noNik : status_npwp === 'Ya' ? '' : '',
             periode: '',
             nama_vendor: nama,
             alamat_vendor: alamat,
@@ -1057,7 +1057,8 @@ class CartOps extends Component {
                 const diffTime = Math.abs(date2 - date1)
                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
                 return (
-                    diffDays < 90 && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
+                    // diffDays < 90 &&
+                    item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
                 )
             })
             this.setState({fakturList: temp})
@@ -2236,8 +2237,8 @@ class CartOps extends Component {
                                                     type= "text" 
                                                     className="inputRinci"
                                                     disabled={this.state.digit === 0 ? true : false}
-                                                    minLength={this.state.digit}
-                                                    maxLength={this.state.digit}
+                                                    minLength={this.state.digit === null ? 10 : this.state.digit}
+                                                    maxLength={this.state.digit === null ? 16 : this.state.digit}
                                                     value={values.norek_ajuan}
                                                     onBlur={handleBlur("norek_ajuan")}
                                                     onChange={handleChange("norek_ajuan")}
@@ -2245,7 +2246,9 @@ class CartOps extends Component {
                                                 )}
                                                 </Col>
                                             </Row>
-                                            {(errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit) && this.state.tujuan_tf !== 'PMA'? (
+                                            {this.state.digit !== null && values.norek_ajuan.length !== this.state.digit && this.state.tujuan_tf !== 'PMA'? (
+                                                <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                            ) : this.state.digit === null && (values.norek_ajuan.length < 10 || values.norek_ajuan.length > 16) && this.state.tujuan_tf !== 'PMA'? (
                                                 <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                             ) : this.state.tujuan_tf === 'PMA' && this.state.norek.length !== this.state.digit ? (
                                                 <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
@@ -2916,8 +2919,8 @@ class CartOps extends Component {
                                                     type= "text" 
                                                     className="inputRinci"
                                                     disabled={this.state.digit === 0 ? true : false}
-                                                    minLength={this.state.digit}
-                                                    maxLength={this.state.digit}
+                                                    minLength={this.state.digit === null ? 10 : this.state.digit}
+                                                    maxLength={this.state.digit === null ? 16 : this.state.digit}
                                                     value={values.norek_ajuan}
                                                     onBlur={handleBlur("norek_ajuan")}
                                                     onChange={handleChange("norek_ajuan")}
@@ -2925,7 +2928,9 @@ class CartOps extends Component {
                                                 )}
                                                 </Col>
                                             </Row>
-                                            {(errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit) && this.state.tujuan_tf !== 'PMA'? (
+                                            {this.state.digit !== null && values.norek_ajuan.length !== this.state.digit && this.state.tujuan_tf !== 'PMA'? (
+                                                <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                            ) : this.state.digit === null && (values.norek_ajuan.length < 10 || values.norek_ajuan.length > 16) && this.state.tujuan_tf !== 'PMA'? (
                                                 <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                             ) : this.state.tujuan_tf === 'PMA' && this.state.norek.length !== this.state.digit ? (
                                                 <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>

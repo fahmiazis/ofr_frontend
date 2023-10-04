@@ -27,7 +27,7 @@ import {Formik} from 'formik'
 import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import Select from 'react-select'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import pagu from '../../redux/actions/pagu'
@@ -378,6 +378,7 @@ class CartIkk extends Component {
         await this.props.getCoa(token, 'ikk')
         await this.props.getBank(token)
         await this.props.getVendor(token)
+        await this.props.getAllNotif(token)
         this.getDataCart()
     }
 
@@ -450,19 +451,25 @@ class CartIkk extends Component {
             subject: subject,
             no: noikk,
             tipe: 'ikk',
+            menu: 'pengajuan ikk',
+            proses: 'approve',
+            route: 'ikk'
         }
         await this.props.sendEmail(token, data)
         await this.props.submitIkkFinal(token, tempno)
+        await this.props.addNotif(token, data)
         await this.props.getCart(token)
         this.openModalDoc()
         this.modalSubmitPre()
         this.openDraftEmail()
-        this.openConfirm(this.setState({confirm: 'submit'}))
+        this.openConfirm(this.setState({confirm: 'submit', nominal: 0}))
     }
 
     componentDidUpdate() {
         const { isAdd, isUpload, isEdit } = this.props.ikk
         const token = localStorage.getItem("token")
+        console.log(this.state.tipeVendor)
+        console.log(this.state.jenisVendor)
         if (isAdd === true) {
             this.openModalAdd()
             this.props.getCart(token)
@@ -726,15 +733,16 @@ class CartIkk extends Component {
             periode_awal: val.periode_awal,
             periode_akhir: val.periode_akhir,
             bank_tujuan: this.state.bank,
-            norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
+            // norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
+            norek_ajuan: this.state.norek,
             nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : val.nama_tujuan,
             tujuan_tf: this.state.tujuan_tf,
             tiperek: this.state.tiperek,
-            status_npwp: status_npwp === 'Tidak' ? 0 : status_npwp === 'Ya' && 1,
-            nama_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' && nama,
-            no_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' && noNpwp,
-            nama_ktp: status_npwp === 'Tidak' ? nama : status_npwp === 'Ya' && '',
-            no_ktp: status_npwp === 'Tidak' ? noNik : status_npwp === 'Ya' && '',
+            status_npwp: status_npwp === 'Tidak' ? 0 : status_npwp === 'Ya' ? 1 : 2,
+            nama_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' ? nama : '',
+            no_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' ? noNpwp : '',
+            nama_ktp: status_npwp === 'Tidak' ? nama : status_npwp === 'Ya' ? '' : '',
+            no_ktp: status_npwp === 'Tidak' ? noNik : status_npwp === 'Ya' ? '' : '',
             periode: '',
             nama_vendor: nama,
             alamat_vendor: alamat,
@@ -771,7 +779,8 @@ class CartIkk extends Component {
             periode_awal: val.periode_awal,
             periode_akhir: val.periode_akhir,
             bank_tujuan: this.state.bank,
-            norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
+            // norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
+            norek_ajuan: this.state.norek,
             nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : val.nama_tujuan,
             tujuan_tf: this.state.tujuan_tf,
             tiperek: this.state.tiperek,
@@ -845,9 +854,9 @@ class CartIkk extends Component {
         const bankcol = dataRek[0].rek_bankcol
         const temp = [
             {label: '-Pilih-', value: ''},
-            spending !== '0' ? {label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card'} : {value: '', label: ''},
-            zba !== '0' ? {label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA'} : {value: '', label: ''},
-            bankcol !== '0' ? {label: `${bankcol}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
+            spending !== '0' ? {label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card'} : {value: '', label: ''}
+            // zba !== '0' ? {label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA'} : {value: '', label: ''},
+            // bankcol !== '0' ? {label: `${bankcol}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
         ]
         this.setState({
             rekList: temp, 
@@ -885,8 +894,8 @@ class CartIkk extends Component {
         const temp = [
             {label: '-Pilih-', value: ''},
             spending !== '0' ? {label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card'} : {value: '', label: ''},
-            zba !== '0' ? {label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA'} : {value: '', label: ''},
-            bankcol !== '0' ? {label: `${bankcol}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
+            // zba !== '0' ? {label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA'} : {value: '', label: ''},
+            // bankcol !== '0' ? {label: `${bankcol}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
         ]
 
         const {idIkk} = this.props.ikk
@@ -1045,7 +1054,8 @@ class CartIkk extends Component {
                 const diffTime = Math.abs(date2 - date1)
                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
                 return (
-                    diffDays < 10000 && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
+                    // diffDays < 90 &&
+                    item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
                 )
             })
             this.setState({fakturList: temp})
@@ -1125,12 +1135,12 @@ class CartIkk extends Component {
             if (cek.type_transaksi === nonObject) {
                 temp = cek
                 jenis = nonObject
-                this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis})
+                this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis, tipeVendor: jenis})
                 this.formulaTax()
             } else if (jenisVendor === '' || jenisVendor === nonObject) {
                 temp = cek
                 jenis = ''
-                this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis})
+                this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis, tipeVendor: jenis})
                 this.formulaTax()
             } else {
                 const selectCoa = allCoa.find(({type_transaksi, jenis_transaksi}) => 
@@ -1142,12 +1152,12 @@ class CartIkk extends Component {
                                     && status_npwp === cekStat)
                 if (selectCoa === undefined && selectCoaFin === undefined) {
                     this.openConfirm(this.setState({confirm: 'failJenisTrans'}))
-                    this.setState({idTrans: '', jenisTrans: '', dataTrans: {}, jenisVendor: ''})
+                    this.setState({idTrans: '', jenisTrans: '', dataTrans: {}, jenisVendor: '', tipeVendor: ''})
                 } else {
                     console.log('masuk not undefined')
                     temp = selectCoaFin === undefined ? selectCoa : selectCoaFin
                     jenis = jenisVendor === nonObject ? '' : jenisVendor
-                    this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis})
+                    this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis, tipeVendor: ''})
                     this.formulaTax()
                 }
             }
@@ -1211,15 +1221,29 @@ class CartIkk extends Component {
     }
 
     selectRek = (e) => {
-        this.setState({norek: e.label.split('~')[0], tiperek: e.value})
+        const rek = e.label.split('~')[0]
+        const tiperek = e.label.split('~')[1]
+        this.setState({norek: rek, tiperek: tiperek})
     }
 
-    selectTujuan = (val) => {
-        if (val === 'PMA') {
-            this.setState({tujuan_tf: val, bank: 'Bank Mandiri', digit: 13})
-        } else {
-            this.setState({tujuan_tf: val, bank: '', digit: 0})
+    selectTujuan = async (val) => {
+        const token = localStorage.getItem('token')
+        await this.props.getRek(token, val === 'PMA' ? 'undefined' : 'all')
+        const { dataRek } = this.props.rekening
+        const temp = []
+        for (let i = 0; i < dataRek.length; i++) {
+            const spending = dataRek[i].rek_spending
+            const plant = dataRek[i].depo.area
+            if (spending !== '0') {
+                temp.push({label: `${spending}~Rekening Spending Card~${plant}`, value: spending})
+            }
         }
+        this.setState({
+            tujuan_tf: val, 
+            bank: 'Bank Mandiri', 
+            digit: 13,
+            rekList: temp
+        })
     }
 
     selectTipe = async (val) => {
@@ -1348,7 +1372,7 @@ class CartIkk extends Component {
         const tipe = tipeVendor
         console.log(dataTrans)
         if (dataTrans.jenis_pph === 'Non PPh' || dataTrans.jenis_pph === undefined) {
-            this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: nilai, tipeVendor: tipe})
+            this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: nilai, tipeVendor: nonObject})
         } else {
             if (tipePpn === 'Ya') {
                 if (tipe === 'PMA') {
@@ -1502,10 +1526,21 @@ class CartIkk extends Component {
                                     <Button className='mr-2 mb-2' onClick={this.prosesOpenAdd} color="info" size="lg">Add</Button>
                                     <Button className='mb-2' onClick={this.prosesSubmitPre} color="success" size="lg">Submit</Button>
                                 </div>
-                                <div className='rowGeneral divPagu'>
-                                    <div className="uppercase mr-1">Nilai Pagu :</div> 
-                                    <div className="ml-1">{(parseFloat(dataPagu.pagu) - this.state.nominal).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>
+                                <div className='divPagu'>
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={6} className="uppercase">Nilai Pagu</Col> 
+                                        <Col md={6}>: {(parseFloat(dataPagu.pagu)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</Col>
+                                    </Row>
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={6} className="uppercase">Nilai Saldo</Col> 
+                                        <Col md={6}>: 0</Col>
+                                    </Row>
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={6} className="uppercase">Nilai Yang Diajukan</Col> 
+                                        <Col md={6}>: {(this.state.nominal).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</Col>
+                                    </Row>
                                 </div>
+                                
                             </div>
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
@@ -1984,24 +2019,33 @@ class CartIkk extends Component {
                                     <div>
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Penanggung Pajak</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={
-                                                    listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? true
-                                                    :this.state.idTrans === '' ? true 
-                                                    : this.state.tipePpn === "Ya" ? true
-                                                    : false
-                                                }
-                                                type= "select" 
-                                                className="inputRinci"
-                                                value={this.state.tipeVendor}
-                                                // value={values.penanggung_pajak}
-                                                // onBlur={handleBlur("penanggung_pajak")}
-                                                onChange={e => {this.selectTipe(e.target.value)}}
-                                                >
-                                                    <option value=''>Pilih</option>
-                                                    <option value="PMA">PMA</option>
-                                                    <option value="Vendor">Vendor</option>
+                                            <Col md={9} className="colRinci">:  
+                                            {this.state.tipeVendor === nonObject 
+                                                ? <Input
+                                                    type= "text" 
+                                                    className="inputRinci"
+                                                    disabled={this.state.tipeVendor === nonObject ? true : false}
+                                                    value={this.state.tipeVendor}
+                                                /> :
+                                                <Input
+                                                    disabled={
+                                                        listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? true
+                                                        : this.state.idTrans === '' ? true 
+                                                        : this.state.tipePpn === "Ya" ? true
+                                                        : false
+                                                    }
+                                                    type= "select" 
+                                                    className="inputRinci"
+                                                    value={this.state.tipeVendor}
+                                                    // value={values.penanggung_pajak}
+                                                    // onBlur={handleBlur("penanggung_pajak")}
+                                                    onChange={e => {this.selectTipe(e.target.value)}}
+                                                    >
+                                                        <option value=''>Pilih</option>
+                                                        <option value="PMA">PMA</option>
+                                                        <option value="Vendor">Vendor</option>
                                                 </Input>
+                                                }
                                             </Col>
                                         </Row>
                                         {this.state.tipeVendor === '' ? (
@@ -2017,10 +2061,14 @@ class CartIkk extends Component {
                                                 }
                                                 className="inputRinci1"
                                                 value={this.state.nilai_ajuan}
+                                                maxLength={8}
                                                 onValueChange={val => this.onEnterVal(val.floatValue)}
                                                 />
                                             </Col>
                                         </Row>
+                                        {this.state.nilai_ajuan > 1000000 && this.state.tipePpn === "Tidak" ? (
+                                            <text className={style.txtError}>maximal pengisian nilai adalah 1 juta</text>
+                                        ) : null}
                                         {this.state.nilai_ajuan === 0 && this.state.tipePpn === "Tidak" ? (
                                             <text className={style.txtError}>must be filled with number</text>
                                         ) : null}
@@ -2128,7 +2176,7 @@ class CartIkk extends Component {
                                                 >
                                                     <option value=''>Pilih</option>
                                                     <option value="PMA">PMA</option>
-                                                    <option value="Outlet">Outlet</option>
+                                                    <option value="ATM tertelan/hilang/terblokir">ATM tertelan/hilang/terblokir</option>
                                                 </Input>
                                             </Col>
                                         </Row>
@@ -2153,13 +2201,14 @@ class CartIkk extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Bank</Col>
                                             <Col md={9} className="colRinci">: 
-                                            {this.state.tujuan_tf === 'PMA' ? (
-                                                <Input
+                                            <Input
                                                 type= "text" 
                                                 className="inputRinci"
                                                 value={this.state.bank}
                                                 disabled
-                                                />
+                                            />
+                                            {/* {this.state.tujuan_tf === 'PMA' ? (
+                                                
                                             ) : (
                                                 <Select
                                                 isDisabled={this.state.tujuan_tf === '' && true}
@@ -2167,7 +2216,7 @@ class CartIkk extends Component {
                                                 options={this.state.bankList}
                                                 onChange={this.selectBank}
                                                 />
-                                            )}
+                                            )} */}
                                             </Col>
                                         </Row>
                                         {this.state.bank === '' ? (
@@ -2176,29 +2225,36 @@ class CartIkk extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nomor Rekening</Col>
                                             <Col md={9} className="colRinci">:  
-                                            {this.state.tujuan_tf === 'PMA' ? (
                                                 <Select
                                                     className="inputRinci2"
                                                     options={this.state.rekList}
                                                     onChange={this.selectRek}
+                                                    value={{label: this.state.norek, value: this.state.tiperek}}
                                                 />
+                                            {/* {this.state.tujuan_tf === 'PMA' ? (
+                                                
                                             ) : (
                                                 <Input
                                                 type= "text" 
                                                 className="inputRinci"
                                                 disabled={this.state.digit === 0 ? true : false}
-                                                minLength={this.state.digit}
-                                                maxLength={this.state.digit}
+                                                minLength={this.state.digit === null ? 10 : this.state.digit}
+                                                maxLength={this.state.digit === null ? 16 : this.state.digit}
                                                 value={values.norek_ajuan}
                                                 onBlur={handleBlur("norek_ajuan")}
                                                 onChange={handleChange("norek_ajuan")}
                                                 />
-                                            )}
+                                            )} */}
                                             </Col>
                                         </Row>
-                                        {(errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit) && this.state.tujuan_tf !== 'PMA'? (
+                                        {/* {this.state.digit !== null && values.norek_ajuan.length !== this.state.digit && this.state.tujuan_tf !== 'PMA'? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : this.state.digit === null && (values.norek_ajuan.length < 10 || values.norek_ajuan.length > 16) && this.state.tujuan_tf !== 'PMA'? (
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                         ) : this.state.tujuan_tf === 'PMA' && this.state.norek.length !== this.state.digit ? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : null} */}
+                                        {this.state.norek.length !== this.state.digit ? (
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                         ) : null}
                                     </div>
@@ -2215,6 +2271,7 @@ class CartIkk extends Component {
                                             : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
                                             // : values.norek_ajuan.length < this.state.digit ? true 
                                             : this.state.tujuan_tf === '' ? true
+                                            : this.state.tipePpn === "Tidak" && this.state.nilai_ajuan > 1000000 ? true
                                             : false } 
                                             color="primary" 
                                             onClick={handleSubmit}>
@@ -2630,7 +2687,7 @@ class CartIkk extends Component {
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled={
                                                     listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? true
-                                                    :this.state.idTrans === '' ? true 
+                                                    : this.state.idTrans === '' ? true 
                                                     : this.state.tipePpn === "Ya" ? true
                                                     : false
                                                 }
@@ -2771,7 +2828,7 @@ class CartIkk extends Component {
                                                 >
                                                     <option value=''>Pilih</option>
                                                     <option value="PMA">PMA</option>
-                                                    <option value="Outlet">Outlet</option>
+                                                    <option value="ATM tertelan/hilang/terblokir">ATM tertelan/hilang/terblokir</option>
                                                 </Input>
                                             </Col>
                                         </Row>
@@ -2796,13 +2853,14 @@ class CartIkk extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Bank</Col>
                                             <Col md={9} className="colRinci">: 
-                                            {this.state.tujuan_tf === 'PMA' ? (
-                                                <Input
+                                            <Input
                                                 type= "text" 
                                                 className="inputRinci"
                                                 value={this.state.bank}
                                                 disabled
-                                                />
+                                            />
+                                            {/* {this.state.tujuan_tf === 'PMA' ? (
+                                                
                                             ) : (
                                                 <Select
                                                 isDisabled={this.state.tujuan_tf === '' && true}
@@ -2810,7 +2868,7 @@ class CartIkk extends Component {
                                                 options={this.state.bankList}
                                                 onChange={this.selectBank}
                                                 />
-                                            )}
+                                            )} */}
                                             </Col>
                                         </Row>
                                         {this.state.bank === '' ? (
@@ -2818,31 +2876,37 @@ class CartIkk extends Component {
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nomor Rekening</Col>
-                                            <Col md={9} className="colRinci">:  
-                                            {this.state.tujuan_tf === 'PMA' ? (
+                                            <Col md={9} className="colRinci">: 
                                                 <Select
                                                     className="inputRinci2"
                                                     options={this.state.rekList}
                                                     onChange={this.selectRek}
                                                     value={{label: this.state.norek, value: this.state.tiperek}}
-                                                />
+                                                /> 
+                                            {/* {this.state.tujuan_tf === 'PMA' ? (
+                                                
                                             ) : (
                                                 <Input
                                                 type= "text" 
                                                 className="inputRinci"
                                                 disabled={this.state.digit === 0 ? true : false}
-                                                minLength={this.state.digit}
-                                                maxLength={this.state.digit}
+                                                minLength={this.state.digit === null ? 10 : this.state.digit}
+                                                maxLength={this.state.digit === null ? 16 : this.state.digit}
                                                 value={values.norek_ajuan}
                                                 onBlur={handleBlur("norek_ajuan")}
                                                 onChange={handleChange("norek_ajuan")}
                                                 />
-                                            )}
+                                            )} */}
                                             </Col>
                                         </Row>
-                                        {(errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit) && this.state.tujuan_tf !== 'PMA'? (
+                                        {/* {this.state.digit !== null && values.norek_ajuan.length !== this.state.digit && this.state.tujuan_tf !== 'PMA'? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : this.state.digit === null && (values.norek_ajuan.length < 10 || values.norek_ajuan.length > 16) && this.state.tujuan_tf !== 'PMA'? (
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                         ) : this.state.tujuan_tf === 'PMA' && this.state.norek.length !== this.state.digit ? (
+                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                        ) : null} */}
+                                        {this.state.norek.length !== this.state.digit ? (
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                         ) : null}
                                     </div>
@@ -2859,6 +2923,7 @@ class CartIkk extends Component {
                                             : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
                                             // : values.norek_ajuan.length < this.state.digit ? true 
                                             : this.state.tujuan_tf === '' ? true
+                                            : this.state.tipePpn === "Tidak" && this.state.nilai_ajuan > 1000000 ? true
                                             : false } 
                                             color="primary" 
                                             onClick={handleSubmit}>
@@ -3038,7 +3103,7 @@ class CartIkk extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ikk.isLoading || this.props.email.isLoading || this.state.isLoading || this.props.faktur.isLoading || this.props.vendor.isLoading} size="sm">
+                <Modal isOpen={this.props.ikk.isLoading || this.props.email.isLoading || this.props.notif.isLoading || this.state.isLoading || this.props.faktur.isLoading || this.props.vendor.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -3546,6 +3611,7 @@ class CartIkk extends Component {
                                     ) : (
                                         <Col md={12} lg={12} className="colDoc">
                                             <text className="btnDocIo" >{x.desc}</text>
+                                            <text className="italRed" >{x.stat_upload === 0 ? '*tidak harus upload' : '*harus upload'}</text>
                                             <div className="colDoc">
                                                 <input
                                                 type="file"
@@ -3634,8 +3700,9 @@ const mapDispatchToProps = {
     sendEmail: email.sendEmail,
     getDetail: ikk.getDetail,
     getDetailId: ikk.getDetailId,
-    editIkk: ikk.editIkk
-    // notifStock: notif.notifStock
+    editIkk: ikk.editIkk,
+    getAllNotif: notif.getAllNotif,
+    addNotif: notif.addNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(CartIkk)

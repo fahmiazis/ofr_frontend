@@ -427,6 +427,7 @@ class MasterTarif extends Component {
                                                 <th>GL Account</th>
                                                 <th>GL Name</th>
                                                 <th>Jenis Transaksi</th>
+                                                <th>Grouping</th>
                                                 <th>OP/BADAN</th>
                                                 <th>Jenis PPh</th>
                                                 <th>NPWP/NIK</th>
@@ -446,6 +447,7 @@ class MasterTarif extends Component {
                                                     <td>{item.gl_account}</td>
                                                     <td>{item.gl_name}</td>
                                                     <td>{item.jenis_transaksi}</td>
+                                                    <td>{item.grouping}</td>
                                                     <td>{item.type_transaksi}</td>
                                                     <td>{item.jenis_pph}</td>
                                                     <td>{item.status_npwp}</td>

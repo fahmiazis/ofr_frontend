@@ -149,6 +149,10 @@ html,body{
 .txtError {
     color: red;
 }
+.italRed {
+    color: red;
+    font-style: italic;
+}
 .colred {
     color: #D83022;
 }
@@ -711,7 +715,8 @@ html,body{
     background-color: #0da9ef !important;
     color: white !important;
     align-items: center;
-    width: 80% !important;
+    width: 60% !important;
+    height: 15%;
     display: flex;
     flex-direction: column;
     border-radius: 10px !important;
@@ -722,9 +727,10 @@ html,body{
     background-color: rgb(240, 173, 78);
     align-items: center;
     justify-content: center;
-    height: 50px !important;
-    width: 15% !important;
+    height: auto !important;
+    width: 20% !important;
     color: white;
+    padding: 10px;
 }
 .txtCart {
     margin-left: 5%;
@@ -831,10 +837,10 @@ html,body{
     font-size: medium;
 }
 .txtDisposEmpty {
-    margin-left: 2%;
-    margin-top: 5%;
+    margin-top: 20%;
     font-weight: bold;
     font-size: 120%;
+    text-align: center;
 }
 .txtDisposEmpty1 {
     margin-left: 2%;

@@ -1143,7 +1143,17 @@ class ReportIkk extends Component {
                                                         <th>{item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                         <th>{item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                         <th>{item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                        <th>{item.status_transaksi === 8 ? 'Transaksi selesai' : item.status_transaksi === 4 ? 'Verifikasi Finance' : item.status_transaksi === 5 ? 'Verifikasi Tax' : item.status_transaksi === 2 ? 'Approval Area' : filter === 'reject' && 'Reject'}</th>
+                                                        <th>
+                                                            {
+                                                                item.status_transaksi === 0 ? 'Reject Pembatalan' 
+                                                                : item.status_reject === 1 ? 'Reject Perbaikan'
+                                                                : item.status_reject === 0 ? 'Telah Revisi'
+                                                                : item.status_transaksi === 8 ? 'Transaksi selesai' 
+                                                                : item.status_transaksi === 4 ? 'Verifikasi Finance' 
+                                                                : item.status_transaksi === 5 ? 'Verifikasi Tax' 
+                                                                : item.status_transaksi === 2 && 'Approval Area'
+                                                            }
+                                                        </th>
                                                         {/* <th>{item.history.split(',').reverse()[0]}</th> */}
                                                     </tr>
                                                 )

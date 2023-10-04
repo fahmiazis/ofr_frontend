@@ -18,13 +18,16 @@ export default function Bell({dataNotif, color}) {
         if (val === 'notif') {
             history.push(`/${val}`)
         } else {
-            // dispatch(notif.upNotif(token, val.id))
-            // dispatch(notif.getNotif(token))
-            const ket = val.keterangan === null
-            const jenis = (val.jenis === '' || val.jenis === null) && val.no_proses.split('')[0] === 'O' ? 'Stock Opname' : val.jenis
-            console.log(val.route)
-            const route = val.route !== undefined && val.route !== null && val.route !== 'null' ? val.route : ket === 'tax' || ket === 'finance' || ket === 'tax and finance' ? 'taxfin' : ket === 'eksekusi' && jenis === 'disposal' ? 'eksdis' : jenis === 'disposal' && ket === 'pengajuan' ? 'disposal' : jenis === 'mutasi' && ket === 'pengajuan' ? 'mutasi' : jenis === 'Stock Opname' && ket === 'pengajuan' ? 'stock' : jenis === 'disposal' ? 'navdis' : jenis === 'mutasi' ? 'navmut' : jenis === 'Stock Opname' && 'navstock' 
-            history.push(`/${route}`)
+            const data = {
+                route: val.routes, 
+                type: val.tipe, 
+                item: val
+            }
+            const route = val.routes
+            history.push({
+                pathname: `/${route}`,
+                state: data
+            })
         }
     }
 
@@ -72,9 +75,8 @@ export default function Bell({dataNotif, color}) {
                                 <FaFileSignature size={90} className="mr-4"/>
                                 <Button className="labelBut" color={item.status === null ? "danger" : "success"} size="sm">{item.status === null ? 'unread' : 'read'}</Button>
                                 <div>
-                                    <div>Request</div>
-                                    <div className="textNotif">{item.keterangan} {item.jenis}</div>
-                                    <div className="textNotif">No transaksi: {item.no_proses}</div>
+                                    <div className="textNotif">{item.proses} ({item.tipe})</div>
+                                    <div className="textNotif">No transaksi: {item.no_transaksi}</div>
                                     <div>{moment(item.createdAt).format('LLL')}</div>
                                 </div>
                             </div>
