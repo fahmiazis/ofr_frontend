@@ -11,6 +11,8 @@ import Notif from './pages/Master/Notif'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 
+import VerifVendor from './pages/VerifVendor'
+
 //Klaim
 import NavKlaim from './pages/Klaim/NavKlaim'
 import Klaim from './pages/Klaim/Klaim'
@@ -81,6 +83,9 @@ import MasterKliring from './pages/Master/MasterKliring'
 import MasterFaktur from './pages/Master/MasterFaktur'
 import MasterKpp from './pages/Master/MasterKpp'
 import MasterFinance from './pages/Master/MasterFinance'
+import MasterPicklaim from './pages/Master/MasterPicklaim'
+import MasterSpvklaim from './pages/Master/MasterSpvklaim'
+
 import Reservoir from './pages/Master/Reservoir'
 import MasterTaxcode from './pages/Master/MasterTaxcode'
 
@@ -253,6 +258,9 @@ class App extends Component {
                 <PrivateRoute path='/formlistikk'>
                     <FormListIkk/>
                 </PrivateRoute>
+                <PrivateRoute path='/verifven'>
+                    <VerifVendor />
+                </PrivateRoute>
 
                 {/* Master */}
                 <PrivateRoute path='/approval'>
@@ -305,6 +313,12 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/finance'>
                     <MasterFinance />
+                </PrivateRoute>
+                <PrivateRoute path='/picklaim'>
+                    <MasterPicklaim />
+                </PrivateRoute>
+                <PrivateRoute path='/spvklaim'>
+                    <MasterSpvklaim />
                 </PrivateRoute>
                 <PrivateRoute path='/reservoir'>
                     <Reservoir />

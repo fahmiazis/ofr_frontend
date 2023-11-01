@@ -356,7 +356,7 @@ class MasterDepo extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master Depo</div>
+                                    <div className={style.titleDashboard}>Master Area</div>
                                 </div>
                                 <div className={style.secHeadDashboard}>
                                     <div>

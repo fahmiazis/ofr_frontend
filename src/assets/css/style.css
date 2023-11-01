@@ -672,7 +672,7 @@ html,body{
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    width: 75%;
+    width: 100%;
     background-color: white;
     box-shadow: 0px 6px 40px rgba(173, 173, 173, 0.8);
     margin-top: 3%;
@@ -699,7 +699,7 @@ html,body{
     object-fit: contain;
 }
 .navCart {
-    width: 60%;
+    width: 80%;
     display: flex;
     flex-direction: row;
 }
@@ -715,7 +715,7 @@ html,body{
     background-color: #0da9ef !important;
     color: white !important;
     align-items: center;
-    width: 60% !important;
+    width: 40% !important;
     height: 15%;
     display: flex;
     flex-direction: column;
@@ -1045,6 +1045,35 @@ html,body{
     align-items: center;
     justify-content: space-between;
 }
+.bodyNotif {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 5%;
+    background-color: white;
+    box-shadow: 0px 6px 40px rgba(173, 173, 173, 0.8);
+    width: 70%;
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, 0%);
+    padding-left: 2%;
+    padding-right: 2%;
+    padding-bottom: 5%;
+}
+.heightAuto {
+    height: auto;
+}
+.heightNotif {
+    height: 100%;
+}
+.notifNav {
+    display: flex;
+    flex-direction: row;
+    align-items: center !important;
+    justify-content: space-between;
+    margin-top: 2%;
+    width: 100%;
+  }
 .txtTrans {
     text-transform: capitalize;
 }
@@ -1285,6 +1314,9 @@ html,body{
     display: flex;
     flex-direction: row;
 }
+.titleName {
+    text-transform: capitalize !important;
+}
 .relogin {
     justify-content: center;
     text-align: center;
@@ -1295,6 +1327,9 @@ html,body{
 }
 .space {
     margin-bottom: 10%;
+}
+.spaceChar {
+    letter-spacing: 2px
 }
 .black {
     color: black;
@@ -1319,6 +1354,17 @@ html,body{
     margin-left: 15px;
     margin-bottom: 10px;
 }
+.divNotif {
+    position: absolute;
+    margin-left: 15px;
+    margin-bottom: 10px;
+    background-color: red;
+    border-radius: 60%;
+    width: 40%;
+    text-align: center;
+    justify-content: center;
+}
+
 .white {
     color: white;
 }

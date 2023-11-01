@@ -5,7 +5,7 @@ import {connect} from 'react-redux'
 import moment from 'moment'
 import {Formik} from 'formik'
 
-class TableRincian extends Component {
+class EmailVerven extends Component {
 
     state = {
         message: '',
@@ -25,10 +25,9 @@ class TableRincian extends Component {
 
     componentDidMount() {
         const { draftEmail } = this.props.email
-        const {detailKlaim} = this.props.klaim
+        const {detailVerven} = this.props.verven
         const cek = draftEmail.result
-        const stat = detailKlaim[0].status_transaksi
-        const no = (stat === 5 || stat === 6 || stat ===  7) && detailKlaim[0].no_pembayaran !== null ? detailKlaim[0].no_pembayaran : detailKlaim[0].no_transaksi
+        const no = detailVerven[0].no_transaksi
         const message = cek === undefined ? '' : cek.message
         const subject = cek === undefined ? '' : `${cek.type === 'submit' ? '' : cek.type} ${cek.menu} NO ${no}`
         this.setState({message: message, subject: subject})
@@ -36,7 +35,7 @@ class TableRincian extends Component {
     }
 
   render() {
-    const {detailKlaim} = this.props.klaim
+    const {detailVerven} = this.props.verven
     const { draftEmail } = this.props.email
     const statMail = this.props.statMail || ''
     const {dataResmail} = this.props.email
@@ -85,7 +84,7 @@ class TableRincian extends Component {
                             className='ml-1'
                             // onChange={listTo.find(element => element === item.name) === undefined ? () => this.checkToApp(item.name) : () => this.checkToRej(item.name)}
                             />
-                            <text className='ml-4'>{`${draftEmail.to.role.name}: ${draftEmail.to.username}`}</text>
+                            <text className='ml-4'>{`${draftEmail.to.role.name}: ${draftEmail.to.fullname}`}</text>
                         </div>
                     ) : draftEmail.to.length > 0 && draftEmail.to.map(item => {
                         return (
@@ -97,7 +96,7 @@ class TableRincian extends Component {
                                 className='ml-1'
                                 // onChange={listTo.find(element => element === item.name) === undefined ? () => this.checkToApp(item.name) : () => this.checkToRej(item.name)}
                                 />
-                                <text className='ml-4'>{`${item.role.name}: ${item.username}`}</text>
+                                <text className='ml-4'>{`${item.role.name}: ${item.fullname}`}</text>
                             </div>
                         )
                     }
@@ -120,7 +119,7 @@ class TableRincian extends Component {
                                 className='ml-1'
                                 // onChange={listCc.find(element => element === item.name) === undefined ? () => this.checkApp(item.name) : () => this.checkRej(item.name)}
                                 />
-                                <text className='ml-4'>{`${item.role.name}: ${item.username}`}</text>
+                                <text className='ml-4'>{`${item.role.name}: ${item.fullname}`}</text>
                             </div>
                         )
                     })}
@@ -167,43 +166,23 @@ class TableRincian extends Component {
                     <thead>
                         <tr>
                             <th>NO</th>
-                            <th>COST CENTRE</th>
-                            <th>NO COA</th>
-                            <th>NAMA COA</th>
-                            <th>KETERANGAN TAMBAHAN</th>
-                            <th>TGL AJUAN</th>
-                            <th>NILAI YANG DIAJUKAN</th>
-                            <th>BANK</th>
-                            <th>NOMOR REKENING</th>
-                            <th>ATAS NAMA</th>
-                            <th>MEMILIKI NPWP</th>
-                            <th>NAMA SESUAI NPWP</th>
-                            <th>NOMOR NPWP</th>
-                            <th>NILAI YANG DIBAYARKAN</th>
-                            <th>TANGGAL TRANSFER</th>
-                            <th>Status</th>
+                            <th>No ajuan</th>
+                            <th>Nama Vendor</th>
+                            <th>No KTP</th>
+                            <th>No NPWP</th>
+                            <th>Alamat</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {detailKlaim.length !== 0 && detailKlaim.map(item => {
+                        {detailVerven.length !== 0 && detailVerven.map(item => {
                             return (
                                 <tr>
-                                    <th scope="row">{detailKlaim.indexOf(item) + 1}</th>
-                                    <th>{item.cost_center}</th>
-                                    <th>{item.no_coa}</th>
-                                    <th>{item.nama_coa}</th>
-                                    <th>{item.keterangan}</th>
-                                    <th>{item.start_klaim !== null ? moment(item.start_klaim).format('DD/MMMM/YYYY') : moment().format('DD/MMMM/YYYY')}</th>
-                                    <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                    <th>{item.bank_tujuan}</th>
-                                    <th>{item.norek_ajuan}</th>
-                                    <th>{item.nama_tujuan}</th>
-                                    <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
-                                    <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                    <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                    <th>{item.nilai_bayar}</th>
-                                    <th>{item.tanggal_transfer}</th>
-                                    <th>{item.isreject === 1 ? 'reject' : '-'}</th>
+                                    <th scope="row">{detailVerven.indexOf(item) + 1}</th>
+                                    <th>{item.no_transaksi}</th>
+                                    <th>{item.nama}</th>
+                                    <th>{item.nik}</th>
+                                    <th>{item.npwp}</th>
+                                    <th>{item.alamat}</th>
                                 </tr>
                                 )
                             })}
@@ -224,10 +203,11 @@ const mapStateToProps = state => ({
     depo: state.depo,
     user: state.user,
     notif: state.notif,
-    klaim: state.klaim,
+    ikk: state.ikk,
     menu: state.menu,
     reason: state.reason,
-    email: state.email
+    email: state.email,
+    verven: state.verven
 })
 
-export default connect(mapStateToProps)(TableRincian)
+export default connect(mapStateToProps)(EmailVerven)

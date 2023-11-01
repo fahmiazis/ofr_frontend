@@ -25,7 +25,7 @@ import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
 import email from '../../redux/actions/email'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -149,7 +149,9 @@ class Klaim extends Component {
             modalNilai: false,
             nilai_verif: 0,
             dataZip: [],
-            listReject: []
+            listReject: [],
+            statEmail: '',
+            modResmail: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -582,6 +584,110 @@ class Klaim extends Component {
         this.openModalRinci()
     }
 
+    prosesStatEmail = async (val) => {
+        const level = localStorage.getItem('level')
+        const token = localStorage.getItem("token")
+        const app = val[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const {filter} = this.state
+
+        let tempno = {
+            no: val[0].no_transaksi,
+            kode: val[0].kode_plant
+        }
+        
+        if (level === '5') {
+            if (val.status_reject === 0) {
+                tempno = {
+                    ...tempno,
+                    jenis: 'klaim',
+                    tipe: 'revisi',
+                    menu: 'Revisi Area (Klaim)'
+                }
+               
+            } else {
+                tempno = {
+                    ...tempno,
+                    jenis: 'klaim',
+                    tipe: 'approve',
+                    menu: 'Pengajuan Klaim (Klaim)'
+                }
+            }
+        } else {
+            const tipe = tempApp.length === app.length ? 'full approve' : 'approve'
+            const cekMenu = 'Pengajuan Klaim (Klaim)'
+            if (val.status_reject === 1) {
+                tempno = {
+                    ...tempno,
+                    jenis: 'klaim',
+                    tipe: 'reject',
+                    typeReject: val[0].status_transaksi === 0 ? 'pembatalan' : 'perbaikan',
+                    menu: cekMenu
+                }
+            } else {
+                tempno = {
+                    ...tempno,
+                    jenis: 'klaim',
+                    tipe: tipe,
+                    menu: cekMenu
+                }
+            }
+        }
+        await this.props.getDraftEmail(token, tempno)
+
+        const { draftEmail } = this.props.email
+        const resSend = {
+            ...tempno,
+            draft: draftEmail
+        }
+        await this.props.getResmail(token, resSend)
+        
+        this.openModResmail()
+    }
+
+    openModResmail = () => {
+        const {modResmail} = this.state
+        if (modResmail === false) {
+            this.setState({statEmail: 'resend'})
+            this.setState({modResmail: !this.state.modResmail})
+        } else {
+            this.setState({statEmail: ''})
+            this.setState({modResmail: !this.state.modResmail})
+        }
+    }
+
+    prosesResmail = async () => {
+        const token = localStorage.getItem("token")
+        const { listReject } = this.state
+        const { detailKlaim } = this.props.klaim
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            draft: draftEmail,
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: detailKlaim[0].no_transaksi,
+            tipe: 'klaim'
+        }
+        await this.props.sendEmail(token, tempno)
+        this.openModResmail()
+        this.setState({confirm: 'resmail'})
+        this.openConfirm()
+    }
+
     prosesDocTab = async (val) => {
         const token = localStorage.getItem("token")
         const tempno = {
@@ -782,6 +888,7 @@ class Klaim extends Component {
 
     dataSendEmail = async (val) => {
         const token = localStorage.getItem("token")
+        const { listReject } = this.state
         const { detailKlaim } = this.props.klaim
         const { draftEmail } = this.props.email
         const { message, subject } = this.state
@@ -790,7 +897,18 @@ class Klaim extends Component {
         for (let i = 0; i < cc.length; i++) {
             tempcc.push(cc[i].email)
         }
+        const app = detailKlaim[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipeProses = val === 'reject' && listReject[0] === 'pembatalan' ? 'reject pembatalan' : val === 'reject' && listReject[0] !== 'pembatalan' ? 'reject perbaikan' : tempApp.length === app.length-1 ? 'verifikasi' : 'approve'
+        const tipeRoute = val === 'reject' && listReject[0] === 'pembatalan' ? 'klaim' : val === 'reject' && listReject[0] !== 'pembatalan' ? 'revklm' : tempApp.length === app.length-1 ? 'veriffinklm' : 'klaim'
+        const tipeMenu = tempApp.length === app.length-1 ? 'verifikasi klaim' : 'pengajuan klaim'
         const tempno = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
@@ -798,8 +916,12 @@ class Klaim extends Component {
             subject: subject,
             no: detailKlaim[0].no_transaksi,
             tipe: 'klaim',
+            menu: tipeMenu,
+            proses: tipeProses,
+            route: tipeRoute
         }
         await this.props.sendEmail(token, tempno)
+        await this.props.addNotif(token, tempno)
         if (val === 'reject') {
             this.getDataKlaim()
             this.setState({confirm: 'reject'})
@@ -1776,6 +1898,12 @@ class Klaim extends Component {
                             <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
+                            {filter === 'available' || 
+                            (detailKlaim[0] !== undefined && 
+                            (detailKlaim[0].status_transaksi === 0 || 
+                            detailKlaim[0].status_transaksi === 8)) ? null : (
+                                <Button className='mr-2' color="warning"  onClick={() => this.prosesStatEmail(detailKlaim)}>Status Email</Button>
+                            )}
                             {filter !== 'available' && filter !== 'revisi' ? (
                                 (filter === 'bayar' || filter === 'completed') &&
                                 <Button className="mr-2"  color="danger" onClick={this.openNilaiVerif}>
@@ -2229,7 +2357,14 @@ class Klaim extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
                             </div>
                         </div>
-                    ): (
+                    ) : this.state.confirm === 'resmail' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Kirim Email</div>
+                            </div>
+                        </div>
+                    ) : (
                         <div></div>
                     )}
                 </ModalBody>
@@ -2311,7 +2446,7 @@ class Klaim extends Component {
                                         //     </div>
                                         //     <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                         // </Col>
-                                        <div></div>
+                                        null
                                     )}
                                 </Row>
                             )
@@ -2424,6 +2559,26 @@ class Klaim extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal isOpen={this.state.modResmail} size='xl'>
+                <ModalHeader>Status Email</ModalHeader>
+                <ModalBody>
+                    <Email handleData={this.getMessage} statMail={this.state.statEmail} />
+                    <div className={style.foot}>
+                        <div></div>
+                        <div>
+                            <Button
+                                disabled={this.state.message === '' || this.state.subject === '' ? true : false} 
+                                className="mr-2"
+                                onClick={() => this.prosesResmail()} 
+                                color="primary"
+                            >
+                                Resend Email
+                            </Button>
+                            <Button className="mr-3" onClick={this.openModResmail}>Cancel</Button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
             </>
         )
     }
@@ -2462,8 +2617,9 @@ const mapDispatchToProps = {
     sendEmail: email.sendEmail,
     approveDokumen: dokumen.approveDokumen,
     rejectDokumen: dokumen.rejectDokumen,
-    updateNilaiVerif: klaim.updateNilaiVerif
-    // notifStock: notif.notifStock
+    updateNilaiVerif: klaim.updateNilaiVerif,
+    addNotif: notif.addNotif,
+    getResmail: email.getResmail
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Klaim)

@@ -76,14 +76,16 @@ class MasterEmail extends Component {
             limit: 10,
             search: '',
             modalReset: false,
-            filter: null,
+            filter: 'all',
             filterName: 'All',
             modalDel: false,
             page: 1,
             depoList: [],
             plant: '',
             listCc: [],
-            listTo: []
+            listTo: [],
+            test: [1, 2, 3],
+            dataDel: {}
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -203,17 +205,6 @@ class MasterEmail extends Component {
             await this.getDataCount()
             this.openModalAdd()
         }
-    }
-
-    delEmail = async () => {
-        const token = localStorage.getItem("token")
-        const {detail} = this.state
-        await this.props.deleteEmail(token, detail.id)
-        this.openModalEdit()
-        this.setState({confirm: 'del'})
-        this.openConfirm()
-        await this.getDataCount()
-        this.openModalDel()
     }
 
     next = async () => {
@@ -365,10 +356,6 @@ class MasterEmail extends Component {
 
     async componentDidMount() {
         const token = localStorage.getItem("token")
-        await this.props.getAllMenu(token, 'all')
-        await this.props.getDepo(token, 1000, '')
-        await this.props.getRole(token)
-        this.prepareSelect()
         this.getDataCount()
     }
 
@@ -379,13 +366,14 @@ class MasterEmail extends Component {
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
         const filter = value === undefined || value.filter === undefined ? this.state.filter : value.filter
-        await this.props.getAllNotif(token)
+        await this.props.getAllNotif(token, this.state.filter)
         this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages})
     }
 
     changeFilter = async (val) => {
-        this.setState({filter: val.level, filterName: val.name})
-        this.getDataCount({limit: this.state.limit, search: this.state.search, filter: val.level, page: 1})
+        const token = localStorage.getItem("token")
+        this.setState({filter: val, filterName: val})
+        await this.props.getAllNotif(token, val)
     }
 
     menuButtonClick(ev) {
@@ -416,16 +404,34 @@ class MasterEmail extends Component {
 
     openReq = async (val) => {
         const token = localStorage.getItem('token')
-        const data = {
-            route: val.routes, 
-            type: val.tipe, 
-            item: val
-        }
+        const typeNotif = val.tipe === 'pengajuan area' && val.transaksi === 'vendor' ? 'approve' : val.tipe
+            const data = {
+                route: val.routes, 
+                type: typeNotif, 
+                item: val
+            }
+        await localStorage.setItem('typeNotif', typeNotif)
         const route = val.routes
+        await this.props.readNotif(token, val.id)
         this.props.history.push({
             pathname: `/${route}`,
             state: data
         })
+    }
+
+    prosesOpenDel = (val) => {
+        this.setState({dataDel: val})
+        this.openModalDel()
+    }
+
+    deleteNotif = async () => {
+        const {dataDel} = this.state
+        const token = localStorage.getItem('token')
+        await this.props.deleteNotif(token, dataDel.id)
+        await this.props.getAllNotif(token)
+        this.openModalDel()
+        this.setState({confirm: 'delete'})
+        this.openConfirm()
     }
 
     render() {
@@ -469,81 +475,75 @@ class MasterEmail extends Component {
                 <Sidebar {...sidebarProps}>
                     <MaterialTitlePanel title={contentHeader}>
                         <div className={style.backgroundLogo}>
-                            <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
-                                <div>{alertMsg}</div>
-                                <div>{alertM}</div>
-                                {alertUpload !== undefined && alertUpload.map(item => {
-                                    return (
-                                        <div>{item}</div>
-                                    )
-                                })}
-                            </Alert>
-                            <Alert color="danger" className={style.alertWrong} isOpen={upload}>
-                                <div>{errMsg}</div>
-                            </Alert>
                             <div className={style.bodyDashboard}>
-                                <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Notification</div>
-                                </div>
-                                {dataAllNotif.length === 0 && (
-                                    <div className="txtDisposEmpty">Data Notification Tidak Ditemukan</div>
-                                )}
-                                <Row className="cartDisposal">
+                                <div className={dataAllNotif.length > 2 ? 'bodyNotif heightAuto' : 'bodyNotif heightNotif'}>
+                                    <div className={style.headMaster}>
+                                        <div className={style.titleDashboard}>Notification</div>
+                                    </div>
+                                    <div className='notifNav'>
+                                        <div className={style.searchEmail2}>
+                                            <text>Filter:  </text>
+                                            <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="read">Read</option>
+                                                <option value="unread">Unread</option>
+                                            </Input>
+                                        </div>
+                                        <Button color='danger'>Delete All</Button>
+                                    </div>
                                     {dataAllNotif.length === 0 ? (
-                                        <Col md={8} xl={8} sm={12}>
-                                            <div className="txtDisposEmpty"></div>
-                                        </Col>
+                                            <div className="txtDisposEmpty">Data Notification Tidak Ditemukan</div>
                                     ) : (
-                                        <Col md={8} xl={8} sm={12} className="mb-5 mt-5">
-                                        {dataAllNotif.length !== 0 && dataAllNotif.map(item => {
-                                            return (
-                                                <div className="cart">
-                                                    <div className="navCart">
-                                                        <FaFileSignature className="cartImg" />
-                                                        <Button className="labelBut" color={item.status === null ? "danger" : "success"} size="sm">{item.status === null ? 'unread' : 'read'}</Button>
-                                                        <div className="txtCart">
-                                                            <button className='openReq' size='sm' onClick={() => this.openReq(item)}>Open</button>
-                                                            <div>
-                                                                <div className="textNotif mb-3">{item.proses} ({item.tipe})</div>
-                                                                <div className="textNotif mb-3">No transaksi: {item.no_transaksi}</div>
-                                                                <div>{moment(item.createdAt).format('LLL')}</div>
+                                            dataAllNotif.length !== 0 && dataAllNotif.map(item => {
+                                                return (
+                                                    <div className="cart">
+                                                        <div className="navCart">
+                                                            <FaFileSignature className="cartImg" />
+                                                            <Button className="labelBut" color={item.status === null ? "danger" : "success"} size="md">{item.status === null ? 'unread' : 'read'}</Button>
+                                                            <div className="txtCart">
+                                                                {item.status === null && (
+                                                                    <button className='openReq' size='sm' onClick={() => this.openReq(item)}>Open</button>
+                                                                )}
+                                                                <div>
+                                                                    <div className="textNotif mb-3">{item.proses} ({item.tipe})</div>
+                                                                    <div className="textNotif mb-3">No transaksi: {item.no_transaksi}</div>
+                                                                    <div>{moment(item.createdAt).format('LLL')}</div>
+                                                                </div>
                                                             </div>
                                                         </div>
+                                                        <div className="footCart">
+                                                            <div><FaTrash size={20} onClick={() => this.prosesOpenDel(item)} className="txtError"/></div>
+                                                        </div>
                                                     </div>
-                                                    <div className="footCart">
-                                                        <div><FaTrash size={20} onClick={() => this.deleteNotif(item.id)} className="txtError"/></div>
+                                                )
+                                            })
+                                    )}
+                                        {/* {dataAllNotif.length === 0 || dataAllNotif === undefined ? (
+                                            null
+                                        ) : (
+                                            <Col md={4} xl={4} sm={12} className="mt-5">
+                                                <div className="sideSum">
+                                                    <div className="titSum">Notification data</div>
+                                                    <div className="txtSum">
+                                                        <div className="totalSum">Total Notification</div>
+                                                        <div className="angkaSum">{dataAllNotif.length}</div>
                                                     </div>
+                                                    <div className="txtSum">
+                                                        <div className="totalSum">Notification unread</div>
+                                                        <div className="angkaSum">{dataAllNotif.length - dataAllNotif.filter(e => e.status !== null).length}</div>
+                                                    </div>
+                                                    <Row>
+                                                        <Col lg={6} md={6} xl={6}>
+                                                            <button className="btnSum" disabled={dataAllNotif.length === 0 ? true : false } onClick={() => this.deleteAll()}>Delete all</button>
+                                                        </Col>
+                                                        <Col lg={6} md={6} xl={6}>
+                                                            <button className="btnSum1" disabled={dataAllNotif.length === 0 ? true : false } onClick={() => this.updateAll()}>Mark all read</button>
+                                                        </Col>
+                                                    </Row>
                                                 </div>
-                                            )
-                                        })}
-                                    </Col>
-                                    )}
-                                    {dataAllNotif.length === 0 || dataAllNotif === undefined ? (
-                                        null
-                                    ) : (
-                                        <Col md={4} xl={4} sm={12} className="mt-5">
-                                            <div className="sideSum">
-                                                <div className="titSum">Notification data</div>
-                                                <div className="txtSum">
-                                                    <div className="totalSum">Total Notification</div>
-                                                    <div className="angkaSum">{dataAllNotif.length}</div>
-                                                </div>
-                                                <div className="txtSum">
-                                                    <div className="totalSum">Notification unread</div>
-                                                    <div className="angkaSum">{dataAllNotif.length}</div>
-                                                </div>
-                                                <Row>
-                                                    <Col lg={6} md={6} xl={6}>
-                                                        <button className="btnSum" disabled={dataAllNotif.length === 0 ? true : false } onClick={() => this.deleteAll()}>Delete all</button>
-                                                    </Col>
-                                                    <Col lg={6} md={6} xl={6}>
-                                                        <button className="btnSum1" disabled={dataAllNotif.length === 0 ? true : false } onClick={() => this.updateAll()}>Mark all read</button>
-                                                    </Col>
-                                                </Row>
-                                            </div>
-                                        </Col>
-                                    )}
-                                </Row>
+                                            </Col>
+                                        )} */}
+                                </div>
                             </div>
                         </div>
                     </MaterialTitlePanel>
@@ -965,10 +965,10 @@ class MasterEmail extends Component {
                                     <AiFillCheckCircle size={80} className={style.green} />
                                 <div className={style.sucUpdate}>Berhasil Menambahkan Email</div>
                             </div>
-                        ) : this.state.confirm === 'del' ? (
+                        ) : this.state.confirm === 'delete' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menghapus Email</div>
+                                <div className={style.sucUpdate}>Berhasil Menghapus Notif</div>
                             </div>
                         ) : this.state.confirm === 'upload' ?(
                             <div>
@@ -1014,12 +1014,12 @@ class MasterEmail extends Component {
                         <div className={style.modalApprove}>
                             <div>
                                 <text>
-                                    Anda yakin untuk delete {detail.name} ?
+                                    Anda yakin untuk delete notifikasi ?
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.delEmail()}>Ya</Button>
-                                <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
+                                <Button color="primary" onClick={() => this.deleteNotif()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalDel}>Tidak</Button>
                             </div>
                         </div>
                     </ModalBody>
@@ -1049,6 +1049,8 @@ const mapDispatchToProps = {
     getAllMenu: menu.getAllMenu,
     getRole: user.getRole,
     getDepo: depo.getDepo,
+    readNotif: notif.readNotif,
+    deleteNotif: notif.deleteNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(MasterEmail)

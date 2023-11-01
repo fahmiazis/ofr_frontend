@@ -3,11 +3,11 @@ import {  NavbarBrand, DropdownToggle, DropdownMenu,
     DropdownItem, Table, ButtonDropdown, Input, Button,
     Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
 import style from '../../assets/css/input.module.css'
-import {FaSearch, FaFinanceCircle, FaBars} from 'react-icons/fa'
+import {FaSearch, FaBars} from 'react-icons/fa'
 import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
 import depo from '../../redux/actions/depo'
 import user from '../../redux/actions/user'
-import finance from '../../redux/actions/finance'
+import spvklaim from '../../redux/actions/spvklaim'
 import {connect} from 'react-redux'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
@@ -19,32 +19,10 @@ import SidebarContent from "../../components/sidebar_content";
 import NavBar from '../../components/NavBar'
 const {REACT_APP_BACKEND_URL} = process.env
 
-const financeSchema = Yup.object().shape({
-    kode_plant: Yup.string().required(),
-    profit_center: Yup.string().required(),
-    region: Yup.string().required(),
-    inisial: Yup.string().required(),
-    rek_spending: Yup.string().required(),
-    rek_zba: Yup.string().required(),
-    rek_bankcoll: Yup.string().required(),
-    type_live: Yup.string().required(),
-    gl_kk: Yup.string().required(),
-    area: Yup.string().required(),
-    pagu: Yup.string().required(),
-    pic_finance: Yup.string().required(),
-    spv_finance: Yup.string().required(),
-    spv2_finance: Yup.string().required(),
-    asman_finance: Yup.string().required(),
-    manager_finance: Yup.string().required(),
-    pic_tax: Yup.string().required(),
-    spv_tax: Yup.string().required(),
-    asman_tax: Yup.string().required(),
-    manager_tax: Yup.string().required(),
-    aos: Yup.string().required(),
-    rom: Yup.string().required(),
-    bm: Yup.string().required(),
-    nom: Yup.string().required(),
-    rbm: Yup.string().required()
+const spvklaimSchema = Yup.object().shape({
+    pic_klaim: Yup.string().required(),
+    spv_klaim: Yup.string().required(),
+    manager_klaim: Yup.string().required()
 });
 
 
@@ -53,7 +31,7 @@ const changeSchema = Yup.object().shape({
     new_password: Yup.string().required('must be filled')
 });
 
-class MasterFinance extends Component {
+class MasterSpvklaim extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -124,7 +102,7 @@ class MasterFinance extends Component {
      }
 
     DownloadMaster = () => {
-        const {link} = this.props.finance
+        const {link} = this.props.spvklaim
         axios({
             url: `${link}`,
             method: 'GET',
@@ -184,10 +162,10 @@ class MasterFinance extends Component {
         });
     }
 
-    addFinance = async (values) => {
+    addSpvklaim = async (values) => {
         const token = localStorage.getItem("token")
-        await this.props.addFinance(token, values)
-        const {isAdd} = this.props.finance
+        await this.props.addSpvklaim(token, values)
+        const {isAdd} = this.props.spvklaim
         if (isAdd) {
             this.setState({confirm: 'add'})
             this.openConfirm()
@@ -196,10 +174,10 @@ class MasterFinance extends Component {
         }
     }
 
-    delFinance = async () => {
+    delSpvklaim = async () => {
         const token = localStorage.getItem("token")
         const {detail} = this.state
-        await this.props.deleteFinance(token, detail.id)
+        await this.props.deleteSpvklaim(token, detail.id)
         this.openModalEdit()
         this.setState({confirm: 'del'})
         this.openConfirm()
@@ -208,13 +186,13 @@ class MasterFinance extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.finance
+        const { page } = this.props.spvklaim
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.finance
+        const { page } = this.props.spvklaim
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.prevLink)
     }
@@ -246,10 +224,10 @@ class MasterFinance extends Component {
         await this.props.uploadMaster(token, data)
     }
 
-    editFinance = async (values, id) => {
+    editSpvklaim = async (values, id) => {
         const token = localStorage.getItem("token")
-        await this.props.updateFinance(token, values, id)
-        const {isUpdate} = this.props.finance
+        await this.props.updateSpvklaim(token, values, id)
+        const {isUpdate} = this.props.spvklaim
         if (isUpdate) {
             this.setState({confirm: 'edit'})
             this.openConfirm()
@@ -264,7 +242,7 @@ class MasterFinance extends Component {
     }
 
     componentDidUpdate() {
-        const {isError, isUpload, isExport, isReset} = this.props.finance
+        const {isError, isUpload, isExport, isReset} = this.props.spvklaim
         if (isError) {
             this.props.resetError()
             this.showAlert()
@@ -293,14 +271,14 @@ class MasterFinance extends Component {
     }
 
     getDataCount = async (value) => {
-        const { page } = this.props.finance
+        const { page } = this.props.spvklaim
         const pages = value === undefined || value.page === undefined ? page.currentPage : value.page
         const token = localStorage.getItem("token")
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
         const filter = value === undefined || value.filter === undefined ? this.state.filter : value.filter
         console.log(this.state.filter)
-        await this.props.getFinance(token, limit, search, pages, filter)
+        await this.props.getSpvklaim(token, limit, search, pages, filter)
         this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages})
     }
 
@@ -328,7 +306,7 @@ class MasterFinance extends Component {
 
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
-        const {dataFinance, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.finance
+        const {dataSpvklaim, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.spvklaim
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
 
@@ -378,7 +356,7 @@ class MasterFinance extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master Finance</div>
+                                    <div className={style.titleDashboard}>Master SPV Klaim</div>
                                 </div>
                                 <div className={style.secHeadDashboard} >
                                     <div>
@@ -395,7 +373,7 @@ class MasterFinance extends Component {
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
                                     </div>
-                                    <div className='filterFinance'>
+                                    <div className='filterSpvklaim'>
                                     </div>
                                 </div>
                                 <div className='secEmail'>
@@ -422,31 +400,9 @@ class MasterFinance extends Component {
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>Kode Plant</th>
-                                                <th>Profit Center</th>
-                                                <th>Region</th>
-                                                <th>Inisial</th>
-                                                <th>Rekening Spending Card</th>
-                                                <th>Rekening ZBA</th>
-                                                <th>Rekening Bank Coll</th>
-                                                <th>Sistem Area</th>
-                                                <th>PAGU IKK</th>
-                                                <th>GL KK</th>
-
-                                                <th>PIC FINANCE</th>
-                                                <th>SPV FINANCE 1</th>
-                                                <th>SPV FINANCE 2</th>
-                                                <th>ASST MGR FIN</th>
-                                                <th>MGR FIN</th>
-                                                <th>PIC TAX</th>
-                                                <th>SPV TAX</th>
-                                                <th>ASMEN TAX</th>
-                                                <th>MGR TAX</th>
-                                                <th>AOS</th>
-                                                <th>ROM</th>
-                                                <th>BM</th>
-                                                <th>NOM</th>
-                                                <th>RBM</th>
+                                                <th>PIC Klaim</th>
+                                                <th>SPV Klaim</th>
+                                                <th>MANAGER Klaim</th>
                                             </tr>
                                         </thead>
                                     </Table>
@@ -460,31 +416,9 @@ class MasterFinance extends Component {
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>Kode Plant</th>
-                                                <th>Profit Center</th>
-                                                <th>Region</th>
-                                                <th>Inisial</th>
-                                                <th>Rekening Spending Card</th>
-                                                <th>Rekening ZBA</th>
-                                                <th>Rekening Bank Coll</th>
-                                                <th>Sistem Area</th>
-                                                <th>PAGU IKK</th>
-                                                <th>GL KK</th>
-
-                                                <th>PIC FINANCE</th>
-                                                <th>SPV FINANCE 1</th>
-                                                <th>SPV FINANCE 2</th>
-                                                <th>ASST MGR FIN</th>
-                                                <th>MGR FIN</th>
-                                                <th>PIC TAX</th>
-                                                <th>SPV TAX</th>
-                                                <th>ASMEN TAX</th>
-                                                <th>MGR TAX</th>
-                                                <th>AOS</th>
-                                                <th>ROM</th>
-                                                <th>BM</th>
-                                                <th>NOM</th>
-                                                <th>RBM</th>
+                                                <th>PIC Klaim</th>
+                                                <th>SPV Klaim</th>
+                                                <th>MANAGER Klaim</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -492,31 +426,9 @@ class MasterFinance extends Component {
                                                 return (
                                                 <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
-                                                    <td>{item.kode_plant}</td>
-                                                    <td>{item.profit_center}</td>
-                                                    <td>{item.region}</td>
-                                                    <td>{item.inisial}</td>
-                                                    <td>{item.rek_spending}</td>
-                                                    <td>{item.rek_zba}</td>
-                                                    <td>{item.rek_bankcoll}</td>
-                                                    <td>{item.type_live}</td>
-                                                    <td>{item.pagu}</td>
-                                                    <td>{item.gl_kk}</td>
-
-                                                    <td>{item.pic_finance}</td>
-                                                    <td>{item.spv_finance}</td>
-                                                    <td>{item.spv2_finance}</td>
-                                                    <td>{item.asman_finance}</td>
-                                                    <td>{item.manager_finance}</td>
-                                                    <td>{item.pic_tax}</td>
-                                                    <td>{item.spv_tax}</td>
-                                                    <td>{item.asman_tax}</td>
-                                                    <td>{item.manager_tax}</td>
-                                                    <td>{item.aos}</td>
-                                                    <td>{item.rom}</td>
-                                                    <td>{item.bm}</td>
-                                                    <td>{item.nom}</td>
-                                                    <td>{item.rbm}</td>
+                                                    <td>{item.pic_klaim}</td>
+                                                    <td>{item.spv_klaim}</td>
+                                                    <td>{item.manager_klaim}</td>
                                                 </tr>
                                             )})}
                                         </tbody>
@@ -537,7 +449,7 @@ class MasterFinance extends Component {
                     </MaterialTitlePanel>
                 </Sidebar>
                 <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
-                    <ModalHeader toggle={this.openModalAdd}>Add Master Finance</ModalHeader>
+                    <ModalHeader toggle={this.openModalAdd}>Add Master Spvklaim</ModalHeader>
                     <Formik
                     initialValues={{
                         kode_plant: '',
@@ -545,8 +457,8 @@ class MasterFinance extends Component {
                         region: '',
                         inisial: ''
                     }}
-                    validationSchema={financeSchema}
-                    onSubmit={(values) => {this.addFinance(values)}}
+                    validationSchema={spvklaimSchema}
+                    onSubmit={(values) => {this.addSpvklaim(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
@@ -631,7 +543,7 @@ class MasterFinance extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
-                    <ModalHeader toggle={this.openModalEdit}>Edit Master Finance</ModalHeader>
+                    <ModalHeader toggle={this.openModalEdit}>Edit Master Spvklaim</ModalHeader>
                     <Formik
                     initialValues={{
                     kode_plant: detail.kode_plant === null ? '' : detail.kode_plant,
@@ -639,8 +551,8 @@ class MasterFinance extends Component {
                     region: detail.region === null ? '' : detail.region,
                     inisial: detail.inisial === null ? '' : detail.inisial
                     }}
-                    validationSchema={financeSchema}
-                    onSubmit={(values) => {this.editFinance(values, detail.id)}}
+                    validationSchema={spvklaimSchema}
+                    onSubmit={(values) => {this.editSpvklaim(values, detail.id)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
@@ -715,7 +627,7 @@ class MasterFinance extends Component {
                         <hr/>
                         <div className={style.foot}>
                             <div>
-                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Finance</Button>
+                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Spvklaim</Button>
                             </div>
                             <div>
                                 <Button  onClick={handleSubmit} color="primary">Save</Button>
@@ -726,7 +638,7 @@ class MasterFinance extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
-                    <ModalHeader>Upload Master Finance</ModalHeader>
+                    <ModalHeader>Upload Master Spv klaim</ModalHeader>
                     <ModalBody className={style.modalUpload}>
                         <div className={style.titleModalUpload}>
                             <text>Upload File: </text>
@@ -754,23 +666,23 @@ class MasterFinance extends Component {
                         {this.state.confirm === 'edit' ? (
                         <div className={style.cekUpdate}>
                             <AiFillCheckCircle size={80} className={style.green} />
-                            <div className={style.sucUpdate}>Berhasil Memperbarui Finance</div>
+                            <div className={style.sucUpdate}>Berhasil Memperbarui Spvklaim</div>
                         </div>
                         ) : this.state.confirm === 'add' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menambahkan Finance</div>
+                                <div className={style.sucUpdate}>Berhasil Menambahkan Spvklaim</div>
                             </div>
                         ) : this.state.confirm === 'del' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menghapus Finance</div>
+                                <div className={style.sucUpdate}>Berhasil Menghapus Spvklaim</div>
                             </div>
                         ) : this.state.confirm === 'upload' ?(
                             <div>
                                 <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Mengupload Master Finance</div>
+                                <div className={style.sucUpdate}>Berhasil Mengupload Master Spvklaim</div>
                             </div>
                             </div>
                         ) : this.state.confirm === 'reset' ? (
@@ -785,7 +697,7 @@ class MasterFinance extends Component {
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.finance.isLoading ? true: false} size="sm">
+                <Modal isOpen={this.props.spvklaim.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -795,7 +707,7 @@ class MasterFinance extends Component {
                         </div>
                         </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.finance.isUpload ? true: false} size="sm">
+                <Modal isOpen={this.props.spvklaim.isUpload ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -876,7 +788,7 @@ class MasterFinance extends Component {
                             </text>
                         </div>
                         <div className={style.btnApprove}>
-                            <Button color="primary" onClick={() => this.delFinance()}>Ya</Button>
+                            <Button color="primary" onClick={() => this.delSpvklaim()}>Ya</Button>
                             <Button color="secondary" onClick={this.openModalDel}>Tidak</Button>
                         </div>
                     </div>
@@ -889,21 +801,21 @@ class MasterFinance extends Component {
 
 const mapStateToProps = state => ({
     user: state.user,
-    finance: state.finance
+    spvklaim: state.spvklaim
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
-    addFinance: finance.addFinance,
-    updateFinance: finance.updateFinance,
-    getFinance: finance.getAllFinance,
-    uploadMaster: finance.uploadMaster,
-    nextPage: finance.nextPage,
-    exportMaster: finance.exportMaster,
-    resetError: finance.resetError,
+    addSpvklaim: spvklaim.addSpvklaim,
+    updateSpvklaim: spvklaim.updateSpvklaim,
+    getSpvklaim: spvklaim.getAllSpvklaim,
+    uploadMaster: spvklaim.uploadMaster,
+    nextPage: spvklaim.nextPage,
+    exportMaster: spvklaim.exportMaster,
+    resetError: spvklaim.resetError,
     resetPassword: user.resetPassword,
-    deleteFinance: finance.deleteFinance
+    deleteSpvklaim: spvklaim.deleteSpvklaim
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(MasterFinance)
+export default connect(mapStateToProps, mapDispatchToProps)(MasterSpvklaim)
 	

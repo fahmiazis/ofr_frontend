@@ -7,17 +7,17 @@ export default {
         type: 'GET_NOTIF',
         payload: http(token).get(`/notif/get?limit=${limit}&search=${search}&page=${page === undefined ? 1 : page}`),
     }),
-    getAllNotif: (token) => ({
+    getAllNotif: (token, tipe) => ({
         type: 'GET_ALL_NOTIF',
-        payload: http(token).get(`/notif/all`)
+        payload: http(token).get(`/notif/all?tipe=${tipe}`)
     }),
     addNotif: (token, data) => ({
         type: 'ADD_NOTIF',
         payload: http(token).post(`/notif/add`, qs.stringify(data))
     }),
-    readNotif: (token, data) => ({
+    readNotif: (token, id) => ({
         type: 'READ_NOTIF',
-        payload: http(token).patch(`/notif/read`, data)
+        payload: http(token).patch(`/notif/read/${id}`)
     }),
     deleteNotif: (token, id) => ({
         type: 'DELETE_NOTIF',

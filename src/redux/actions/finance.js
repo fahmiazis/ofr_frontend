@@ -7,6 +7,10 @@ export default {
         type: 'GET_FINANCE',
         payload: http(token).get(`/finance/all`),
     }),
+    getFinRek: (token, tipe) => ({
+        type: 'GET_FINREK',
+        payload: http(token).get(`/finance/rek?tipe=${tipe}`),
+    }),
     getAllFinance: (token, limit, search, page) => ({
         type: 'GET_ALL',
         payload: http(token).get(`/finance/get?limit=${limit}&search=${search}&page=${page === undefined ? 1 : page}`)

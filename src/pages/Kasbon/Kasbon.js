@@ -703,6 +703,7 @@ class Kasbon extends Component {
             tempcc.push(cc[i].email)
         }
         const tempno = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: draftEmail.to.email,
             cc: tempcc.toString(),

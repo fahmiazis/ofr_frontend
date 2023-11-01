@@ -23,7 +23,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -266,7 +266,21 @@ class AjuanBayarKlaim extends Component {
             tempcc.push(cc[i].email)
         }
         to.length > 0 && to.map(item => { return (tempto.push(item.email)) })
+
+        const app = detailKlaim[0].appList
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        
+        const tipeProses = val === 'reject' ? 'reject perbaikan' : tempApp.length === app.length-1 ? 'pembayaran' : 'approve'
+        const tipeRoute = val === 'reject' ? 'revklm' : tempApp.length === app.length-1 ? 'payklm' : 'listklm'
+        const tipeMenu = 'list ajuan bayar'
+
         const tempno = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: val === 'reject' ? tempto.toString() : draftEmail.to.email,
             cc: tempcc.toString(),
@@ -274,9 +288,15 @@ class AjuanBayarKlaim extends Component {
             subject: subject,
             no: noTrans,
             tipe: 'klaim',
-            jenis: 'ajuan'
+            jenis: 'ajuan',
+            menu: tipeMenu,
+            proses: tipeProses,
+            route: tipeRoute
         }
+        
         await this.props.sendEmail(token, tempno)
+        await this.props.addNotif(token, tempno)
+
         if (tipeTrans === 'submit') {
             this.getDataKlaim()
             this.setState({confirm: 'submit'})
@@ -1191,7 +1211,7 @@ class AjuanBayarKlaim extends Component {
                                     </Input>
                                 </div>
                                 {this.state.filter === 'available' && level !== '2' ? (
-                                    null
+                                    <div></div>
                                 ) : (
                                     <div className={style.headEmail2}>
                                         {this.state.filter === 'verif' && level === '2' ?  (
@@ -2587,7 +2607,7 @@ const mapDispatchToProps = {
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
     getDraftAjuan: email.getDraftAjuan,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarKlaim)

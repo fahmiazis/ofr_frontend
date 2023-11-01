@@ -23,7 +23,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -232,7 +232,21 @@ class AjuanBayarOps extends Component {
             tempcc.push(cc[i].email)
         }
         to.length > 0 && to.map(item => { return (tempto.push(item.email)) })
+
+        const app = detailOps[0].appList
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        
+        const tipeProses = val === 'reject' ? 'reject perbaikan' : tempApp.length === app.length-1 ? 'pembayaran' : 'approve'
+        const tipeRoute = val === 'reject' ? 'revops' : tempApp.length === app.length-1 ? 'payops' : 'listops'
+        const tipeMenu = 'list ajuan bayar'
+
         const tempno = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: val === 'reject' ? tempto.toString() : draftEmail.to.email,
             cc: tempcc.toString(),
@@ -240,7 +254,10 @@ class AjuanBayarOps extends Component {
             subject: subject,
             no: noTrans,
             tipe: 'ops',
-            jenis: 'ajuan'
+            jenis: 'ajuan',
+            menu: tipeMenu,
+            proses: tipeProses,
+            route: tipeRoute
         }
         await this.props.sendEmail(token, tempno)
         if (tipeTrans === 'submit') {
@@ -1165,9 +1182,8 @@ class AjuanBayarOps extends Component {
                                             {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button> */}
                                             <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
                                         </>
-                                    ) : null}
+                                    ) : <div></div>}
                                 </div>
-                                <div></div>
                             </div>
                             <div className={[style.secEmail4]}>
                                 <div className='rowCenter'>
@@ -2552,7 +2568,7 @@ const mapDispatchToProps = {
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
     getDraftAjuan: email.getDraftAjuan,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarOps)

@@ -20,14 +20,14 @@ import placeholder from  "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
 import klaim from '../../redux/actions/klaim'
 import bank from '../../redux/actions/bank'
-import rekening from '../../redux/actions/rekening'
+import finance from '../../redux/actions/finance'
 import {connect} from 'react-redux'
 import moment from 'moment'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import Select from 'react-select'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -425,6 +425,7 @@ class CartKlaim extends Component {
             tempcc.push(cc[i].email)
         }
         const data = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
@@ -432,12 +433,16 @@ class CartKlaim extends Component {
             subject: subject,
             no: noklaim,
             tipe: 'klaim',
+            menu: 'pengajuan klaim',
+            proses: 'approve',
+            route: 'klaim'
         }
         const tempno = {
             no: noklaim
         }
         await this.props.sendEmail(token, data)
         await this.props.submitKlaimFinal(token, tempno)
+        await this.props.addNotif(token, data)
         await this.props.getCart(token)
         this.openModalDoc()
         this.modalSubmitPre()
@@ -858,17 +863,17 @@ class CartKlaim extends Component {
         if (dataCart.length > 0) {
             this.openConfirm(this.setState({confirm: 'rejCartAdd'}))
         } else {
-            await this.props.getRek(token)
+            await this.props.getFinRek(token)
             await this.props.getDetailDepo(token)
-            const { dataRek } = this.props.rekening
+            const { dataRek } = this.props.finance
             const spending = dataRek[0].rek_spending
             const zba = dataRek[0].rek_zba
-            const bankcol = dataRek[0].rek_bankcol
+            const bankcoll = dataRek[0].rek_bankcoll
             const temp = [
                 {label: '-Pilih-', value: ''},
                 spending !== '0' ? {label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card'} : {value: '', label: ''},
                 zba !== '0' ? {label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA'} : {value: '', label: ''},
-                bankcol !== '0' ? {label: `${bankcol}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
+                bankcoll !== '0' ? {label: `${bankcoll}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
             ]
             this.setState({rekList: temp})
             this.openModalAdd()
@@ -878,17 +883,17 @@ class CartKlaim extends Component {
     prosesOpenEdit = async (val) => {
         const token = localStorage.getItem('token')
         await this.props.getDetailId(token, val)
-        await this.props.getRek(token)
+        await this.props.getFinRek(token)
         await this.props.getDetailDepo(token)
-        const { dataRek } = this.props.rekening
+        const { dataRek } = this.props.finance
         const spending = dataRek[0].rek_spending
         const zba = dataRek[0].rek_zba
-        const bankcol = dataRek[0].rek_bankcol
+        const bankcoll = dataRek[0].rek_bankcoll
         const temp = [
             {label: '-Pilih-', value: ''},
             spending !== '0' ? {label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card'} : {value: '', label: ''},
             zba !== '0' ? {label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA'} : {value: '', label: ''},
-            bankcol !== '0' ? {label: `${bankcol}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
+            bankcoll !== '0' ? {label: `${bankcoll}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
         ]
 
         const {idKlaim} = this.props.klaim
@@ -2672,6 +2677,7 @@ class CartKlaim extends Component {
                                     ) : (
                                         <Col md={12} lg={12} className="colDoc">
                                             <text className="btnDocIo" >{x.desc}</text>
+                                            <text className="italRed" >{x.stat_upload === 0 ? '*tidak harus upload' : '*harus upload'}</text>
                                             <div className="colDoc">
                                                 <input
                                                 type="file"
@@ -2691,7 +2697,7 @@ class CartKlaim extends Component {
                     <Button className="mr-2" disabled={dataDoc.length > 0 ? false : true} color="primary" onClick={this.cekDok}>
                         Done
                     </Button>
-                    <Button color="primary" onClick={this.openModalDoc}>
+                    <Button color="secondary" onClick={this.openModalDoc}>
                         Close 
                     </Button>
                 </ModalFooter>
@@ -2724,7 +2730,7 @@ const mapStateToProps = state => ({
     coa: state.coa,
     klaim: state.klaim,
     bank: state.bank,
-    rekening: state.rekening,
+    finance: state.finance,
     dokumen: state.dokumen,
     email: state.email
 })
@@ -2747,15 +2753,15 @@ const mapDispatchToProps = {
     getBank: bank.getBank,
     submitKlaimFinal: klaim.submitKlaimFinal,
     getApproval: klaim.getApproval,
-    getRek: rekening.getRek,
+    getFinRek: finance.getFinRek,
     showDokumen: dokumen.showDokumen,
     resetEmail: email.resetError,
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
     getDetail: klaim.getDetail,
     getDetailId: klaim.getDetailId,
-    editKlaim: klaim.editKlaim
-    // notifStock: notif.notifStock
+    editKlaim: klaim.editKlaim,
+    addNotif: notif.addNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(CartKlaim)

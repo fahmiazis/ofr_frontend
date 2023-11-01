@@ -896,6 +896,7 @@ class AjuanBayarIkk extends Component {
         }
         to.map(item => { return (tempto.push(item.email)) })
         const tempno = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: tempto.toString(),
             cc: tempcc.toString(),
@@ -1345,7 +1346,7 @@ class AjuanBayarIkk extends Component {
                                 <div>{alertM}</div>
                             </Alert> */}
                             <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Pembayaran List Ajuan Ikk</div>
+                                <div className={style.titleDashboard}>Pembayaran Ajuan Ikk</div>
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.searchEmail2}>

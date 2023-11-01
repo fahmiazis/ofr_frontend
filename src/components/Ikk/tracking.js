@@ -10,10 +10,10 @@ import depo from '../../redux/actions/depo'
 import auth from '../../redux/actions/auth'
 import {connect} from 'react-redux'
 import {FiSend, FiTruck, FiSettings, FiUpload} from 'react-icons/fi'
-import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
+import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle, AiOutlineUpload} from 'react-icons/ai'
 import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList, FaFileSignature} from 'react-icons/fa'
 import {RiDraftFill} from 'react-icons/ri'
-import {MdAssignment} from 'react-icons/md'
+import {MdAssignment, MdPayments} from 'react-icons/md'
 import moment from 'moment'
 
 class Tracking extends Component {
@@ -99,12 +99,12 @@ class Tracking extends Component {
                     </div>
                     <h4 class="step-title">Verifikasi Finance</h4>
                 </div>
-                <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 4 ? "step completed" : 'step'}>
+                {/* <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 4 ? "step completed" : 'step'}>
                     <div class="step-icon-wrap">
                         <button class="step-icon" onClick={() => this.showCollap('Verifikasi Tax')}><FiSettings size={40} className="center" /></button>
                     </div>
                     <h4 class="step-title">Verifikasi Tax</h4>
-                </div>
+                </div> */}
                 <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 5 ? "step completed" : 'step'}>
                     <div class="step-icon-wrap">
                         <button class="step-icon" onClick={() => this.showCollap('Draft List Ajuan Bayar')}><RiDraftFill size={40} className="center" /></button>
@@ -117,7 +117,13 @@ class Tracking extends Component {
                     </div>
                     <h4 class="step-title">Approval List Ajuan Bayar</h4>
                 </div>
-                <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi >= 7 ? "step completed" : 'step'}>
+                <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 7 ? "step completed" : 'step'}>
+                    <div class="step-icon-wrap">
+                        <button class="step-icon" onClick={() => this.showCollap('Pembayaran Ajuan')}><MdPayments size={40} className="center" /></button>
+                    </div>
+                    <h4 class="step-title">Pembayaran Ajuan</h4>
+                </div>
+                <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi === 8 ? "step completed" : 'step'}>
                     <div class="step-icon-wrap">
                         <button class="step-icon"><AiOutlineCheck size={40} className="center" /></button>
                     </div>
@@ -241,6 +247,21 @@ class Tracking extends Component {
                                             <h4 class="step-title">Seleksi Data Ajuan</h4>
                                         </div>
                                         <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 5 ? "step completed" : 'step'}>
+                                            <div class="step-icon-wrap">
+                                            <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
+                                            </div>
+                                            <h4 class="step-title">Selesai</h4>
+                                        </div>
+                                    </div>
+                                ) : this.state.tipeCol === 'Pembayaran Ajuan' ? (
+                                    <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
+                                        <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 7 ? "step completed" : 'step'}>
+                                            <div class="step-icon-wrap">
+                                            <button class="step-icon" ><AiOutlineUpload size={30} className="center2" /></button>
+                                            </div>
+                                            <h4 class="step-title">Upload Bukti Bayar</h4>
+                                        </div>
+                                        <div class={detailIkk[0] === undefined ? 'step' : detailIkk[0].status_transaksi > 7 ? "step completed" : 'step'}>
                                             <div class="step-icon-wrap">
                                             <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
                                             </div>

@@ -5,25 +5,33 @@ import { Input, Button, UncontrolledDropdown, DropdownToggle,
 import style from '../assets/css/input.module.css'
 import {FaBars, FaFileSignature, FaUserCircle} from 'react-icons/fa'
 import moment from 'moment'
+import notifAct from '../redux/actions/notif'
 import { useHistory } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 
 
-export default function Bell({dataNotif, color}) {
+export default function Bell({dataPass, color}) {
     const dispatch = useDispatch()
+
+    const notifDucer = useSelector((state) => state.notif)
+    const dataAllNotif = notifDucer.dataAllNotif
+
     const history = useHistory()
 
-    async function goRoute(val) {
+    const goRoute = async (val) => {
         const token = localStorage.getItem('token')
         if (val === 'notif') {
             history.push(`/${val}`)
         } else {
+            const typeNotif = val.tipe === 'pengajuan area' && val.transaksi === 'vendor' ? 'approve' : val.tipe
             const data = {
                 route: val.routes, 
-                type: val.tipe, 
+                type: typeNotif, 
                 item: val
             }
+            await localStorage.setItem('typeNotif', typeNotif)
             const route = val.routes
+            await dispatch(notifAct.readNotif(token, val.id))
             history.push({
                 pathname: `/${route}`,
                 state: data
@@ -36,8 +44,9 @@ export default function Bell({dataNotif, color}) {
         <DropdownToggle nav>
             <div className={style.optionType}>
                 <BsBell size={30} className={color === undefined ? 'white' : color} />
-                {dataNotif.find(({status}) => status === null) !== undefined ? (
-                    <BsFillCircleFill className="red ball" size={10} />
+                {dataAllNotif.length > 0 && dataAllNotif.find(({status}) => status === null) !== undefined ? (
+                    // <BsFillCircleFill className="red ball" size={10} />
+                    <div className="white divNotif">{dataAllNotif.filter(e => e.status === null).length}</div>
                 ) : (
                     <div></div>
                 ) }
@@ -65,8 +74,8 @@ export default function Bell({dataNotif, color}) {
                     See all notifications
                 </div>        
             </DropdownItem>
-            {dataNotif.length > 0 ? (
-                dataNotif.map(item => {
+            {dataAllNotif.length > 0 && dataAllNotif.find(({status}) => status === null) !== undefined ? (
+                dataAllNotif.filter(e => e.status === null).map(item => {
                     return (
                         <DropdownItem 
                             onClick={() => goRoute(item)}

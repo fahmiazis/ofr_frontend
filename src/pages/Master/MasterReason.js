@@ -362,7 +362,7 @@ class MasterReason extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master Alasan</div>
+                                    <div className={style.titleDashboard}>Master Alasan Reject</div>
                                 </div>
                                 <div className={style.secHeadDashboard} >
                                     <div>

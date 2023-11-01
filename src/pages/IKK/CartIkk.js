@@ -20,7 +20,7 @@ import placeholder from  "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
 import ikk from '../../redux/actions/ikk'
 import bank from '../../redux/actions/bank'
-import rekening from '../../redux/actions/rekening'
+import finance from '../../redux/actions/finance'
 import {connect} from 'react-redux'
 import moment from 'moment'
 import {Formik} from 'formik'
@@ -151,7 +151,9 @@ class CartIkk extends Component {
             message: '',
             isLoading: false,
             typeniknpwp: '',
-            dataDelete: ''
+            dataDelete: '',
+            showOptions: false,
+            tipeSkb: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -444,6 +446,7 @@ class CartIkk extends Component {
             no: noikk
         }
         const data = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
@@ -759,7 +762,8 @@ class CartIkk extends Component {
             nilai_bayar: parseInt(nilai_vendor),
             jenis_pph: dataTrans.jenis_pph,
             tgl_faktur: tgl_faktur,
-            typeniknpwp: typeniknpwp
+            typeniknpwp: typeniknpwp,
+            stat_skb: this.state.tipeSkb
         }
         await this.props.addCart(token, data, dataTrans.id)
     }
@@ -805,7 +809,8 @@ class CartIkk extends Component {
             nilai_bayar: parseInt(nilai_vendor),
             jenis_pph: dataTrans.jenis_pph,
             tgl_faktur: tgl_faktur,
-            typeniknpwp: typeniknpwp
+            typeniknpwp: typeniknpwp,
+            stat_skb: this.state.tipeSkb
         }
         await this.props.editIkk(token, idIkk.id, dataTrans.id, data )
         this.openModalEdit()
@@ -846,9 +851,9 @@ class CartIkk extends Component {
 
     prosesOpenAdd = async () => {
         const token = localStorage.getItem('token')
-        await this.props.getRek(token)
+        await this.props.getFinRek(token)
         await this.props.getDetailDepo(token)
-        const { dataRek } = this.props.rekening
+        const { dataRek } = this.props.finance
         const spending = dataRek[0].rek_spending
         const zba = dataRek[0].rek_zba
         const bankcol = dataRek[0].rek_bankcol
@@ -877,7 +882,8 @@ class CartIkk extends Component {
             noNik: '',
             nama: '',
             alamat: '',
-            tgl_faktur: ''
+            tgl_faktur: '',
+            tipeSkb: ''
         })
         this.openModalAdd()
     }
@@ -885,9 +891,9 @@ class CartIkk extends Component {
     prosesOpenEdit = async (val) => {
         const token = localStorage.getItem('token')
         await this.props.getDetailId(token, val)
-        await this.props.getRek(token)
+        await this.props.getFinRek(token)
         await this.props.getDetailDepo(token)
-        const { dataRek } = this.props.rekening
+        const { dataRek } = this.props.finance
         const spending = dataRek[0].rek_spending
         const zba = dataRek[0].rek_zba
         const bankcol = dataRek[0].rek_bankcol
@@ -920,7 +926,8 @@ class CartIkk extends Component {
             tipePpn: idIkk.type_transaksi,
             tipeVendor: idIkk.penanggung_pajak,
             status_npwp: idIkk.status_npwp === 0 ? 'Tidak' : idIkk.status_npwp === 1 ? 'Ya' : nonObject,
-            dataSelFaktur: { no_faktur: idIkk.no_faktur }
+            dataSelFaktur: { no_faktur: idIkk.no_faktur },
+            tipeSkb: idIkk.stat_skb
         })
         const cekNpwp = idIkk.no_npwp === '' || idIkk.no_npwp === null ? null : idIkk.no_npwp
 
@@ -1228,12 +1235,12 @@ class CartIkk extends Component {
 
     selectTujuan = async (val) => {
         const token = localStorage.getItem('token')
-        await this.props.getRek(token, val === 'PMA' ? 'undefined' : 'all')
-        const { dataRek } = this.props.rekening
+        await this.props.getFinRek(token, val === 'PMA' ? 'undefined' : 'all')
+        const { dataRek } = this.props.finance
         const temp = []
         for (let i = 0; i < dataRek.length; i++) {
             const spending = dataRek[i].rek_spending
-            const plant = dataRek[i].depo.area
+            const plant = dataRek[i].depo === null ? dataRek[i].area : dataRek[i].depo.area
             if (spending !== '0') {
                 temp.push({label: `${spending}~Rekening Spending Card~${plant}`, value: spending})
             }
@@ -1251,6 +1258,10 @@ class CartIkk extends Component {
         setTimeout(() => {
             this.formulaTax()
         }, 200)
+    }
+
+    selectSkb = async (val) => {
+        this.setState({tipeSkb: val})
     }
 
     selectTypePpn = async (val) => {
@@ -1321,22 +1332,38 @@ class CartIkk extends Component {
     }
 
     inputNik = (val) => {
-        const {noNik} = this.state
-        const cek = noNik.split('')
-        if (cek.length > 1 && val === '') {
-            this.setState({noNik: noNik})
+        // const {noNik} = this.state
+        // const cek = noNik.split('')
+        // if (cek.length > 1 && val === '') {
+        //     this.setState({noNik: noNik})
+        // } else {
+        //     this.setState({noNik: val, typeniknpwp: 'manual'})
+        // }
+        if( val.length === 16 ) {
+            this.setState({ showOptions : true })
         } else {
-            this.setState({noNik: val, typeniknpwp: 'manual'})
+            this.setState(
+                { showOptions : false },
+                console.log('Option lenght is short {} {}', val, val.length)
+            )
         }
     }
 
     inputNpwp = (val) => {
-        const {noNpwp} = this.state
-        const cek = noNpwp.split('')
-        if (cek.length > 1 && val === '') {
-            this.setState({noNpwp: noNpwp})
+        // const {noNpwp} = this.state
+        // const cek = noNpwp.split('')
+        // if (cek.length > 1 && val === '') {
+        //     this.setState({noNpwp: noNpwp})
+        // } else {
+        //     this.setState({noNpwp: val, typeniknpwp: 'manual'})
+        // }
+        if( val.length === 15 ) {
+            this.setState({ showOptions : true })
         } else {
-            this.setState({noNpwp: val, typeniknpwp: 'manual'})
+            this.setState(
+                { showOptions : false },
+                console.log('Option lenght is short {} {}', val, val.length)
+            )
         }
     }
 
@@ -1475,7 +1502,7 @@ class CartIkk extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, newStock, dataTrans} = this.state
+        const {dataRinci, dropApp, dataItem, listMut, drop, newStock, dataTrans, showOptions} = this.state
         const {dataCart, dataDoc, depoCart, idIkk} = this.props.ikk
         const {dataPagu} = this.props.pagu
         const { detailDepo, dataDepo } = this.props.depo
@@ -1801,15 +1828,20 @@ class CartIkk extends Component {
                                                 <Select
                                                     isDisabled={this.state.status_npwp === 'Ya' ? false : true}
                                                     className="inputRinci2"
-                                                    options={this.state.listNpwp}
+                                                    options={showOptions ? this.state.listNpwp : []}
                                                     onChange={e => this.selectNikNpwp({val: e, type: 'npwp'})}
                                                     onInputChange={e => this.inputNpwp(e)}
                                                     isSearchable
+                                                    components={
+                                                        {
+                                                          DropdownIndicator: () => null,
+                                                        }
+                                                    }
                                                     value={this.state.status_npwp === 'Ya' ? {value: this.state.noNpwp, label: this.state.noNpwp} : { value: '', label: '' }}
                                                 />
                                             </Col>
                                         </Row>
-                                        {this.state.status_npwp === 'Ya' && this.state.typeniknpwp === 'manual' && this.state.noNpwp.length < 15 && this.state.noNpwp.length > 15  ? (
+                                        {this.state.status_npwp === 'Ya' && this.state.typeniknpwp === 'manual' && (this.state.noNpwp.length < 15 || this.state.noNpwp.length > 15)  ? (
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
                                         ) : null}
                                         {/* <Row className="mb-2 rowRinci">
@@ -1843,15 +1875,20 @@ class CartIkk extends Component {
                                                 <Select
                                                     isDisabled={this.state.status_npwp === 'Tidak' ? false : true}
                                                     className="inputRinci2"
-                                                    options={this.state.listNik}
+                                                    options={showOptions ? this.state.listNik : []}
                                                     onChange={e => this.selectNikNpwp({val: e, type: 'nik'})}
                                                     onInputChange={e => this.inputNik(e)}
                                                     isSearchable
+                                                    components={
+                                                        {
+                                                          DropdownIndicator: () => null,
+                                                        }
+                                                    }
                                                     value={this.state.status_npwp === 'Tidak' ? {value: this.state.noNik, label: this.state.noNik} : { value: '', label: '' }}
                                                 />
                                             </Col>
                                         </Row>
-                                        {this.state.status_npwp === 'Tidak' && this.state.typeniknpwp === 'manual' && this.state.noNik.length < 16 && this.state.noNik.length > 16 ? (
+                                        {this.state.status_npwp === 'Tidak' && this.state.typeniknpwp === 'manual' && (this.state.noNik.length < 16 || this.state.noNik.length > 16) ? (
                                             <text className={style.txtError}>must be filled with 16 digits characters</text>
                                         ) : null}
                                         {/* <Row className="mb-2 rowRinci">
@@ -1873,11 +1910,12 @@ class CartIkk extends Component {
                                             <Col md={3}>Nama Vendor/NPWP/KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 type= "text" 
-                                                disabled={
-                                                    this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
-                                                    : this.state.jenisVendor === nonObject ? true
-                                                    : false
-                                                }
+                                                // disabled={
+                                                //     this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
+                                                //     : this.state.jenisVendor === nonObject ? true
+                                                //     : false
+                                                // }
+                                                disabled
                                                 className="inputRinci"
                                                 value={this.state.nama}
                                                 // onBlur={handleBlur("nama_vendor")}
@@ -1892,11 +1930,12 @@ class CartIkk extends Component {
                                             <Col md={3}>Alamat Vendor</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 type= "textarea" 
-                                                disabled={
-                                                    this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
-                                                    : this.state.jenisVendor === nonObject ? true
-                                                    : false
-                                                }
+                                                // disabled={
+                                                //     this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
+                                                //     : this.state.jenisVendor === nonObject ? true
+                                                //     : false
+                                                // }
+                                                disabled
                                                 className="inputRinci"
                                                 value={this.state.alamat}
                                                 // onBlur={handleBlur("alamat_vendor")}
@@ -2071,6 +2110,37 @@ class CartIkk extends Component {
                                         ) : null}
                                         {this.state.nilai_ajuan === 0 && this.state.tipePpn === "Tidak" ? (
                                             <text className={style.txtError}>must be filled with number</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Vendor Memiliki Surat Keterangan Bebas Pajak (SKB)/Surat Keterangan (SKT)</Col>
+                                            <Col md={9} className="colRinci">:  
+                                            {this.state.jenisVendor === nonObject 
+                                                ? <Input
+                                                    type= "text" 
+                                                    className="inputRinci"
+                                                    disable
+                                                    // value={nonObject}
+                                                />
+                                            : 
+                                                <Input
+                                                type= "select" 
+                                                className="inputRinci"
+                                                value={this.state.tipeSkb}
+                                                disabled={this.state.idTrans === '' ? true : false}
+                                                // value={values.penanggung_pajak}
+                                                // onBlur={handleBlur("penanggung_pajak")}
+                                                onChange={e => {this.selectSkb(e.target.value)}}
+                                                >
+                                                    <option value=''>Pilih</option>
+                                                    <option value="ya">Ya</option>
+                                                    <option value="tidak">Tidak</option>
+                                                </Input>
+                                            }
+                                                
+                                            </Col>
+                                        </Row>
+                                        {this.state.jenisVendor !== nonObject && this.state.tipeSkb === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nilai Yang Dibukukan</Col>
@@ -2260,26 +2330,29 @@ class CartIkk extends Component {
                                     </div>
                                 </div>
                             </div>
-                                <div className="modalFoot mt-3">
-                                    <div></div>
-                                    <div className='btnfoot'>
-                                        <Button 
-                                            className="mr-3" 
-                                            size="md" 
-                                            disabled={this.state.no_coa === '' ? true 
-                                            : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp === '' ) ? true 
-                                            : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
-                                            // : values.norek_ajuan.length < this.state.digit ? true 
-                                            : this.state.tujuan_tf === '' ? true
-                                            : this.state.tipePpn === "Tidak" && this.state.nilai_ajuan > 1000000 ? true
-                                            : false } 
-                                            color="primary" 
-                                            onClick={handleSubmit}>
-                                            Save
-                                        </Button>
-                                        <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
-                                    </div>
+                            <div className="modalFoot mt-5">
+                                <div className='btnfoot ml-3'>
+                                    <Button className="" size="md" color="warning" onClick={() => this.props.history.push('/verifven')}>Ajukan Data Vendor</Button>
                                 </div>
+                                <div className='btnfoot'>
+                                    <Button 
+                                        className="mr-3" 
+                                        size="md" 
+                                        disabled={this.state.no_coa === '' ? true 
+                                        : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp === '' ) ? true 
+                                        : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
+                                        // : values.norek_ajuan.length < this.state.digit ? true 
+                                        : this.state.tujuan_tf === '' ? true
+                                        : this.state.tipePpn === "Tidak" && this.state.nilai_ajuan > 1000000 ? true
+                                        : this.state.jenisVendor !== nonObject && this.state.tipeSkb === '' ? true
+                                        : false } 
+                                        color="primary" 
+                                        onClick={handleSubmit}>
+                                        Save
+                                    </Button>
+                                    <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
+                                </div>
+                            </div>
                             </>
                         )}
                         </Formik>
@@ -2466,10 +2539,15 @@ class CartIkk extends Component {
                                                 <Select
                                                     isDisabled={this.state.status_npwp === 'Ya' ? false : true}
                                                     className="inputRinci2"
-                                                    options={this.state.listNpwp}
+                                                    options={showOptions ? this.state.listNpwp : []}
                                                     onChange={e => this.selectNikNpwp({val: e, type: 'npwp'})}
                                                     onInputChange={e => this.inputNpwp(e)}
                                                     isSearchable
+                                                    components={
+                                                        {
+                                                          DropdownIndicator: () => null,
+                                                        }
+                                                    }
                                                     value={this.state.status_npwp === 'Ya' ? {value: this.state.noNpwp, label: this.state.noNpwp} : { value: '', label: '' }}
                                                 />
                                             </Col>
@@ -2508,10 +2586,15 @@ class CartIkk extends Component {
                                                 <Select
                                                     isDisabled={this.state.status_npwp === 'Tidak' ? false : true}
                                                     className="inputRinci2"
-                                                    options={this.state.listNik}
+                                                    options={showOptions ? this.state.listNik : []}
                                                     onChange={e => this.selectNikNpwp({val: e, type: 'nik'})}
                                                     onInputChange={e => this.inputNik(e)}
                                                     isSearchable
+                                                    components={
+                                                        {
+                                                          DropdownIndicator: () => null,
+                                                        }
+                                                    }
                                                     value={this.state.status_npwp === 'Tidak' ? {value: this.state.noNik, label: this.state.noNik} : { value: '', label: '' }}
                                                 />
                                             </Col>
@@ -2538,11 +2621,12 @@ class CartIkk extends Component {
                                             <Col md={3}>Nama Vendor/NPWP/KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 type= "text" 
-                                                disabled={
-                                                    this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
-                                                    : this.state.jenisVendor === nonObject ? true
-                                                    : false
-                                                }
+                                                // disabled={
+                                                //     this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
+                                                //     : this.state.jenisVendor === nonObject ? true
+                                                //     : false
+                                                // }
+                                                disabled
                                                 className="inputRinci"
                                                 value={this.state.nama}
                                                 // onBlur={handleBlur("nama_vendor")}
@@ -2557,11 +2641,12 @@ class CartIkk extends Component {
                                             <Col md={3}>Alamat Vendor</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 type= "textarea" 
-                                                disabled={
-                                                    this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
-                                                    : this.state.jenisVendor === nonObject ? true
-                                                    : false
-                                                }
+                                                // disabled={
+                                                //     this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
+                                                //     : this.state.jenisVendor === nonObject ? true
+                                                //     : false
+                                                // }
+                                                disabled
                                                 className="inputRinci"
                                                 value={this.state.alamat}
                                                 // onBlur={handleBlur("alamat_vendor")}
@@ -2723,6 +2808,37 @@ class CartIkk extends Component {
                                         </Row>
                                         {this.state.nilai_ajuan === 0 && this.state.tipePpn === "Tidak" ? (
                                             <text className={style.txtError}>must be filled with number</text>
+                                        ) : null}
+                                        <Row className="mb-2 rowRinci">
+                                            <Col md={3}>Vendor Memiliki Surat Keterangan Bebas Pajak (SKB)/Surat Keterangan (SKT)</Col>
+                                            <Col md={9} className="colRinci">:  
+                                            {this.state.jenisVendor === nonObject 
+                                                ? <Input
+                                                    type= "text" 
+                                                    className="inputRinci"
+                                                    disabled
+                                                    // value={nonObject}
+                                                />
+                                            : 
+                                                <Input
+                                                type= "select" 
+                                                className="inputRinci"
+                                                value={this.state.tipeSkb}
+                                                disabled={this.state.idTrans === '' ? true : false}
+                                                // value={values.penanggung_pajak}
+                                                // onBlur={handleBlur("penanggung_pajak")}
+                                                onChange={e => {this.selectSkb(e.target.value)}}
+                                                >
+                                                    <option value=''>Pilih</option>
+                                                    <option value="ya">Ya</option>
+                                                    <option value="tidak">Tidak</option>
+                                                </Input>
+                                            }
+                                                
+                                            </Col>
+                                        </Row>
+                                        {this.state.jenisVendor !== nonObject && this.state.tipeSkb === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nilai Yang Dibukukan</Col>
@@ -3665,7 +3781,7 @@ const mapStateToProps = state => ({
     ikk: state.ikk,
     bank: state.bank,
     pagu: state.pagu,
-    rekening: state.rekening,
+    finance: state.finance,
     dokumen: state.dokumen,
     vendor: state.vendor,
     faktur: state.faktur,
@@ -3690,7 +3806,7 @@ const mapDispatchToProps = {
     getBank: bank.getBank,
     submitIkkFinal: ikk.submitIkkFinal,
     getApproval: ikk.getApproval,
-    getRek: rekening.getRek,
+    getFinRek: finance.getFinRek,
     getPagu: pagu.getPagu,
     showDokumen: dokumen.showDokumen,
     getVendor: vendor.getVendor,

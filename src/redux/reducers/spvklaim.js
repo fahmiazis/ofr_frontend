@@ -1,5 +1,5 @@
 /* eslint-disable import/no-anonymous-default-export */
-const financeState = {
+const spvklaimState = {
     isAdd: false,
     isAddDetail: false,
     isUpdate: false,
@@ -8,32 +8,32 @@ const financeState = {
     isLoading: false,
     isError: false,
     alertMsg: '',
-    dataFinance: [],
+    dataSpvklaim: [],
     dataName: [],
     alertM: '',
     alertUpload: [],
     page: {},
     isExport: false,
-    detFinance: {},
+    detSpvklaim: {},
     link: '',
     dataAll: [],
     isAll: false,
     isUpload: false,
-    allFinance: [],
+    allSpvklaim: [],
     dataRek: [],
     isFinRek: false
 };
 
-export default (state=financeState, action) => {
+export default (state=spvklaimState, action) => {
         switch(action.type){
-            case 'GET_ALL_PENDING': {
+            case 'GET_ALL_SPVKLAIM_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_ALL_FULFILLED': {
+            case 'GET_ALL_SPVKLAIM_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -43,7 +43,7 @@ export default (state=financeState, action) => {
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'GET_ALL_REJECTED': {
+            case 'GET_ALL_SPVKLAIM_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -51,48 +51,24 @@ export default (state=financeState, action) => {
                     alertMsg: "Failed get data finance"
                 };
             }
-            case 'GET_FINREK_PENDING': {
+            case 'GET_SPVKLAIM_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_FINREK_FULFILLED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isFinRek: true,
-                    dataRek: action.payload.data.result,
-                    alertMsg: 'get finance Succesfully'
-                };
-            }
-            case 'GET_FINREK_REJECTED': {
-                return {
-                    ...state,
-                    isLoading: false,
-                    isFinRek: false,
-                    alertMsg: "Unable connect to server"
-                };
-            }
-            case 'GET_FINANCE_PENDING': {
-                return {
-                    ...state,
-                    isLoading: true,
-                    alertMsg: 'Waiting ...'
-                };
-            }
-            case 'GET_FINANCE_FULFILLED': {
+            case 'GET_SPVKLAIM_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    dataFinance: action.payload.data.result,
-                    allFinance: action.payload.data.length,
+                    dataSpvklaim: action.payload.data.result,
+                    allSpvklaim: action.payload.data.length,
                     alertMsg: 'get finance Succesfully'
                 };
             }
-            case 'GET_FINANCE_REJECTED': {
+            case 'GET_SPVKLAIM_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -100,23 +76,23 @@ export default (state=financeState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'DETAIL_FINANCE_PENDING': {
+            case 'DETAIL_SPVKLAIM_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'DETAIL_FINANCE_FULFILLED': {
+            case 'DETAIL_SPVKLAIM_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    detFinance: action.payload.data.result,
+                    detSpvklaim: action.payload.data.result,
                     alertMsg: 'get detail finance Succesfully',
                 };
             }
-            case 'DETAIL_FINANCE_REJECTED': {
+            case 'DETAIL_SPVKLAIM_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -124,14 +100,14 @@ export default (state=financeState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'NEXT_DATA_FINANCE_PENDING': {
+            case 'NEXT_DATA_SPVKLAIM_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'NEXT_DATA_FINANCE_FULFILLED': {
+            case 'NEXT_DATA_SPVKLAIM_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -141,7 +117,7 @@ export default (state=financeState, action) => {
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'NEXT_DATA_FINANCE_REJECTED': {
+            case 'NEXT_DATA_SPVKLAIM_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -150,14 +126,14 @@ export default (state=financeState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'UPDATE_FINANCE_PENDING': {
+            case 'UPDATE_SPVKLAIM_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting'
                 };
             }
-            case 'UPDATE_FINANCE_FULFILLED': {
+            case 'UPDATE_SPVKLAIM_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -165,7 +141,7 @@ export default (state=financeState, action) => {
                     alertMsg: 'update user Succesfully'
                 };
             }
-            case 'UPDATE_FINANCE_REJECTED': {
+            case 'UPDATE_SPVKLAIM_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -174,14 +150,14 @@ export default (state=financeState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'ADD_FINANCE_PENDING': {
+            case 'ADD_SPVKLAIM_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'ADD_FINANCE_FULFILLED': {
+            case 'ADD_SPVKLAIM_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -190,7 +166,7 @@ export default (state=financeState, action) => {
                     alertMsg: 'add user Succesfully'
                 };
             }
-            case 'ADD_FINANCE_REJECTED': {
+            case 'ADD_SPVKLAIM_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -199,14 +175,14 @@ export default (state=financeState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'UPLOAD_FINANCE_PENDING': {
+            case 'UPLOAD_SPVKLAIM_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting....'
                 };
             }
-            case 'UPLOAD_FINANCE_FULFILLED': {
+            case 'UPLOAD_SPVKLAIM_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -214,7 +190,7 @@ export default (state=financeState, action) => {
                     alertMsg: 'upload master Succesfully'
                 };
             }
-            case 'UPLOAD_FINANCE_REJECTED': {
+            case 'UPLOAD_SPVKLAIM_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -223,14 +199,14 @@ export default (state=financeState, action) => {
                     alertUpload: action.payload.response.data.result
                 };
             }
-            case 'EXPORT_MASTER_FINANCE_PENDING': {
+            case 'EXPORT_MASTER_SPVKLAIM_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'EXPORT_MASTER_FINANCE_FULFILLED': {
+            case 'EXPORT_MASTER_SPVKLAIM_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -239,7 +215,7 @@ export default (state=financeState, action) => {
                     alertMsg: 'success export data'
                 };
             }
-            case 'EXPORT_MASTER_FINANCE_REJECTED': {
+            case 'EXPORT_MASTER_SPVKLAIM_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -247,7 +223,7 @@ export default (state=financeState, action) => {
                     alertMsg: 'Failed export data'
                 };
             }
-            case 'RESET_FINANCE': {
+            case 'RESET_SPVKLAIM': {
                 return {
                     ...state,
                     isError: false,

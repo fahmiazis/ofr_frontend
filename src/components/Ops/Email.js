@@ -38,6 +38,8 @@ class TableRincian extends Component {
   render() {
     const {detailOps} = this.props.ops
     const { draftEmail } = this.props.email
+    const statMail = this.props.statMail || ''
+    const {dataResmail} = this.props.email
     return (
         <>
         <Formik
@@ -48,6 +50,27 @@ class TableRincian extends Component {
         >
             {({ handleChange, handleBlur, handleSubmit, values, errors, touched}) => (
             <>
+            {statMail === 'resend' && (
+                <>
+                <div className='addModalMenu'>
+                    <text className="col-md-3">
+                        Status
+                    </text>
+                    <div className="col-md-9">
+                        Terkirim
+                    </div>
+                </div>
+                <div className='addModalMenu'>
+                    <text className="col-md-3">
+                        Jumlah terkirim
+                    </text>
+                    <div className="col-md-9">
+                        {dataResmail !== null && dataResmail.status !== undefined ? dataResmail.status : 1}
+                    </div>
+                </div>
+                <hr />
+                </>
+            )}
             <div className='addModalMenu'>
                 <text className="col-md-3">
                     To

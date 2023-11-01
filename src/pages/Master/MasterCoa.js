@@ -363,7 +363,7 @@ class MasterCoa extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master COA</div>
+                                    <div className={style.titleDashboard}>Master COA Klaim</div>
                                 </div>
                                 <div className={style.secHeadDashboard} >
                                     <div>
@@ -571,7 +571,7 @@ class MasterCoa extends Component {
                                 onBlur={handleBlur("tipe")}
                                 >   
                                     <option>-Pilih-</option>
-                                    <option value="OPS">Operasional</option>
+                                    {/* <option value="OPS">Operasional</option> */}
                                     <option value="KLAIM">Klaim</option>
                                 </Input>
                                 {errors.tipe ? (
@@ -669,7 +669,7 @@ class MasterCoa extends Component {
                                 onBlur={handleBlur("tipe")}
                                 >   
                                     <option>-Pilih-</option>
-                                    <option value="OPS">Operasional</option>
+                                    {/* <option value="OPS">Operasional</option> */}
                                     <option value="KLAIM">Klaim</option>
                                 </Input>
                                 {errors.tipe ? (

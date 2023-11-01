@@ -22,7 +22,9 @@ const emailState = {
     draftEmail: {},
     isDraft: null,
     isSend: null,
-    draftAjuan: null
+    draftAjuan: null,
+    isResmail: null,
+    dataResmail: {}
 };
 
 export default (state=emailState, action) => {
@@ -48,6 +50,30 @@ export default (state=emailState, action) => {
                     ...state,
                     isLoading: false,
                     isError: true,
+                    alertMsg: "Failed get data email"
+                };
+            }
+            case 'GET_RESMAIL_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GET_RESMAIL_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isResmail: true,
+                    dataResmail: action.payload.data.result,
+                    alertMsg: 'get email Succesfully'
+                };
+            }
+            case 'GET_RESMAIL_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isResmail: false,
                     alertMsg: "Failed get data email"
                 };
             }
@@ -259,7 +285,8 @@ export default (state=emailState, action) => {
                     isUpload: false,
                     isDraft: null,
                     isSend: null,
-                    draftAjuan: null
+                    draftAjuan: null,
+                    isResmail: null,
                 }
             }
             default: {

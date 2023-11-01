@@ -10,7 +10,7 @@ import {FiLogOut, FiUser, FiUsers, FiMail, FiSettings, FiTruck} from 'react-icon
 import { SiReason } from 'react-icons/si'
 import { BsClipboardData, BsHouseDoor, BsFileCheck } from 'react-icons/bs'
 import { GiFamilyTree } from 'react-icons/gi'
-import { MdKeyboardArrowLeft, MdKeyboardArrowDown } from 'react-icons/md'
+import { MdKeyboardArrowLeft, MdOutlineDomainVerification } from 'react-icons/md'
 import { AiFillSetting, AiOutlineClockCircle, AiOutlineMail, AiOutlineMenu, AiFillDashboard } from 'react-icons/ai'
 import { GrDocumentVerified } from 'react-icons/gr'
 import { useHistory } from 'react-router-dom'
@@ -67,7 +67,13 @@ function Sidebar(props) {
                     <FaTasks size={20} className="iconSide" />
                     <text className="txtMenu">Ikhtisar Kas Kecil</text>
                 </button>
-                {level === '1' || level === '4' ? (
+                {(level === '4' || level === '14' || level === '5') && (
+                    <button className="menuSides" onClick={() => goHome('verifven')}>
+                        <MdOutlineDomainVerification size={20} className="iconSide" />
+                        <text className="txtMenu">Pengajuan Data Vendor</text>
+                    </button>
+                )}
+                {level === '1' || level === '4' || level === '14' ? (
                     <button className={stile.btnSide2} onClick={toggle}>
                         <FaDatabase size={20} className="mr-3"/>
                         Master
@@ -82,17 +88,9 @@ function Sidebar(props) {
                 )}
                 {level === '4' || level === '14' ? (
                     <Collapse isOpen={isOpen} className="ml-5 mt-3">
-                        <button onClick={() => goHome('vendor')} className={stile.btnSide}>
-                            <BsClipboardData size={20} className="mr-2"/>
-                            Master Vendor
-                        </button>
                         <button onClick={() => goHome('faktur')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Faktur
-                        </button>
-                        <button onClick={() => goHome('tarif')} className={stile.btnSide}>
-                            <FaTicketAlt size={20} className="mr-2"/>
-                            Master VerifTax
                         </button>
                         <button onClick={() => goHome('kpp')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
@@ -101,6 +99,14 @@ function Sidebar(props) {
                         <button onClick={() => goHome('taxcode')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Taxcode
+                        </button>
+                        <button onClick={() => goHome('vendor')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Master Vendor
+                        </button>
+                        <button onClick={() => goHome('tarif')} className={stile.btnSide}>
+                            <FaTicketAlt size={20} className="mr-2"/>
+                            Master VerifTax
                         </button>
                     </Collapse>
                 ) : level === '1' && (
@@ -109,74 +115,83 @@ function Sidebar(props) {
                             <BsClipboardData size={20} className="mr-2"/>
                             Setting Approval
                         </button>
-                        <button onClick={() => goHome('depo')} className={stile.btnSide}>
+                        <button onClick={() => goHome('reason')} className={stile.btnSide}>
+                            <SiReason size={20} className="mr-2"/>
+                            Master Alasan Reject
+                        </button>
+                        {/* <button onClick={() => goHome('depo')} className={stile.btnSide}>
                             <BsHouseDoor size={20} className="mr-2"/>
-                            Master Depo
-                        </button>
-                        <button onClick={() => goHome('user')} className={stile.btnSide}>
-                            <FiUser size={20} className="mr-2"/>
-                            Master User
-                        </button>
+                            Master Area
+                        </button> */}
                         <button onClick={() => goHome('bank')} className={stile.btnSide}>
                             <RiBankCardFill size={20} className="mr-2"/>
                             Master Bank
                         </button>
-                        <button onClick={() => goHome('rekening')} className={stile.btnSide}>
-                            <RiBankCardFill size={20} className="mr-2"/>
-                            Master Rekening
-                        </button>
-                        <button onClick={() => goHome('tarif')} className={stile.btnSide}>
-                            <FaTicketAlt size={20} className="mr-2"/>
-                            Master VerifTax
-                        </button>
-                        <button onClick={() => goHome('menu')} className={stile.btnSide}>
-                            <AiOutlineMenu size={20} className="mr-2"/>
-                            Master Menu
-                        </button>
-                        <button onClick={() => goHome('reason')} className={stile.btnSide}>
-                            <SiReason size={20} className="mr-2"/>
-                            Master Alasan
+                        <button onClick={() => goHome('coa')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Master COA Klaim
                         </button>
                         <button onClick={() => goHome('dokumen')} className={stile.btnSide}>
                             <HiOutlineDocumentText size={20} className="mr-2"/>
                             Master Dokumen
                         </button>
-                        <button onClick={() => goHome('coa')} className={stile.btnSide}>
-                            <BsClipboardData size={20} className="mr-2"/>
-                            Master COA
-                        </button>
-                        <button onClick={() => goHome('vendor')} className={stile.btnSide}>
-                            <BsClipboardData size={20} className="mr-2"/>
-                            Master Vendor
+                        <button onClick={() => goHome('email')} className={stile.btnSide}>
+                            <AiOutlineMail size={20} className="mr-2"/>
+                            Master Email
                         </button>
                         <button onClick={() => goHome('faktur')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Faktur
                         </button>
-                        <button onClick={() => goHome('pagu')} className={stile.btnSide}>
-                            <RiBankCardFill size={20} className="mr-2"/>
-                            Master Pagu
-                        </button>
-                        <button onClick={() => goHome('email')} className={stile.btnSide}>
-                            <AiOutlineMail size={20} className="mr-2"/>
-                            Master Email
-                        </button>
-                        <button onClick={() => goHome('kpp')} className={stile.btnSide}>
+                        <button onClick={() => goHome('finance')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
-                            Master KPP
+                            Master Finance
                         </button>
                         <button onClick={() => goHome('kliring')} className={stile.btnSide}>
                             <RiBankCardFill size={20} className="mr-2"/>
                             Master Kliring
                         </button>
-                        <button onClick={() => goHome('finance')} className={stile.btnSide}>
+                        <button onClick={() => goHome('kpp')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
-                            Master Finance
+                            Master KPP
+                        </button>
+                        <button onClick={() => goHome('menu')} className={stile.btnSide}>
+                            <AiOutlineMenu size={20} className="mr-2"/>
+                            Master Menu
+                        </button>
+                        {/* <button onClick={() => goHome('pagu')} className={stile.btnSide}>
+                            <RiBankCardFill size={20} className="mr-2"/>
+                            Master Pagu
+                        </button> */}
+                        <button onClick={() => goHome('picklaim')} className={stile.btnSide}>
+                            <FiUser size={20} className="mr-2"/>
+                            Master PIC Klaim
+                        </button>
+                        {/* <button onClick={() => goHome('rekening')} className={stile.btnSide}>
+                            <RiBankCardFill size={20} className="mr-2"/>
+                            Master Rekening
+                        </button> */}
+                        <button onClick={() => goHome('spvklaim')} className={stile.btnSide}>
+                            <FiUser size={20} className="mr-2"/>
+                            Master SPV Klaim
                         </button>
                         <button onClick={() => goHome('taxcode')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Taxcode
                         </button>
+                        <button onClick={() => goHome('user')} className={stile.btnSide}>
+                            <FiUser size={20} className="mr-2"/>
+                            Master User
+                        </button>
+                        <button onClick={() => goHome('vendor')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Master Vendor
+                        </button>
+                        <button onClick={() => goHome('tarif')} className={stile.btnSide}>
+                            <FaTicketAlt size={20} className="mr-2"/>
+                            Master VerifTax
+                        </button>
+                        
                         <button onClick={() => goHome('reservoir')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
                             Reservoir

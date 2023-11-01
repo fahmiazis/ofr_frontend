@@ -24,7 +24,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -39,13 +39,18 @@ import dokumen from '../../redux/actions/dokumen'
 import ExcelJS from "exceljs"
 import fs from "file-saver"
 import email from '../../redux/actions/email'
+import NumberInput from '../../components/NumberInput'
 import Email from '../../components/Ikk/Email'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
-    dpp: Yup.string().required('must be filled'),
-    ppn: Yup.string().required('must be filled'),
-    nilai_utang: Yup.number().required('must be filled')
+    nilai_utang: Yup.number().required('must be filled'),
+    nilai_buku: Yup.number().required('must be filled'),
+    nilai_bayar: Yup.number().required('must be filled'),
+    no_skb: Yup.string().required('must be filled'),
+    jenis_pph: Yup.string().required('must be filled'),
+    datef_skb: Yup.date().required("must be filled"),
+    datel_skb: Yup.date().required('must be filled')
 })
 
 const alasanSchema = Yup.object().shape({
@@ -127,7 +132,9 @@ class VerifIkk extends Component {
             message: '',
             subject: '',
             tipeEmail: '',
-            dataRej: {}
+            dataRej: {},
+            statEmail: '',
+            modResmail: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -445,6 +452,101 @@ class VerifIkk extends Component {
         this.openModalRinci()
     }
 
+    prosesStatEmail = async (val) => {
+        const level = localStorage.getItem('level')
+        const token = localStorage.getItem("token")
+        const {filter} = this.state
+
+        let tempno = {
+            no: val[0].no_transaksi,
+            kode: val[0].kode_plant
+        }
+        
+        if (level === '5') {
+            if (val[0].status_reject === 0) {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ikk',
+                    tipe: 'revisi',
+                    menu: 'Revisi Area (IKK)'
+                }
+               
+            } else {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ikk',
+                    tipe: 'approve',
+                    menu: 'Pengajuan Ikk (IKK)'
+                }
+            }
+        } else {
+            const cekMenu = level === '2' ? 'Verifikasi Finance (IKK)' : 'Verifikasi Tax (IKK)'
+            if (val[0].status_reject === 1) {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ikk',
+                    tipe: 'reject',
+                    menu: cekMenu
+                }
+            } else {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ikk',
+                    tipe: 'submit',
+                    menu: cekMenu
+                }
+            }
+        }
+        await this.props.getDraftEmail(token, tempno)
+
+        const { draftEmail } = this.props.email
+        const resSend = {
+            ...tempno,
+            draft: draftEmail
+        }
+        await this.props.getResmail(token, resSend)
+        
+        this.openModResmail()
+    }
+
+    openModResmail = () => {
+        const {modResmail} = this.state
+        if (modResmail === false) {
+            this.setState({statEmail: 'resend'})
+            this.setState({modResmail: !this.state.modResmail})
+        } else {
+            this.setState({statEmail: ''})
+            this.setState({modResmail: !this.state.modResmail})
+        }
+    }
+
+    prosesResmail = async () => {
+        const token = localStorage.getItem("token")
+        const { listReject } = this.state
+        const { detailIkk } = this.props.ikk
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            draft: draftEmail,
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: detailIkk[0].no_transaksi,
+            tipe: 'ikk'
+        }
+        await this.props.sendEmail(token, tempno)
+        this.openModResmail()
+        this.setState({confirm: 'resmail'})
+        this.openConfirm()
+    }
+
     openModalDok = () => {
         this.setState({opendok: !this.state.opendok})
     }
@@ -477,9 +579,13 @@ class VerifIkk extends Component {
         const token = localStorage.getItem("token")
         const {dataRinci} = this.state
         const data = {
-            dpp: val.dpp,
-            ppn: val.ppn,
             nilai_utang: val.nilai_utang,
+            nilai_buku: val.nilai_buku,
+            nilai_bayar: val.nilai_bayar,
+            no_skb: val.no_skb,
+            jenis_pph: val.jenis_pph,
+            datef_skb: val.datef_skb,
+            datel_skb: val.datel_skb
         }
         const tempno = {
             no: dataRinci.no_transaksi,
@@ -577,6 +683,7 @@ class VerifIkk extends Component {
     }
 
     dataSendEmail = async (val) => {
+        const level = localStorage.getItem("level")
         const token = localStorage.getItem("token")
         const { detailIkk } = this.props.ikk
         const { draftEmail } = this.props.email
@@ -586,7 +693,11 @@ class VerifIkk extends Component {
         for (let i = 0; i < cc.length; i++) {
             tempcc.push(cc[i].email)
         }
+        const tipeProses = val === 'reject' ? 'reject perbaikan' : level === '4' || level === '14' ?  'approve' : 'verifikasi'
+        const tipeRoute = val === 'reject' ? 'revikk' : level === '4' || level === '14'  ? 'listikk' : 'veriffinikk'
+        const tipeMenu = level === '4' || level === '14' ? 'list ajuan bayar' : 'verifikasi ikk'
         const tempno = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
@@ -594,8 +705,12 @@ class VerifIkk extends Component {
             subject: subject,
             no: detailIkk[0].no_transaksi,
             tipe: 'ikk',
+            menu: tipeMenu,
+            proses: tipeProses,
+            route: tipeRoute
         }
         await this.props.sendEmail(token, tempno)
+        await this.props.addNotif(token, tempno)
         if (val === 'reject') {
             this.getDataIkk()
             this.setState({confirm: 'reject'})
@@ -1014,12 +1129,39 @@ class VerifIkk extends Component {
     }
 
     cekDataDoc = () => {
-        const { dataDoc } = this.props.ikk
+        const { dataDoc, detailIkk } = this.props.ikk
         const level = localStorage.getItem("level")
-        if (level === '4') {
-            this.openModalApprove()
+        if (level === '4' || level === '14') {
+            const resData = detailIkk.find(({stat_skb}) => stat_skb === 'ya')
+            if (resData !== undefined) {
+                const cekDoc = dataDoc.find(({desc}) => desc === 'Dokumen SKB')
+                const stat = cekDoc.status
+                const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+                const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+
+                if (resData.jenis_pph === null ||
+                    resData.no_skb === null ||
+                    resData.nilai_bayar === null ||
+                    resData.datef_skb === null ||
+                    resData.datel_skb === null ||
+                    resData.nilai_utang === null ||
+                    resData.nilai_buku === null
+                    ) 
+                {
+                    this.setState({confirm: 'rejTax'})
+                    this.openConfirm()
+                } else if (cekLevel !== ` level ${level}` || cekStat !== ` status approve`) {
+                    this.setState({confirm: 'appNotifDoc'})
+                    this.openConfirm()
+                } else {
+                    this.openModalApprove()
+                }
+            } else {
+                this.openModalApprove()
+            }
         } else {
             const tempdoc = []
+            const arrDoc = []
             for (let i = 0; i < dataDoc.length; i++) {
                 if (dataDoc[i].path !== null) {
                     const arr = dataDoc[i]
@@ -1028,14 +1170,13 @@ class VerifIkk extends Component {
                     const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
                     if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
                         tempdoc.push(arr)
-                        console.log('masuk if')
+                        arrDoc.push(arr)
                     } else {
-                        console.log('masuk else')
-                        console.log(cekLevel)
+                        arrDoc.push(arr)
                     }
                 }
             }
-            if (tempdoc.length === dataDoc.length) {
+            if (tempdoc.length === arrDoc.length) {
                 this.openModalApprove()
             } else {
                 this.setState({confirm: 'appNotifDoc'})
@@ -1141,7 +1282,7 @@ class VerifIkk extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listIkk} = this.state
+        const {dataRinci, filter, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listIkk} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailIkk, ttdIkk, dataDoc, newIkk } = this.props.ikk
@@ -1189,7 +1330,7 @@ class VerifIkk extends Component {
                             <div className={style.secEmail3}>
                                 <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                    <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
                                         <option value="all">All</option>
                                         <option value="reject">Reject</option>
                                         <option value="available">Available Submit</option>
@@ -1199,7 +1340,7 @@ class VerifIkk extends Component {
                                 <div className={style.headEmail2}>
                                     {level === '14' ?  (
                                         <>
-                                            {this.state.filter === 'available' && (
+                                            {filter === 'available' && (
                                                 <Button 
                                                     className='mr-1' 
                                                     onClick={this.prosesSubmit} 
@@ -1313,7 +1454,7 @@ class VerifIkk extends Component {
                                                         <th>{moment(item.start_ikk).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history.split(',').reverse()[0]}</th>
                                                         <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>{filter === 'available' ? 'Proses' : 'Detail'}</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
@@ -1403,6 +1544,7 @@ class VerifIkk extends Component {
                                         <th>PPN</th>
                                         <th>PPh</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
+                                        <th>Vendor Memiliki SKB</th>
                                         <th>TANGGAL TRANSFER</th>
                                         <th>Jenis PPh</th>
                                         <th>Status</th>
@@ -1421,7 +1563,9 @@ class VerifIkk extends Component {
                                                 </th>
                                                 {level === '2' ? (<></>) : (
                                                 <th>
-                                                    <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Proses</Button>
+                                                    {item.stat_skb === 'ya' && (
+                                                        <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Proses</Button>
+                                                    )}
                                                 </th>
                                                 )}
                                                 <th scope="row">{detailIkk.indexOf(item) + 1}</th>
@@ -1441,6 +1585,7 @@ class VerifIkk extends Component {
                                                 <th>{item.ppn}</th>
                                                 <th>{item.nilai_utang}</th>
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.stat_skb === 'ya' ? 'Ya' : '-'}</th>
                                                 <th>{item.tanggal_transfer !== null ? moment(item.tanggal_transfer).format('DD/MMMM/YYYY') : '-'}</th>
                                                 <th>{item.jenis_pph}</th>
                                                 <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
@@ -1458,14 +1603,20 @@ class VerifIkk extends Component {
                             <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
-                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
+                            {filter === 'available' || 
+                            (detailIkk[0] !== undefined && 
+                            (detailIkk[0].status_transaksi === 0 || 
+                            detailIkk[0].status_transaksi === 8)) ? null : (
+                                <Button className='mr-2' color="warning"  onClick={() => this.prosesStatEmail(detailIkk)}>Status Email</Button>
+                            )}
+                            {filter !== 'available' && filter !== 'revisi' ? (
                                 <div></div>
                             ) : (
                                 <>
-                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
+                                    <Button className="mr-2" disabled={filter === 'revisi'  && listMut.length > 0 ? false : filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
-                                    <Button color="success" disabled={listIkk.length > 0 ? true : this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
+                                    <Button color="success" disabled={listIkk.length > 0 ? true : filter === 'revisi'  ? false : filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
                                         Submit
                                     </Button>
                                 </>
@@ -1602,18 +1753,24 @@ class VerifIkk extends Component {
                                 norek_ajuan: dataRinci.norek_ajuan,
                                 nama_tujuan: dataRinci.nama_tujuan,
                                 status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : dataRinci.status_npwp === 1 ? 'Ya' : '',
-                                nama_npwp: dataRinci.nama_npwp === null ? '' : dataRinci.nama_npwp,
+                                nama_vendor: dataRinci.nama_vendor === null ? '' : dataRinci.nama_vendor,
                                 no_npwp: dataRinci.no_npwp === null ? '' : dataRinci.no_npwp,
                                 no_ktp: dataRinci.no_ktp === null ? '' : dataRinci.no_ktp,
                                 nama_ktp: dataRinci.nama_ktp === null ? '' : dataRinci.nama_ktp,
                                 dpp: dataRinci.dpp === null ? '' : dataRinci.dpp,
                                 ppn: dataRinci.ppn === null ? '' : dataRinci.ppn,
-                                nilai_utang: dataRinci.nilai_utang === null ? '' : dataRinci.nilai_utang
+                                nilai_utang: dataRinci.nilai_utang === null ? '' : dataRinci.nilai_utang,
+                                nilai_buku: dataRinci.nilai_buku,
+                                nilai_bayar: dataRinci.nilai_bayar,
+                                no_skb: dataRinci.no_skb,
+                                jenis_pph: dataRinci.jenis_pph,
+                                datef_skb: dataRinci.datef_skb,
+                                datel_skb: dataRinci.datel_skb
                             }}
                             validationSchema = {opsSchema}
                             onSubmit={(values) => {this.prosesEditIkk(values)}}
                             >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                            {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                                 <div className="rightRinci2">
                                     <div>
                                         <Row className="mb-2 rowRinci">
@@ -1687,7 +1844,7 @@ class VerifIkk extends Component {
                                             <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
                                         ) : null }
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nilai ajuan</Col>
+                                            <Col md={3}>Nilai yg diajukan</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
@@ -1734,7 +1891,7 @@ class VerifIkk extends Component {
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                         ) : null} */}
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Atas Nama</Col>
+                                            <Col md={3}>Tujuan Transfer</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
@@ -1769,18 +1926,18 @@ class VerifIkk extends Component {
                                             <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nama Sesuai NPWP</Col>
+                                            <Col md={3}>Nama Vendor/NPWP/KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
                                                 className="inputRinci"
-                                                value={values.status_npwp === 'Ya' ? values.nama_npwp : ''}
-                                                onBlur={handleBlur("nama_npwp")}
-                                                onChange={handleChange("nama_npwp")}
+                                                value={values.nama_vendor}
+                                                onBlur={handleBlur("nama_vendor")}
+                                                onChange={handleChange("nama_vendor")}
                                                 />
                                             </Col>
                                         </Row>
-                                        {values.status_npwp === 'Ya' && values.nama_npwp === '' ? (
+                                        {values.status_npwp === 'Ya' && values.nama_vendor === '' ? (
                                             <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
@@ -1801,21 +1958,6 @@ class VerifIkk extends Component {
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nama Sesuai KTP</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.status_npwp === 'Tidak' ? values.nama_ktp : ''}
-                                                onBlur={handleBlur("nama_ktp")}
-                                                onChange={handleChange("nama_ktp")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {values.status_npwp === 'Tidak' && values.nama_ktp === '' ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nomor KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
@@ -1834,62 +1976,129 @@ class VerifIkk extends Component {
                                         ) : null}
                                     </div>
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>Tgl Invoice</Col>
-                                        <Col md={9} className="colRinci">:  <Input
+                                        <Col md={3}>Nilai Yang Dibayarkan</Col>
+                                        <Col md={9} className="colRinci">:  
+                                            <NumberInput
+                                            className="inputRinci"
+                                            value={values.nilai_bayar}
+                                            onValueChange={val => setFieldValue("nilai_bayar", val.floatValue)}
+                                            />
+                                            {/* <Input
                                             type= "text" 
                                             className="inputRinci"
-                                            value={dataRinci.tgl_tagihanbayar === null ? '-' : moment(dataRinci.tgl_tagihanbayar).format('DD MMMM YYYY')}
-                                            />
+                                            value={values.nilai_bayar}
+                                            onBlur={handleBlur("nilai_bayar")}
+                                            onChange={handleChange("nilai_bayar")}
+                                            /> */}
                                         </Col>
                                     </Row>
+                                    {errors.nilai_bayar && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>DPP</Col>
-                                        <Col md={9} className="colRinci">:  <Input
+                                        <Col md={3}>Nilai Yang Dibukukan</Col>
+                                        <Col md={9} className="colRinci">:  
+                                            <NumberInput
+                                            className="inputRinci"
+                                            value={values.nilai_buku}
+                                            onValueChange={val => setFieldValue("nilai_buku", val.floatValue)}
+                                            />
+                                            {/* <Input
                                             type= "text" 
                                             className="inputRinci"
-                                            value={values.dpp}
-                                            onBlur={handleBlur("dpp")}
-                                            onChange={handleChange("dpp")}
-                                            />
+                                            value={values.nilai_buku}
+                                            onBlur={handleBlur("nilai_buku")}
+                                            onChange={handleChange("nilai_buku")}
+                                            /> */}
                                         </Col>
                                     </Row>
+                                    {errors.nilai_buku && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>PPN</Col>
-                                        <Col md={9} className="colRinci">:  <Input
-                                            type= "text" 
+                                        <Col md={3}>Nilai Utang PPh</Col>
+                                        <Col md={9} className="colRinci">:  
+                                            <NumberInput
                                             className="inputRinci"
-                                            value={values.ppn}
-                                            onBlur={handleBlur("ppn")}
-                                            onChange={handleChange("ppn")}
+                                            value={values.nilai_utang}
+                                            onValueChange={val => setFieldValue("nilai_utang", val.floatValue)}
                                             />
-                                        </Col>
-                                    </Row>
-                                    <Row className="mb-2 rowRinci">
-                                        <Col md={3}>Nilai PPh</Col>
-                                        <Col md={9} className="colRinci">:  <Input
+                                            {/* <Input
                                             type= "text" 
                                             className="inputRinci"
                                             value={values.nilai_utang}
                                             onBlur={handleBlur("nilai_utang")}
                                             onChange={handleChange("nilai_utang")}
+                                            /> */}
+                                        </Col>
+                                    </Row>
+                                    {errors.nilai_utang && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>Jenis PPh</Col>
+                                        <Col md={9} className="colRinci">:  <Input
+                                            type= "text" 
+                                            className="inputRinci"
+                                            value={values.jenis_pph}
+                                            onBlur={handleBlur("jenis_pph")}
+                                            onChange={handleChange("jenis_pph")}
                                             />
                                         </Col>
                                     </Row>
+                                    {errors.jenis_pph && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>No SKB</Col>
+                                        <Col md={9} className="colRinci">:  <Input
+                                            type= "text" 
+                                            className="inputRinci"
+                                            value={values.no_skb}
+                                            onBlur={handleBlur("no_skb")}
+                                            onChange={handleChange("no_skb")}
+                                            />
+                                        </Col>
+                                    </Row>
+                                    {errors.no_skb && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>Periode SKB</Col>
+                                        <Col md={9} className="colRinci">: 
+                                            <Input
+                                            type= "date"
+                                            className="inputRinci"
+                                            value={moment(values.datef_skb).format('YYYY-MM-DD')}
+                                            onBlur={handleBlur("datef_skb")}
+                                            onChange={handleChange("datef_skb")}
+                                            />
+                                            <text className='mr-1 ml-1'>To</text>
+                                            <Input
+                                            type= "date"
+                                            className="inputRinci"
+                                            value={moment(values.datel_skb).format('YYYY-MM-DD')}
+                                            onBlur={handleBlur("datel_skb")}
+                                            onChange={handleChange("datel_skb")}
+                                            />
+                                        </Col>
+                                    </Row>
+                                    {errors.datef_skb || errors.datel_skb ? (
+                                        <text className={style.txtError}>must be filled</text>
+                                    ) : values.datef_skb > values.datel_skb ? (
+                                        <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
+                                    ) : null }
                                     <div className="modalFoot mt-3">
                                         <div></div>
                                         <div className='btnfoot'>
                                             <Button 
                                                 className="mr-3" 
-                                                size="md" 
-                                                disabled={ values.dpp === '' ? true 
-                                                : values.ppn === '' ? true
-                                                : values.nilai_pph === '' ? true 
-                                                : false } 
+                                                size="md"
                                                 color="primary" 
                                                 onClick={handleSubmit}>
                                                 Save
                                             </Button>
-                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
+                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalEdit()}>Close</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -2067,6 +2276,13 @@ class VerifIkk extends Component {
                             <div className={[style.sucUpdate, style.green]}>Gagal Submit, Pastikan Dokumen Lampiran Telah Diapprove</div>
                         </div>
                         </div>
+                    ) : this.state.confirm === 'rejTax' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                            <AiOutlineClose size={80} className={style.red} />
+                            <div className={[style.sucUpdate, style.green]}>Gagal Submit, Pastikan Semua Data Telah Terisi</div>
+                        </div>
+                        </div>
                     ) : this.state.confirm === 'rejSubmit' ?(
                         <div>
                             <div className={style.cekUpdate}>
@@ -2079,6 +2295,13 @@ class VerifIkk extends Component {
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Approve</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'resmail' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Kirim Email</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'isRejDoc' ? (
@@ -2148,7 +2371,7 @@ class VerifIkk extends Component {
                                         //     </div>
                                         //     <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                         // </Col>
-                                        <div></div>
+                                        null
                                     )}
                                 </Row>
                             )
@@ -2159,20 +2382,6 @@ class VerifIkk extends Component {
                     <Button className="mr-2" color="secondary" onClick={this.openModalDoc}>
                         Close
                     </Button>
-                    {/* {this.state.stat === 'DIPINJAM SEMENTARA' && (dataDoc.length === 0 || dataDoc.find(({status}) => status === 1) === undefined) ? (
-                        <Button color="primary" disabled onClick={this.updateStatus}>
-                            Save 
-                        </Button>
-                    ) : this.state.stat === 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.updateStatus}>
-                            Save 
-                        </Button>
-                    )}
-                    {this.state.stat !== 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.openModalDoc}>
-                            Save 
-                        </Button>
-                    )} */}
                 </ModalFooter>
             </Modal>
             <Modal isOpen={this.state.openPdf} size="xl" toggle={this.openModalPdf} centered={true}>
@@ -2183,7 +2392,7 @@ class VerifIkk extends Component {
                     </div>
                     <hr/>
                     <div className={style.foot}>
-                        {this.state.filter === 'available' ? (
+                        {filter === 'available' ? (
                             <div>
                                 <Button color="success" onClick={() => this.openModalAppDoc()}>Approve</Button>
                                 <Button className='ml-1' color="danger" onClick={() => this.openModalRejDoc()}>Reject</Button>
@@ -2309,6 +2518,26 @@ class VerifIkk extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
+                <Modal isOpen={this.state.modResmail} size='xl'>
+                    <ModalHeader>Status Email</ModalHeader>
+                    <ModalBody>
+                        <Email handleData={this.getMessage} statMail={this.state.statEmail} />
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button
+                                    disabled={this.state.message === '' || this.state.subject === '' ? true : false} 
+                                    className="mr-2"
+                                    onClick={() => this.prosesResmail()} 
+                                    color="primary"
+                                >
+                                    Resend Email
+                                </Button>
+                                <Button className="mr-3" onClick={this.openModResmail}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     }
@@ -2350,7 +2579,8 @@ const mapDispatchToProps = {
     resetEmail: email.resetError,
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif,
+    getResmail: email.getResmail
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifIkk)

@@ -891,6 +891,7 @@ class AjuanBayarOps extends Component {
         }
         to.map(item => { return (tempto.push(item.email)) })
         const tempno = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: tempto.toString(),
             cc: tempcc.toString(),

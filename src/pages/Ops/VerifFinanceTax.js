@@ -24,7 +24,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -40,13 +40,18 @@ import ExcelJS from "exceljs"
 import email from '../../redux/actions/email'
 import Email from '../../components/Ops/Email'
 import fs from "file-saver"
+import NumberInput from '../../components/NumberInput'
 const nonObject = 'Non Object PPh'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
-    dpp: Yup.string().required('must be filled'),
-    ppn: Yup.string().required('must be filled'),
-    nilai_utang: Yup.number().required('must be filled')
+    nilai_utang: Yup.number().required('must be filled'),
+    nilai_buku: Yup.number().required('must be filled'),
+    nilai_bayar: Yup.number().required('must be filled'),
+    no_skb: Yup.string().required('must be filled'),
+    jenis_pph: Yup.string().required('must be filled'),
+    datef_skb: Yup.date().required("must be filled"),
+    datel_skb: Yup.date().required('must be filled')
 })
 
 const alasanSchema = Yup.object().shape({
@@ -128,7 +133,9 @@ class VerifOps extends Component {
             detailDoc: {},
             docCon: false,
             tipeEmail: '',
-            dataRej: {}
+            dataRej: {},
+            statEmail: '',
+            modResmail: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -434,6 +441,101 @@ class VerifOps extends Component {
         this.openModalRinci()
     }
 
+    prosesStatEmail = async (val) => {
+        const level = localStorage.getItem('level')
+        const token = localStorage.getItem("token")
+        const {filter} = this.state
+
+        let tempno = {
+            no: val[0].no_transaksi,
+            kode: val[0].kode_plant
+        }
+        
+        if (level === '5') {
+            if (val[0].status_reject === 0) {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ops',
+                    tipe: 'revisi',
+                    menu: 'Revisi Area (Operasional)'
+                }
+               
+            } else {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ops',
+                    tipe: 'approve',
+                    menu: 'Pengajuan Operasional (Operasional)'
+                }
+            }
+        } else {
+            const cekMenu = level === '2' ? 'Verifikasi Finance (Operasional)' : 'Verifikasi Tax (Operasional)'
+            if (val[0].status_reject === 1) {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ops',
+                    tipe: 'reject',
+                    menu: cekMenu
+                }
+            } else {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ops',
+                    tipe: 'submit',
+                    menu: cekMenu
+                }
+            }
+        }
+        await this.props.getDraftEmail(token, tempno)
+
+        const { draftEmail } = this.props.email
+        const resSend = {
+            ...tempno,
+            draft: draftEmail
+        }
+        await this.props.getResmail(token, resSend)
+        
+        this.openModResmail()
+    }
+
+    openModResmail = () => {
+        const {modResmail} = this.state
+        if (modResmail === false) {
+            this.setState({statEmail: 'resend'})
+            this.setState({modResmail: !this.state.modResmail})
+        } else {
+            this.setState({statEmail: ''})
+            this.setState({modResmail: !this.state.modResmail})
+        }
+    }
+
+    prosesResmail = async () => {
+        const token = localStorage.getItem("token")
+        const { listReject } = this.state
+        const { detailOps } = this.props.ops
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            draft: draftEmail,
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: detailOps[0].no_transaksi,
+            tipe: 'ops'
+        }
+        await this.props.sendEmail(token, tempno)
+        this.openModResmail()
+        this.setState({confirm: 'resmail'})
+        this.openConfirm()
+    }
+
     openModalDok = () => {
         this.setState({opendok: !this.state.opendok})
     }
@@ -492,9 +594,13 @@ class VerifOps extends Component {
         const token = localStorage.getItem("token")
         const {dataRinci} = this.state
         const data = {
-            dpp: val.dpp,
-            ppn: val.ppn,
             nilai_utang: val.nilai_utang,
+            nilai_buku: val.nilai_buku,
+            nilai_bayar: val.nilai_bayar,
+            no_skb: val.no_skb,
+            jenis_pph: val.jenis_pph,
+            datef_skb: val.datef_skb,
+            datel_skb: val.datel_skb
         }
         const tempno = {
             no: dataRinci.no_transaksi,
@@ -613,6 +719,7 @@ class VerifOps extends Component {
     }
 
     dataSendEmail = async (val) => {
+        const level = localStorage.getItem("level")
         const token = localStorage.getItem("token")
         const { detailOps } = this.props.ops
         const { draftEmail } = this.props.email
@@ -622,7 +729,11 @@ class VerifOps extends Component {
         for (let i = 0; i < cc.length; i++) {
             tempcc.push(cc[i].email)
         }
+        const tipeProses = val === 'reject' ? 'reject perbaikan' : level === '4' || level === '14' ? 'approve' : 'verifikasi'
+        const tipeRoute = val === 'reject' ? 'revops' : level === '4' || level === '14'  ? 'listops' : 'veriffintax'
+        const tipeMenu = level === '4' || level === '14' ? 'list ajuan bayar' : 'verifikasi ops'
         const tempno = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
@@ -630,8 +741,12 @@ class VerifOps extends Component {
             subject: subject,
             no: detailOps[0].no_transaksi,
             tipe: 'ops',
+            menu: tipeMenu,
+            proses: tipeProses,
+            route: tipeRoute
         }
         await this.props.sendEmail(token, tempno)
+        await this.props.addNotif(token, tempno)
         if (val === 'reject') {
             this.getDataOps()
             this.setState({confirm: 'reject'})
@@ -836,7 +951,7 @@ class VerifOps extends Component {
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
               new Blob([buffer], { type: "application/octet-stream" }),
-              `Data Ajuan IKK ${moment().format('DD MMMM YYYY')}.xlsx`
+              `Data Ajuan Operasional ${moment().format('DD MMMM YYYY')}.xlsx`
             );
           });
     }
@@ -1030,20 +1145,36 @@ class VerifOps extends Component {
         const { dataDoc, detailOps } = this.props.ops
         const level = localStorage.getItem("level")
         if (level === '4' || level === '14') {
-            const tempdoc = []
-            for (let i = 0; i < detailOps.length; i++) {
-                if (detailOps[i].typeniknpwp === 'manual' && (detailOps[i].new_ident === null || detailOps[i].new_ident === '')) {
-                    tempdoc.push(detailOps[i])
+            const resData = detailOps.find(({stat_skb}) => stat_skb === 'ya')
+            if (resData !== undefined) {
+                const cekDoc = dataDoc.find(({desc}) => desc === 'Dokumen SKB')
+                const stat = cekDoc.status
+                const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+                const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+
+                if (resData.jenis_pph === null ||
+                    resData.no_skb === null ||
+                    resData.nilai_bayar === null ||
+                    resData.datef_skb === null ||
+                    resData.datel_skb === null ||
+                    resData.nilai_utang === null ||
+                    resData.nilai_buku === null
+                    ) 
+                {
+                    this.setState({confirm: 'rejTax'})
+                    this.openConfirm()
+                } else if (cekLevel !== ` level ${level}` || cekStat !== ` status approve`) {
+                    this.setState({confirm: 'appNotifDoc'})
+                    this.openConfirm()
+                } else {
+                    this.openModalApprove()
                 }
-            }
-            if (tempdoc.length > 0) {
-                this.setState({confirm: 'appNotifIdent'})
-                this.openConfirm()
             } else {
                 this.openModalApprove()
             }
         } else {
             const tempdoc = []
+            const arrDoc = []
             for (let i = 0; i < dataDoc.length; i++) {
                 if (dataDoc[i].path !== null) {
                     const arr = dataDoc[i]
@@ -1052,10 +1183,13 @@ class VerifOps extends Component {
                     const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
                     if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
                         tempdoc.push(arr)
+                        arrDoc.push(arr)
+                    } else {
+                        arrDoc.push(arr)
                     }
                 }
             }
-            if (tempdoc.length === dataDoc.length) {
+            if (tempdoc.length === arrDoc.length) {
                 this.openModalApprove()
             } else {
                 this.setState({confirm: 'appNotifDoc'})
@@ -1212,7 +1346,7 @@ class VerifOps extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
+        const {dataRinci, filter, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
@@ -1261,7 +1395,7 @@ class VerifOps extends Component {
                             <div className={style.secEmail3}>
                                 <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                    <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
                                         <option value="all">All</option>
                                         <option value="reject">Reject</option>
                                         <option value="available">Available Submit</option>
@@ -1271,7 +1405,7 @@ class VerifOps extends Component {
                                 <div className={style.headEmail2}>
                                     {level === '14' ?  (
                                         <>
-                                            {this.state.filter === 'available' && (
+                                            {filter === 'available' && (
                                                 <Button 
                                                     className='mr-1' 
                                                     onClick={this.prosesSubmit} 
@@ -1386,7 +1520,7 @@ class VerifOps extends Component {
                                                         <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>{filter === 'available' ? 'Proses' : 'Detail'}</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
@@ -1470,14 +1604,14 @@ class VerifOps extends Component {
                                         <th>NOMOR REKENING</th>
                                         <th>ATAS NAMA</th>
                                         <th>MEMILIKI NPWP</th>
-                                        <th>NAMA SESUAI NPWP</th>
+                                        <th>NAMA VENDOR/KTP/NPWP</th>
                                         <th>NOMOR NPWP</th>
-                                        <th>NAMA SESUAI KTP</th>
                                         <th>NIK</th>
                                         <th>DPP</th>
                                         <th>PPN</th>
                                         <th>PPh</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
+                                        <th>Vendor Memiliki SKB</th>
                                         <th>TANGGAL TRANSFER</th>
                                         <th>Jenis PPh</th>
                                         <th>Status</th>
@@ -1496,7 +1630,9 @@ class VerifOps extends Component {
                                                 </th>
                                                 {level === '2' ? (<></>) : (
                                                 <th>
-                                                    <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Proses</Button>
+                                                    {item.stat_skb === 'ya' && (
+                                                        <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Proses</Button>
+                                                    )}
                                                 </th>
                                                 )}
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
@@ -1510,9 +1646,9 @@ class VerifOps extends Component {
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.status_npwp === 1 ? 'Ya' : nonObject}</th>
-                                                <th>{item.nama_npwp}</th>
+                                                <th>{item.nama_vendor}</th>
                                                 <th>
-                                                    <div className='colGeneral'>
+                                                    {/* <div className='colGeneral'>
                                                         {level !== '2' && item.typeniknpwp === 'manual' && item.status_npwp === 1 && (
                                                            <>
                                                             <input  
@@ -1524,12 +1660,12 @@ class VerifOps extends Component {
                                                             <text>New</text>
                                                         </>
                                                         )}
-                                                        <div className='mt-1'>{item.no_npwp}</div>
-                                                    </div>
+                                                        <div className='mt-1'></div>
+                                                    </div> */}
+                                                    {item.no_npwp}
                                                 </th>
-                                                <th>{item.nama_ktp}</th>
                                                 <th>
-                                                    <div className='colGeneral'>
+                                                    {/* <div className='colGeneral'>
                                                         {level !== '2' && item.typeniknpwp === 'manual' && item.status_npwp === 0 && (
                                                             <>
                                                                 <input  
@@ -1542,12 +1678,14 @@ class VerifOps extends Component {
                                                             </>
                                                         )}
                                                         <div className='mt-1'>{item.no_ktp}</div>
-                                                    </div>
+                                                    </div> */}
+                                                    {item.no_ktp}
                                                 </th>
                                                 <th>{item.dpp}</th>
                                                 <th>{item.pph}</th>
                                                 <th>{item.nilai_utang}</th>
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.stat_skb === 'ya' ? 'Ya' : '-'}</th>
                                                 <th>{item.tanggal_transfer}</th>
                                                 <th>{item.jenis_pph}</th>
                                                 <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
@@ -1565,14 +1703,20 @@ class VerifOps extends Component {
                             <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
-                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
+                            {filter === 'available' || 
+                            (detailOps[0] !== undefined && 
+                            (detailOps[0].status_transaksi === 0 || 
+                            detailOps[0].status_transaksi === 8)) ? null : (
+                                <Button className='mr-2' color="warning"  onClick={() => this.prosesStatEmail(detailOps)}>Status Email</Button>
+                            )}
+                            {filter !== 'available' && filter !== 'revisi' ? (
                                 <div></div>
                             ) : (
                                 <>
-                                    <Button className="mr-2" disabled={this.state.filter === 'revisi'  && listMut.length > 0 ? false : this.state.filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
+                                    <Button className="mr-2" disabled={filter === 'revisi'  && listMut.length > 0 ? false : filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
-                                    <Button color="success" disabled={listOps.length > 0 ? true : this.state.filter === 'revisi'  ? false : this.state.filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
+                                    <Button color="success" disabled={listOps.length > 0 ? true : filter === 'revisi'  ? false : filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
                                         Submit
                                     </Button>
                                 </>
@@ -1712,18 +1856,24 @@ class VerifOps extends Component {
                                 norek_ajuan: dataRinci.norek_ajuan,
                                 nama_tujuan: dataRinci.nama_tujuan,
                                 status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : dataRinci.status_npwp === 1 ? 'Ya' : '',
-                                nama_npwp: dataRinci.nama_npwp === null ? '' : dataRinci.nama_npwp,
+                                nama_vendor: dataRinci.nama_vendor === null ? '' : dataRinci.nama_vendor,
                                 no_npwp: dataRinci.no_npwp === null ? '' : dataRinci.no_npwp,
                                 no_ktp: dataRinci.no_ktp === null ? '' : dataRinci.no_ktp,
                                 nama_ktp: dataRinci.nama_ktp === null ? '' : dataRinci.nama_ktp,
                                 dpp: dataRinci.dpp === null ? '' : dataRinci.dpp,
                                 ppn: dataRinci.ppn === null ? '' : dataRinci.ppn,
-                                nilai_utang: dataRinci.nilai_utang === null ? '' : dataRinci.nilai_utang
+                                nilai_utang: dataRinci.nilai_utang === null ? '' : dataRinci.nilai_utang,
+                                nilai_buku: dataRinci.nilai_buku,
+                                nilai_bayar: dataRinci.nilai_bayar,
+                                no_skb: dataRinci.no_skb,
+                                jenis_pph: dataRinci.jenis_pph,
+                                datef_skb: dataRinci.datef_skb,
+                                datel_skb: dataRinci.datel_skb
                             }}
                             validationSchema = {opsSchema}
                             onSubmit={(values) => {this.prosesEditOps(values)}}
                             >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                            {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                                 <div className="rightRinci2">
                                     <div>
                                         <Row className="mb-2 rowRinci">
@@ -1797,7 +1947,7 @@ class VerifOps extends Component {
                                             <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
                                         ) : null }
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nilai Ajuan</Col>
+                                            <Col md={3}>Nilai yg diajukan</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
@@ -1844,7 +1994,7 @@ class VerifOps extends Component {
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                         ) : null} */}
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Atas Nama</Col>
+                                            <Col md={3}>Tujuan Transfer</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
@@ -1879,14 +2029,14 @@ class VerifOps extends Component {
                                             <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nama Sesuai NPWP</Col>
+                                            <Col md={3}>Nama Vendor/NPWP/KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
                                                 className="inputRinci"
-                                                value={values.status_npwp === 'Ya' ? values.nama_npwp : ''}
-                                                onBlur={handleBlur("nama_npwp")}
-                                                onChange={handleChange("nama_npwp")}
+                                                value={values.nama_vendor}
+                                                onBlur={handleBlur("nama_vendor")}
+                                                onChange={handleChange("nama_vendor")}
                                                 />
                                             </Col>
                                         </Row>
@@ -1911,21 +2061,6 @@ class VerifOps extends Component {
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
                                         ) : null} */}
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nama Sesuai KTP</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.status_npwp === 'Tidak' ? values.nama_ktp : ''}
-                                                onBlur={handleBlur("nama_ktp")}
-                                                onChange={handleChange("nama_ktp")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {values.status_npwp === 'Tidak' && values.nama_ktp === '' ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nomor KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
@@ -1944,47 +2079,118 @@ class VerifOps extends Component {
                                         ) : null}
                                     </div>
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>Tgl Invoice</Col>
-                                        <Col md={9} className="colRinci">:  <Input
+                                        <Col md={3}>Nilai Yang Dibayarkan</Col>
+                                        <Col md={9} className="colRinci">:  
+                                            <NumberInput
+                                            className="inputRinci"
+                                            value={values.nilai_bayar}
+                                            onValueChange={val => setFieldValue("nilai_bayar", val.floatValue)}
+                                            />
+                                            {/* <Input
                                             type= "text" 
                                             className="inputRinci"
-                                            value={dataRinci.tgl_tagihanbayar === null ? '-' : moment(dataRinci.tgl_tagihanbayar).format('DD MMMM YYYY')}
-                                            />
+                                            value={values.nilai_bayar}
+                                            onBlur={handleBlur("nilai_bayar")}
+                                            onChange={handleChange("nilai_bayar")}
+                                            /> */}
                                         </Col>
                                     </Row>
+                                    {errors.nilai_bayar && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>DPP</Col>
-                                        <Col md={9} className="colRinci">:  <Input
+                                        <Col md={3}>Nilai Yang Dibukukan</Col>
+                                        <Col md={9} className="colRinci">:  
+                                            <NumberInput
+                                            className="inputRinci"
+                                            value={values.nilai_buku}
+                                            onValueChange={val => setFieldValue("nilai_buku", val.floatValue)}
+                                            />
+                                            {/* <Input
                                             type= "text" 
                                             className="inputRinci"
-                                            value={values.dpp}
-                                            onBlur={handleBlur("dpp")}
-                                            onChange={handleChange("dpp")}
-                                            />
+                                            value={values.nilai_buku}
+                                            onBlur={handleBlur("nilai_buku")}
+                                            onChange={handleChange("nilai_buku")}
+                                            /> */}
                                         </Col>
                                     </Row>
+                                    {errors.nilai_buku && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>PPN</Col>
-                                        <Col md={9} className="colRinci">:  <Input
-                                            type= "text" 
+                                        <Col md={3}>Nilai Utang PPh</Col>
+                                        <Col md={9} className="colRinci">:  
+                                            <NumberInput
                                             className="inputRinci"
-                                            value={values.ppn}
-                                            onBlur={handleBlur("ppn")}
-                                            onChange={handleChange("ppn")}
+                                            value={values.nilai_utang}
+                                            onValueChange={val => setFieldValue("nilai_utang", val.floatValue)}
                                             />
-                                        </Col>
-                                    </Row>
-                                    <Row className="mb-2 rowRinci">
-                                        <Col md={3}>Nilai PPh</Col>
-                                        <Col md={9} className="colRinci">:  <Input
+                                            {/* <Input
                                             type= "text" 
                                             className="inputRinci"
                                             value={values.nilai_utang}
                                             onBlur={handleBlur("nilai_utang")}
                                             onChange={handleChange("nilai_utang")}
+                                            /> */}
+                                        </Col>
+                                    </Row>
+                                    {errors.nilai_utang && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>Jenis PPh</Col>
+                                        <Col md={9} className="colRinci">:  <Input
+                                            type= "text" 
+                                            className="inputRinci"
+                                            value={values.jenis_pph}
+                                            onBlur={handleBlur("jenis_pph")}
+                                            onChange={handleChange("jenis_pph")}
                                             />
                                         </Col>
                                     </Row>
+                                    {errors.jenis_pph && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>No SKB</Col>
+                                        <Col md={9} className="colRinci">:  <Input
+                                            type= "text" 
+                                            className="inputRinci"
+                                            value={values.no_skb}
+                                            onBlur={handleBlur("no_skb")}
+                                            onChange={handleChange("no_skb")}
+                                            />
+                                        </Col>
+                                    </Row>
+                                    {errors.no_skb && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>Periode SKB</Col>
+                                        <Col md={9} className="colRinci">: 
+                                            <Input
+                                            type= "date"
+                                            className="inputRinci"
+                                            value={moment(values.datef_skb).format('YYYY-MM-DD')}
+                                            onBlur={handleBlur("datef_skb")}
+                                            onChange={handleChange("datef_skb")}
+                                            />
+                                            <text className='mr-1 ml-1'>To</text>
+                                            <Input
+                                            type= "date"
+                                            className="inputRinci"
+                                            value={moment(values.datel_skb).format('YYYY-MM-DD')}
+                                            onBlur={handleBlur("datel_skb")}
+                                            onChange={handleChange("datel_skb")}
+                                            />
+                                        </Col>
+                                    </Row>
+                                    {errors.datef_skb || errors.datel_skb ? (
+                                        <text className={style.txtError}>must be filled</text>
+                                    ) : values.datef_skb > values.datel_skb ? (
+                                        <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
+                                    ) : null }
                                     <div className="modalFoot mt-3">
                                         <div></div>
                                         <div className='btnfoot'>
@@ -1998,7 +2204,7 @@ class VerifOps extends Component {
                                                 onClick={handleSubmit}>
                                                 Save
                                             </Button>
-                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
+                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalEdit()}>Close</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -2197,11 +2403,25 @@ class VerifOps extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Submit</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'rejTax' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                            <AiOutlineClose size={80} className={style.red} />
+                            <div className={[style.sucUpdate, style.green]}>Gagal Submit, Pastikan Semua Data Telah Terisi</div>
+                        </div>
+                        </div>
                     ) : this.state.confirm === 'isRejDoc' ? (
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiFillCheckCircle size={80} className={style.green} />
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'resmail' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Kirim Email</div>
                             </div>
                         </div>
                     ) : (
@@ -2264,7 +2484,7 @@ class VerifOps extends Component {
                                         //     </div>
                                         //     <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                         // </Col>
-                                        <div></div>
+                                        null
                                     )}
                                 </Row>
                             )
@@ -2275,20 +2495,6 @@ class VerifOps extends Component {
                     <Button className="mr-2" color="secondary" onClick={this.openModalDoc}>
                         Close
                     </Button>
-                    {/* {this.state.stat === 'DIPINJAM SEMENTARA' && (dataDoc.length === 0 || dataDoc.find(({status}) => status === 1) === undefined) ? (
-                        <Button color="primary" disabled onClick={this.updateStatus}>
-                            Save 
-                        </Button>
-                    ) : this.state.stat === 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.updateStatus}>
-                            Save 
-                        </Button>
-                    )}
-                    {this.state.stat !== 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.openModalDoc}>
-                            Save 
-                        </Button>
-                    )} */}
                 </ModalFooter>
             </Modal>
             <Modal isOpen={this.state.openPdf} size="xl" toggle={this.openModalPdf} centered={true}>
@@ -2299,7 +2505,7 @@ class VerifOps extends Component {
                     </div>
                     <hr/>
                     <div className={style.foot}>
-                        {this.state.filter === 'available' ? (
+                        {filter === 'available' ? (
                             <div>
                                 <Button color="success" onClick={() => this.openModalAppDoc()}>Approve</Button>
                                 <Button className='ml-1' color="danger" onClick={() => this.openModalRejDoc()}>Reject</Button>
@@ -2425,6 +2631,26 @@ class VerifOps extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
+                <Modal isOpen={this.state.modResmail} size='xl'>
+                    <ModalHeader>Status Email</ModalHeader>
+                    <ModalBody>
+                        <Email handleData={this.getMessage} statMail={this.state.statEmail} />
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button
+                                    disabled={this.state.message === '' || this.state.subject === '' ? true : false} 
+                                    className="mr-2"
+                                    onClick={() => this.prosesResmail()} 
+                                    color="primary"
+                                >
+                                    Resend Email
+                                </Button>
+                                <Button className="mr-3" onClick={this.openModResmail}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     }
@@ -2466,7 +2692,8 @@ const mapDispatchToProps = {
     resetEmail: email.resetError,
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif,
+    getResmail: email.getResmail
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifOps)

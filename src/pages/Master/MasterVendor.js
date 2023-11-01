@@ -560,7 +560,7 @@ class MasterVendor extends Component {
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="name" 
+                                type="textarea" 
                                 name="alamat"
                                 value={values.alamat}
                                 onBlur={handleBlur("alamat")}
@@ -599,7 +599,7 @@ class MasterVendor extends Component {
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                No COA
+                                Nama
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -616,7 +616,7 @@ class MasterVendor extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama COA
+                                No NPWP
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -633,7 +633,7 @@ class MasterVendor extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama Sub COA
+                                NO KTP
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -650,20 +650,16 @@ class MasterVendor extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Tipe
+                                Alamat
                             </text>
                             <div className="col-md-9">
-                            <Input 
-                                type="select"
+                                <Input 
+                                type="textarea"
                                 name="alamat"
                                 value={values.alamat}
                                 onChange={handleChange("alamat")}
                                 onBlur={handleBlur("alamat")}
-                                >   
-                                    <option>-Pilih-</option>
-                                    <option value="OPS">Operasional</option>
-                                    <option value="KLAIM">Klaim</option>
-                                </Input>
+                                />
                                 {errors.alamat ? (
                                     <text className={style.txtError}>{errors.alamat}</text>
                                 ) : null}

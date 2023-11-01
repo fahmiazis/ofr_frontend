@@ -39,6 +39,10 @@ export default {
         type: 'DELETE_EMAIL',
         payload: http(token).delete(`/email/del/${id}`)
     }),
+    getResmail: (token, data) => ({
+        type: 'GET_RESMAIL',
+        payload: http(token).patch(`/email/resmail`, data)
+    }),
     nextPage: (token, link) => ({
         type: 'NEXT_DATA_EMAIL',
         payload: http(token).get(`${link}`)

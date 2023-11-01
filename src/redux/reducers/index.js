@@ -20,12 +20,15 @@ import kliring from './kliring'
 import faktur from './faktur'
 import kpp from './kpp'
 import finance from './finance'
+import picklaim from './picklaim'
+import spvklaim from './spvklaim'
 import reservoir from './reservoir'
 import taxcode from './taxcode'
 //transaksi
 import klaim from './klaim'
 import ikk from './ikk'
 import ops from './ops'
+import verven from './verven'
 //notif
 import notif from './notif'
 
@@ -53,5 +56,8 @@ export default combineReducers({
   finance,
   reservoir,
   taxcode,
-  notif
+  notif,
+  verven,
+  picklaim,
+  spvklaim
 })

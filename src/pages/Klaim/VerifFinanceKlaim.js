@@ -24,7 +24,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -40,6 +40,7 @@ import ExcelJS from "exceljs"
 import fs from "file-saver"
 import NumberInput from '../../components/NumberInput'
 const {REACT_APP_BACKEND_URL} = process.env
+const accKlaim = [3, 13, 23]
 
 const klaimSchema = Yup.object().shape({
     pa: Yup.string().required('must be filled'),
@@ -434,6 +435,7 @@ class VerifKlaim extends Component {
         //     this.openModalApprove()
         // } else {
         const tempdoc = []
+        const arrDoc = []
         for (let i = 0; i < dataDoc.length; i++) {
             if (dataDoc[i].path !== null) {
                 const arr = dataDoc[i]
@@ -442,14 +444,13 @@ class VerifKlaim extends Component {
                 const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
                 if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
                     tempdoc.push(arr)
-                    console.log('masuk if')
+                    arrDoc.push(arr)
                 } else {
-                    console.log('masuk else')
-                    console.log(cekLevel)
+                    arrDoc.push(arr)
                 }
             }
         }
-        if (tempdoc.length === dataDoc.length) {
+        if (tempdoc.length === arrDoc.length) {
             this.cekDataKlaim()
         } else {
             this.setState({confirm: 'appNotifDoc'})
@@ -643,6 +644,7 @@ class VerifKlaim extends Component {
     }
 
     dataSendEmail = async (val) => {
+        const level = localStorage.getItem("level")
         const token = localStorage.getItem("token")
         const { detailKlaim } = this.props.klaim
         const { draftEmail } = this.props.email
@@ -652,7 +654,11 @@ class VerifKlaim extends Component {
         for (let i = 0; i < cc.length; i++) {
             tempcc.push(cc[i].email)
         }
+        const tipeProses = val === 'reject' ? 'reject perbaikan' : level === '3' || level === '13' ? 'approve' : 'verifikasi'
+        const tipeRoute = val === 'reject' ? 'revklm' : level === '3' || level === '13'  ? 'listklm' : 'veriffinklm'
+        const tipeMenu = level === '3' || level === '13' ? 'list ajuan bayar' : 'verifikasi klaim'
         const tempno = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
@@ -660,8 +666,12 @@ class VerifKlaim extends Component {
             subject: subject,
             no: detailKlaim[0].no_transaksi,
             tipe: 'klaim',
+            menu: tipeMenu,
+            proses: tipeProses,
+            route: tipeRoute
         }
         await this.props.sendEmail(token, tempno)
+        await this.props.addNotif(token, tempno)
         if (val === 'reject') {
             this.getDataKlaim()
             this.setState({confirm: 'reject'})
@@ -1025,7 +1035,7 @@ class VerifKlaim extends Component {
 
     render() {
         const level = localStorage.getItem('level')
-        const names = localStorage.getItem('name')
+        const names = localStorage.getItem('fullname')
         const {dataRinci, dropApp, tipeEmail, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
@@ -1142,32 +1152,74 @@ class VerifKlaim extends Component {
                                                 <th>NO.COA</th>
                                                 <th>NAMA COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
+                                                <th>TGL AJUAN</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
-                                            {newKlaim.map(item => {
-                                                return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{newKlaim.indexOf(item) + 1}</th>
-                                                        <th>{item.no_transaksi}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.area}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
-                                                        <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
-                                                        <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
-                                                            <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
-                                                        </th>
-                                                    </tr>
-                                                )
-                                            })}
-                                        </tbody>
+                                        {accKlaim.find(item => item.toString() === level) !== undefined ? (
+                                            <tbody>
+                                                {newKlaim.map(item => {
+                                                    return (
+                                                        item.picklaim !== null && 
+                                                        // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
+                                                        item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                                        item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
+                                                        (
+                                                            <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                                <th>{newKlaim.indexOf(item) + 1}</th>
+                                                                <th>{item.no_transaksi}</th>
+                                                                <th>{item.cost_center}</th>
+                                                                <th>{item.area}</th>
+                                                                <th>{item.no_coa}</th>
+                                                                <th>{item.nama_coa}</th>
+                                                                <th>{item.keterangan}</th>
+                                                                <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                                                <th>{item.history.split(',').reverse()[0]}</th>
+                                                                <th>
+                                                                    <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
+                                                                        {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
+                                                                    </Button>
+                                                                    <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                                </th>
+                                                            </tr>
+                                                        ) 
+                                                        // : (
+                                                        //     <div>
+                                                        //         <div>{item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()}</div>
+                                                        //         <div>{names.toLowerCase()}</div>
+                                                        //         <div>{item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase()}</div>
+                                                        //     </div>
+                                                        // )
+                                                    )
+                                                })}
+                                            </tbody>
+                                        ) : (
+                                            <tbody>
+                                                {newKlaim.map(item => {
+                                                    return (
+                                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>{newKlaim.indexOf(item) + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
+                                                                    {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
+                                                                </Button>
+                                                                <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        )}
+                                        
                                     </Table>
                                     {newKlaim.length === 0 && (
                                         <div className={style.spin}>
@@ -2460,7 +2512,7 @@ const mapDispatchToProps = {
     resetEmail: email.resetError,
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifKlaim)

@@ -9,9 +9,9 @@ import {connect} from 'react-redux'
 import {Formik} from 'formik'
 import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
 import * as Yup from 'yup'
-// import notif from '../redux/actions/notif'
 import {VscAccount} from 'react-icons/vsc'
 import { useHistory } from 'react-router-dom'
+import notif from '../redux/actions/notif'
 import style from '../assets/css/input.module.css'
 const {REACT_APP_BACKEND_URL} = process.env
 
@@ -114,6 +114,7 @@ class Account extends Component {
     getProfile = async () => {
         const token = localStorage.getItem("token")
         const id = localStorage.getItem("id")
+        await this.props.getAllNotif(token)
         await this.props.getDetail(token, id)
         const {detailUser} = this.props.user
         this.setState({username: detailUser.username, fullname: detailUser.fullname, email: detailUser.email})
@@ -150,7 +151,17 @@ class Account extends Component {
                         <img className="pictTask mr-2" src={`${REACT_APP_BACKEND_URL}/${detailUser.image}`} alt="profile1" />
                     )}
                     <div className={color === undefined ? 'mr-2 white' : `mr-2 ${color}`}>
-                        {level === '1' ? 'Super Admin' : detailUser.fullname}
+                        <text>
+                            {level === '1' ? 'Super Admin' 
+                            : detailUser.fullname === undefined ? '' 
+                            : detailUser.fullname.length <= 17 ? detailUser.fullname.split(" ").map((word) => { 
+                                return word[0] === undefined ? '' : word[0].toUpperCase() + word.substring(1)
+                                }).join(" ")
+                            : detailUser.fullname.slice(0, 16).split(" ").map((word) => { 
+                                return word[0] === undefined ? '' : word[0].toUpperCase() + word.substring(1)
+                                }).join(" ") + '.'
+                            }
+                        </text>
                     </div>
                 </DropdownToggle>
                 <DropdownMenu right>
@@ -438,7 +449,8 @@ const mapDispatchToProps = {
     changePassword: user.changePassword,
     getDetail: user.getDetailUser,
     goRoute: auth.goRoute,
-    uploadImage: user.uploadImage
+    uploadImage: user.uploadImage,
+    getAllNotif: notif.getAllNotif,
     // upNotif: notif.upNotif
 }
 

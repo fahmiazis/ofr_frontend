@@ -24,7 +24,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -152,7 +152,9 @@ class Ops extends Component {
             modalNilai: false,
             nilai_verif: 0,
             dataZip: [],
-            listReject: []
+            listReject: [],
+            statEmail: '',
+            modResmail: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -488,12 +490,10 @@ class Ops extends Component {
         if (isApprove === false) {
             this.setState({confirm: 'rejApprove'})
             this.openConfirm()
-            this.openModalApprove()
             this.props.resetOps()
         } else if (isReject === false) {
             this.setState({confirm: 'rejReject'})
             this.openConfirm()
-            this.openModalReject()
             this.props.resetOps()
         } else if (isSend === false) {
             this.setState({confirm: 'rejSend'})
@@ -585,6 +585,110 @@ class Ops extends Component {
         await this.props.getApproval(token, tempno)
         await this.props.getDocOps(token, data)
         this.openModalRinci()
+    }
+
+    prosesStatEmail = async (val) => {
+        const level = localStorage.getItem('level')
+        const token = localStorage.getItem("token")
+        const app = val[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const {filter} = this.state
+
+        let tempno = {
+            no: val[0].no_transaksi,
+            kode: val[0].kode_plant
+        }
+        
+        if (level === '5') {
+            if (val[0].status_reject === 0) {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ops',
+                    tipe: 'revisi',
+                    menu: 'Revisi Area (Operasional)'
+                }
+               
+            } else {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ops',
+                    tipe: 'approve',
+                    menu: 'Pengajuan Operasional (Operasional)'
+                }
+            }
+        } else {
+            const tipe = tempApp.length === app.length ? 'full approve' : 'approve'
+            const cekMenu = 'Pengajuan Operasional (Operasional)'
+            if (val[0].status_reject === 1) {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ops',
+                    tipe: 'reject',
+                    typeReject: val[0].status_transaksi === 0 ? 'pembatalan' : 'perbaikan',
+                    menu: cekMenu
+                }
+            } else {
+                tempno = {
+                    ...tempno,
+                    jenis: 'ops',
+                    tipe: tipe,
+                    menu: cekMenu
+                }
+            }
+        }
+        await this.props.getDraftEmail(token, tempno)
+
+        const { draftEmail } = this.props.email
+        const resSend = {
+            ...tempno,
+            draft: draftEmail
+        }
+        await this.props.getResmail(token, resSend)
+        
+        this.openModResmail()
+    }
+
+    openModResmail = () => {
+        const {modResmail} = this.state
+        if (modResmail === false) {
+            this.setState({statEmail: 'resend'})
+            this.setState({modResmail: !this.state.modResmail})
+        } else {
+            this.setState({statEmail: ''})
+            this.setState({modResmail: !this.state.modResmail})
+        }
+    }
+
+    prosesResmail = async () => {
+        const token = localStorage.getItem("token")
+        const { listReject } = this.state
+        const { detailOps } = this.props.ops
+        const { draftEmail } = this.props.email
+        const { message, subject } = this.state
+        const cc = draftEmail.cc
+        const tempcc = []
+        for (let i = 0; i < cc.length; i++) {
+            tempcc.push(cc[i].email)
+        }
+        const tempno = {
+            draft: draftEmail,
+            nameTo: draftEmail.to.username,
+            to: draftEmail.to.email,
+            cc: tempcc.toString(),
+            message: message,
+            subject: subject,
+            no: detailOps[0].no_transaksi,
+            tipe: 'ops'
+        }
+        await this.props.sendEmail(token, tempno)
+        this.openModResmail()
+        this.setState({confirm: 'resmail'})
+        this.openConfirm()
     }
 
     openModalDok = () => {
@@ -767,6 +871,7 @@ class Ops extends Component {
 
     dataSendEmail = async (val) => {
         const token = localStorage.getItem("token")
+        const { listReject } = this.state
         const { detailOps } = this.props.ops
         const { draftEmail } = this.props.email
         const { message, subject } = this.state
@@ -775,7 +880,18 @@ class Ops extends Component {
         for (let i = 0; i < cc.length; i++) {
             tempcc.push(cc[i].email)
         }
+        const app = detailOps[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipeProses = val === 'reject' && listReject[0] === 'pembatalan' ? 'reject pembatalan' : val === 'reject' && listReject[0] !== 'pembatalan' ? 'reject perbaikan' : tempApp.length === app.length-1 ? 'verifikasi' : 'approve'
+        const tipeRoute = val === 'reject' && listReject[0] === 'pembatalan' ? 'ops' : val === 'reject' && listReject[0] !== 'pembatalan' ? 'revops' : tempApp.length === app.length-1 ? 'veriffintax' : 'ops'
+        const tipeMenu = tempApp.length === app.length-1 ? 'verifikasi ops' : 'pengajuan ops'
         const tempno = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
@@ -783,8 +899,12 @@ class Ops extends Component {
             subject: subject,
             no: detailOps[0].no_transaksi,
             tipe: 'ops',
+            menu: tipeMenu,
+            proses: tipeProses,
+            route: tipeRoute
         }
         await this.props.sendEmail(token, tempno)
+        await this.props.addNotif(token, tempno)
         if (val === 'reject') {
             this.getDataOps()
             this.setState({confirm: 'reject'})
@@ -1395,7 +1515,7 @@ class Ops extends Component {
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>{index + 1}</th>
                                                         <th>{item.no_transaksi}</th>
-                                                        <th>{item.cost_center}</th>
+                                                        <th>{item.depo.profit_center}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
@@ -1442,7 +1562,7 @@ class Ops extends Component {
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>{newOps.indexOf(item) + 1}</th>
                                                         <th>{item.no_transaksi}</th>
-                                                        <th>{item.cost_center}</th>
+                                                        <th>{item.depo.profit_center}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
@@ -1552,7 +1672,7 @@ class Ops extends Component {
                                             <tr>
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
-                                                <th>{item.cost_center}</th>
+                                                <th>{item.depo.profit_center}</th>
                                                 <th>{item.area}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
@@ -1758,6 +1878,7 @@ class Ops extends Component {
                                         <th>PPh</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>NILAI YANG DITERIMA</th>
+                                        <th>Vendor Memiliki SKB</th>
                                         <th>TANGGAL TRANSFER</th>
                                         <th>Jenis PPh</th>
                                         <th>Status</th>
@@ -1775,7 +1896,7 @@ class Ops extends Component {
                                                     />
                                                 </th>
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
-                                                <th>{item.cost_center}</th>
+                                                <th>{item.depo.profit_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
                                                 <th>{item.keterangan}</th>
@@ -1792,6 +1913,7 @@ class Ops extends Component {
                                                 <th>{item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.nilai_bayar === null ? item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.nilai_verif !== null && item.nilai_verif.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.stat_skb === 'ya' ? 'Ya' : '-'}</th>
                                                 <th>{item.tanggal_transfer}</th>
                                                 <th>{item.jenis_pph}</th>
                                                 <th>{item.isreject === 1 ? 'reject' : '-'}</th>
@@ -1809,6 +1931,12 @@ class Ops extends Component {
                             <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
+                            {filter === 'available' || 
+                            (detailOps[0] !== undefined && 
+                            (detailOps[0].status_transaksi === 0 || 
+                            detailOps[0].status_transaksi === 8)) ? null : (
+                                <Button className='mr-2' color="warning"  onClick={() => this.prosesStatEmail(detailOps)}>Status Email</Button>
+                            )}
                             {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
                                 <>
                                     {(filter === 'bayar' || filter === 'completed') && (
@@ -2095,6 +2223,13 @@ class Ops extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Update Nilai Yang Diterima</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'resmail' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Kirim Email</div>
+                            </div>
+                        </div>
                     ) : (
                         <div></div>
                     )}
@@ -2133,8 +2268,9 @@ class Ops extends Component {
 
                         {dataDoc.length !== 0 && dataDoc.map(x => {
                             return (
+                                x.path !== null &&
                                 <Row className="mt-3 mb-4">
-                                    {x.path !== null ? (
+                                    {x.path !== null && (
                                         <Col md={12} lg={12} className='mb-2' >
                                             <div className="btnDocIo mb-2 ml-4" >
                                                 <Input 
@@ -2152,7 +2288,7 @@ class Ops extends Component {
                                                     <BsCircle size={20} />
                                                 )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
-                                            <div>
+                                            <div className='mt-3'>
                                                 <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
                                             </div>
                                             {/* <div className="colDoc">
@@ -2165,7 +2301,8 @@ class Ops extends Component {
                                                 <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                             </div> */}
                                         </Col>
-                                    ) : (
+                                    ) 
+                                    // : (
                                         // <Col md={6} lg={6} className="colDoc">
                                         //     <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
                                         //     <div className="colDoc">
@@ -2177,8 +2314,9 @@ class Ops extends Component {
                                         //     </div>
                                         //     <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                         // </Col>
-                                        <div></div>
-                                    )}
+                                    //     null
+                                    // )
+                                    }
                                 </Row>
                             )
                         })}
@@ -2270,6 +2408,26 @@ class Ops extends Component {
                                 {tipeEmail === 'reject' ? 'Reject' : 'Approve'} & Send Email
                             </Button>
                             <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
+            <Modal isOpen={this.state.modResmail} size='xl'>
+                <ModalHeader>Status Email</ModalHeader>
+                <ModalBody>
+                    <Email handleData={this.getMessage} statMail={this.state.statEmail} />
+                    <div className={style.foot}>
+                        <div></div>
+                        <div>
+                            <Button
+                                disabled={this.state.message === '' || this.state.subject === '' ? true : false} 
+                                className="mr-2"
+                                onClick={() => this.prosesResmail()} 
+                                color="primary"
+                            >
+                                Resend Email
+                            </Button>
+                            <Button className="mr-3" onClick={this.openModResmail}>Cancel</Button>
                         </div>
                     </div>
                 </ModalBody>
@@ -2377,8 +2535,9 @@ const mapDispatchToProps = {
     approveDokumen: dokumen.approveDokumen,
     rejectDokumen: dokumen.rejectDokumen,
     getDetailId: ops.getDetailId,
-    updateNilaiVerif: ops.updateNilaiVerif
-    // notifStock: notif.notifStock
+    updateNilaiVerif: ops.updateNilaiVerif,
+    addNotif: notif.addNotif,
+    getResmail: email.getResmail
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Ops)

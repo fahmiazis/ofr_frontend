@@ -23,7 +23,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -217,6 +217,7 @@ class AjuanBayarIkk extends Component {
     }
 
     dataSendEmail = async (val) => {
+        const level = localStorage.getItem("level")
         const token = localStorage.getItem("token")
         const { detailIkk } = this.props.ikk
         const { draftEmail } = this.props.email
@@ -232,7 +233,21 @@ class AjuanBayarIkk extends Component {
             tempcc.push(cc[i].email)
         }
         to.length > 0 && to.map(item => { return (tempto.push(item.email)) })
+
+        const app = detailIkk[0].appList
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        
+        const tipeProses = val === 'reject' ? 'reject perbaikan' : tempApp.length === app.length-1 ? 'pembayaran' : 'approve'
+        const tipeRoute = val === 'reject' ? 'revikk' : tempApp.length === app.length-1 ? 'payikk' : 'listikk'
+        const tipeMenu = 'list ajuan bayar'
+
         const tempno = {
+            draft: draftEmail,
             nameTo: draftEmail.to.username,
             to: val === 'reject' ? tempto.toString() : draftEmail.to.email,
             cc: tempcc.toString(),
@@ -240,9 +255,13 @@ class AjuanBayarIkk extends Component {
             subject: subject,
             no: noTrans,
             tipe: 'ikk',
-            jenis: 'ajuan'
+            jenis: 'ajuan',
+            menu: tipeMenu,
+            proses: tipeProses,
+            route: tipeRoute
         }
         await this.props.sendEmail(token, tempno)
+        await this.props.addNotif(token, tempno)
         if (tipeTrans === 'submit') {
             this.getDataIkk()
             this.setState({confirm: 'submit'})
@@ -1159,7 +1178,7 @@ class AjuanBayarIkk extends Component {
                                     </Input>
                                 </div>
                                 {this.state.filter === 'available' && level !== '2' ? (
-                                    null
+                                    <div></div>
                                 ) : (
                                     <div className={style.headEmail2}>
                                         {this.state.filter === 'verif' && level === '2' ? (
@@ -1171,7 +1190,6 @@ class AjuanBayarIkk extends Component {
                                         <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
                                     </div>
                                 )}
-                                <div></div>
                             </div>
                             <div className={[style.secEmail4]}>
                                 <div className='rowCenter'>
@@ -2552,7 +2570,7 @@ const mapDispatchToProps = {
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
     getDraftAjuan: email.getDraftAjuan,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarIkk)
