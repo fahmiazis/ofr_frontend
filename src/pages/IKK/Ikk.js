@@ -447,7 +447,6 @@ class IKK extends Component {
         const token = localStorage.getItem("token")
         const dataCek = localStorage.getItem('docData')
         const {item, type} = (this.props.location && this.props.location.state) || {}
-        await this.props.getAllNotif(token)
         if (type === 'approve') {
             this.getDataIkk()
             this.prosesDetail(item)
@@ -2039,7 +2038,7 @@ class IKK extends Component {
                         <JurnalArea />
                     </ModalBody>
                     <ModalFooter>
-                        <Button className="mr-2" color="warning" onClick={() => this.printData('klmfpd')}>
+                        <Button className="mr-2" color="warning" onClick={() => this.printData('jurnalikk')}>
                             {/* <TableStock /> */}
                             Download
                         </Button>
@@ -2355,6 +2354,7 @@ class IKK extends Component {
 
                         {dataDoc.length !== 0 && dataDoc.map(x => {
                             return (
+                                x.path !== null &&
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >

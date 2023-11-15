@@ -2402,6 +2402,7 @@ class Klaim extends Component {
                         
                         {dataDoc.length !== 0 && dataDoc.map(x => {
                             return (
+                                x.path !== null &&
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >

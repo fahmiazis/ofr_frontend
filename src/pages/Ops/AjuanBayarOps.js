@@ -38,6 +38,8 @@ import FPD from '../../components/Ops/FPD'
 import dokumen from '../../redux/actions/dokumen'
 import email from '../../redux/actions/email'
 import Email from '../../components/Ops/Email'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
@@ -129,9 +131,75 @@ class AjuanBayarOps extends Component {
             time: 'pilih',
             time1: moment().startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
+            dataZip: [],
+            docHist: false,
+            detailDoc: {},
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    docHistory = (val) => {
+        this.setState({detailDoc: val})
+        this.setState({docHist: !this.state.docHist})
+    }
+
+
+    checkDoc = (val) => {
+        const { dataZip } = this.state
+        const {dataDoc} = this.props.ops
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataDoc.length; i++) {
+                if (dataDoc[i].path !== null) {
+                    data.push(dataDoc[i].id)
+                }
+            }
+            this.setState({dataZip: data})
+        } else {
+            dataZip.push(val)
+            this.setState({dataZip: dataZip})
+        }
+    }
+
+    unCheckDoc = (val) => {
+        const {dataZip} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({dataZip: data})
+        } else {
+            const data = []
+            for (let i = 0; i < dataZip.length; i++) {
+                if (dataZip[i] === val) {
+                    data.push()
+                } else {
+                    data.push(dataZip[i])
+                }
+            }
+            this.setState({dataZip: data})
+        }
+    }
+
+    downloadDataZip = () => {
+        const {dataZip} = this.state
+        const {dataDoc} = this.props.ops
+        let zip = new JSZip();
+    
+        const remoteZips = dataDoc.map(async (item) => {
+            const cekData = dataZip.find(e => e === item.id)
+            if (cekData !== undefined) {
+                const response = await fetch(`${REACT_APP_BACKEND_URL}/show/doc/${item.id}`);
+                const data = await response.blob();
+                zip.file(`${item.desc} ~ ${item.history}`, data);
+                return data;
+            }
+        })
+
+        Promise.all(remoteZips).then(() => {
+            zip.generateAsync({ type: "blob" }).then((content) => {
+              saveAs(content, `Dokumen Lampiran ${dataDoc[0].no_transaksi} ${moment().format('DDMMYYYY h:mm:ss')}.zip`);
+            })
+          })
     }
 
     submitStock = async () => {
@@ -940,7 +1008,7 @@ class AjuanBayarOps extends Component {
     }
 
     openModalDoc = () => {
-        this.setState({modalDoc: !this.state.modalDoc})
+        this.setState({modalDoc: !this.state.modalDoc, dataZip: []})
     }
 
     openModalAdd = () => {
@@ -1120,7 +1188,7 @@ class AjuanBayarOps extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {tipeTrans, dataRinci, listMut, listReason, dataMenu, listMenu, listOps, dataDownload, tipeReject} = this.state
+        const {detailDoc, tipeTrans, dataRinci, listMut, listReason, dataMenu, listMenu, listOps, dataDownload, tipeReject, dataZip} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps } = this.props.ops
@@ -1273,7 +1341,7 @@ class AjuanBayarOps extends Component {
                                                         </th>
                                                         <th>{newOps.indexOf(item) + 1}</th>
                                                         <th>{item.no_transaksi}</th>
-                                                        <th>{item.cost_center}</th>
+                                                        <th>{item.depo.profit_center}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
@@ -1414,7 +1482,7 @@ class AjuanBayarOps extends Component {
                                                     />
                                                 </th>
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
-                                                <th>{item.cost_center}</th>
+                                                <th>{item.depo.profit_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
                                                 <th>{item.keterangan}</th>
@@ -1502,7 +1570,7 @@ class AjuanBayarOps extends Component {
                                         return (
                                             <tr>
                                                 <th scope="row">{dataDownload.indexOf(item) + 1}</th>
-                                                <th>{item.cost_center}</th>
+                                                <th>{item.depo.profit_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
                                                 <th>{item.keterangan}</th>
@@ -1598,7 +1666,7 @@ class AjuanBayarOps extends Component {
                                                 <th scope="row">{dataDownload.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.area}</th>
-                                                <th>{item.cost_center}</th>
+                                                <th>{item.depo.profit_center}</th>
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
@@ -1696,7 +1764,7 @@ class AjuanBayarOps extends Component {
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.area}</th>
-                                                <th>{item.cost_center}</th>
+                                                <th>{item.depo.profit_center}</th>
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
@@ -2362,6 +2430,19 @@ class AjuanBayarOps extends Component {
                     )}
                 </ModalBody>
             </Modal>
+            <Modal isOpen={this.state.docHist} toggle={this.docHistory}>
+                <ModalBody>
+                    <div className='mb-4'>History Dokumen</div>
+                    <div className='history'>
+                        {detailDoc.status !== undefined && detailDoc.status !== null && detailDoc.status.split(',').map(item => {
+                            return (
+                                item !== null && item !== 'null' && 
+                                <Button className='mb-2' color='info'>{item}</Button>
+                            )
+                        })}
+                    </div>
+                </ModalBody>
+            </Modal>
             <Modal isOpen={this.state.alert} size="sm">
                 <ModalBody>
                     <div>
@@ -2374,53 +2455,83 @@ class AjuanBayarOps extends Component {
             </Modal>
             <Modal size="xl" isOpen={this.state.modalDoc} toggle={this.openModalDoc}>
                 <ModalHeader>
-                   Kelengkapan Dokumen
+                   Kelengkapan Dokumen {detailOps !== undefined && detailOps.length > 0 && detailOps[0].no_transaksi}
                 </ModalHeader>
                 <ModalBody>
                 <Container>
-                        {dataDoc !== undefined && dataDoc.map(x => {
-                            return (
-                                <Row className="mt-3 mb-4">
-                                    {x.path !== null ? (
-                                        <Col md={12} lg={12} className='mb-2' >
-                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
-                                            {x.status === 0 ? (
-                                                <AiOutlineClose size={20} />
-                                            ) : x.status === 3 ? (
-                                                <AiOutlineCheck size={20} />
-                                            ) : (
-                                                <BsCircle size={20} />
-                                            )}
-                                            <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
-                                            {/* <div className="colDoc">
-                                                <input
-                                                className="ml-4"
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                                <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
-                                            </div> */}
-                                        </Col>
-                                    ) : (
-                                        <Col md={6} lg={6} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
-                                            <div className="colDoc">
-                                                <input
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                            </div>
+                    {dataDoc.length >= 0 && (
+                        <Row className="mt-3 mb-4">
+                            <Col md={12} lg={12} className='mb-2' >
+                                <div className="btnDocIo mb-2 ml-4" >
+                                    <Input 
+                                        type='checkbox'
+                                        checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
+                                        onChange={() => dataZip.length === dataDoc.length ? this.unCheckDoc('all') : this.checkDoc('all')}
+                                    />
+                                    Ceklis All
+                                </div>
+                            </Col>
+                        </Row>
+                    )}
+
+                    {dataDoc.length !== 0 && dataDoc.map(x => {
+                        return (
+                            x.path !== null &&
+                            <Row className="mt-3 mb-4">
+                                {x.path !== null ? (
+                                    <Col md={12} lg={12} className='mb-2' >
+                                        <div className="btnDocIo mb-2 ml-4" >
+                                            <Input 
+                                                type='checkbox'
+                                                checked={dataZip.find(element => element === x.id) !== undefined ? true : false}
+                                                onChange={dataZip.find(element => element === x.id) === undefined ? () => this.checkDoc(x.id) : () => this.unCheckDoc(x.id)}
+                                            />
+                                            {x.desc === null ? 'Lampiran' : x.desc}
+                                        </div>
+                                        {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                        x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
+                                        : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                        x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
+                                        : (
+                                            <BsCircle size={20} />
+                                        )}
+                                        <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+                                        <div className='mt-3'>
+                                            <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
+                                        </div>
+                                        {/* <div className="colDoc">
+                                            <input
+                                            className="ml-4"
+                                            type="file"
+                                            onClick={() => this.setState({detail: x})}
+                                            onChange={this.onChangeUpload}
+                                            />
                                             <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
-                                        </Col>
-                                    )}
-                                </Row>
-                            )
-                        })}
+                                        </div> */}
+                                    </Col>
+                                ) : (
+                                    // <Col md={6} lg={6} className="colDoc">
+                                    //     <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
+                                    //     <div className="colDoc">
+                                    //         <input
+                                    //         type="file"
+                                    //         onClick={() => this.setState({detail: x})}
+                                    //         onChange={this.onChangeUpload}
+                                    //         />
+                                    //     </div>
+                                    //     <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                    // </Col>
+                                    null
+                                )}
+                            </Row>
+                        )
+                    })}
                     </Container>
                 </ModalBody>
                 <ModalFooter>
+                    <Button disabled={dataZip.length === 0} className="mr-2" color="primary" onClick={this.downloadDataZip}>
+                        Download Document
+                    </Button>
                     <Button className="mr-2" color="secondary" onClick={this.openModalDoc}>
                         Close
                     </Button>

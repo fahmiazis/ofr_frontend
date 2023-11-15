@@ -1618,7 +1618,7 @@ class Ops extends Component {
                         <JurnalArea />
                     </ModalBody>
                     <ModalFooter>
-                        <Button className="mr-2" color="warning" onClick={() => this.printData('klmfpd')}>
+                        <Button className="mr-2" color="warning" onClick={() => this.printData('jurnalops')}>
                             {/* <TableStock /> */}
                             Download
                         </Button>

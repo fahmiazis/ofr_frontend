@@ -24,6 +24,7 @@ import {Formik} from 'formik'
 import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
+import finance from '../../redux/actions/finance'
 import reason from '../../redux/actions/reason'
 // import notif from '../redux/actions/notif'
 import Pdf from "../../components/Pdf"
@@ -173,7 +174,8 @@ class RevisiOps extends Component {
             modalRev: false,
             openDraft: false,
             message: '',
-            subject: ''
+            subject: '',
+            tipeSkb: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -391,8 +393,8 @@ class RevisiOps extends Component {
         // const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const type = localStorage.getItem('tipeKasbon')
-        await this.props.getBank(token)
         await this.props.getCoa(token, type === 'kasbon' ? 'kasbon' :'ops')
+        await this.props.getBank(token)
         await this.props.getVendor(token)
         this.getDataOps()
     }
@@ -547,32 +549,6 @@ class RevisiOps extends Component {
         const token = localStorage.getItem("token")
         await this.props.exportStock(token, val.no, this.state.month)
         this.openModalDok()
-    }
-
-    addStock = async (val) => {
-        const token = localStorage.getItem("token")
-        const dataAsset = this.props.asset.assetAll
-        const { detailDepo } = this.props.depo
-        const { kondisi, fisik } = this.state
-        const data = {
-            area: detailDepo.nama_area,
-            kode_plant: dataAsset[0].kode_plant,
-            deskripsi: val.deskripsi,
-            merk: val.merk,
-            satuan: val.satuan,
-            unit: val.unit,
-            lokasi: val.lokasi,
-            grouping: val.grouping,
-            keterangan: val.keterangan,
-            kondisi: kondisi,
-            status_fisik: fisik
-        }
-        await this.props.addOpname(token, data)
-        await this.props.getStockArea(token, '', 1000, 1, 'null')
-        const { dataAdd } = this.props.stock
-        this.setState({kondisi: '', fisik: '', dataId: dataAdd.id})
-        this.openModalAdd()
-        this.openModalUpload()
     }
 
     openModalSum = async () => {
@@ -960,9 +936,9 @@ class RevisiOps extends Component {
     prosesOpenEdit = async (val) => {
         const token = localStorage.getItem('token')
         await this.props.getDetailId(token, val)
-        await this.props.getRek(token)
-        await this.props.getDetailDepo(token)
-        const { dataRek } = this.props.rekening
+        await this.props.getFinRek(token)
+        await this.props.getDetailFinance(token)
+        const { dataRek } = this.props.finance
         const spending = dataRek[0].rek_spending
         const zba = dataRek[0].rek_zba
         const bankcol = dataRek[0].rek_bankcol
@@ -995,7 +971,8 @@ class RevisiOps extends Component {
             tipePpn: idOps.type_transaksi,
             tipeVendor: idOps.penanggung_pajak,
             status_npwp: idOps.status_npwp === 0 ? 'Tidak' : idOps.status_npwp === 1 ? 'Ya' : nonObject,
-            dataSelFaktur: { no_faktur: idOps.no_faktur }
+            dataSelFaktur: { no_faktur: idOps.no_faktur },
+            tipeSkb: idOps.stat_skb
         })
         const cekNpwp = idOps.no_npwp === '' || idOps.no_npwp === null ? null : idOps.no_npwp
 
@@ -1036,6 +1013,10 @@ class RevisiOps extends Component {
                 this.prepareTrans()
              }, 100)
         }
+    }
+
+    selectSkb = async (val) => {
+        this.setState({tipeSkb: val})
     }
 
     prepNikNpwp = async (val) => {
@@ -1137,6 +1118,8 @@ class RevisiOps extends Component {
                             type_transaksi === vendor  
                             && jenis_transaksi === trans
                             && status_npwp === cekStat)
+            console.log(allCoa)
+            console.log(selectCoa, vendor, trans, cekStat)
             this.selectTrans({value: selectCoa.id, label: `${selectCoa.gl_account} ~ ${selectCoa.jenis_transaksi}`})
             setTimeout(() => {
                 this.selectJenis(selectCoa.type_transaksi)
@@ -1287,7 +1270,7 @@ class RevisiOps extends Component {
     editCartOps = async (val) => {
         const token = localStorage.getItem("token")
         const {idOps} = this.props.ops
-        const {detailDepo} = this.props.depo
+        const {detFinance} = this.props.finance
         const { dataTrans, nilai_buku, nilai_ajuan, nilai_utang, tgl_faktur, type_kasbon,
             nilai_vendor, tipeVendor, tipePpn, nilai_dpp, nilai_ppn, typeniknpwp,
             dataSelFaktur, noNpwp, noNik, nama, alamat, status_npwp } = this.state
@@ -1298,7 +1281,7 @@ class RevisiOps extends Component {
             periode_akhir: val.periode_akhir,
             bank_tujuan: this.state.bank,
             norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
-            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : val.nama_tujuan,
+            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : val.nama_tujuan,
             tujuan_tf: this.state.tujuan_tf,
             tiperek: this.state.tiperek,
             status_npwp: status_npwp === 'Tidak' ? 0 : status_npwp === 'Ya' && 1,
@@ -1417,7 +1400,7 @@ class RevisiOps extends Component {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
         const {dataRinci, type_kasbon, dataItem, listMut, dataTrans, listReason, dataMenu, listMenu} = this.state
-        const { detailDepo, dataDepo } = this.props.depo
+        const { detFinance } = this.props.finance
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, newOps, dataDoc, idOps } = this.props.ops
         const {listGl} = this.props.coa
@@ -1497,7 +1480,7 @@ class RevisiOps extends Component {
                                                 <th>NO.COA</th>
                                                 <th>NAMA COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
-                                                <th>PERIODE</th>
+                                                <th>TGL AJUAN</th>
                                                 <th>STATUS</th>
                                                 <th>ALASAN</th>
                                                 <th>TIPE KASBON</th>
@@ -1515,10 +1498,10 @@ class RevisiOps extends Component {
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                        <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
                                                         <th>{item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 2 ? 'Proses Approval' : ''}</th>
                                                         <th>{item.reason}</th>
-                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
+                                                        <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
                                                         </th>
@@ -1543,7 +1526,7 @@ class RevisiOps extends Component {
                                                     <th>NO.COA</th>
                                                     <th>NAMA COA</th>
                                                     <th>KETERANGAN TAMBAHAN</th>
-                                                    <th>PERIODE</th>
+                                                    <th>TGL AJUAN</th>
                                                     <th>STATUS</th>
                                                     <th>ALASAN</th>
                                                     <th>TIPE KASBON</th>
@@ -1561,10 +1544,10 @@ class RevisiOps extends Component {
                                                             <th>{item.no_coa}</th>
                                                             <th>{item.nama_coa}</th>
                                                             <th>{item.keterangan}</th>
-                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                            <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
                                                             <th>{item.status_reject !== null && item.status_reject !== 0 ? item.history.split(',').reverse()[0] : item.status_transaksi === 2 ? 'Proses Approval' : ''}</th>
                                                             <th>{item.reason}</th>
-                                                            <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
+                                                            <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
                                                             <th>
                                                                 <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
                                                             </th>
@@ -1601,7 +1584,21 @@ class RevisiOps extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal isOpen={this.props.ops.isLoading || this.props.email.isLoading || this.state.isLoading || this.props.faktur.isLoading || this.props.vendor.isLoading} size="sm">
+                <Modal isOpen={
+                    this.props.ops.isLoading 
+                    || this.props.email.isLoading 
+                    || this.props.approve.isLoading 
+                    || this.props.finance.isLoading 
+                    || this.props.user.isLoading 
+                    || this.props.dokumen.isLoading 
+                    || this.props.coa.isLoading 
+                    || this.props.notif.isLoading 
+                    || this.props.bank.isLoading 
+                    || this.props.pagu.isLoading 
+
+                    || this.state.isLoading 
+                    || this.props.faktur.isLoading 
+                    || this.props.vendor.isLoading} size="sm">
                     <ModalBody>
                     <div>
                         <div className={style.cekUpdate}>
@@ -2390,7 +2387,7 @@ class RevisiOps extends Component {
                                                     disabled
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={detailDepo.area}
+                                                    value={detFinance.area}
                                                     />
                                                 </Col>
                                             </Row>
@@ -2400,7 +2397,7 @@ class RevisiOps extends Component {
                                                     disabled
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={detailDepo.profit_center}
+                                                    value={detFinance.profit_center}
                                                     />
                                                 </Col>
                                             </Row>
@@ -2821,6 +2818,37 @@ class RevisiOps extends Component {
                                                 <text className={style.txtError}>must be filled with number</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
+                                                <Col md={3}>Vendor Memiliki Surat Keterangan Bebas Pajak (SKB)/Surat Keterangan (SKT)</Col>
+                                                <Col md={9} className="colRinci">:  
+                                                {(this.state.jenisVendor === nonObject || this.state.idTrans === '')
+                                                    ? <Input
+                                                        type= "text" 
+                                                        className="inputRinci"
+                                                        disabled
+                                                        value={nonObject}
+                                                    />
+                                                : 
+                                                    <Input
+                                                    type= "select" 
+                                                    className="inputRinci"
+                                                    value={this.state.tipeSkb}
+                                                    disabled={this.state.idTrans === '' ? true : false}
+                                                    // value={values.penanggung_pajak}
+                                                    // onBlur={handleBlur("penanggung_pajak")}
+                                                    onChange={e => {this.selectSkb(e.target.value)}}
+                                                    >
+                                                        <option value=''>Pilih</option>
+                                                        <option value="ya">Ya</option>
+                                                        <option value="tidak">Tidak</option>
+                                                    </Input>
+                                                }
+                                                    
+                                                </Col>
+                                            </Row>
+                                            {this.state.jenisVendor !== nonObject && this.state.tipeSkb === '' ? (
+                                                <text className={style.txtError}>must be filled</text>
+                                            ) : null}
+                                            <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Nilai Yang Dibukukan</Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     type= "text" 
@@ -2937,7 +2965,7 @@ class RevisiOps extends Component {
                                                     disabled={this.state.tujuan_tf === '' || this.state.tujuan_tf === 'PMA' ? true : false}
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : values.nama_tujuan}
+                                                    value={this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : values.nama_tujuan}
                                                     onBlur={handleBlur("nama_tujuan")}
                                                     onChange={handleChange("nama_tujuan")}
                                                     />
@@ -3056,6 +3084,7 @@ const mapStateToProps = state => ({
     user: state.user,
     ops: state.ops,
     menu: state.menu,
+    notif: state.notif,
     reason: state.reason,
     dokumen: state.dokumen,
     email: state.email,
@@ -3064,13 +3093,14 @@ const mapStateToProps = state => ({
     pagu: state.pagu,
     faktur: state.faktur,
     rekening: state.rekening,
-    coa: state.coa
+    coa: state.coa,
+    finance: state.finance,
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
-    getDetailDepo: depo.getDetailDepo,
+    getDetailFinance: finance.getDetailFinance,
     getDepo: depo.getDepo,
     getRole: user.getRole,
     getOps: ops.getOps,
@@ -3087,7 +3117,6 @@ const mapDispatchToProps = {
     appRevisi: ops.appRevisi,
     submitRevisi: ops.submitRevisi,
     showDokumen: dokumen.showDokumen,
-    getRek: rekening.getRek,
     getPagu: pagu.getPagu,
     getVendor: vendor.getVendor,
     getFaktur: faktur.getFaktur,
@@ -3097,6 +3126,7 @@ const mapDispatchToProps = {
     resetEmail: email.resetError,
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
+    getFinRek: finance.getFinRek,
     // notifStock: notif.notifStock
 }
 

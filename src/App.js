@@ -41,6 +41,7 @@ import ReportTaxOps from './pages/Ops/ReportTax'
 import NavAjuanOps from './pages/Ops/NavAjuanOps'
 import PayOps from './pages/Ops/PayOps'
 import FormListOps from './components/Ops/FormList'
+import JurnalAreaOps from './components/Ops/JurnalArea'
 
 //Ikk
 import NavIkk from './pages/IKK/NavIkk'
@@ -56,6 +57,7 @@ import ReportTaxIkk from './pages/IKK/ReportTax'
 import NavAjuanIkk from './pages/IKK/NavAjuanIkk'
 import PayIkk from './pages/IKK/PayIkk'
 import FormListIkk from './components/Ikk/FormList'
+import JurnalAreaIkk from './components/Ikk/JurnalArea'
 
 //Kasbon
 import NavKasbon from './pages/Kasbon/NavKasbon'
@@ -85,6 +87,8 @@ import MasterKpp from './pages/Master/MasterKpp'
 import MasterFinance from './pages/Master/MasterFinance'
 import MasterPicklaim from './pages/Master/MasterPicklaim'
 import MasterSpvklaim from './pages/Master/MasterSpvklaim'
+import MasterRole from './pages/Master/MasterRole'
+import MasterGlikk from './pages/Master/MasterGlikk'
 
 import Reservoir from './pages/Master/Reservoir'
 import MasterTaxcode from './pages/Master/MasterTaxcode'
@@ -197,6 +201,9 @@ class App extends Component {
                 <PrivateRoute path='/formlistops'>
                     <FormListOps/>
                 </PrivateRoute>
+                <PrivateRoute path='/jurnalops'>
+                    <JurnalAreaOps/>
+                </PrivateRoute>
 
                 {/* Kasbon */}
                 <PrivateRoute path='/navkasbon'>
@@ -257,6 +264,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/formlistikk'>
                     <FormListIkk/>
+                </PrivateRoute>
+                <PrivateRoute path='/jurnalikk'>
+                    <JurnalAreaIkk/>
                 </PrivateRoute>
                 <PrivateRoute path='/verifven'>
                     <VerifVendor />
@@ -320,11 +330,17 @@ class App extends Component {
                 <PrivateRoute path='/spvklaim'>
                     <MasterSpvklaim />
                 </PrivateRoute>
+                <PrivateRoute path='/role'>
+                    <MasterRole />
+                </PrivateRoute>
                 <PrivateRoute path='/reservoir'>
                     <Reservoir />
                 </PrivateRoute>
                 <PrivateRoute path='/taxcode'>
                     <MasterTaxcode />
+                </PrivateRoute>
+                <PrivateRoute path='/glikk'>
+                    <MasterGlikk />
                 </PrivateRoute>
             </Switch>
         </BrowserRouter>

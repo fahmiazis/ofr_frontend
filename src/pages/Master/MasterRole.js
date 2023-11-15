@@ -3,11 +3,10 @@ import {  NavbarBrand, DropdownToggle, DropdownMenu,
     DropdownItem, Table, ButtonDropdown, Input, Button,
     Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
 import style from '../../assets/css/input.module.css'
-import {FaSearch, FaFinanceCircle, FaBars} from 'react-icons/fa'
+import {FaSearch, FaUserCircle, FaBars} from 'react-icons/fa'
 import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
 import depo from '../../redux/actions/depo'
 import user from '../../redux/actions/user'
-import finance from '../../redux/actions/finance'
 import {connect} from 'react-redux'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
@@ -17,43 +16,30 @@ import Sidebar from "../../components/Header";
 import MaterialTitlePanel from "../../components/material_title_panel";
 import SidebarContent from "../../components/sidebar_content";
 import NavBar from '../../components/NavBar'
+import moment from 'moment'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 
-const financeSchema = Yup.object().shape({
-    kode_plant: Yup.string().required(),
-    profit_center: Yup.string().required(),
-    region: Yup.string().required(),
-    inisial: Yup.string().required(),
-    rek_spending: Yup.string().required(),
-    rek_zba: Yup.string().required(),
-    rek_bankcoll: Yup.string().required(),
-    type_live: Yup.string().required(),
-    gl_kk: Yup.string().required(),
-    area: Yup.string().required(),
-    pagu: Yup.string().required(),
-    pic_finance: Yup.string().required(),
-    spv_finance: Yup.string().required(),
-    spv2_finance: Yup.string().required(),
-    asman_finance: Yup.string().required(),
-    manager_finance: Yup.string().required(),
-    pic_tax: Yup.string().required(),
-    spv_tax: Yup.string().required(),
-    asman_tax: Yup.string().required(),
-    manager_tax: Yup.string().required(),
-    aos: Yup.string().required(),
-    rom: Yup.string().required(),
-    bm: Yup.string().required(),
-    nom: Yup.string().required(),
-    rbm: Yup.string().required()
+const userSchema = Yup.object().shape({
+    name: Yup.string().required(),
+    fullname: Yup.string().required(),
+    type: Yup.string().required(),
+    level: Yup.number('must be filled').required('must be filled')
 });
 
+const userEditSchema = Yup.object().shape({
+    name: Yup.string().required(),
+    fullname: Yup.string().required(),
+    type: Yup.string().required()
+});
 
 const changeSchema = Yup.object().shape({
     confirm_password: Yup.string().required('must be filled'),
     new_password: Yup.string().required('must be filled')
 });
 
-class MasterFinance extends Component {
+class MasterUser extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -89,7 +75,7 @@ class MasterFinance extends Component {
             filter: null,
             filterName: 'All',
             modalDel: false,
-            page: 1
+            listUser: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -124,7 +110,7 @@ class MasterFinance extends Component {
      }
 
     DownloadMaster = () => {
-        const {link} = this.props.finance
+        const {link} = this.props.user
         axios({
             url: `${link}`,
             method: 'GET',
@@ -133,7 +119,7 @@ class MasterFinance extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master coa.xlsx"); //or any other extension
+            link.setAttribute('download', "master user.xlsx"); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -171,50 +157,56 @@ class MasterFinance extends Component {
 
     DownloadTemplate = () => {
         axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/coa.xlsx`,
+            url: `${REACT_APP_BACKEND_URL}/masters/user.xlsx`,
             method: 'GET',
             responseType: 'blob',
         }).then((response) => {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "coa.xlsx");
+            link.setAttribute('download', "user.xlsx");
             document.body.appendChild(link);
             link.click();
         });
     }
 
-    addFinance = async (values) => {
+    addRole = async (val) => {
         const token = localStorage.getItem("token")
-        await this.props.addFinance(token, values)
-        const {isAdd} = this.props.finance
-        if (isAdd) {
+        const data = {
+            name: val.name,
+            fullname: val.fullname,
+            type: val.type,
+            level: val.level
+        }
+        await this.props.addRole(token, data)
+        const {addRole} = this.props.user
+        if (addRole) {
             this.setState({confirm: 'add'})
             this.openConfirm()
-            await this.getDataCount()
+            await this.getDataRole()
             this.openModalAdd()
         }
     }
 
-    delFinance = async () => {
+    delUser = async () => {
         const token = localStorage.getItem("token")
         const {detail} = this.state
-        await this.props.deleteFinance(token, detail.id)
+        await this.props.deleteUser(token, detail.id)
         this.openModalEdit()
         this.setState({confirm: 'del'})
         this.openConfirm()
-        await this.getDataCount()
+        await this.getDataRole()
         this.openModalDel()
     }
 
     next = async () => {
-        const { page } = this.props.finance
+        const { page } = this.props.user
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.finance
+        const { page } = this.props.user
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.prevLink)
     }
@@ -222,7 +214,7 @@ class MasterFinance extends Component {
     onSearch = (e) => {
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            this.getDataCount({limit: 10, search: this.state.search})
+            this.getDataRole({limit: 10, search: this.state.search})
         }
     }
 
@@ -246,25 +238,30 @@ class MasterFinance extends Component {
         await this.props.uploadMaster(token, data)
     }
 
-    editFinance = async (values, id) => {
+    editRole = async (values, id) => {
         const token = localStorage.getItem("token")
-        await this.props.updateFinance(token, values, id)
-        const {isUpdate} = this.props.finance
-        if (isUpdate) {
+        const data = {
+            name: values.name,
+            fullname: values.fullname,
+            type: values.type
+        }
+        await this.props.updateRole(token, id, data)
+        const {isUpdateRole} = this.props.user
+        if (isUpdateRole) {
             this.setState({confirm: 'edit'})
             this.openConfirm()
-            this.getDataCount()
+            this.getDataRole()
             this.openModalEdit()
         }
     }
 
-    ExportMaster = async () => {
+    ExportMaster = () => {
         const token = localStorage.getItem('token')
-        await this.props.exportMaster(token)
+        this.props.exportMaster(token)
     }
 
     componentDidUpdate() {
-        const {isError, isUpload, isExport, isReset} = this.props.finance
+        const {isError, isUpload, isExport, isReset} = this.props.user
         if (isError) {
             this.props.resetError()
             this.showAlert()
@@ -279,7 +276,7 @@ class MasterFinance extends Component {
                 this.setState({modalUpload: false})
              }, 2000)
              setTimeout(() => {
-                this.getDataCount()
+                this.getDataRole()
              }, 2100)
         } else if (isExport) {
             this.DownloadMaster()
@@ -289,24 +286,32 @@ class MasterFinance extends Component {
 
     async componentDidMount() {
         const token = localStorage.getItem("token")
-        this.getDataCount()
+        await this.props.getRole(token)
+        this.getDataRole()
+        this.getDataDepo()
     }
 
-    getDataCount = async (value) => {
-        const { page } = this.props.finance
+    getDataRole = async (value) => {
+        const { page } = this.props.user
         const pages = value === undefined || value.page === undefined ? page.currentPage : value.page
         const token = localStorage.getItem("token")
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
         const filter = value === undefined || value.filter === undefined ? this.state.filter : value.filter
         console.log(this.state.filter)
-        await this.props.getFinance(token, limit, search, pages, filter)
-        this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages})
+        await this.props.getRole(token)
+        this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter})
     }
 
     changeFilter = async (val) => {
         this.setState({filter: val.level, filterName: val.name})
-        this.getDataCount({limit: this.state.limit, search: this.state.search, filter: val.level, page: 1})
+        this.getDataRole({limit: this.state.limit, search: this.state.search, filter: val.level, page: 1})
+    }
+
+    getDataDepo = async () => {
+        const token = localStorage.getItem("token")
+        await this.props.getDepo(token, 1000, '')
+        // const { dataDepo } = this.props.depo
     }
 
     menuButtonClick(ev) {
@@ -326,9 +331,107 @@ class MasterFinance extends Component {
         this.setState({modalDel: !this.state.modalDel})
     }
 
+    chekApp = (val) => {
+        const { listUser } = this.state
+        const {dataRole} = this.props.user
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataRole.length; i++) {
+                data.push(dataRole[i].id)
+            }
+            this.setState({listUser: data})
+        } else {
+            listUser.push(val)
+            this.setState({listUser: listUser})
+        }
+    }
+
+    chekRej = (val) => {
+        const {listUser} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listUser: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listUser.length; i++) {
+                if (listUser[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listUser[i])
+                }
+            }
+            this.setState({listUser: data})
+        }
+    }
+
+    downloadData = () => {
+        const {listUser} = this.state
+        const {dataRole} = this.props.user
+        const dataDownload = []
+        for (let i = 0; i < listUser.length; i++) {
+            for (let j = 0; j < dataRole.length; j++) {
+                if (dataRole[j].id === listUser[i]) {
+                    dataDownload.push(dataRole[j])
+                }
+            }
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data klaim')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+        
+
+        ws.columns = [
+            {header: 'User Name', key: 'c2'},
+            {header: 'Full Name', key: 'c3'},
+            {header: 'Kode Area', key: 'c4'},
+            {header: 'Email', key: 'c5'},
+            {header: 'User Level', key: 'c6'},
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c2: item.name,
+                c3: item.fullname,
+                c4: item.kode_plant === 0 ? "" : item.kode_plant,
+                c5: item.type,
+                c6: `${item.level}-${item.role.name}`,
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Master Role ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
+    }
+
     render() {
-        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
-        const {dataFinance, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.finance
+        const {isOpen, dropOpen, listUser, detail, level, upload, errMsg} = this.state
+        const {isGet, alertM, alertMsg, alertUpload, page, dataRole} = this.props.user
+        const { dataDepo } = this.props.depo
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
 
@@ -378,31 +481,63 @@ class MasterFinance extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master Finance</div>
+                                    <div className={style.titleDashboard}>Master Role</div>
                                 </div>
                                 <div className={style.secHeadDashboard} >
-                                    <div>
+                                    {/* <div>
                                         <text>Show: </text>
                                         <ButtonDropdown className={style.drop} isOpen={dropOpen} toggle={this.dropDown}>
                                         <DropdownToggle caret color="light">
                                             {this.state.limit}
                                         </DropdownToggle>
                                         <DropdownMenu>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataRole({limit: 10, search: ''})}>10</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataRole({limit: 20, search: ''})}>20</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataRole({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataRole({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
-                                    </div>
-                                    <div className='filterFinance'>
-                                    </div>
+                                    </div> */}
+                                    {/* <div className='filterUser'>
+                                        <text className='mr-2'>Filter:</text>
+                                        <UncontrolledDropdown className={style.drop}>
+                                            <DropdownToggle caret color="light">
+                                                {this.state.filterName}
+                                            </DropdownToggle>
+                                            <DropdownMenu 
+                                                right
+                                                modifiers={{
+                                                setMaxHeight: {
+                                                    enabled: true,
+                                                    order: 890,
+                                                    fn: (data) => {
+                                                    return {
+                                                        ...data,
+                                                        styles: {
+                                                        ...data.styles,
+                                                        overflow: 'auto',
+                                                        maxHeight: '400px',
+                                                        },
+                                                    };
+                                                    },
+                                                },
+                                            }}
+                                            >
+                                                {dataRole !== undefined && dataRole.map(item => {
+                                                    return (
+                                                        <DropdownItem className='uppercase' onClick={() => {this.setState({filter: item.id, filterName: item.name}); this.changeFilter({name: item.name, level: item.id})}}>{item.name}</DropdownItem>
+                                                    )
+                                                })}
+                                            </DropdownMenu>
+                                        </UncontrolledDropdown>
+                                    </div> */}
                                 </div>
                                 <div className='secEmail'>
                                     <div className={style.headEmail}>
                                         <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
-                                        <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button>
+                                        {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
+                                        <Button className='mr-1' onClick={this.downloadData} color="success" size="lg">Download</Button> */}
                                     </div>
                                     <div className={style.searchEmail}>
                                         <text>Search: </text>
@@ -416,121 +551,53 @@ class MasterFinance extends Component {
                                         </Input>
                                     </div>
                                 </div>
-                                {dataAll.length === 0 ? (
                                     <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab}>
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>Kode Plant</th>
-                                                <th>Profit Center</th>
-                                                <th>Region</th>
-                                                <th>Inisial</th>
-                                                <th>Rekening Spending Card</th>
-                                                <th>Rekening ZBA</th>
-                                                <th>Rekening Bank Coll</th>
-                                                <th>Sistem Area</th>
-                                                <th>PAGU IKK</th>
-                                                <th>GL KK</th>
-
-                                                <th>PIC FINANCE</th>
-                                                <th>SPV FINANCE 1</th>
-                                                <th>SPV FINANCE 2</th>
-                                                <th>ASST MGR FIN</th>
-                                                <th>MGR FIN</th>
-                                                <th>PIC TAX</th>
-                                                <th>SPV TAX</th>
-                                                <th>ASMEN TAX</th>
-                                                <th>MGR TAX</th>
-                                                <th>AOS</th>
-                                                <th>ROM</th>
-                                                <th>BM</th>
-                                                <th>NOM</th>
-                                                <th>RBM</th>
-                                            </tr>
-                                        </thead>
-                                    </Table>
-                                        <div className={style.spin}>
-                                            Data tidak ditemukan
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab}>
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>Kode Plant</th>
-                                                <th>Profit Center</th>
-                                                <th>Region</th>
-                                                <th>Nama Area</th>
-                                                <th>Inisial</th>
-                                                <th>Rekening Spending Card</th>
-                                                <th>Rekening ZBA</th>
-                                                <th>Rekening Bank Coll</th>
-                                                <th>Sistem Area</th>
-                                                <th>PAGU IKK</th>
-                                                <th>GL KK</th>
-
-                                                <th>PIC FINANCE</th>
-                                                <th>SPV FINANCE 1</th>
-                                                <th>SPV FINANCE 2</th>
-                                                <th>ASST MGR FIN</th>
-                                                <th>MGR FIN</th>
-                                                <th>PIC TAX</th>
-                                                <th>SPV TAX</th>
-                                                <th>ASMEN TAX</th>
-                                                <th>MGR TAX</th>
-                                                <th>AOS</th>
-                                                <th>ROM</th>
-                                                <th>BM</th>
-                                                <th>NOM</th>
-                                                <th>RBM</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {dataAll.length !== 0 && dataAll.map(item => {
-                                                return (
-                                                <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
-                                                    <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
-                                                    <td>{item.kode_plant}</td>
-                                                    <td>{item.profit_center}</td>
-                                                    <td>{item.region}</td>
-                                                    <td>{item.area}</td>
-                                                    <td>{item.inisial}</td>
-                                                    <td>{item.rek_spending}</td>
-                                                    <td>{item.rek_zba}</td>
-                                                    <td>{item.rek_bankcoll}</td>
-                                                    <td>{item.type_live}</td>
-                                                    <td>{item.pagu}</td>
-                                                    <td>{item.gl_kk}</td>
-
-                                                    <td>{item.pic_finance}</td>
-                                                    <td>{item.spv_finance}</td>
-                                                    <td>{item.spv2_finance}</td>
-                                                    <td>{item.asman_finance}</td>
-                                                    <td>{item.manager_finance}</td>
-                                                    <td>{item.pic_tax}</td>
-                                                    <td>{item.spv_tax}</td>
-                                                    <td>{item.asman_tax}</td>
-                                                    <td>{item.manager_tax}</td>
-                                                    <td>{item.aos}</td>
-                                                    <td>{item.rom}</td>
-                                                    <td>{item.bm}</td>
-                                                    <td>{item.nom}</td>
-                                                    <td>{item.rbm}</td>
+                                        <Table bordered responsive hover className={style.tab}>
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Name</th>
+                                                    <th>Full Name</th>
+                                                    <th>Type</th>
+                                                    <th>Level</th>
+                                                    <th>Opsi</th>
                                                 </tr>
-                                            )})}
-                                        </tbody>
-                                    </Table>
-                                </div>  
-                                )}
+                                            </thead>
+                                            <tbody>
+                                            {dataRole.length !== 0 && dataRole.map((item, index) => {
+                                                return (
+                                                    <tr>
+                                                        <th scope="row">{index + 1}</th>
+                                                        <td>{item.name}</td>
+                                                        <td>{item.fullname}</td>
+                                                        <td>{item.level}</td>
+                                                        <td>{item.type}</td>
+                                                        <td>
+                                                            <Button onClick={()=>this.openModalEdit(this.setState({detail: item}))} color='primary'>Edit</Button>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                            </tbody>
+                                        </Table>
+                                        {dataRole.length === 0 && (
+                                            <div className={style.spin}>
+                                                Data tidak ditemukan
+                                            </div>
+                                        )}
+                                    </div>
                                 <div>
                                     <div className='infoPageEmail'>
                                         <text>Showing {page.currentPage} of {page.pages} pages</text>
                                         <div className={style.pageButton}>
-                                            <button className={style.btnPrev} color="info" disabled={page.prevLink === null ? true : false} onClick={this.prev}>Prev</button>
-                                            <button className={style.btnPrev} color="info" disabled={page.nextLink === null ? true : false} onClick={this.next}>Next</button>
+                                            <button className={style.btnPrev} color="info" 
+                                            disabled
+                                            // disabled={page.prevLink === null ? true : false}
+                                            onClick={this.prev}>Prev</button>
+                                            <button className={style.btnPrev} color="info" 
+                                            disabled
+                                            // disabled={page.nextLink === null ? true : false}
+                                            onClick={this.next}>Next</button>
                                         </div>
                                     </div>
                                 </div>
@@ -539,84 +606,84 @@ class MasterFinance extends Component {
                     </MaterialTitlePanel>
                 </Sidebar>
                 <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
-                    <ModalHeader toggle={this.openModalAdd}>Add Master Finance</ModalHeader>
+                    <ModalHeader toggle={this.openModalAdd}>Add Master Role</ModalHeader>
                     <Formik
                     initialValues={{
-                        kode_plant: '',
-                        profit_center: '',
-                        region: '',
-                        inisial: ''
+                        name: "",
+                        fullname: "",
+                        type: "",
+                        level: null
                     }}
-                    validationSchema={financeSchema}
-                    onSubmit={(values) => {this.addFinance(values)}}
+                    validationSchema={userSchema}
+                    onSubmit={(values) => {this.addRole(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Kode Plant
+                               Name
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="kode_plant"
-                                value={values.kode_plant}
-                                onBlur={handleBlur("kode_plant")}
-                                onChange={handleChange("kode_plant")}
+                                name="name"
+                                value={values.name}
+                                onBlur={handleBlur("name")}
+                                onChange={handleChange("name")}
                                 />
-                                {errors.kode_plant ? (
-                                    <text className={style.txtError}>{errors.kode_plant}</text>
+                                {errors.name ? (
+                                    <text className={style.txtError}>{errors.name}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Profit Center
+                                Full Name
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="profit_center"
-                                value={values.profit_center}
-                                onBlur={handleBlur("profit_center")}
-                                onChange={handleChange("profit_center")}
+                                name="fullname"
+                                value={values.fullname}
+                                onBlur={handleBlur("fullname")}
+                                onChange={handleChange("fullname")}
                                 />
-                                {errors.profit_center ? (
-                                    <text className={style.txtError}>{errors.profit_center}</text>
+                                {errors.fullname ? (
+                                    <text className={style.txtError}>{errors.fullname}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Region
+                                Type
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="region"
-                                value={values.region}
-                                onBlur={handleBlur("region")}
-                                onChange={handleChange("region")}
+                                name="type"
+                                value={values.type}
+                                onBlur={handleBlur("type")}
+                                onChange={handleChange("type")}
                                 />
-                                {errors.region ? (
-                                    <text className={style.txtError}>{errors.region}</text>
+                                {errors.type ? (
+                                    <text className={style.txtError}>{errors.type}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Inisial
+                                Level
                             </text>
                             <div className="col-md-9">
-                                <Input 
+                            <Input 
                                 type="name" 
-                                name="inisial"
-                                value={values.inisial}
-                                onBlur={handleBlur("inisial")}
-                                onChange={handleChange("inisial")}
+                                name="level"
+                                value={values.level}
+                                onChange={handleChange("level")}
+                                onBlur={handleBlur("level")}
                                 />
-                                {errors.inisial ? (
-                                    <text className={style.txtError}>{errors.inisial}</text>
+                                {errors.level ? (
+                                    <text className={style.txtError}>{errors.level}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -633,93 +700,92 @@ class MasterFinance extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
-                    <ModalHeader toggle={this.openModalEdit}>Edit Master Finance</ModalHeader>
+                    <ModalHeader toggle={this.openModalEdit}>Edit Master Role</ModalHeader>
                     <Formik
                     initialValues={{
-                    kode_plant: detail.kode_plant === null ? '' : detail.kode_plant,
-                    profit_center: detail.profit_center === null ? '' : detail.profit_center,
-                    region: detail.region === null ? '' : detail.region,
-                    inisial: detail.inisial === null ? '' : detail.inisial
+                    name: detail.name === null ? '' : detail.name,
+                    level: detail.level === null ? '' : detail.level,
+                    type: detail.type === null ? '' : detail.type,
+                    fullname: detail.fullname === null ? '' : detail.fullname
                     }}
-                    validationSchema={financeSchema}
-                    onSubmit={(values) => {this.editFinance(values, detail.id)}}
+                    validationSchema={userEditSchema}
+                    onSubmit={(values) => {this.editRole(values, detail.id)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Kode Plant
+                                Name
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="kode_plant"
-                                value={values.kode_plant}
-                                onBlur={handleBlur("kode_plant")}
-                                onChange={handleChange("kode_plant")}
+                                name="name"
+                                value={values.name}
+                                onBlur={handleBlur("name")}
+                                onChange={handleChange("name")}
                                 />
-                                {errors.kode_plant ? (
-                                    <text className={style.txtError}>{errors.kode_plant}</text>
+                                {errors.name ? (
+                                    <text className={style.txtError}>{errors.name}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Profit Center
+                                Full Name
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="profit_center"
-                                value={values.profit_center}
-                                onBlur={handleBlur("profit_center")}
-                                onChange={handleChange("profit_center")}
+                                name="fullname"
+                                value={values.fullname}
+                                onBlur={handleBlur("fullname")}
+                                onChange={handleChange("fullname")}
                                 />
-                                {errors.profit_center ? (
-                                    <text className={style.txtError}>{errors.profit_center}</text>
+                                {errors.fullname ? (
+                                    <text className={style.txtError}>{errors.fullname}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Region
+                                Level
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="name" 
-                                name="region"
-                                value={values.region}
-                                onBlur={handleBlur("region")}
-                                onChange={handleChange("region")}
+                                type="select" 
+                                name="select"
+                                value={values.level}
+                                disabled
                                 />
-                                {errors.region ? (
-                                    <text className={style.txtError}>{errors.region}</text>
+                                {errors.level ? (
+                                    <text className={style.txtError}>{errors.level}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Inisial
+                                Type
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="inisial"
-                                value={values.inisial}
-                                onBlur={handleBlur("inisial")}
-                                onChange={handleChange("inisial")}
+                                name="type"
+                                value={values.type}
+                                onBlur={handleBlur("type")}
+                                onChange={handleChange("type")}
                                 />
-                                {errors.inisial ? (
-                                    <text className={style.txtError}>{errors.inisial}</text>
+                                {errors.type ? (
+                                    <text className={style.txtError}>{errors.type}</text>
                                 ) : null}
                             </div>
                         </div>
                         <hr/>
                         <div className={style.foot}>
                             <div>
-                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Finance</Button>
                             </div>
                             <div>
+                                <Button className="mr-2" onClick={this.openModalEdit} color='secondary'>Cloes</Button>
                                 <Button  onClick={handleSubmit} color="primary">Save</Button>
                             </div>
                         </div>
@@ -728,7 +794,7 @@ class MasterFinance extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
-                    <ModalHeader>Upload Master Finance</ModalHeader>
+                    <ModalHeader>Upload Master Role</ModalHeader>
                     <ModalBody className={style.modalUpload}>
                         <div className={style.titleModalUpload}>
                             <text>Upload File: </text>
@@ -756,23 +822,23 @@ class MasterFinance extends Component {
                         {this.state.confirm === 'edit' ? (
                         <div className={style.cekUpdate}>
                             <AiFillCheckCircle size={80} className={style.green} />
-                            <div className={style.sucUpdate}>Berhasil Memperbarui Finance</div>
+                            <div className={style.sucUpdate}>Berhasil Memperbarui Role</div>
                         </div>
                         ) : this.state.confirm === 'add' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menambahkan Finance</div>
+                                <div className={style.sucUpdate}>Berhasil Menambahkan Role</div>
                             </div>
                         ) : this.state.confirm === 'del' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menghapus Finance</div>
+                                <div className={style.sucUpdate}>Berhasil Menghapus Role</div>
                             </div>
                         ) : this.state.confirm === 'upload' ?(
                             <div>
                                 <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Mengupload Master Finance</div>
+                                <div className={style.sucUpdate}>Berhasil Mengupload Master Role</div>
                             </div>
                             </div>
                         ) : this.state.confirm === 'reset' ? (
@@ -787,7 +853,7 @@ class MasterFinance extends Component {
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.finance.isLoading ? true: false} size="sm">
+                <Modal isOpen={this.props.user.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -797,7 +863,7 @@ class MasterFinance extends Component {
                         </div>
                         </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.finance.isUpload ? true: false} size="sm">
+                <Modal isOpen={this.props.user.isUpload ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -874,38 +940,39 @@ class MasterFinance extends Component {
                     <div className={style.modalApprove}>
                         <div>
                             <text>
-                                Anda yakin untuk delete coa {detail.region} ?
+                                Anda yakin untuk delete user {detail.name} ?
                             </text>
                         </div>
                         <div className={style.btnApprove}>
-                            <Button color="primary" onClick={() => this.delFinance()}>Ya</Button>
-                            <Button color="secondary" onClick={this.openModalDel}>Tidak</Button>
+                            <Button color="primary" onClick={() => this.delUser()}>Ya</Button>
+                            <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                         </div>
                     </div>
                 </ModalBody>
             </Modal>
             </>
         )
-    } 
+    }
 }
 
 const mapStateToProps = state => ({
     user: state.user,
-    finance: state.finance
+    depo: state.depo
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
-    addFinance: finance.addFinance,
-    updateFinance: finance.updateFinance,
-    getFinance: finance.getAllFinance,
-    uploadMaster: finance.uploadMaster,
-    nextPage: finance.nextPage,
-    exportMaster: finance.exportMaster,
-    resetError: finance.resetError,
+    addRole: user.addRole,
+    updateRole: user.updateRole,
+    getRole: user.getRole,
+    resetError: user.resetError,
+    getDepo: depo.getDepo,
+    uploadMaster: user.uploadMaster,
+    nextPage: user.nextPage,
+    exportMaster: user.exportMaster,
     resetPassword: user.resetPassword,
-    deleteFinance: finance.deleteFinance
+    deleteUser: user.deleteUser
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(MasterFinance)
+export default connect(mapStateToProps, mapDispatchToProps)(MasterUser)
 	

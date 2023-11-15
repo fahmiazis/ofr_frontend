@@ -24,6 +24,8 @@ import picklaim from './picklaim'
 import spvklaim from './spvklaim'
 import reservoir from './reservoir'
 import taxcode from './taxcode'
+import glikk from './glikk'
+
 //transaksi
 import klaim from './klaim'
 import ikk from './ikk'
@@ -56,6 +58,7 @@ export default combineReducers({
   finance,
   reservoir,
   taxcode,
+  glikk,
   notif,
   verven,
   picklaim,

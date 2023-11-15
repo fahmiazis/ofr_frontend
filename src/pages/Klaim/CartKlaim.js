@@ -49,7 +49,9 @@ const addSchema = Yup.object().shape({
     status_npwp: Yup.string().required('must be filled'),
     no_surkom: Yup.string().required("must be filled"),
     nama_program: Yup.string().required("must be filled"),
-    dn_area: Yup.string().required("must be filled")
+    dn_area: Yup.string().required("must be filled"),
+    no_ktp: Yup.number(),
+    no_npwp: Yup.number()
 })
 
 const alasanSchema = Yup.object().shape({
@@ -568,32 +570,6 @@ class CartKlaim extends Component {
         this.openModalDok()
     }
 
-    addStock = async (val) => {
-        const token = localStorage.getItem("token")
-        const dataAsset = this.props.asset.assetAll
-        const { detailDepo } = this.props.depo
-        const { kondisi, fisik } = this.state
-        const data = {
-            area: detailDepo.nama_area,
-            kode_plant: dataAsset[0].kode_plant,
-            deskripsi: val.deskripsi,
-            merk: val.merk,
-            satuan: val.satuan,
-            unit: val.unit,
-            lokasi: val.lokasi,
-            grouping: val.grouping,
-            keterangan: val.keterangan,
-            kondisi: kondisi,
-            status_fisik: fisik
-        }
-        await this.props.addOpname(token, data)
-        await this.props.getStockArea(token, '', 1000, 1, 'null')
-        const { dataAdd } = this.props.stock
-        this.setState({kondisi: '', fisik: '', dataId: dataAdd.id})
-        this.openModalAdd()
-        this.openModalUpload()
-    }
-
     openModalSum = async () => {
         const token = localStorage.getItem('token')
         await this.props.getStockArea(token, '', 1000, 1, 'null')
@@ -723,7 +699,7 @@ class CartKlaim extends Component {
 
     addCartKlaim = async (val) => {
         const token = localStorage.getItem("token")
-        const {detailDepo} = this.props.depo
+        const {detFinance} = this.props.finance
         const data = {
             no_coa: this.state.no_coa,
             keterangan: val.keterangan,
@@ -732,7 +708,7 @@ class CartKlaim extends Component {
             nilai_ajuan: val.nilai_ajuan,
             bank_tujuan: this.state.bank,
             norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
-            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : val.nama_tujuan,
+            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : val.nama_tujuan,
             tujuan_tf: this.state.tujuan_tf,
             tiperek: this.state.tiperek,
             status_npwp: val.status_npwp === 'Tidak' ? 0 : val.status_npwp === 'Ya' ? 1 : null,
@@ -750,7 +726,7 @@ class CartKlaim extends Component {
 
     editCartKlaim = async (val) => {
         const token = localStorage.getItem("token")
-        const {detailDepo} = this.props.depo
+        const {detFinance} = this.props.finance
         const data = {
             no_coa: this.state.no_coa,
             keterangan: val.keterangan,
@@ -759,7 +735,7 @@ class CartKlaim extends Component {
             nilai_ajuan: val.nilai_ajuan,
             bank_tujuan: this.state.bank,
             norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
-            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : val.nama_tujuan,
+            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : val.nama_tujuan,
             tujuan_tf: this.state.tujuan_tf,
             tiperek: this.state.tiperek,
             status_npwp: val.status_npwp === 'Tidak' ? 0 : val.status_npwp === 'Ya' ? 1 : null,
@@ -864,7 +840,7 @@ class CartKlaim extends Component {
             this.openConfirm(this.setState({confirm: 'rejCartAdd'}))
         } else {
             await this.props.getFinRek(token)
-            await this.props.getDetailDepo(token)
+            await this.props.getDetailFinance(token)
             const { dataRek } = this.props.finance
             const spending = dataRek[0].rek_spending
             const zba = dataRek[0].rek_zba
@@ -884,7 +860,7 @@ class CartKlaim extends Component {
         const token = localStorage.getItem('token')
         await this.props.getDetailId(token, val)
         await this.props.getFinRek(token)
-        await this.props.getDetailDepo(token)
+        await this.props.getDetailFinance(token)
         const { dataRek } = this.props.finance
         const spending = dataRek[0].rek_spending
         const zba = dataRek[0].rek_zba
@@ -1022,8 +998,8 @@ class CartKlaim extends Component {
         const names = localStorage.getItem('name')
         const {dataRinci, dropApp, dataItem, listMut, drop, newStock} = this.state
         const {dataCart, dataDoc, idKlaim} = this.props.klaim
-        const { detailDepo, dataDepo } = this.props.depo
-        // const pages = this.props.depo.page
+        const { detFinance } = this.props.finance
+        // const pages = this.props.finance.page
 
         const contentHeader =  (
             <div className={style.navbar}>
@@ -1426,7 +1402,7 @@ class CartKlaim extends Component {
                                                 disabled={this.state.tujuan_tf === '' || this.state.tujuan_tf === 'PMA' ? true : false}
                                                 type= "text" 
                                                 className="inputRinci"
-                                                value={this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : values.nama_tujuan}
+                                                value={this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : values.nama_tujuan}
                                                 onBlur={handleBlur("nama_tujuan")}
                                                 onChange={handleChange("nama_tujuan")}
                                                 />
@@ -1485,6 +1461,8 @@ class CartKlaim extends Component {
                                         </Row>
                                         {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                        ) : values.status_npwp === 'Ya' && errors.no_npwp ? (
+                                            <text className={style.txtError}>{errors.no_npwp}</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nama Sesuai KTP</Col>
@@ -1517,6 +1495,8 @@ class CartKlaim extends Component {
                                         </Row>
                                         {values.status_npwp === 'Tidak' && values.no_ktp.length < 16 ? (
                                             <text className={style.txtError}>must be filled with 16 digits characters</text>
+                                        ) : values.status_npwp === 'Tidak' && errors.no_ktp ? (
+                                            <text className={style.txtError}>{errors.no_ktp}</text>
                                         ) : null}
                                     </div>
                                     <div className="modalFoot mt-3">
@@ -1526,8 +1506,8 @@ class CartKlaim extends Component {
                                                 className="mr-3" 
                                                 size="md" 
                                                 disabled={this.state.no_coa === '' ? true 
-                                                : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp === '' ) ? true 
-                                                : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
+                                                : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp.length !== 15 || errors.no_npwp) ? true 
+                                                : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true 
                                                 // : values.norek_ajuan.length < this.state.digit ? true 
                                                 : this.state.tujuan_tf === '' ? true
                                                 : false } 
@@ -1803,7 +1783,7 @@ class CartKlaim extends Component {
                                                 disabled={this.state.tujuan_tf === '' || this.state.tujuan_tf === 'PMA' ? true : false}
                                                 type= "text" 
                                                 className="inputRinci"
-                                                value={this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : values.nama_tujuan}
+                                                value={this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : values.nama_tujuan}
                                                 onBlur={handleBlur("nama_tujuan")}
                                                 onChange={handleChange("nama_tujuan")}
                                                 />
@@ -1862,6 +1842,8 @@ class CartKlaim extends Component {
                                         </Row>
                                         {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                        ) : values.status_npwp === 'Ya' && errors.no_npwp ? (
+                                            <text className={style.txtError}>{errors.no_npwp}</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nama Sesuai KTP</Col>
@@ -1892,8 +1874,10 @@ class CartKlaim extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {values.status_npwp === 'Tidak' && values.no_ktp.length <= 16 ? (
+                                        {values.status_npwp === 'Tidak' && values.no_ktp.length < 16 ? (
                                             <text className={style.txtError}>must be filled with 16 digits characters</text>
+                                        ) : values.status_npwp === 'Tidak' && errors.no_ktp ? (
+                                            <text className={style.txtError}>{errors.no_ktp}</text>
                                         ) : null}
                                     </div>
                                     <div className="modalFoot mt-3">
@@ -1903,8 +1887,8 @@ class CartKlaim extends Component {
                                                 className="mr-3" 
                                                 size="md" 
                                                 disabled={this.state.no_coa === '' ? true 
-                                                : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp === '' ) ? true 
-                                                : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
+                                                : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp.length !== 15 || errors.no_npwp) ? true 
+                                                : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true 
                                                 // : values.norek_ajuan.length < this.state.digit ? true 
                                                 : this.state.tujuan_tf === '' ? true
                                                 : false } 
@@ -2186,7 +2170,16 @@ class CartKlaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading || this.props.email.isLoading || this.state.isLoading} size="sm">
+                <Modal isOpen={this.props.bank.isLoading 
+                    || this.props.coa.isLoading 
+                    || this.props.user.isLoading
+                    || this.props.dokumen.isLoading
+                    || this.props.notif.isLoading
+                    || this.props.approve.isLoading 
+                    || this.props.finance.isLoading 
+                    || this.props.klaim.isLoading 
+                    || this.props.email.isLoading 
+                    || this.state.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2738,7 +2731,7 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = {
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
-    getDetailDepo: depo.getDetailDepo,
+    getDetailFinance: finance.getDetailFinance,
     getDepo: depo.getDepo,
     getRole: user.getRole,
     getCoa: coa.getCoa,

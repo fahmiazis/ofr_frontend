@@ -73,7 +73,7 @@ function Sidebar(props) {
                         <text className="txtMenu">Pengajuan Data Vendor</text>
                     </button>
                 )}
-                {level === '1' || level === '4' || level === '14' ? (
+                {level === '1' || level === '101' || level === '102' || level === '103' ? (
                     <button className={stile.btnSide2} onClick={toggle}>
                         <FaDatabase size={20} className="mr-3"/>
                         Master
@@ -86,7 +86,7 @@ function Sidebar(props) {
                 ) : (
                     <div></div>
                 )}
-                {level === '4' || level === '14' ? (
+                {level === '102' ? (
                     <Collapse isOpen={isOpen} className="ml-5 mt-3">
                         <button onClick={() => goHome('faktur')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
@@ -107,6 +107,40 @@ function Sidebar(props) {
                         <button onClick={() => goHome('tarif')} className={stile.btnSide}>
                             <FaTicketAlt size={20} className="mr-2"/>
                             Master VerifTax
+                        </button>
+                    </Collapse>
+                ) : level === '101' ? (
+                    <Collapse isOpen={isOpen} className="ml-5 mt-3">
+                        <button onClick={() => goHome('bank')} className={stile.btnSide}>
+                            <RiBankCardFill size={20} className="mr-2"/>
+                            Master Bank
+                        </button>
+                        <button onClick={() => goHome('finance')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Master Finance
+                        </button>
+                        <button onClick={() => goHome('kliring')} className={stile.btnSide}>
+                            <RiBankCardFill size={20} className="mr-2"/>
+                            Master Kliring
+                        </button>
+                        <button onClick={() => goHome('reservoir')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Reservoir
+                        </button>
+                    </Collapse>
+                ) : level === '103' ? (
+                    <Collapse isOpen={isOpen} className="ml-5 mt-3">
+                        <button onClick={() => goHome('coa')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Master COA Klaim
+                        </button>
+                        <button onClick={() => goHome('picklaim')} className={stile.btnSide}>
+                            <FiUser size={20} className="mr-2"/>
+                            Master PIC Klaim
+                        </button>
+                        <button onClick={() => goHome('spvklaim')} className={stile.btnSide}>
+                            <FiUser size={20} className="mr-2"/>
+                            Master SPV Klaim
                         </button>
                     </Collapse>
                 ) : level === '1' && (
@@ -147,6 +181,10 @@ function Sidebar(props) {
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Finance
                         </button>
+                        <button onClick={() => goHome('glikk')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Master GL Kas Kecil
+                        </button>
                         <button onClick={() => goHome('kliring')} className={stile.btnSide}>
                             <RiBankCardFill size={20} className="mr-2"/>
                             Master Kliring
@@ -174,6 +212,10 @@ function Sidebar(props) {
                         <button onClick={() => goHome('spvklaim')} className={stile.btnSide}>
                             <FiUser size={20} className="mr-2"/>
                             Master SPV Klaim
+                        </button>
+                        <button onClick={() => goHome('role')} className={stile.btnSide}>
+                            <FiUser size={20} className="mr-2"/>
+                            Master Role
                         </button>
                         <button onClick={() => goHome('taxcode')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>

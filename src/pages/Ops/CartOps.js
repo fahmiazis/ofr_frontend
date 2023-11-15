@@ -382,7 +382,7 @@ class CartOps extends Component {
         const type = localStorage.getItem('tipeKasbon')
         const token = localStorage.getItem("token")
         this.setState({type_kasbon: type})
-        await this.props.getCoa(token, type === 'kasbon' ? 'kasbon' :'ops')
+        await this.props.getCoa(token, 'ops')
         await this.props.getBank(token)
         await this.props.getVendor(token)
         this.getDataCart()
@@ -707,7 +707,7 @@ class CartOps extends Component {
 
     addCartOps = async (val) => {
         const token = localStorage.getItem("token")
-        const {detailDepo} = this.props.depo
+        const {detFinance} = this.props.finance
         const { dataTrans, nilai_buku, nilai_ajuan, nilai_utang, tgl_faktur,
             nilai_vendor, tipeVendor, tipePpn, nilai_dpp, nilai_ppn, typeniknpwp, type_kasbon,
             dataSelFaktur, noNpwp, noNik, nama, alamat, status_npwp } = this.state
@@ -718,7 +718,7 @@ class CartOps extends Component {
             periode_akhir: val.periode_akhir,
             bank_tujuan: this.state.bank,
             norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
-            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : val.nama_tujuan,
+            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : val.nama_tujuan,
             tujuan_tf: this.state.tujuan_tf,
             tiperek: this.state.tiperek,
             status_npwp: status_npwp === 'Tidak' ? 0 : status_npwp === 'Ya' ? 1 : 2,
@@ -748,7 +748,7 @@ class CartOps extends Component {
             no_po: val.no_po,
             nilai_po: val.nilai_po,
             nilai_pr: val.nilai_pr,
-            stat_skb: this.state.tipeSkb
+            stat_skb: this.state.jenisVendor === nonObject ? '' : this.state.tipeSkb
         }
         await this.props.addCart(token, data, dataTrans.id)
     }
@@ -772,7 +772,7 @@ class CartOps extends Component {
     editCartOps = async (val) => {
         const token = localStorage.getItem("token")
         const {idOps} = this.props.ops
-        const {detailDepo} = this.props.depo
+        const {detFinance} = this.props.finance
         const { dataTrans, nilai_buku, nilai_ajuan, nilai_utang, tgl_faktur, type_kasbon,
             nilai_vendor, tipeVendor, tipePpn, nilai_dpp, nilai_ppn, typeniknpwp,
             dataSelFaktur, noNpwp, noNik, nama, alamat, status_npwp } = this.state
@@ -783,7 +783,7 @@ class CartOps extends Component {
             periode_akhir: val.periode_akhir,
             bank_tujuan: this.state.bank,
             norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
-            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : val.nama_tujuan,
+            nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : val.nama_tujuan,
             tujuan_tf: this.state.tujuan_tf,
             tiperek: this.state.tiperek,
             status_npwp: status_npwp === 'Tidak' ? 0 : status_npwp === 'Ya' && 1,
@@ -813,7 +813,7 @@ class CartOps extends Component {
             no_po: val.no_po,
             nilai_po: val.nilai_po,
             nilai_pr: val.nilai_pr,
-            stat_skb: this.state.tipeSkb
+            stat_skb: this.state.jenisVendor === nonObject ? '' : this.state.tipeSkb
         }
         await this.props.editOps(token, idOps.id, dataTrans.id, data)
         this.openEdit()
@@ -855,7 +855,7 @@ class CartOps extends Component {
     prosesOpenAdd = async () => {
         const token = localStorage.getItem('token')
         await this.props.getFinRek(token)
-        await this.props.getDetailDepo(token)
+        await this.props.getDetailFinance(token)
         const { dataRek } = this.props.finance
         const spending = dataRek[0].rek_spending
         const zba = dataRek[0].rek_zba
@@ -895,7 +895,7 @@ class CartOps extends Component {
         const token = localStorage.getItem('token')
         await this.props.getDetailId(token, val)
         await this.props.getFinRek(token)
-        await this.props.getDetailDepo(token)
+        await this.props.getDetailFinance(token)
         const { dataRek } = this.props.finance
         const spending = dataRek[0].rek_spending
         const zba = dataRek[0].rek_zba
@@ -1496,9 +1496,9 @@ class CartOps extends Component {
         const names = localStorage.getItem('name')
         const {dataRinci, dropApp, dataItem, listMut, drop, newStock, dataTrans, type_kasbon, showOptions} = this.state
         const {dataCart, dataDoc, depoCart, idOps} = this.props.ops
-        const { detailDepo, dataDepo } = this.props.depo
+        const { detFinance } = this.props.finance
         const {listGl} = this.props.coa
-        // const pages = this.props.depo.page
+        // const pages = this.props.finance.page
 
         const contentHeader =  (
             <div className={style.navbar}>
@@ -1675,7 +1675,7 @@ class CartOps extends Component {
                                                     disabled
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={detailDepo.area}
+                                                    value={detFinance.area}
                                                     />
                                                 </Col>
                                             </Row>
@@ -1685,7 +1685,7 @@ class CartOps extends Component {
                                                     disabled
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={detailDepo.profit_center}
+                                                    value={detFinance.profit_center}
                                                     />
                                                 </Col>
                                             </Row>
@@ -2120,12 +2120,12 @@ class CartOps extends Component {
                                             <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Vendor Memiliki Surat Keterangan Bebas Pajak (SKB)/Surat Keterangan (SKT)</Col>
                                                 <Col md={9} className="colRinci">:  
-                                                {this.state.jenisVendor === nonObject 
+                                                {(this.state.jenisVendor === nonObject || this.state.idTrans === '')
                                                     ? <Input
                                                         type= "text" 
                                                         className="inputRinci"
-                                                        disable
-                                                        // value={nonObject}
+                                                        disabled
+                                                        value={nonObject}
                                                     />
                                                 : 
                                                     <Input
@@ -2265,7 +2265,7 @@ class CartOps extends Component {
                                                     disabled={this.state.tujuan_tf === '' || this.state.tujuan_tf === 'PMA' ? true : false}
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : values.nama_tujuan}
+                                                    value={this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : values.nama_tujuan}
                                                     onBlur={handleBlur("nama_tujuan")}
                                                     onChange={handleChange("nama_tujuan")}
                                                     />
@@ -2400,7 +2400,7 @@ class CartOps extends Component {
                                                     disabled
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={detailDepo.area}
+                                                    value={detFinance.area}
                                                     />
                                                 </Col>
                                             </Row>
@@ -2410,7 +2410,7 @@ class CartOps extends Component {
                                                     disabled
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={detailDepo.profit_center}
+                                                    value={detFinance.profit_center}
                                                     />
                                                 </Col>
                                             </Row>
@@ -2845,12 +2845,12 @@ class CartOps extends Component {
                                             <Row className="mb-2 rowRinci">
                                             <Col md={3}>Vendor Memiliki Surat Keterangan Bebas Pajak (SKB)/Surat Keterangan (SKT)</Col>
                                             <Col md={9} className="colRinci">:  
-                                            {this.state.jenisVendor === nonObject 
+                                            {(this.state.jenisVendor === nonObject || this.state.idTrans === '')
                                                 ? <Input
                                                     type= "text" 
                                                     className="inputRinci"
                                                     disabled
-                                                    // value={nonObject}
+                                                    value={nonObject}
                                                 />
                                             : 
                                                 <Input
@@ -2990,7 +2990,7 @@ class CartOps extends Component {
                                                     disabled={this.state.tujuan_tf === '' || this.state.tujuan_tf === 'PMA' ? true : false}
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : values.nama_tujuan}
+                                                    value={this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : values.nama_tujuan}
                                                     onBlur={handleBlur("nama_tujuan")}
                                                     onChange={handleChange("nama_tujuan")}
                                                     />
@@ -3347,7 +3347,21 @@ class CartOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.props.email.isLoading || this.state.isLoading || this.props.faktur.isLoading || this.props.vendor.isLoading} size="sm">
+                <Modal isOpen={
+                    this.props.ops.isLoading 
+                    || this.props.email.isLoading 
+                    || this.props.approve.isLoading 
+                    || this.props.finance.isLoading 
+                    || this.props.user.isLoading 
+                    || this.props.dokumen.isLoading 
+                    || this.props.coa.isLoading 
+                    || this.props.notif.isLoading 
+                    || this.props.bank.isLoading 
+                    || this.props.pagu.isLoading 
+
+                    || this.state.isLoading 
+                    || this.props.faktur.isLoading 
+                    || this.props.vendor.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -3810,7 +3824,7 @@ class CartOps extends Component {
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Gagal Menambahkan Data</div>
-                                <div className={[style.sucUpdate, style.green]}>Pastikan pengisian program dan periode sesuai dengan SOP</div>
+                                <div className={[style.sucUpdate, style.green]}>Pastikan seluruh kolom data telah terisi</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'isApprove' ? (
@@ -3944,7 +3958,7 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = {
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
-    getDetailDepo: depo.getDetailDepo,
+    getDetailFinance: finance.getDetailFinance,
     getDepo: depo.getDepo,
     getRole: user.getRole,
     getCoa: coa.getCoa,

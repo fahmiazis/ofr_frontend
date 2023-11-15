@@ -153,7 +153,7 @@ class MasterUser extends Component {
         this.setState({modalEdit: !this.state.modalEdit})
     }
     openModalUpload = () => {
-        this.setState({modalUpload: !this.state.modalUpload})
+        this.setState({modalUpload: !this.state.modalUpload, fileUpload: ''})
     }
     openModalDownload = () => {
         this.setState({modalUpload: !this.state.modalUpload})
@@ -390,7 +390,7 @@ class MasterUser extends Component {
         }
 
         const workbook = new ExcelJS.Workbook();
-        const ws = workbook.addWorksheet('data klaim')
+        const ws = workbook.addWorksheet('data user')
 
         // await ws.protect('F1n4NcePm4')
 

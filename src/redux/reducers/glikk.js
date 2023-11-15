@@ -1,5 +1,5 @@
 /* eslint-disable import/no-anonymous-default-export */
-const coaState = {
+const glikkState = {
     isAdd: false,
     isAddDetail: false,
     isUpdate: false,
@@ -8,85 +8,63 @@ const coaState = {
     isLoading: false,
     isError: false,
     alertMsg: '',
-    dataCoa: [],
+    dataGlikk: [],
     dataName: [],
     alertM: '',
     alertUpload: [],
     page: {},
     isExport: false,
-    detCoa: {},
+    detGlikk: {},
     link: '',
     dataAll: [],
     isAll: false,
-    isUpload: false,
-    allCoa: [],
-    listGl: [],
-    dataPph:{
-        pph21: '21050107',
-        pph23: '21050102',
-        ppn: '11060204',
-        pph4a2: '21050101',
-        kasbon: 'V100IN0001',
-        bankops: '11010401',
-        pc_ho: 'P01H000001'
-    },
-    dataPphSc:{
-        pph21: '213710',
-        pph23: '213210',
-        ppn: '11060204',
-        pph4a2: '213110',
-        kasbon: 'V100IN0001',
-        bankops: '11010401',
-        pc_ho: 'P01H000001'
-    }
+    isUpload: false
 };
 
-export default (state=coaState, action) => {
+export default (state=glikkState, action) => {
         switch(action.type){
-            case 'GET_ALL_PENDING': {
+            case 'GET_ALLGLIKK_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_ALL_FULFILLED': {
+            case 'GET_ALLGLIKK_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isAll: true,
                     dataAll: action.payload.data.result.rows,
-                    alertMsg: 'get coa Succesfully',
+                    alertMsg: 'get glikk Succesfully',
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'GET_ALL_REJECTED': {
+            case 'GET_ALLGLIKK_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
                     isError: true,
-                    alertMsg: "Failed get data coa"
+                    alertMsg: "Failed get data glikk"
                 };
             }
-            case 'GET_COA_PENDING': {
+            case 'GET_GLIKK_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_COA_FULFILLED': {
+            case 'GET_GLIKK_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    dataCoa: action.payload.data.result,
-                    allCoa: action.payload.data.length,
-                    listGl: action.payload.data.listGl,
-                    alertMsg: 'get coa Succesfully'
+                    dataGlikk: action.payload.data.result,
+                    alertMsg: 'get glikk Succesfully'
                 };
             }
-            case 'GET_COA_REJECTED': {
+            case 'GET_GLIKK_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -94,23 +72,23 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'DETAIL_COA_PENDING': {
+            case 'DETAIL_GLIKK_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'DETAIL_COA_FULFILLED': {
+            case 'DETAIL_GLIKK_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
                     isGet: true,
-                    detCoa: action.payload.data.result,
-                    alertMsg: 'get detail coa Succesfully',
+                    detGlikk: action.payload.data.result,
+                    alertMsg: 'get detail glikk Succesfully',
                 };
             }
-            case 'DETAIL_COA_REJECTED': {
+            case 'DETAIL_GLIKK_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -118,14 +96,14 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'NEXT_DATA_COA_PENDING': {
+            case 'NEXT_DATA_GLIKK_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'NEXT_DATA_COA_FULFILLED': {
+            case 'NEXT_DATA_GLIKK_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -135,7 +113,7 @@ export default (state=coaState, action) => {
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'NEXT_DATA_COA_REJECTED': {
+            case 'NEXT_DATA_GLIKK_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -144,14 +122,14 @@ export default (state=coaState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'UPDATE_COA_PENDING': {
+            case 'UPDATE_GLIKK_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting'
                 };
             }
-            case 'UPDATE_COA_FULFILLED': {
+            case 'UPDATE_GLIKK_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -159,7 +137,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'update user Succesfully'
                 };
             }
-            case 'UPDATE_COA_REJECTED': {
+            case 'UPDATE_GLIKK_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -168,14 +146,14 @@ export default (state=coaState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'ADD_COA_PENDING': {
+            case 'ADD_GLIKK_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'ADD_COA_FULFILLED': {
+            case 'ADD_GLIKK_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -184,7 +162,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'add user Succesfully'
                 };
             }
-            case 'ADD_COA_REJECTED': {
+            case 'ADD_GLIKK_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -193,14 +171,14 @@ export default (state=coaState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
-            case 'UPLOAD_COA_PENDING': {
+            case 'UPLOAD_GLIKK_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting....'
                 };
             }
-            case 'UPLOAD_COA_FULFILLED': {
+            case 'UPLOAD_GLIKK_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -208,7 +186,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'upload master Succesfully'
                 };
             }
-            case 'UPLOAD_COA_REJECTED': {
+            case 'UPLOAD_GLIKK_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -217,14 +195,14 @@ export default (state=coaState, action) => {
                     alertUpload: action.payload.response.data.result
                 };
             }
-            case 'EXPORT_MASTER_COA_PENDING': {
+            case 'EXPORT_MASTER_GLIKK_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'EXPORT_MASTER_COA_FULFILLED': {
+            case 'EXPORT_MASTER_GLIKK_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -233,7 +211,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'success export data'
                 };
             }
-            case 'EXPORT_MASTER_COA_REJECTED': {
+            case 'EXPORT_MASTER_GLIKK_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -241,7 +219,7 @@ export default (state=coaState, action) => {
                     alertMsg: 'Failed export data'
                 };
             }
-            case 'RESET_COA': {
+            case 'RESET_GLIKK': {
                 return {
                     ...state,
                     isError: false,

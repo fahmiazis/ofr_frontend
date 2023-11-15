@@ -41,6 +41,8 @@ import Email from '../../components/Ikk/Email'
 import ExcelJS from "exceljs";
 import fs from "file-saver";
 import { CSVLink } from "react-csv";
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const ikkSchema = Yup.object().shape({
@@ -130,9 +132,67 @@ class AjuanBayarIkk extends Component {
             time: 'pilih',
             time1: moment().startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
+            dataZip: [],
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    checkDoc = (val) => {
+        const { dataZip } = this.state
+        const {dataDoc} = this.props.ikk
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataDoc.length; i++) {
+                if (dataDoc[i].path !== null) {
+                    data.push(dataDoc[i].id)
+                }
+            }
+            this.setState({dataZip: data})
+        } else {
+            dataZip.push(val)
+            this.setState({dataZip: dataZip})
+        }
+    }
+
+    unCheckDoc = (val) => {
+        const {dataZip} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({dataZip: data})
+        } else {
+            const data = []
+            for (let i = 0; i < dataZip.length; i++) {
+                if (dataZip[i] === val) {
+                    data.push()
+                } else {
+                    data.push(dataZip[i])
+                }
+            }
+            this.setState({dataZip: data})
+        }
+    }
+
+    downloadDataZip = () => {
+        const {dataZip} = this.state
+        const {dataDoc} = this.props.ikk
+        let zip = new JSZip();
+    
+        const remoteZips = dataDoc.map(async (item) => {
+            const cekData = dataZip.find(e => e === item.id)
+            if (cekData !== undefined) {
+                const response = await fetch(`${REACT_APP_BACKEND_URL}/show/doc/${item.id}`);
+                const data = await response.blob();
+                zip.file(`${item.desc} ~ ${item.history}`, data);
+                return data;
+            }
+        })
+
+        Promise.all(remoteZips).then(() => {
+            zip.generateAsync({ type: "blob" }).then((content) => {
+              saveAs(content, `Dokumen Lampiran ${dataDoc[0].no_transaksi} ${moment().format('DDMMYYYY h:mm:ss')}.zip`);
+            })
+          })
     }
 
     submitStock = async () => {
@@ -917,7 +977,7 @@ class AjuanBayarIkk extends Component {
     }
 
     openModalDoc = () => {
-        this.setState({modalDoc: !this.state.modalDoc})
+        this.setState({modalDoc: !this.state.modalDoc, dataZip: []})
     }
 
     openModalAdd = () => {
@@ -1302,7 +1362,7 @@ class AjuanBayarIkk extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, listMut, listReason, dataMenu, listMenu, listIkk, dataDownload, csvData} = this.state
+        const {dataRinci, listMut, listReason, dataMenu, listMenu, listIkk, dataDownload, csvData, dataZip} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailIkk, ttdIkk, ttdIkkList, dataDoc, newIkk, docBukti } = this.props.ikk
@@ -2638,20 +2698,45 @@ class AjuanBayarIkk extends Component {
                 </ModalHeader>
                 <ModalBody>
                 <Container>
-                        {dataDoc !== undefined && dataDoc.map(x => {
+                    {dataDoc.length >= 0 && (
+                        <Row className="mt-3 mb-4">
+                            <Col md={12} lg={12} className='mb-2' >
+                                <div className="btnDocIo mb-2 ml-4" >
+                                    <Input 
+                                        type='checkbox'
+                                        checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
+                                        onChange={() => dataZip.length === dataDoc.length ? this.unCheckDoc('all') : this.checkDoc('all')}
+                                    />
+                                    Ceklis All
+                                </div>
+                            </Col>
+                        </Row>
+                    )}
+
+                        {dataDoc.length !== 0 && dataDoc.map(x => {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
-                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
-                                            {x.status === 0 ? (
-                                                <AiOutlineClose size={20} />
-                                            ) : x.status === 3 ? (
-                                                <AiOutlineCheck size={20} />
-                                            ) : (
+                                            <div className="btnDocIo mb-2 ml-4" >
+                                                <Input 
+                                                    type='checkbox'
+                                                    checked={dataZip.find(element => element === x.id) !== undefined ? true : false}
+                                                    onChange={dataZip.find(element => element === x.id) === undefined ? () => this.checkDoc(x.id) : () => this.unCheckDoc(x.id)}
+                                                />
+                                                {x.desc === null ? 'Lampiran' : x.desc}
+                                            </div>
+                                            {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                            x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
+                                            : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                            x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
+                                            : (
                                                 <BsCircle size={20} />
                                             )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+                                            <div className='mt-3'>
+                                                <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
+                                            </div>
                                             {/* <div className="colDoc">
                                                 <input
                                                 className="ml-4"
@@ -2663,17 +2748,18 @@ class AjuanBayarIkk extends Component {
                                             </div> */}
                                         </Col>
                                     ) : (
-                                        <Col md={6} lg={6} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
-                                            <div className="colDoc">
-                                                <input
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                            </div>
-                                            <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
-                                        </Col>
+                                        // <Col md={6} lg={6} className="colDoc">
+                                        //     <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
+                                        //     <div className="colDoc">
+                                        //         <input
+                                        //         type="file"
+                                        //         onClick={() => this.setState({detail: x})}
+                                        //         onChange={this.onChangeUpload}
+                                        //         />
+                                        //     </div>
+                                        //     <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                        // </Col>
+                                        null
                                     )}
                                 </Row>
                             )
@@ -2681,6 +2767,9 @@ class AjuanBayarIkk extends Component {
                     </Container>
                 </ModalBody>
                 <ModalFooter>
+                    <Button disabled={dataZip.length === 0} className="mr-2" color="primary" onClick={this.downloadDataZip}>
+                        Download Document
+                    </Button>
                     <Button className="mr-2" color="secondary" onClick={this.openModalDoc}>
                         Close
                     </Button>

@@ -459,7 +459,7 @@ class IKK extends Component {
         const dataCek = localStorage.getItem('docData')
         const typeNotif = localStorage.getItem('typeNotif')
         const {item, type} = (this.props.location && this.props.location.state) || {}
-        await this.props.getAllNotif(token)
+        console.log(dataCek)
         if (typeNotif !== undefined && typeNotif === 'approve') {
             localStorage.removeItem('typeNotif')
             await this.getDataVerven()
@@ -1145,19 +1145,18 @@ class IKK extends Component {
         }
         const data = {
             no: val.no_transaksi,
-            name: 'Draft Pengajuan Ikk'
+            name: 'Pengajuan area'
         }
         this.setState({listMut: []})
-        await this.props.getDetail(token, tempno)
-        await this.props.getApproval(token, tempno)
-        await this.props.getDocIkk(token, data)
+        await this.props.getDetailVerven(token, tempno)
+        await this.props.getDocument(token, data)
         this.openModalRinci()
         this.openProsesModalDoc(sendDoc)
     }
 
     openDocNewTab = async (val) => {
         localStorage.setItem('docData', val[0].no_transaksi)
-        const newWindow = window.open('ikk', '_blank', 'noopener,noreferrer')
+        const newWindow = window.open('verifven', '_blank', 'noopener,noreferrer')
         this.setState({docCon: false})
         if (newWindow) {
             newWindow.opener = null

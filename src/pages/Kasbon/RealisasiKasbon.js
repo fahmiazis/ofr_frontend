@@ -22,6 +22,7 @@ import moment from 'moment'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
+import finance from '../../redux/actions/finance'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
 // import notif from '../redux/actions/notif'
@@ -568,7 +569,7 @@ class Kasbon extends Component {
         const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
         this.prepareSelect()
-        this.changeFilter(level === '5' ? 'all' : 'all')
+        this.changeFilter(level === '5' ? 'available' : 'all')
     }
 
     getDataList = async () => {
@@ -622,32 +623,6 @@ class Kasbon extends Component {
         const token = localStorage.getItem("token")
         await this.props.exportStock(token, val.no, this.state.month)
         this.openModalDok()
-    }
-
-    addStock = async (val) => {
-        const token = localStorage.getItem("token")
-        const dataAsset = this.props.asset.assetAll
-        const { detailDepo } = this.props.depo
-        const { kondisi, fisik } = this.state
-        const data = {
-            area: detailDepo.nama_area,
-            kode_plant: dataAsset[0].kode_plant,
-            deskripsi: val.deskripsi,
-            merk: val.merk,
-            satuan: val.satuan,
-            unit: val.unit,
-            lokasi: val.lokasi,
-            grouping: val.grouping,
-            keterangan: val.keterangan,
-            kondisi: kondisi,
-            status_fisik: fisik
-        }
-        await this.props.addOpname(token, data)
-        await this.props.getStockArea(token, '', 1000, 1, 'null')
-        const { dataAdd } = this.props.stock
-        this.setState({kondisi: '', fisik: '', dataId: dataAdd.id})
-        this.openModalAdd()
-        this.openModalUpload()
     }
 
     openModalSum = async () => {
@@ -773,15 +748,35 @@ class Kasbon extends Component {
             list: []
         }
         await this.props.submitRealisasi(token, tempno)
-        // if (level === '12') {
-        this.getDataOps()
-        this.setState({confirm: 'isApprove'})
-        this.openConfirm()
-        this.openModalApprove()
-        this.openModalRinci()
-        // } else {
-        // this.dataSendEmail()
-        // }
+        this.dataSendEmail()
+    }
+
+    prepSendEmail = async () => {
+        const { detailOps } = this.props.ops
+        const level = localStorage.getItem("level")
+        const token = localStorage.getItem("token")
+        const app = detailOps[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'submit'
+        const cekMenu = 'Pengajuan Realisasi Kasbon (Operasional)'
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            kode: detailOps[0].kode_plant,
+            jenis: 'ops',
+            tipe: tipe,
+            menu: cekMenu 
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.openDraftEmail()
+    }
+
+    openDraftEmail = () => {
+        this.setState({openDraft: !this.state.openDraft}) 
     }
 
     dataSendEmail = async (val) => {
@@ -811,28 +806,6 @@ class Kasbon extends Component {
         this.openDraftEmail()
         this.openModalApprove()
         this.openModalRinci()
-    }
-
-    prepSendEmail = async () => {
-        const { detailOps } = this.props.ops
-        const token = localStorage.getItem("token")
-        const app = detailOps[0].appForm
-        const tempApp = []
-        app.map(item => {
-            return (
-                item.status === '1' && tempApp.push(item)
-            )
-        })
-        const tipe = tempApp.length === app.length-1 ? 'full approve' : 'approve'
-        const tempno = {
-            no: detailOps[0].no_transaksi,
-            kode: detailOps[0].kode_plant,
-            jenis: 'ops',
-            tipe: tipe,
-            menu: 'Pengajuan Operasional (Operasional)'
-        }
-        await this.props.getDraftEmail(token, tempno)
-        this.openDraftEmail()
     }
 
     openDraftEmail = () => {
@@ -1162,9 +1135,9 @@ class Kasbon extends Component {
     prosesOpenEdit = async (val) => {
         const token = localStorage.getItem('token')
         await this.props.getDetailId(token, val)
-        await this.props.getRek(token)
-        await this.props.getDetailDepo(token)
-        const { dataRek } = this.props.rekening
+        await this.props.getFinRek(token)
+        await this.props.getDetailFinance(token)
+        const { dataRek } = this.props.finance
         const spending = dataRek[0].rek_spending
         const zba = dataRek[0].rek_zba
         const bankcol = dataRek[0].rek_bankcol
@@ -1474,11 +1447,11 @@ class Kasbon extends Component {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
         const {dataRinci, dataTrans, type_kasbon, listMut, listReason, dataMenu, listMenu, detailDoc} = this.state
-        const { detailDepo, dataDepo } = this.props.depo
+        const { detFinance } = this.props.finance
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, idOps } = this.props.ops
         const {listGl} = this.props.coa
-        // const pages = this.props.depo.page
+        // const pages = this.props.finance.page
 
         const contentHeader =  (
             <div className={style.navbar}>
@@ -1827,7 +1800,7 @@ class Kasbon extends Component {
                             <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
-                            {detailOps[0].status_reject === 1 && (
+                            {detailOps.length !== 0 && detailOps[0].status_reject === 1 && (
                                 <Button color="success" onClick={this.openModalRev}>
                                     Submit Revisi
                                 </Button>
@@ -1977,7 +1950,7 @@ class Kasbon extends Component {
                                 ) : (
                                     <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 )} */}
-                                <Button color="primary" onClick={() => this.approveDataOps()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -2114,8 +2087,9 @@ class Kasbon extends Component {
                     <Container>
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
+                                x.path !== null &&
                                 <Row className="mt-3 mb-4">
-                                    {x.path !== null ? (
+                                    {x.path !== null && (
                                         <Col md={12} lg={12} className='mb-2' >
                                             <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
                                                 {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
@@ -2138,18 +2112,6 @@ class Kasbon extends Component {
                                                 />
                                                 <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                             </div> */}
-                                        </Col>
-                                    ) : (
-                                        <Col md={6} lg={6} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
-                                            <div className="colDoc">
-                                                <input
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                            </div>
-                                            <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                         </Col>
                                     )}
                                 </Row>
@@ -2313,7 +2275,7 @@ class Kasbon extends Component {
                 </Modal>
                 <Modal isOpen={this.state.modalEdit} className='modalrinci' size="xl">
                     <ModalHeader>
-                        Edit Ajuan Operasional
+                        Edit Ajuan Operasional Kasbon
                     </ModalHeader>
                     <ModalBody>
                             <Formik
@@ -2356,7 +2318,7 @@ class Kasbon extends Component {
                                                     disabled
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={detailDepo.area}
+                                                    value={detFinance.area}
                                                     />
                                                 </Col>
                                             </Row>
@@ -2366,7 +2328,7 @@ class Kasbon extends Component {
                                                     disabled
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={detailDepo.profit_center}
+                                                    value={detFinance.profit_center}
                                                     />
                                                 </Col>
                                             </Row>
@@ -2408,7 +2370,8 @@ class Kasbon extends Component {
                                                             <Input
                                                                 type= "select" 
                                                                 className="inputRinci"
-                                                                disabled={this.state.idTrans === '' ? true : false}
+                                                                // disabled={this.state.idTrans === '' ? true : false}
+                                                                disabled
                                                                 value={values.type_po}
                                                                 onBlur={handleBlur('type_po')}
                                                                 onChange={handleChange('type_po')}
@@ -2641,9 +2604,10 @@ class Kasbon extends Component {
                                             <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Transaksi Ber PPN</Col>
                                                 <Col md={9} className="colRinci">:  <Input
-                                                    disabled={listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? true : false}
+                                                    // disabled={listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? true : false}
                                                     type= "select" 
                                                     className="inputRinci"
+                                                    disabled
                                                     value={this.state.tipePpn}
                                                     // value={values.type_transaksi}
                                                     // onBlur={handleBlur("type_transaksi")}
@@ -2771,12 +2735,13 @@ class Kasbon extends Component {
                                             <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Nilai Yang Diajukan</Col>
                                                 <Col md={9} className="colRinci">:  <NumberInput
-                                                    disabled={
-                                                        type_kasbon === 'kasbon' && this.state.idTrans !== '' ? false
-                                                        : this.state.idTrans === '' ? true 
-                                                        : this.state.tipePpn === "Ya" || this.state.tipePpn === "" ? true
-                                                        : false
-                                                    }
+                                                    // disabled={
+                                                    //     type_kasbon === 'kasbon' && this.state.idTrans !== '' ? false
+                                                    //     : this.state.idTrans === '' ? true 
+                                                    //     : this.state.tipePpn === "Ya" || this.state.tipePpn === "" ? true
+                                                    //     : false
+                                                    // }
+                                                    disabled
                                                     className="inputRinci1"
                                                     value={this.state.nilai_ajuan}
                                                     onValueChange={val => this.onEnterVal(val.floatValue)}
@@ -2903,7 +2868,7 @@ class Kasbon extends Component {
                                                     disabled={this.state.tujuan_tf === '' || this.state.tujuan_tf === 'PMA' ? true : false}
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    value={this.state.tujuan_tf === 'PMA' ? `PMA-${detailDepo.area}` : values.nama_tujuan}
+                                                    value={this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : values.nama_tujuan}
                                                     onBlur={handleBlur("nama_tujuan")}
                                                     onChange={handleChange("nama_tujuan")}
                                                     />
@@ -3011,13 +2976,14 @@ const mapStateToProps = state => ({
     pagu: state.pagu,
     faktur: state.faktur,
     rekening: state.rekening,
-    coa: state.coa
+    coa: state.coa,
+    finance: state.finance
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
-    getDetailDepo: depo.getDetailDepo,
+    getDetailFinance: finance.getDetailFinance,
     getDepo: depo.getDepo,
     getRole: user.getRole,
     getOps: ops.getOps,
@@ -3035,7 +3001,7 @@ const mapDispatchToProps = {
     sendEmail: email.sendEmail,
     approveDokumen: dokumen.approveDokumen,
     rejectDokumen: dokumen.rejectDokumen,
-    getRek: rekening.getRek,
+    getFinRek: finance.getFinRek,
     getPagu: pagu.getPagu,
     getVendor: vendor.getVendor,
     getFaktur: faktur.getFaktur,

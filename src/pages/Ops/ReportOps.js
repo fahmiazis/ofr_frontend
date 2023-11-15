@@ -37,6 +37,11 @@ import dokumen from '../../redux/actions/dokumen'
 import ExcelJS from "exceljs";
 import fs from "file-saver";
 const {REACT_APP_BACKEND_URL} = process.env
+const ceknon = 'Non PPh'
+const cek21 = 'PPh Pasal 21'
+const cek23 = 'PPh Pasal 23'
+const cek4a2 = 'PPh Pasal 4(2)'
+
 
 const stockSchema = Yup.object().shape({
     merk: Yup.string().required("must be filled"),
@@ -128,7 +133,20 @@ class ReportOps extends Component {
             titleDownload: '',
             listOps: [],
             jurnalMap: [1, 2],
-            isLoading: false
+            isLoading: false,
+            jurnal2: [1, 2],
+            jurnal3: [1, 2, 3],
+            jurnal4: [1, 2, 3, 4],
+            jurnal6: [1, 2, 3, 4, 5, 6],
+            dataPph:{
+                pph21: '21050107',
+                pph23: '21050102',
+                ppn: '11060204',
+                pph4a2: '21050101',
+                kasbon: 'V100IN0001',
+                bankops: '11010401',
+                pc_ho: 'P01H000001'
+            }
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -866,7 +884,7 @@ class ReportOps extends Component {
         dataDownload.map((item, index) => { return ( ws.addRow(
             {
                 c1: index + 1,
-                c2: item.finance.pic_console,
+                c2: item.finance.pic_finance,
                 c3: item.area,
                 c4: item.depo.channel,
                 c5: item.no_transaksi,
@@ -947,7 +965,8 @@ class ReportOps extends Component {
 
     downloadJurnal = async () => {
         this.setLoading(true)
-        const { dataDownload, jurnalMap } = this.state
+        const { dataDownload, jurnalMap, dataPph, jurnal2,
+        jurnal3, jurnal4, jurnal6 } = this.state
 
         const workbook = new ExcelJS.Workbook();
         const ws = workbook.addWorksheet('file upload operasional')
@@ -1037,46 +1056,462 @@ class ReportOps extends Component {
             }
         )
 
+        // dataDownload.map((item, index) => { return (
+        //     jurnalMap.map((x, iter) => {
+        //         return (  ws.addRow({
+        //             c1: index + 1,
+        //             c2: item.no_transaksi,
+        //             c3: 'PP01',
+        //             c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+        //             c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
+        //             c6: '',
+        //             c7: 'SA',
+        //             c8: item.finance.pic_finance,
+        //             c9: 'IDR',
+        //             c10: iter + 1,
+        //             c11: iter === 0 ? item.depo.gl_kk : '11010401',
+        //             c12: iter === 0 ? 40 : 50,
+        //             c13: '',
+        //             c14: '',
+        //             c15: item.nilai_ajuan,
+        //             c16: '',
+        //             c17: '',
+        //             c18: '',
+        //             c19: '',
+        //             c20: item.keterangan,
+        //             c21: '',
+        //             c22: '',
+        //             c23: '',
+        //             c24: '',
+        //             c25: '',
+        //             c26: '',
+        //             c27: item.depo.profit_center,
+        //             c28: '',
+        //             c29: '',
+        //             c30: '',
+        //             c31: item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`,
+        //             c32: '',
+        //             c33: '',
+        //             c34: '',
+        //         })
+        //         )
+        //     })
+        // ) })
+
         dataDownload.map((item, index) => { return (
-            jurnalMap.map((x, iter) => {
-                return (  ws.addRow({
-                    c1: index + 1,
-                    c2: item.no_transaksi,
-                    c3: 'PP01',
-                    c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
-                    c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
-                    c6: '',
-                    c7: 'SA',
-                    c8: item.finance.pic_console,
-                    c9: 'IDR',
-                    c10: iter + 1,
-                    c11: iter === 0 ? item.finance.gl_kk : '11010401',
-                    c12: iter === 0 ? 40 : 50,
-                    c13: '',
-                    c14: '',
-                    c15: item.nilai_ajuan,
-                    c16: '',
-                    c17: '',
-                    c18: '',
-                    c19: '',
-                    c20: item.keterangan,
-                    c21: '',
-                    c22: '',
-                    c23: '',
-                    c24: '',
-                    c25: '',
-                    c26: '',
-                    c27: item.depo.profit_center,
-                    c28: '',
-                    c29: '',
-                    c30: '',
-                    c31: item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`,
-                    c32: '',
-                    c33: '',
-                    c34: '',
+            item.veriftax !== null && item.veriftax.grouping !== null && item.veriftax.grouping.toLowerCase() === 'kasbon' ? (
+                jurnal2.map((x, iter) => {
+                    return ( ws.addRow({
+                        
+                            c1: index + 1,
+                            c2: item.no_transaksi,
+                            c3: 'PP01',
+                            c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                            c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                            c6: '',
+                            c7: 'SA',
+                            c8: item.depo.area,
+                            c9: 'IDR',
+                            c10:iter + 1,
+                            c11: iter === 0 ? dataPph.kasbon : iter === 1 && dataPph.bankops,
+                            c12: iter === 0 ? 29 : 50,
+                            c13: iter === 0 && 'E',
+                            c14: '',
+                            c15: item.nilai_buku,
+                            c16: '',
+                            c17: item.depo.profit_center,
+                            c18: '',
+                            c19: '',
+                            c20: item.sub_coa + 's',
+                            c21: '',
+                            c22: '',
+                            c23: '',
+                            c24: '',
+                            c25: '',
+                            c26: '',
+                            c27: item.depo.profit_center,
+                            c28: '',
+                            c29: '',
+                            c30: '',
+                            c31: '',
+                            c32: '',
+                            c33: '',
+                            c34: ''
+                        })
+                    )
                 })
+            ) : item.tujuan_tf === 'PMA' ? (
+                (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi !== 'Ya' ? ( // tidak berpph dan tidak berppn
+                    jurnal2.map((x, iter) => {
+                        return ( ws.addRow({
+                            
+                                c1: index + 1,
+                                c2: item.no_transaksi,
+                                c3: 'PP01',
+                                c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c6: '',
+                                c7: 'SA',
+                                c8: item.depo.area,
+                                c9: 'IDR',
+                                c10: iter + 1,
+                                c11: iter === 0 ? item.depo.gl_kk : iter === 1 && dataPph.bankops,
+                                c12: iter === 0 ? 40 : 50,
+                                c13: '',
+                                c14: '',
+                                c15: item.nilai_buku,
+                                c16: '',
+                                c17: iter === 0 ? item.depo.profit_center : '',
+                                c18: '',
+                                c19: '',
+                                c20: item.sub_coa + 's',
+                                c21: '',
+                                c22: '',
+                                c23: '',
+                                c24: '',
+                                c25: '',
+                                c26: '',
+                                c27: iter === 0 ? item.depo.profit_center : dataPph.pc_ho,
+                                c28: '',
+                                c29: '',
+                                c30: '',
+                                c31: '',
+                                c32: '',
+                                c33: '',
+                                c34: '',
+                            })
+                        )
+                    })
+                ) : (item.jenis_pph !== 'Non PPh' && item.jenis_pph !== null) && item.type_transaksi !== 'Ya' ? ( // berpph tidak berppn
+                    jurnal4.map((x, iter) => {
+                        return ( ws.addRow({
+                                c1: index + 1,
+                                c2: item.no_transaksi,
+                                c3: 'PP01',
+                                c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c6: '',
+                                c7: 'SA',
+                                c8: item.depo.area,
+                                c9: 'IDR',
+                                c10: iter + 1,
+                                c11: iter === 0 ? item.depo.gl_kk 
+                                    : iter === 1 ? dataPph.bankops
+                                    : iter === 2 ? item.veriftax.gl_jurnal
+                                    : iter === 3 && 
+                                    (item.jenis_pph === cek21 ? dataPph.pph21 :
+                                    item.jenis_pph === cek23 ? dataPph.pph23 :
+                                    item.jenis_pph === cek4a2 && dataPph.pph4a2)
+                                ,
+                                c12: iter === 0 || iter === 2 ? 40 : 50,
+                                c13: '',
+                                c14: '',
+                                c15: iter === 0 || iter === 1 ? item.nilai_buku : item.nilai_utang,
+                                c16: '',
+                                c17: iter === 2 ? item.depo.profit_center : '',
+                                c18: '',
+                                c19: '',
+                                c20: item.sub_coa + 's',
+                                c21: '',
+                                c22: '',
+                                c23: '',
+                                c24: '',
+                                c25: '',
+                                c26: '',
+                                c27: iter === 1 ? dataPph.pc_ho : item.depo.profit_center,
+                                c28: '',
+                                c29: '',
+                                c30: '',
+                                c31: '',
+                                c32: '',
+                                c33: '',
+                                c34: ''
+                            })
+                        )
+                    })
+                ) : (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi === 'Ya' ? ( // berppn tidak berpph
+                    jurnal4.map((x, iter) => {
+                        return ( ws.addRow({
+                                c1: index + 1,
+                                c2: item.no_transaksi,
+                                c3: 'PP01',
+                                c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c6: '',
+                                c7: 'SA',
+                                c8: item.depo.area,
+                                c9: 'IDR',
+                                c10: iter + 1,
+                                c11: iter === 0 ? item.depo.gl_kk 
+                                    : iter === 1 ? dataPph.bankops
+                                    : iter === 2 ? dataPph.ppn
+                                    : iter === 3 && item.veriftax.gl_jurnal
+                                ,
+                                c12: iter === 0 || iter === 2 ? 40 : 50,
+                                c13: '',
+                                c14: '',
+                                c15: iter === 0 || iter === 1 ? item.nilai_buku : item.ppn,
+                                c16: '',
+                                c17: iter === 3 ? item.depo.profit_center : '',
+                                c18: '',
+                                c19: '',
+                                c20: item.sub_coa + 's',
+                                c21: '',
+                                c22: '',
+                                c23: '',
+                                c24: '',
+                                c25: '',
+                                c26: '',
+                                c27: iter === 1 ? dataPph.pc_ho : item.depo.profit_center,
+                                c28: '',
+                                c29: '',
+                                c30: '',
+                                c31: '',
+                                c32: '',
+                                c33: '',
+                                c34: ''
+                            })
+                        )
+                    })
+                ) : (item.jenis_pph !== 'Non PPh' && item.jenis_pph !== null) && item.type_transaksi === 'Ya' && ( // berpph dan berppn
+                    jurnal6.map((x, iter) => {
+                        return ( ws.addRow({
+                                c1: index + 1,
+                                c2: item.no_transaksi,
+                                c3: 'PP01',
+                                c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c6: '',
+                                c7: 'SA',
+                                c8: item.depo.area,
+                                c9: 'IDR',
+                                c10: iter + 1,
+                                c11: iter === 0 ? item.depo.gl_kk 
+                                    : iter === 1 ? dataPph.bankops
+                                    : iter === 2 ? dataPph.ppn
+                                    : iter === 3 ? item.veriftax.gl_jurnal
+                                    : iter === 4 ? item.veriftax.gl_jurnal
+                                    : iter === 5 && 
+                                        (item.jenis_pph === cek21 ? dataPph.pph21 :
+                                        item.jenis_pph === cek23 ? dataPph.pph23 :
+                                        item.jenis_pph === cek4a2 && dataPph.pph4a2)
+                                ,
+                                c12: iter === 0 || iter === 2 || iter === 4 ? 40 : 50,
+                                c13: '',
+                                c14: '',
+                                c15: iter === 0 || iter === 1 ? item.nilai_buku 
+                                : iter === 2 || iter === 3 ? item.ppn
+                                : item.nilai_utang
+                                ,
+                                c16: '',
+                                c17: (iter === 3 || iter === 4) ? item.depo.profit_center : '',
+                                c18: '',
+                                c19: '',
+                                c20: item.sub_coa + 's',
+                                c21: '',
+                                c22: '',
+                                c23: '',
+                                c24: '',
+                                c25: '',
+                                c26: '',
+                                c27: iter === 1 ? dataPph.pc_ho : item.depo.profit_center,
+                                c28: '',
+                                c29: '',
+                                c30: '',
+                                c31: '',
+                                c32: '',
+                                c33: '',
+                                c34: '',
+                            })
+                        )
+                    })
                 )
-            })
+            ) : item.tujuan_tf !== 'PMA' && (
+                (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi !== 'Ya' ? ( // tidak berpph dan tidak berppn
+                    jurnal2.map((x, iter) => {
+                        return ( ws.addRow({
+                                c1: index + 1,
+                                c2: item.no_transaksi,
+                                c3: 'PP01',
+                                c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c6: '',
+                                c7: 'SA',
+                                c8: item.depo.area,
+                                c9: 'IDR',
+                                c10:iter + 1,
+                                c11: iter === 0 ? item.veriftax.gl_jurnal : iter === 1 && dataPph.bankops,
+                                c12: iter === 0 ? 40 : 50,
+                                c13: '',
+                                c14: '',
+                                c15: item.nilai_buku,
+                                c16: '',
+                                c17: iter === 0 ? item.depo.profit_center : '',
+                                c18: '',
+                                c19: '',
+                                c20: item.sub_coa + 's',
+                                c21: '',
+                                c22: '',
+                                c23: '',
+                                c24: '',
+                                c25: '',
+                                c26: '',
+                                c27: iter === 0 ? item.depo.profit_center : dataPph.pc_ho,
+                                c28: '',
+                                c29: '',
+                                c30: '',
+                                c31: '',
+                                c32: '',
+                                c33: '',
+                                c34: '',
+                            })
+                        )
+                    })
+                ) : (item.jenis_pph !== 'Non PPh' && item.jenis_pph !== null) && item.type_transaksi !== 'Ya' ? ( // berpph tidak berppn
+                    jurnal3.map((x, iter) => {
+                        return ( ws.addRow({
+                                c1: index + 1,
+                                c2: item.no_transaksi,
+                                c3: 'PP01',
+                                c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c6: '',
+                                c7: 'SA',
+                                c8: item.depo.area,
+                                c9: 'IDR',
+                                c10: iter + 1,
+                                c11: iter === 0 ? item.veriftax.gl_jurnal 
+                                    : iter === 1 ? 
+                                    (item.jenis_pph === cek21 ? dataPph.pph21 :
+                                    item.jenis_pph === cek23 ? dataPph.pph23 :
+                                    item.jenis_pph === cek4a2 && dataPph.pph4a2)
+                                    : iter === 2 && dataPph.bankops
+                                ,
+                                c12: iter === 0 ? 40 : 50,
+                                c13: '',
+                                c14: '',
+                                c15: iter === 0 ? item.nilai_buku : iter === 1 ? item.nilai_utang : item.nilai_bayar,
+                                c16: '',
+                                c17: iter === 0 ? item.depo.profit_center : '',
+                                c18: '',
+                                c19: '',
+                                c20: item.sub_coa + 's',
+                                c21: '',
+                                c22: '',
+                                c23: '',
+                                c24: '',
+                                c25: '',
+                                c26: '',
+                                c27: iter === 2 ? dataPph.pc_ho : item.depo.profit_center,
+                                c28: '',
+                                c29: '',
+                                c30: '',
+                                c31: '',
+                                c32: '',
+                                c33: '',
+                                c34: '',
+                            })
+                        )
+                    })
+                ) : (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi === 'Ya' ? ( // berppn tidak berpph
+                    jurnal3.map((x, iter) => {
+                        return ( ws.addRow({
+                                c1: index + 1,
+                                c2: item.no_transaksi,
+                                c3: 'PP01',
+                                c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                c6: '',
+                                c7: 'SA',
+                                c8: item.depo.area,
+                                c9: 'IDR',
+                                c10: iter + 1,
+                                c11: iter === 0 ? item.veriftax.gl_jurnal
+                                    : iter === 1 ? dataPph.ppn
+                                    : iter === 2 && dataPph.bankops
+                                ,
+                                c12: iter === 0 || iter === 1 ? 40 : 50,
+                                c13: '',
+                                c14: '',
+                                c15: iter === 0 ? item.nilai_bayar : iter === 1 ? item.ppn : item.nilai_buku,
+                                c16: '',
+                                c17: iter === 0 ? item.depo.profit_center : '',
+                                c18: '',
+                                c19: '',
+                                c20: item.sub_coa + 's',
+                                c21: '',
+                                c22: '',
+                                c23: '',
+                                c24: '',
+                                c25: '',
+                                c26: '',
+                                c27: iter === 2 ? dataPph.pc_ho : item.depo.profit_center,
+                                c28: '',
+                                c29: '',
+                                c30: '',
+                                c31: '',
+                                c32: '',
+                                c33: '',
+                                c34: '',
+                            })
+                        )
+                    })
+                ) : (item.jenis_pph !== 'Non PPh' && item.jenis_pph !== null) && item.type_transaksi === 'Ya' && ( // berpph dan berppn
+                        jurnal4.map((x, iter) => {
+                            return ( ws.addRow({
+                                    c1: index + 1,
+                                    c2: item.no_transaksi,
+                                    c3: 'PP01',
+                                    c4: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                    c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
+                                    c6: '',
+                                    c7: 'SA',
+                                    c8: item.depo.area,
+                                    c9: 'IDR',
+                                    c10: iter + 1,
+                                    c11: iter === 0 ? item.veriftax.gl_jurnal 
+                                        : iter === 1 ? dataPph.ppn
+                                        : iter === 2 ? 
+                                        (item.jenis_pph === cek21 ? dataPph.pph21 :
+                                            item.jenis_pph === cek23 ? dataPph.pph23 :
+                                            item.jenis_pph === cek4a2 && dataPph.pph4a2)
+                                        : iter === 3 && dataPph.bankops
+                                    ,
+                                    c12: iter === 0 || iter === 1 ? 40 
+                                    : (iter === 2 || iter === 3) && 50
+                                    ,
+                                    c13: '',
+                                    c14: '',
+                                    c15: 
+                                        iter === 0 ? item.nilai_bayar 
+                                        : iter === 1 ? item.ppn 
+                                        : iter === 2 ? item.nilai_utang 
+                                        : iter === 3 && item.nilai_buku 
+                                    ,
+                                    c16: '',
+                                    c17: (iter === 0 || iter === 3) ? item.depo.profit_center : '',
+                                    c18: '',
+                                    c19: '',
+                                    c20: item.sub_coa + 's',
+                                    c21: '',
+                                    c22: '',
+                                    c23: '',
+                                    c24: '',
+                                    c25: '',
+                                    c26: '',
+                                    c27: iter === 3 ? dataPph.pc_ho : item.depo.profit_center,
+                                    c28: '',
+                                    c29: '',
+                                    c30: '',
+                                    c31: '',
+                                    c32: '',
+                                    c33: '',
+                                    c34: ''
+                                })
+                            )
+                        })
+                )
+            )
         ) })
 
         ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
@@ -1149,7 +1584,8 @@ class ReportOps extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listOps, jurnalMap, listReason, dataMenu, listMenu, dataDownload} = this.state
+        const {dataRinci, dropApp, dataPph, listOps, jurnalMap, listReason, 
+            dataMenu, listMenu, dataDownload, jurnal2, jurnal3, jurnal4, jurnal6} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, dataReport } = this.props.ops
@@ -1260,7 +1696,7 @@ class ReportOps extends Component {
                             </div>
                             <div className='mb-4 mt-2' />
                                 <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-ops">
+                                    <Table bordered responsive hover className={[style.tab, 'tableJurnal']} id="table-ops">
                                         <thead>
                                             <tr>
                                                 <th>
@@ -1294,7 +1730,12 @@ class ReportOps extends Component {
                                                 <th>DPP</th>
                                                 <th>PPN</th>
                                                 <th>PPh</th>
+                                                <th>Jenis PPh</th>
+                                                <th>Transaksi Ber PPN</th>
+                                                <th>Tujuan Transfer</th>
+                                                <th>NILAI YANG DIAJUKAN</th>
                                                 <th>NILAI YANG DIBAYARKAN</th>
+                                                <th>NILAI YANG DIBUKUKAN</th>
                                                 <th>PO</th>
                                                 <th>TANGGAL TRANSFER</th>
                                                 <th>KETERANGAN</th>
@@ -1306,47 +1747,52 @@ class ReportOps extends Component {
                                                 return (
                                                    
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                         <th>
+                                                         <td>
                                                             <input 
                                                             type='checkbox'
                                                             checked={listOps.find(element => element === item.id) !== undefined ? true : false}
                                                             onChange={listOps.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
                                                             />
-                                                        </th>
-                                                        <th>{dataReport.indexOf(item) + 1}</th>
-                                                        <th>{item.finance.pic_console}</th>
-                                                        <th>{item.area}</th>
-                                                        <th>{item.depo.channel}</th>
-                                                        <th>{item.no_transaksi}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
-                                                        <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                        <th>{item.bank_tujuan}</th>
-                                                        <th>{item.norek_ajuan}</th>
-                                                        <th>{item.nama_tujuan}</th>
-                                                        <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
-                                                        <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                                        <th>{item.dpp}</th>
-                                                        <th>{item.ppn}</th>
-                                                        <th>{item.nilai_utang}</th>
-                                                        <th>
+                                                        </td>
+                                                        <td>{dataReport.indexOf(item) + 1}</td>
+                                                        <td>{item.finance.pic_finance}</td>
+                                                        <td>{item.area}</td>
+                                                        <td>{item.depo.channel}</td>
+                                                        <td>{item.no_transaksi}</td>
+                                                        <td>{item.cost_center}</td>
+                                                        <td>{item.no_coa}</td>
+                                                        <td>{item.nama_coa}</td>
+                                                        <td>{item.keterangan}</td>
+                                                        <td>{moment(item.start_ops).format('DD MMMM YYYY')}</td>
+                                                        <td>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</td>
+                                                        <td>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</td>
+                                                        <td>{item.bank_tujuan}</td>
+                                                        <td>{item.norek_ajuan}</td>
+                                                        <td>{item.nama_tujuan}</td>
+                                                        <td>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</td>
+                                                        <td>{item.status_npwp === 0 ? '' : item.nama_npwp}</td>
+                                                        <td>{item.status_npwp === 0 ? '' : item.no_npwp}</td>
+                                                        <td>{item.status_npwp === 0 ? item.nama_ktp : ''}</td>
+                                                        <td>{item.status_npwp === 0 ? item.no_ktp : ''}</td>
+                                                        <td>{item.dpp}</td>
+                                                        <td>{item.ppn}</td>
+                                                        <td>{item.nilai_utang}</td>
+                                                        <td>{item.jenis_pph}</td>
+                                                        <td>{item.type_transaksi}</td>
+                                                        <td>{item.tujuan_tf}</td>
+                                                        <td>{item.nilai_ajuan}</td>
+                                                        <td>
                                                             {item.nilai_bayar !== null ? item.nilai_bayar : 
                                                                 (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi !== 'Ya' ? item.nilai_ajuan
                                                                 : item.jenis_pph !== 'Non PPh' && item.type_transaksi !== 'Ya' ? parseFloat(item.nilai_ajuan) - parseFloat(item.nilai_utang)
                                                                 : item.jenis_pph !== 'Non PPh' && item.type_transaksi === 'Ya' && parseFloat(item.nilai_ajuan) - parseFloat(item.nilai_utang)
                                                             }
-                                                        </th>
-                                                        <th>{item.no_po}</th>
-                                                        <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
+                                                        </td>
+                                                        <td>{item.nilai_buku}</td>
+                                                        <td>{item.no_po}</td>
+                                                        <td>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</td>
+                                                        <td>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</td>
+                                                        <td>{item.history.split(',').reverse()[0]}</td>
                                                     </tr>
                                                 )
                                             })}
@@ -1434,7 +1880,10 @@ class ReportOps extends Component {
                                     <th>DPP</th>
                                     <th>PPN</th>
                                     <th>PPh</th>
+                                    <th>Jenis PPh</th>
+                                    <th>NILAI YANG DIAJUKAN</th>
                                     <th>NILAI YANG DIBAYARKAN</th>
+                                    <th>NILAI YANG DIBUKUKAN</th>
                                     <th>TANGGAL TRANSFER</th>
                                     <th>KETERANGAN</th>
                                     <th>STATUS</th>
@@ -1445,7 +1894,7 @@ class ReportOps extends Component {
                                     return (
                                         <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                             <th>{dataDownload.indexOf(item) + 1}</th>
-                                            <th>{item.finance.pic_console}</th>
+                                            <th>{item.finance.pic_finance}</th>
                                             <th>{item.area}</th>
                                             <th>{item.depo.channel}</th>
                                             <th>{item.no_transaksi}</th>
@@ -1584,8 +2033,8 @@ class ReportOps extends Component {
                                         <th>NOMOR NPWP</th>
                                         <th>NAMA SESUAI KTP</th>
                                         <th>NOMOR KTP</th>
-                                        <th>PPU</th>
-                                        <th>PA</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
                                         <th>NOMINAL</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>TANGGAL TRANSFER</th>
@@ -2374,47 +2823,436 @@ class ReportOps extends Component {
                                 </tr>
                                 {dataDownload.length !== 0 && dataDownload.map((item, index) => {
                                     return (
-                                        jurnalMap.map((x, iter) => {
-                                            return (
-                                                <tr>
-                                                    <th>{index + 1}</th>
-                                                    <th>{item.no_transaksi}</th>
-                                                    <th>PP01</th>
-                                                    <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
-                                                    <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
-                                                    <th></th>
-                                                    <th>SA</th>
-                                                    <th>{item.finance.pic_console}</th>
-                                                    <th>IDR</th>
-                                                    <th>{iter + 1}</th>
-                                                    <th>{iter === 0 ? item.finance.gl_kk : '11010401'}</th>
-                                                    <th>{iter === 0 ? 40 : 50}</th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th>{item.nilai_ajuan}</th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th>{item.keterangan}</th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th>{iter === 0 ? item.depo.profit_center : 'P01H000001'}</th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th>
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-                                                </tr>
+                                        item.veriftax !== null && item.veriftax.grouping !== null && item.veriftax.grouping.toLowerCase() === 'kasbon' ? (
+                                            jurnal2.map((x, iter) => {
+                                                return (
+                                                    <tr>
+                                                        <th>{index + 1}</th>
+                                                        <th>{item.no_transaksi}</th>
+                                                        <th>PP01</th>
+                                                        <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                        <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                        <th></th>
+                                                        <th>SA</th>
+                                                        <th>{item.finance.pic_finance}</th>
+                                                        <th>IDR</th>
+                                                        <th>{iter + 1}</th>
+                                                        <th>{iter === 0 ? item.depo.gl_kk : iter === 1 && dataPph.bankops}</th>
+                                                        <th>{iter === 0 ? 29 : 50}</th>
+                                                        <th>{iter === 0 && 'E'}</th>
+                                                        <th></th>
+                                                        <th>{item.nilai_buku}</th>
+                                                        <th></th>
+                                                        <th>{item.depo.profit_center}</th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th>{item.sub_coa}s</th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th>{item.depo.profit_center}</th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                    </tr>
+                                                )
+                                            })
+                                        ) : item.tujuan_tf === 'PMA' ? (
+                                            (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi !== 'Ya' ? ( // tidak berpph dan tidak berppn
+                                                jurnal2.map((x, iter) => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>PP01</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th></th>
+                                                            <th>SA</th>
+                                                            <th>{item.depo.area}</th>
+                                                            <th>IDR</th>
+                                                            <th>{iter + 1}</th>
+                                                            <th>{iter === 0 ? item.depo.gl_kk : iter === 1 && dataPph.bankops}</th>
+                                                            <th>{iter === 0 ? 40 : 50}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.nilai_buku}</th>
+                                                            <th></th>
+                                                            <th>{iter === 0 && item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.sub_coa}s</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 0 ? item.depo.profit_center : dataPph.pc_ho}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                        </tr>
+                                                    )
+                                                })
+                                            ) : (item.jenis_pph !== 'Non PPh' && item.jenis_pph !== null) && item.type_transaksi !== 'Ya' ? ( // berpph tidak berppn
+                                                jurnal4.map((x, iter) => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>PP01</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th></th>
+                                                            <th>SA</th>
+                                                            <th>{item.depo.area}</th>
+                                                            <th>IDR</th>
+                                                            <th>{iter + 1}</th>
+                                                            <th>{iter === 0 ? item.depo.gl_kk 
+                                                                : iter === 1 ? dataPph.bankops
+                                                                : iter === 2 ? item.veriftax.gl_jurnal
+                                                                : iter === 3 && 
+                                                                (item.jenis_pph === cek21 ? dataPph.pph21 :
+                                                                item.jenis_pph === cek23 ? dataPph.pph23 :
+                                                                item.jenis_pph === cek4a2 && dataPph.pph4a2)
+                                                            }</th>
+                                                            <th>{iter === 0 || iter === 2 ? 40 : 50}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 0 || iter === 1 ? item.nilai_buku : item.nilai_utang}</th>
+                                                            <th></th>
+                                                            <th>{iter === 2 && item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.sub_coa}s</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 1 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                        </tr>
+                                                    )
+                                                })
+                                            ) : (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi === 'Ya' ? ( // berppn tidak berpph
+                                                jurnal4.map((x, iter) => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>PP01</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th></th>
+                                                            <th>SA</th>
+                                                            <th>{item.depo.area}</th>
+                                                            <th>IDR</th>
+                                                            <th>{iter + 1}</th>
+                                                            <th>{iter === 0 ? item.depo.gl_kk 
+                                                                : iter === 1 ? dataPph.bankops
+                                                                : iter === 2 ? dataPph.ppn
+                                                                : iter === 3 && item.veriftax.gl_jurnal
+                                                            }</th>
+                                                            <th>{iter === 0 || iter === 2 ? 40 : 50}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 0 || iter === 1 ? item.nilai_buku : item.ppn}</th>
+                                                            <th></th>
+                                                            <th>{iter === 3 && item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.sub_coa}s</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 1 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                        </tr>
+                                                    )
+                                                })
+                                            ) : (item.jenis_pph !== 'Non PPh' && item.jenis_pph !== null) && item.type_transaksi === 'Ya' && ( // berpph dan berppn
+                                                jurnal6.map((x, iter) => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>PP01</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th></th>
+                                                            <th>SA</th>
+                                                            <th>{item.depo.area}</th>
+                                                            <th>IDR</th>
+                                                            <th>{iter + 1}</th>
+                                                            <th>{iter === 0 ? item.depo.gl_kk 
+                                                                : iter === 1 ? dataPph.bankops
+                                                                : iter === 2 ? dataPph.ppn
+                                                                : iter === 3 ? item.veriftax.gl_jurnal
+                                                                : iter === 4 ? item.veriftax.gl_jurnal
+                                                                : iter === 5 && 
+                                                                    (item.jenis_pph === cek21 ? dataPph.pph21 :
+                                                                    item.jenis_pph === cek23 ? dataPph.pph23 :
+                                                                    item.jenis_pph === cek4a2 && dataPph.pph4a2)
+                                                            }</th>
+                                                            <th>{iter === 0 || iter === 2 || iter === 4 ? 40 : 50}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 0 || iter === 1 ? item.nilai_buku 
+                                                            : iter === 2 || iter === 3 ? item.ppn
+                                                            : item.nilai_utang
+                                                            }</th>
+                                                            <th></th>
+                                                            <th>{(iter === 3 || iter === 4) && item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.sub_coa}s</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 1 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                        </tr>
+                                                    )
+                                                })
                                             )
-                                        })
-                                        
+                                        ) : item.tujuan_tf !== 'PMA' && (
+                                            (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi !== 'Ya' ? ( // tidak berpph dan tidak berppn
+                                                jurnal2.map((x, iter) => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>PP01</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th></th>
+                                                            <th>SA</th>
+                                                            <th>{item.depo.area}</th>
+                                                            <th>IDR</th>
+                                                            <th>{iter + 1}</th>
+                                                            <th>{iter === 0 ? item.veriftax.gl_jurnal : iter === 1 && dataPph.bankops}</th>
+                                                            <th>{iter === 0 ? 40 : 50}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.nilai_buku}</th>
+                                                            <th></th>
+                                                            <th>{iter === 0 && item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.sub_coa}s</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 0 ? item.depo.profit_center : dataPph.pc_ho}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                        </tr>
+                                                    )
+                                                })
+                                            ) : (item.jenis_pph !== 'Non PPh' && item.jenis_pph !== null) && item.type_transaksi !== 'Ya' ? ( // berpph tidak berppn
+                                                jurnal3.map((x, iter) => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>PP01</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th></th>
+                                                            <th>SA</th>
+                                                            <th>{item.depo.area}</th>
+                                                            <th>IDR</th>
+                                                            <th>{iter + 1}</th>
+                                                            <th>{iter === 0 ? item.veriftax.gl_jurnal 
+                                                                : iter === 1 ? 
+                                                                (item.jenis_pph === cek21 ? dataPph.pph21 :
+                                                                item.jenis_pph === cek23 ? dataPph.pph23 :
+                                                                item.jenis_pph === cek4a2 && dataPph.pph4a2)
+                                                                : iter === 2 && dataPph.bankops
+                                                            }</th>
+                                                            <th>{iter === 0 ? 40 : 50}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 0 ? item.nilai_buku : iter === 1 ? item.nilai_utang : item.nilai_bayar}</th>
+                                                            <th></th>
+                                                            <th>{iter === 0 && item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.sub_coa}s</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 2 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                        </tr>
+                                                    )
+                                                })
+                                            ) : (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi === 'Ya' ? ( // berppn tidak berpph
+                                                jurnal3.map((x, iter) => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>PP01</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th></th>
+                                                            <th>SA</th>
+                                                            <th>{item.depo.area}</th>
+                                                            <th>IDR</th>
+                                                            <th>{iter + 1}</th>
+                                                            <th>{iter === 0 ? item.veriftax.gl_jurnal
+                                                                : iter === 1 ? dataPph.ppn
+                                                                : iter === 2 && dataPph.bankops
+                                                            }</th>
+                                                            <th>{iter === 0 || iter === 1 ? 40 : 50}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 0 ? item.nilai_bayar : iter === 1 ? item.ppn : item.nilai_buku}</th>
+                                                            <th></th>
+                                                            <th>{iter === 0 && item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.sub_coa}s</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 2 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                        </tr>
+                                                    )
+                                                })
+                                            ) : (item.jenis_pph !== 'Non PPh' && item.jenis_pph !== null) && item.type_transaksi === 'Ya' && ( // berpph dan berppn
+                                                jurnal4.map((x, iter) => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>PP01</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
+                                                            <th></th>
+                                                            <th>SA</th>
+                                                            <th>{item.depo.area}</th>
+                                                            <th>IDR</th>
+                                                            <th>{iter + 1}</th>
+                                                            <th>{iter === 0 ? item.veriftax.gl_jurnal 
+                                                                : iter === 1 ? dataPph.ppn
+                                                                : iter === 2 ? 
+                                                                (item.jenis_pph === cek21 ? dataPph.pph21 :
+                                                                    item.jenis_pph === cek23 ? dataPph.pph23 :
+                                                                    item.jenis_pph === cek4a2 && dataPph.pph4a2)
+                                                                : iter === 3 && dataPph.bankops
+                                                            }</th>
+                                                            <th>{iter === 0 || iter === 1 ? 40 
+                                                            : (iter === 2 || iter === 3) && 50
+                                                            }</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>
+                                                                {iter === 0 ? item.nilai_bayar 
+                                                                    : iter === 1 ? item.ppn 
+                                                                    : iter === 2 ? item.nilai_utang 
+                                                                    : iter === 3 && item.nilai_buku 
+                                                                }
+                                                            </th>
+                                                            <th></th>
+                                                            <th>{(iter === 0 || iter === 3) && item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{item.sub_coa}s</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th>{iter === 3 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                            <th></th>
+                                                        </tr>
+                                                    )
+                                                })
+                                            )
+                                        )
                                         )
                                     })}
                             </tbody>

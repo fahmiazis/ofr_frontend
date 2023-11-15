@@ -14,6 +14,7 @@ const userState = {
     dataUser: [],
     dataRole: [],
     detailUser: {},
+    detailRole: {},
     alertM: '',
     alertUpload: [],
     page: {},
@@ -22,7 +23,13 @@ const userState = {
     isChange: null,
     isReset: false,
     isUpimage: null,
-    genUser: null
+    genUser: null,
+    addRole: null,
+    updateRole: null,
+    isDetailRole: null,
+    accKlaim: ['3', '13', '23'],
+    accFinance: ['2', '7', '8', '9', '17'],
+    accTax: ['4', '14', '24', '34']
 }
 
 export default (state=userState, action) => {
@@ -77,6 +84,30 @@ export default (state=userState, action) => {
                     isError: true,
                     alertMsg: action.payload.response.data.message,
                     alertM: action.payload.response.data.error
+                };
+            }
+            case 'ADD_ROLE_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'ADD_ROLE_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    addRole: true,
+                    alertMsg: 'add role Succesfully'
+                };
+            }
+            case 'ADD_ROLE_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    addRole: false,
+                    alertMsg: 'add role failed'
+
                 };
             }
             case 'UPLOAD_IMAGE_PENDING': {
@@ -152,7 +183,6 @@ export default (state=userState, action) => {
                 return {
                     ...state,
                     isLoading: false,
-                    isError: true,
                     alertMsg: "Unable connect to server"
                 };
             }
@@ -212,6 +242,30 @@ export default (state=userState, action) => {
                     alert: action.payload.response !== undefined ? action.payload.response.data.error : 'something went wrong'
                 };
             }
+            case 'GET_DETAIL_ROLE_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GET_DETAIL_ROLE_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: false,
+                    isDetailRole: true,
+                    detailRole: action.payload.data.result,
+                    alertMsg: 'get detail user Succesfully'
+                };
+            }
+            case 'GET_DETAIL_ROLE_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDetailRole: false
+                };
+            }
             case 'UPDATE_USER_PENDING': {
                 return {
                     ...state,
@@ -236,6 +290,28 @@ export default (state=userState, action) => {
                     isError: true,
                     alertMsg: action.payload.response.data.message,
                     alertM: action.payload.response.data.error
+                };
+            }
+            case 'UPDATE_ROLE_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting'
+                };
+            }
+            case 'UPDATE_ROLE_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpdateRole: true,
+                    alertMsg: 'update role Succesfully'
+                };
+            }
+            case 'UPDATE_ROLE_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpdateRole: false,
                 };
             }
             case 'UPLOAD_MASTER_PENDING': {
@@ -343,7 +419,10 @@ export default (state=userState, action) => {
                     isChange: null,
                     isReset: false,
                     isUpimage: null,
-                    genUser: null
+                    genUser: null,
+                    isUpdateRole: null,
+                    addRole: null,
+                    isDetailRole: null
                 }
             }
             // case 'USERS_LOADED': {

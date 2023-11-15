@@ -54,7 +54,10 @@ const klaimState = {
     submitBukti: null,
     idKlaim: {},
     detailId: null,
-    updateNilai: null
+    updateNilai: null,
+    uploadKlaim: null,
+    dataUpload: [],
+    messUpload: []
 };
 
 export default (state=klaimState, action) => {
@@ -615,6 +618,31 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'UPLOAD_KLAIM_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPLOAD_KLAIM_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    uploadKlaim: true,
+                    dataUpload: action.payload.data.result,
+                    messUpload: action.payload.data.message,
+                    alertMsg: 'upload bukti Succesfully',
+                };
+            }
+            case 'UPLOAD_KLAIM_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    uploadKlaim: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'SUBMIT_BUKTI_PENDING': {
                 return {
                     ...state,
@@ -759,7 +787,9 @@ export default (state=klaimState, action) => {
                     isDocBukti: null,
                     submitBukti: null,
                     detailId: null,
-                    updateNilai: null
+                    updateNilai: null,
+                    uploadKlaim: null,
+                    messUpload: []
                 }
             }
             default: {

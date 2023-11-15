@@ -39,9 +39,21 @@ export default {
         type: 'DELETE_USER',
         payload: http(token).delete(`/user/delete/${id}`)
     }),
+    addRole: (token, data) => ({
+        type: 'ADD_ROLE',
+        payload: http(token).post(`/user/role/add`, qs.stringify(data))
+    }),
+    updateRole: (token, id, data) => ({
+        type: 'UPDATE_ROLE',
+        payload: http(token).patch(`/user/role/update/${id}`, qs.stringify(data)),
+    }),
     getRole: (token) => ({
         type: 'GET_ROLE',
         payload: http(token).get(`/user/role/get`)
+    }),
+    getDetailRole: (token, id) => ({
+        type: 'GET_DETAIL_ROLE',
+        payload: http(token).get(`/user/role/detail/${id}`)
     }),
     changePassword: (token, data) => ({
         type: 'CHANGE_PW',

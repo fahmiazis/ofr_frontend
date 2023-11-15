@@ -1105,16 +1105,22 @@ class VerifKasbon extends Component {
             }
         } else {
             const tempdoc = []
+            const arrDoc = []
             for (let i = 0; i < dataDoc.length; i++) {
-                const arr = dataDoc[i]
-                const stat = arr.status
-                const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
-                const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
-                if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
-                    tempdoc.push(arr)
+                if (dataDoc[i].path !== null) {
+                    const arr = dataDoc[i]
+                    const stat = arr.status
+                    const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+                    const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+                    if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
+                        tempdoc.push(arr)
+                        arrDoc.push(arr)
+                    } else {
+                        arrDoc.push(arr)
+                    }
                 }
             }
-            if (tempdoc.length === dataDoc.length) {
+            if (tempdoc.length === arrDoc.length) {
                 this.openModalApprove()
             } else {
                 this.setState({confirm: 'appNotifDoc'})
@@ -2307,8 +2313,9 @@ class VerifKasbon extends Component {
                     <Container>
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
+                                x.path !== null &&
                                 <Row className="mt-3 mb-4">
-                                    {x.path !== null ? (
+                                    {x.path !== null && (
                                         <Col md={12} lg={12} className='mb-2' >
                                             <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
                                                 {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
@@ -2331,18 +2338,6 @@ class VerifKasbon extends Component {
                                                 />
                                                 <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                             </div> */}
-                                        </Col>
-                                    ) : (
-                                        <Col md={6} lg={6} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
-                                            <div className="colDoc">
-                                                <input
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                            </div>
-                                            <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                         </Col>
                                     )}
                                 </Row>

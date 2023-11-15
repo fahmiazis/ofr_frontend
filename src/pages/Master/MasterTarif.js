@@ -425,6 +425,7 @@ class MasterTarif extends Component {
                                                 <th>No</th>
                                                 <th>SAP/REDPINE</th>
                                                 <th>GL Account</th>
+                                                <th>GL Jurnal</th>
                                                 <th>GL Name</th>
                                                 <th>Jenis Transaksi</th>
                                                 <th>Grouping</th>
@@ -445,6 +446,7 @@ class MasterTarif extends Component {
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
                                                     <td>{item.system}</td>
                                                     <td>{item.gl_account}</td>
+                                                    <td>{item.gl_jurnal}</td>
                                                     <td>{item.gl_name}</td>
                                                     <td>{item.jenis_transaksi}</td>
                                                     <td>{item.grouping}</td>

@@ -1314,9 +1314,38 @@ html,body{
     display: flex;
     flex-direction: row;
 }
+.titJurnal > tbody > tr > th{
+    border: 1px solid black !important;
+}
+.titJurnal > thead > tr > th{
+    border: 1px solid black !important;
+}
+.btnUpload {
+    display: flex;
+    flex-direction: row;
+    /* justify-content: space-between; */
+    width: 20%;
+    margin-top: 10%;
+    margin-bottom: 10%;
+    align-self: center;
+  }
 .titleName {
     text-transform: capitalize !important;
 }
+
+.tableJurnal {
+    display: block;
+    border-collapse: collapse;
+    height: 500px;
+    overflow: auto;
+}
+
+.tableJurnal > thead > tr > th {
+    top: 0 !important;
+    position: sticky !important;
+    /* display: block; */
+}
+
 .relogin {
     justify-content: center;
     text-align: center;

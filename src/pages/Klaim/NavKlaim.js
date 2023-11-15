@@ -183,7 +183,7 @@ class NavKlaim extends Component {
                                         </div>
                                     </button> */}
                                 </>
-                            ) : level === '3' || level === '13'? (
+                            ) : level === '3' || level === '13' || level === '23'? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('veriffinklm')}>
                                         <MdVerifiedUser size={220} className="picHome" />
@@ -191,14 +191,20 @@ class NavKlaim extends Component {
                                             Verifikasi Klaim
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
+                                    <button className="cardNav1" onClick={() => this.goRoute('repklm')}>
+                                        <HiOutlineDocumentReport size={220} className="picHome" />
+                                        <div className="titCard">
+                                            Report Klaim
+                                        </div>
+                                    </button>
+                                    {/* <button className="cardNav1" onClick={() => this.goRoute('revklm')}>
                                         <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi Klaim
                                         </div>
-                                    </button>
+                                    </button> */}
                                 </>
-                            ) : level === '7' || level === '8' || level === '9' ? (
+                            ) : level === '7' || level === '8' || level === '9' || level === '101'? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('navlistklm')}>
                                         <RiDraftFill size={220} className="picHome" />

@@ -40,13 +40,19 @@ import ExcelJS from "exceljs"
 import email from '../../redux/actions/email'
 import Email from '../../components/Ops/Email'
 import fs from "file-saver"
+import NumberInput from '../../components/NumberInput'
+
 const nonObject = 'Non Object PPh'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
-    dpp: Yup.string().required('must be filled'),
-    ppn: Yup.string().required('must be filled'),
-    nilai_utang: Yup.number().required('must be filled')
+    nilai_utang: Yup.number().required('must be filled'),
+    nilai_buku: Yup.number().required('must be filled'),
+    nilai_bayar: Yup.number().required('must be filled'),
+    no_skb: Yup.string().required('must be filled'),
+    jenis_pph: Yup.string().required('must be filled'),
+    datef_skb: Yup.date().required("must be filled"),
+    datel_skb: Yup.date().required('must be filled')
 })
 
 const alasanSchema = Yup.object().shape({
@@ -494,9 +500,13 @@ class VerifKasbon extends Component {
         const token = localStorage.getItem("token")
         const {dataRinci} = this.state
         const data = {
-            dpp: val.dpp,
-            ppn: val.ppn,
             nilai_utang: val.nilai_utang,
+            nilai_buku: val.nilai_buku,
+            nilai_bayar: val.nilai_bayar,
+            no_skb: val.no_skb,
+            jenis_pph: val.jenis_pph,
+            datef_skb: val.datef_skb,
+            datel_skb: val.datel_skb
         }
         const tempno = {
             no: dataRinci.no_transaksi,
@@ -991,30 +1001,51 @@ class VerifKasbon extends Component {
         const { dataDoc, detailOps } = this.props.ops
         const level = localStorage.getItem("level")
         if (level === '4' || level === '14') {
-            const tempdoc = []
-            for (let i = 0; i < detailOps.length; i++) {
-                if (detailOps[i].typeniknpwp === 'manual' && (detailOps[i].new_ident === null || detailOps[i].new_ident === '')) {
-                    tempdoc.push(detailOps[i])
+            const resData = detailOps.find(({stat_skb}) => stat_skb === 'ya')
+            if (resData !== undefined) {
+                const cekDoc = dataDoc.find(({desc}) => desc === 'Dokumen SKB')
+                const stat = cekDoc.status
+                const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+                const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+
+                if (resData.jenis_pph === null ||
+                    resData.no_skb === null ||
+                    resData.nilai_bayar === null ||
+                    resData.datef_skb === null ||
+                    resData.datel_skb === null ||
+                    resData.nilai_utang === null ||
+                    resData.nilai_buku === null
+                    ) 
+                {
+                    this.setState({confirm: 'rejTax'})
+                    this.openConfirm()
+                } else if (cekLevel !== ` level ${level}` || cekStat !== ` status approve`) {
+                    this.setState({confirm: 'appNotifDoc'})
+                    this.openConfirm()
+                } else {
+                    this.openModalApprove()
                 }
-            }
-            if (tempdoc.length > 0) {
-                this.setState({confirm: 'appNotifIdent'})
-                this.openConfirm()
             } else {
                 this.openModalApprove()
             }
         } else {
             const tempdoc = []
+            const arrDoc = []
             for (let i = 0; i < dataDoc.length; i++) {
-                const arr = dataDoc[i]
-                const stat = arr.status
-                const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
-                const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
-                if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
-                    tempdoc.push(arr)
+                if (dataDoc[i].path !== null) {
+                    const arr = dataDoc[i]
+                    const stat = arr.status
+                    const cekLevel = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[0] : ''
+                    const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+                    if (cekLevel === ` level ${level}` && cekStat === ` status approve`) {
+                        tempdoc.push(arr)
+                        arrDoc.push(arr)
+                    } else {
+                        arrDoc.push(arr)
+                    }
                 }
             }
-            if (tempdoc.length === dataDoc.length) {
+            if (tempdoc.length === arrDoc.length) {
                 this.openModalApprove()
             } else {
                 this.setState({confirm: 'appNotifDoc'})
@@ -1460,7 +1491,9 @@ class VerifKasbon extends Component {
                                                 </th>
                                                 {level === '2' ? (<></>) : (
                                                 <th>
-                                                    <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Proses</Button>
+                                                    {item.stat_skb === 'ya' && (
+                                                        <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Proses</Button>
+                                                    )}
                                                 </th>
                                                 )}
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
@@ -1475,7 +1508,7 @@ class VerifKasbon extends Component {
                                                 <th>{item.status_npwp === 0 ? '' : item.status_npwp === 1 ? 'Ya' : nonObject}</th>
                                                 <th>{item.nama_npwp}</th>
                                                 <th>
-                                                    <div className='colGeneral'>
+                                                    {/* <div className='colGeneral'>
                                                         {level !== '2' && item.typeniknpwp === 'manual' && item.status_npwp === 1 && (
                                                            <>
                                                             <input  
@@ -1488,11 +1521,12 @@ class VerifKasbon extends Component {
                                                         </>
                                                         )}
                                                         <div className='mt-1'>{item.no_npwp}</div>
-                                                    </div>
+                                                    </div> */}
+                                                    {item.no_npwp}
                                                 </th>
                                                 <th>{item.nama_ktp}</th>
                                                 <th>
-                                                    <div className='colGeneral'>
+                                                    {/* <div className='colGeneral'>
                                                         {level !== '2' && item.typeniknpwp === 'manual' && item.status_npwp === 0 && (
                                                             <>
                                                                 <input  
@@ -1505,7 +1539,8 @@ class VerifKasbon extends Component {
                                                             </>
                                                         )}
                                                         <div className='mt-1'>{item.no_ktp}</div>
-                                                    </div>
+                                                    </div> */}
+                                                    {item.no_ktp}
                                                 </th>
                                                 <th>{item.type_po}</th>
                                                 <th>{item.type_transaksi}</th>
@@ -1666,7 +1701,7 @@ class VerifKasbon extends Component {
                     </div>
                 </Modal>
                 <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
-                    <ModalHeader>
+                <ModalHeader>
                         Update Data Operasional
                     </ModalHeader>
                     <ModalBody>
@@ -1681,18 +1716,24 @@ class VerifKasbon extends Component {
                                 norek_ajuan: dataRinci.norek_ajuan,
                                 nama_tujuan: dataRinci.nama_tujuan,
                                 status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : dataRinci.status_npwp === 1 ? 'Ya' : '',
-                                nama_npwp: dataRinci.nama_npwp === null ? '' : dataRinci.nama_npwp,
+                                nama_vendor: dataRinci.nama_vendor === null ? '' : dataRinci.nama_vendor,
                                 no_npwp: dataRinci.no_npwp === null ? '' : dataRinci.no_npwp,
                                 no_ktp: dataRinci.no_ktp === null ? '' : dataRinci.no_ktp,
                                 nama_ktp: dataRinci.nama_ktp === null ? '' : dataRinci.nama_ktp,
                                 dpp: dataRinci.dpp === null ? '' : dataRinci.dpp,
                                 ppn: dataRinci.ppn === null ? '' : dataRinci.ppn,
-                                nilai_utang: dataRinci.nilai_utang === null ? '' : dataRinci.nilai_utang
+                                nilai_utang: dataRinci.nilai_utang === null ? '' : dataRinci.nilai_utang,
+                                nilai_buku: dataRinci.nilai_buku,
+                                nilai_bayar: dataRinci.nilai_bayar,
+                                no_skb: dataRinci.no_skb,
+                                jenis_pph: dataRinci.jenis_pph,
+                                datef_skb: dataRinci.datef_skb,
+                                datel_skb: dataRinci.datel_skb
                             }}
                             validationSchema = {opsSchema}
                             onSubmit={(values) => {this.prosesEditOps(values)}}
                             >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                            {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                                 <div className="rightRinci2">
                                     <div>
                                         <Row className="mb-2 rowRinci">
@@ -1766,7 +1807,7 @@ class VerifKasbon extends Component {
                                             <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
                                         ) : null }
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nilai Ajuan</Col>
+                                            <Col md={3}>Nilai yg diajukan</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
@@ -1813,7 +1854,7 @@ class VerifKasbon extends Component {
                                             <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                         ) : null} */}
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Atas Nama</Col>
+                                            <Col md={3}>Tujuan Transfer</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
@@ -1848,14 +1889,14 @@ class VerifKasbon extends Component {
                                             <text className={style.txtError}>must be filled</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nama Sesuai NPWP</Col>
+                                            <Col md={3}>Nama Vendor/NPWP/KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
                                                 type= "text" 
                                                 className="inputRinci"
-                                                value={values.status_npwp === 'Ya' ? values.nama_npwp : ''}
-                                                onBlur={handleBlur("nama_npwp")}
-                                                onChange={handleChange("nama_npwp")}
+                                                value={values.nama_vendor}
+                                                onBlur={handleBlur("nama_vendor")}
+                                                onChange={handleChange("nama_vendor")}
                                                 />
                                             </Col>
                                         </Row>
@@ -1880,21 +1921,6 @@ class VerifKasbon extends Component {
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
                                         ) : null} */}
                                         <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nama Sesuai KTP</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.status_npwp === 'Tidak' ? values.nama_ktp : ''}
-                                                onBlur={handleBlur("nama_ktp")}
-                                                onChange={handleChange("nama_ktp")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {values.status_npwp === 'Tidak' && values.nama_ktp === '' ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nomor KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled
@@ -1913,47 +1939,118 @@ class VerifKasbon extends Component {
                                         ) : null}
                                     </div>
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>Tgl Invoice</Col>
-                                        <Col md={9} className="colRinci">:  <Input
+                                        <Col md={3}>Nilai Yang Dibayarkan</Col>
+                                        <Col md={9} className="colRinci">:  
+                                            <NumberInput
+                                            className="inputRinci"
+                                            value={values.nilai_bayar}
+                                            onValueChange={val => setFieldValue("nilai_bayar", val.floatValue)}
+                                            />
+                                            {/* <Input
                                             type= "text" 
                                             className="inputRinci"
-                                            value={dataRinci.tgl_tagihanbayar === null ? '-' : moment(dataRinci.tgl_tagihanbayar).format('DD MMMM YYYY')}
-                                            />
+                                            value={values.nilai_bayar}
+                                            onBlur={handleBlur("nilai_bayar")}
+                                            onChange={handleChange("nilai_bayar")}
+                                            /> */}
                                         </Col>
                                     </Row>
+                                    {errors.nilai_bayar && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>DPP</Col>
-                                        <Col md={9} className="colRinci">:  <Input
+                                        <Col md={3}>Nilai Yang Dibukukan</Col>
+                                        <Col md={9} className="colRinci">:  
+                                            <NumberInput
+                                            className="inputRinci"
+                                            value={values.nilai_buku}
+                                            onValueChange={val => setFieldValue("nilai_buku", val.floatValue)}
+                                            />
+                                            {/* <Input
                                             type= "text" 
                                             className="inputRinci"
-                                            value={values.dpp}
-                                            onBlur={handleBlur("dpp")}
-                                            onChange={handleChange("dpp")}
-                                            />
+                                            value={values.nilai_buku}
+                                            onBlur={handleBlur("nilai_buku")}
+                                            onChange={handleChange("nilai_buku")}
+                                            /> */}
                                         </Col>
                                     </Row>
+                                    {errors.nilai_buku && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>PPN</Col>
-                                        <Col md={9} className="colRinci">:  <Input
-                                            type= "text" 
+                                        <Col md={3}>Nilai Utang PPh</Col>
+                                        <Col md={9} className="colRinci">:  
+                                            <NumberInput
                                             className="inputRinci"
-                                            value={values.ppn}
-                                            onBlur={handleBlur("ppn")}
-                                            onChange={handleChange("ppn")}
+                                            value={values.nilai_utang}
+                                            onValueChange={val => setFieldValue("nilai_utang", val.floatValue)}
                                             />
-                                        </Col>
-                                    </Row>
-                                    <Row className="mb-2 rowRinci">
-                                        <Col md={3}>Nilai PPh</Col>
-                                        <Col md={9} className="colRinci">:  <Input
+                                            {/* <Input
                                             type= "text" 
                                             className="inputRinci"
                                             value={values.nilai_utang}
                                             onBlur={handleBlur("nilai_utang")}
                                             onChange={handleChange("nilai_utang")}
+                                            /> */}
+                                        </Col>
+                                    </Row>
+                                    {errors.nilai_utang && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>Jenis PPh</Col>
+                                        <Col md={9} className="colRinci">:  <Input
+                                            type= "text" 
+                                            className="inputRinci"
+                                            value={values.jenis_pph}
+                                            onBlur={handleBlur("jenis_pph")}
+                                            onChange={handleChange("jenis_pph")}
                                             />
                                         </Col>
                                     </Row>
+                                    {errors.jenis_pph && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>No SKB</Col>
+                                        <Col md={9} className="colRinci">:  <Input
+                                            type= "text" 
+                                            className="inputRinci"
+                                            value={values.no_skb}
+                                            onBlur={handleBlur("no_skb")}
+                                            onChange={handleChange("no_skb")}
+                                            />
+                                        </Col>
+                                    </Row>
+                                    {errors.no_skb && (
+                                        <text className={style.txtError}>must be filled</text>
+                                    )}
+                                    <Row className="mb-2 rowRinci">
+                                        <Col md={3}>Periode SKB</Col>
+                                        <Col md={9} className="colRinci">: 
+                                            <Input
+                                            type= "date"
+                                            className="inputRinci"
+                                            value={moment(values.datef_skb).format('YYYY-MM-DD')}
+                                            onBlur={handleBlur("datef_skb")}
+                                            onChange={handleChange("datef_skb")}
+                                            />
+                                            <text className='mr-1 ml-1'>To</text>
+                                            <Input
+                                            type= "date"
+                                            className="inputRinci"
+                                            value={moment(values.datel_skb).format('YYYY-MM-DD')}
+                                            onBlur={handleBlur("datel_skb")}
+                                            onChange={handleChange("datel_skb")}
+                                            />
+                                        </Col>
+                                    </Row>
+                                    {errors.datef_skb || errors.datel_skb ? (
+                                        <text className={style.txtError}>must be filled</text>
+                                    ) : values.datef_skb > values.datel_skb ? (
+                                        <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
+                                    ) : null }
                                     <div className="modalFoot mt-3">
                                         <div></div>
                                         <div className='btnfoot'>
@@ -1967,7 +2064,7 @@ class VerifKasbon extends Component {
                                                 onClick={handleSubmit}>
                                                 Save
                                             </Button>
-                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
+                                            <Button className="" size="md" color="secondary" onClick={() => this.openModalEdit()}>Close</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -2152,6 +2249,13 @@ class VerifKasbon extends Component {
                             <div className={[style.sucUpdate, style.green]}>Gagal Submit, Pastikan Dokumen Lampiran Telah Terapprove</div>
                         </div>
                         </div>
+                    ) : this.state.confirm === 'rejTax' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                            <AiOutlineClose size={80} className={style.red} />
+                            <div className={[style.sucUpdate, style.green]}>Gagal Submit, Pastikan Semua Data Telah Terisi</div>
+                        </div>
+                        </div>
                     ) : this.state.confirm === 'appNotifIdent' ?(
                         <div>
                             <div className={style.cekUpdate}>
@@ -2196,8 +2300,9 @@ class VerifKasbon extends Component {
                     <Container>
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
+                                x.path !== null &&
                                 <Row className="mt-3 mb-4">
-                                    {x.path !== null ? (
+                                    {x.path !== null && (
                                         <Col md={12} lg={12} className='mb-2' >
                                             <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
                                                 {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
@@ -2220,18 +2325,6 @@ class VerifKasbon extends Component {
                                                 />
                                                 <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                             </div> */}
-                                        </Col>
-                                    ) : (
-                                        <Col md={6} lg={6} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
-                                            <div className="colDoc">
-                                                <input
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                            </div>
-                                            <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                         </Col>
                                     )}
                                 </Row>

@@ -23,6 +23,7 @@ import moment from 'moment'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
+import spvklaim from '../../redux/actions/spvklaim'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
 // import notif from '../redux/actions/notif'
@@ -337,8 +338,10 @@ class ReportKlaim extends Component {
         await this.props.submitAsset(token, detailStock[0].no_stock)
     }
 
-    componentDidMount() {
+    async componentDidMount () {
         // const level = localStorage.getItem('level')
+        const token = localStorage.getItem('token')
+        await this.props.getSpvklaim(token)
         this.getDataKlaim()
     }
 
@@ -483,7 +486,7 @@ class ReportKlaim extends Component {
                     c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                     c6: '',
                     c7: 'SA',
-                    c8: item.finance.pic_console,
+                    c8: item.finance.pic_finance,
                     c9: 'IDR',
                     c10: iter + 1,
                     c11: iter === 0 ? item.finance.gl_kk : '11010401',
@@ -596,7 +599,7 @@ class ReportKlaim extends Component {
                 c2: 'PP01',
                 c3: moment(item.tanggal_transfer).format('DDMMYYYY'),
                 c4: 'IDR',
-                c5: item.finance.pic_console,
+                c5: item.finance.pic_finance,
                 c6: item.no_transaksi,
                 c7: item.pa,
                 c8: '11010401',
@@ -1146,8 +1149,8 @@ class ReportKlaim extends Component {
         ws.columns = [
             {header: 'NO', key: 'c1'},
             {header: 'PIC', key: 'c2'},
-            {header: 'NAMA', key: 'c3'},
-            {header: 'AREA', key: 'c4'},
+            {header: 'NAMA AREA', key: 'c3'},
+            // {header: 'AREA', key: 'c4'},
             {header: 'NOMOR FPD', key: 'c5'},
             {header: 'COST CENTRE', key: 'c6'},
             {header: 'NO COA', key: 'c7'},
@@ -1175,9 +1178,9 @@ class ReportKlaim extends Component {
         dataDownload.map((item, index) => { return ( ws.addRow(
             {
                 c1: index + 1,
-                c2: `${item.finance.pic_console}`,
+                c2: `${item.finance.pic_finance}`,
                 c3: item.area,
-                c4: item.depo.channel,
+                // c4: item.depo.channel,
                 c5: item.no_transaksi,
                 c6: item.cost_center,
                 c7: item.no_coa,
@@ -1249,10 +1252,11 @@ class ReportKlaim extends Component {
 
     render() {
         const level = localStorage.getItem('level')
-        const names = localStorage.getItem('name')
+        const names = localStorage.getItem('fullname')
         const {dataRinci, jurnalMap, dropApp, dataItem, listKlaim, drop, listReason, dataMenu, listMenu, dataDownload} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
+        const {dataSpvklaim} = this.props.spvklaim
         const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim, dataReport } = this.props.klaim
         // const pages = this.props.depo.page
 
@@ -1376,8 +1380,8 @@ class ReportKlaim extends Component {
                                                 </th>
                                                 <th>No</th>
                                                 <th>PIC</th>
-                                                <th>NAMA</th>
-                                                <th>AREA</th>
+                                                <th>NAMA AREA</th>
+                                                {/* <th>AREA</th> */}
                                                 <th>NOMOR FPD</th>
                                                 <th>COST CENTRE</th>
                                                 <th>NO COA</th>
@@ -1405,46 +1409,131 @@ class ReportKlaim extends Component {
                                         <tbody>
                                             {dataReport.map(item => {
                                                 return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>
-                                                            <input 
-                                                            type='checkbox'
-                                                            checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
-                                                            onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
-                                                            />
-                                                        </th>
-                                                        <th>{dataReport.indexOf(item) + 1}</th>
-                                                        <th>{item.finance.pic_console}</th>
-                                                        <th>{item.area}</th>
-                                                        <th>{item.depo.channel}</th>
-                                                        <th>{item.no_transaksi}</th>
-                                                        <th>{item.cost_center}</th>
-                                                        <th>{item.no_coa}</th>
-                                                        <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
-                                                        <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
-                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                        <th>{item.bank_tujuan}</th>
-                                                        <th>{item.norek_ajuan}</th>
-                                                        <th>{item.nama_tujuan}</th>
-                                                        <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                        <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
-                                                        <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                                        <th>{item.ppu}</th>
-                                                        <th>{item.pa}</th>
-                                                        <th>{item.nominal}</th>
-                                                        <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
-                                                        <th></th>
-                                                        <th>{item.history.split(',').reverse()[0]}</th>
-                                                    </tr>
+                                                    level ===  '3' ? (
+                                                        item.picklaim !== null && 
+                                                        // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
+                                                        item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                                        item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
+                                                        (<tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>
+                                                                <input 
+                                                                type='checkbox'
+                                                                checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                                onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                                />
+                                                            </th>
+                                                            <th>{dataReport.indexOf(item) + 1}</th>
+                                                            <th>{item.finance.pic_finance}</th>
+                                                            <th>{item.area}</th>
+                                                            {/* <th>{item.depo.channel}</th> */}
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
+                                                            <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                            <th>{item.bank_tujuan}</th>
+                                                            <th>{item.norek_ajuan}</th>
+                                                            <th>{item.nama_tujuan}</th>
+                                                            <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
+                                                            <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                                            <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                            <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
+                                                            <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
+                                                            <th>{item.ppu}</th>
+                                                            <th>{item.pa}</th>
+                                                            <th>{item.nominal}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                                            <th></th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                        </tr>)
+                                                    ) : level ===  '23' ? (
+                                                            item.picklaim !== null && 
+                                                            // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
+                                                            item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                                            dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()) !== undefined
+                                                            && dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
+                                                            &&
+                                                            (<tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                                <th>
+                                                                    <input 
+                                                                    type='checkbox'
+                                                                    checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                                    onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                                    />
+                                                                </th>
+                                                                <th>{dataReport.indexOf(item) + 1}</th>
+                                                                <th>{item.finance.pic_finance}</th>
+                                                                <th>{item.area}</th>
+                                                                {/* <th>{item.depo.channel}</th> */}
+                                                                <th>{item.no_transaksi}</th>
+                                                                <th>{item.cost_center}</th>
+                                                                <th>{item.no_coa}</th>
+                                                                <th>{item.nama_coa}</th>
+                                                                <th>{item.keterangan}</th>
+                                                                <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                                                <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
+                                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                                <th>{item.bank_tujuan}</th>
+                                                                <th>{item.norek_ajuan}</th>
+                                                                <th>{item.nama_tujuan}</th>
+                                                                <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
+                                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                                <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
+                                                                <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
+                                                                <th>{item.ppu}</th>
+                                                                <th>{item.pa}</th>
+                                                                <th>{item.nominal}</th>
+                                                                <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                                                <th></th>
+                                                                <th>{item.history.split(',').reverse()[0]}</th>
+                                                            </tr>)
+                                                    ) : (
+                                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>
+                                                                <input 
+                                                                type='checkbox'
+                                                                checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                                onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                                />
+                                                            </th>
+                                                            <th>{dataReport.indexOf(item) + 1}</th>
+                                                            <th>{item.finance.pic_finance}</th>
+                                                            <th>{item.area}</th>
+                                                            {/* <th>{item.depo.channel}</th> */}
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
+                                                            <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                            <th>{item.bank_tujuan}</th>
+                                                            <th>{item.norek_ajuan}</th>
+                                                            <th>{item.nama_tujuan}</th>
+                                                            <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
+                                                            <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                                            <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                            <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
+                                                            <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
+                                                            <th>{item.ppu}</th>
+                                                            <th>{item.pa}</th>
+                                                            <th>{item.nominal}</th>
+                                                            <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                                            <th></th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                        </tr>
+                                                    )
+                                                    
                                                 )
                                             })}
                                             {dataReport.length > 0 && (
                                                 <tr>
-                                                    <th className='total' colSpan={12}>Total</th>
+                                                    <th className='total' colSpan={11}>Total</th>
                                                     <th>
                                                         {dataReport.reduce((accumulator, object) => {
                                                             return accumulator + parseInt(object.nilai_ajuan);
@@ -1531,8 +1620,8 @@ class ReportKlaim extends Component {
                                 <tr>
                                     <th>No</th>
                                     <th>PIC</th>
-                                    <th>NAMA</th>
-                                    <th>AREA</th>
+                                    <th>NAMA AREA</th>
+                                    {/* <th>AREA</th> */}
                                     <th>NOMOR FPD</th>
                                     <th>COST CENTRE</th>
                                     <th>NO COA</th>
@@ -1562,9 +1651,9 @@ class ReportKlaim extends Component {
                                     return (
                                         <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                             <th>{dataDownload.indexOf(item) + 1}</th>
-                                            <th>{item.finance.pic_console}</th>
+                                            <th>{item.finance.pic_finance}</th>
                                             <th>{item.area}</th>
-                                            <th>{item.depo.channel}</th>
+                                            {/* <th>{item.depo.channel}</th> */}
                                             <th>{item.no_transaksi}</th>
                                             <th>{item.cost_center}</th>
                                             <th>{item.no_coa}</th>
@@ -1592,13 +1681,12 @@ class ReportKlaim extends Component {
                                 })}
                                 {dataDownload.length > 0 && (
                                     <tr>
-                                        <th className='total' colSpan={11}>Total</th>
+                                        <th className='total' colSpan={10}>Total</th>
                                         <th>
                                             {dataDownload.reduce((accumulator, object) => {
                                                 return accumulator + parseInt(object.nilai_ajuan);
                                             }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                         </th>
-                                        <th></th>
                                         <th></th>
                                         <th></th>
                                         <th></th>
@@ -1683,7 +1771,7 @@ class ReportKlaim extends Component {
                                                 <th>PP01</th>
                                                 <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                 <th>IDR</th>
-                                                <th>{item.finance.pic_console}</th>
+                                                <th>{item.finance.pic_finance}</th>
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.pa}</th>
                                                 <th>11010401</th>
@@ -1788,7 +1876,7 @@ class ReportKlaim extends Component {
                                                         <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                         <th></th>
                                                         <th>SA</th>
-                                                        <th>{item.finance.pic_console}</th>
+                                                        <th>{item.finance.pic_finance}</th>
                                                         <th>IDR</th>
                                                         <th>{iter + 1}</th>
                                                         <th>{iter === 0 ? item.finance.gl_kk : '11010401'}</th>
@@ -2789,7 +2877,8 @@ const mapStateToProps = state => ({
     klaim: state.klaim,
     menu: state.menu,
     reason: state.reason,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    spvklaim: state.spvklaim
 })
 
 const mapDispatchToProps = {
@@ -2807,7 +2896,8 @@ const mapDispatchToProps = {
     getReason: reason.getReason,
     rejectKlaim: klaim.rejectKlaim,
     resetKlaim: klaim.resetKlaim,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    getSpvklaim: spvklaim.getSpvklaim
     // notifStock: notif.notifStock
 }
 

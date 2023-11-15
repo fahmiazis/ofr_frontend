@@ -910,7 +910,7 @@ class ReportIkk extends Component {
                 c26: item.area,
                 c25: `${moment(item.start_ikk).format('DD/MMMM/YYYY')}`,
                 c28: `${item.history.split(',').reverse()[0]}`,
-                c23: `${item.finance.pic_console}`,
+                c23: `${item.depo.pic_finance}`,
                 c24: `${item.depo.channel}`,
                 c27: '',
             }
@@ -1074,10 +1074,10 @@ class ReportIkk extends Component {
                     c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                     c6: '',
                     c7: 'SA',
-                    c8: item.finance.pic_console,
+                    c8: item.depo.pic_finance,
                     c9: 'IDR',
                     c10: iter + 1,
-                    c11: iter === 0 ? (item.spending.gl_kk === undefined ? item.finance.gl_kk : item.spending.gl_kk) : '11010401',
+                    c11: iter === 0 ? (item.depo.gl_kk) : '11010401',
                     c12: iter === 0 ? 40 : 50,
                     c13: '',
                     c14: '',
@@ -1093,11 +1093,12 @@ class ReportIkk extends Component {
                     c24: '',
                     c25: '',
                     c26: '',
-                    c27: iter === 0 ? (item.spending.profit_center === undefined ? item.depo.profit_center : item.spending.profit_center) : 'P01H000001',
+                    c27: iter === 0 ? (item.depo.profit_center) : 'P01H000001',
                     c28: '',
                     c29: '',
                     c30: '',
-                    c31: item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`,
+                    // c31: item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`,
+                    c31: '',
                     c32: '',
                     c33: '',
                     c34: '',
@@ -1323,7 +1324,7 @@ class ReportIkk extends Component {
                                                             />
                                                         </th>
                                                         <th>{dataReport.indexOf(item) + 1}</th>
-                                                        <th>{item.finance.pic_console}</th>
+                                                        <th>{item.depo.pic_finance}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.depo.channel}</th>
                                                         <th>{item.no_transaksi}</th>
@@ -1440,7 +1441,7 @@ class ReportIkk extends Component {
                                             return (
                                                 <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                     <th>{dataDownload.indexOf(item) + 1}</th>
-                                                    <th>{item.finance.pic_console}</th>
+                                                    <th>{item.depo.pic_finance}</th>
                                                     <th>{item.area}</th>
                                                     <th>{item.depo.channel}</th>
                                                     <th>{item.no_transaksi}</th>
@@ -1579,10 +1580,10 @@ class ReportIkk extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.finance.pic_console}</th>
+                                                            <th>{item.depo.pic_finance}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 ? (item.spending.gl_kk === undefined ? item.finance.gl_kk : item.spending.gl_kk) : '11010401'}</th>
+                                                            <th>{iter === 0 ? (item.depo.gl_kk) : '11010401'}</th>
                                                             <th>{iter === 0 ? 40 : 50}</th>
                                                             <th></th>
                                                             <th></th>
@@ -1598,11 +1599,12 @@ class ReportIkk extends Component {
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th>{iter === 0 ? (item.spending.profit_center === undefined ? item.depo.profit_center : item.spending.profit_center) : 'P01H000001'}</th>
+                                                            <th>{iter === 0 ? (item.depo.profit_center) : 'P01H000001'}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th>
+                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            <th></th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>

@@ -199,7 +199,6 @@ export default (state=dokumenState, action) => {
                     ...state,
                     isLoading: false,
                     isAdd: false,
-                    isError: true,
                     alertMsg: "Unable connect to server"
                 };
             }

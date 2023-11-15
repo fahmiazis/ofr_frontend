@@ -11,7 +11,7 @@ import approve from '../../redux/actions/approve'
 import {BsCircle} from 'react-icons/bs'
 import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList} from 'react-icons/fa'
 import Sidebar from "../../components/Header";
-import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
+import { AiOutlineFileExcel, AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
@@ -25,6 +25,8 @@ import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
 import notif from '../../redux/actions/notif'
+import spvklaim from '../../redux/actions/spvklaim'
+
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -40,11 +42,11 @@ import ExcelJS from "exceljs"
 import fs from "file-saver"
 import NumberInput from '../../components/NumberInput'
 const {REACT_APP_BACKEND_URL} = process.env
-const accKlaim = [3, 13, 23]
+const accKlaim = ['3', '13', '23']
 
 const klaimSchema = Yup.object().shape({
-    pa: Yup.string().required('must be filled'),
-    ppu: Yup.string().required('must be filled'),
+    pa: Yup.number().required('must be filled'),
+    ppu: Yup.number().required('must be filled'),
     nominal: Yup.number().required('must be filled'),
     kode_vendor: Yup.string().required('must be filled')
 })
@@ -122,7 +124,8 @@ class VerifKlaim extends Component {
             time1: moment().startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             tipeEmail: '',
-            dataRej: {}
+            dataRej: {},
+            listKlaim: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -315,17 +318,24 @@ class VerifKlaim extends Component {
         await this.props.submitAsset(token, detailStock[0].no_stock)
     }
 
-    componentDidMount() {
+    async componentDidMount () {
         // const level = localStorage.getItem('level')
+        const token = localStorage.getItem('token')
+        await this.props.getSpvklaim(token)
         this.getDataKlaim()
     }
 
     componentDidUpdate() {
-        const { isApprove, isReject, subVerif } = this.props.klaim
+        const { isApprove, isReject, subVerif, uploadKlaim } = this.props.klaim
         if (subVerif === false) {
             this.setState({confirm: 'rejSubmit'})
             this.openConfirm()
             this.openModalApprove()
+            this.props.resetKlaim()
+        } else if (uploadKlaim === false) {
+            this.setState({confirm: 'rejUpload'})
+            this.openConfirm()
+            this.openModalUpload()
             this.props.resetKlaim()
         }
     }
@@ -409,7 +419,7 @@ class VerifKlaim extends Component {
     }
 
     openModalUpload = () => {
-        this.setState({modalUpload: !this.state.modalUpload})
+        this.setState({modalUpload: !this.state.modalUpload, fileUpload: ''})
     }
 
     prosesDetail = async (val) => {
@@ -490,32 +500,6 @@ class VerifKlaim extends Component {
         const token = localStorage.getItem("token")
         await this.props.exportStock(token, val.no, this.state.month)
         this.openModalDok()
-    }
-
-    addStock = async (val) => {
-        const token = localStorage.getItem("token")
-        const dataAsset = this.props.asset.assetAll
-        const { detailDepo } = this.props.depo
-        const { kondisi, fisik } = this.state
-        const data = {
-            area: detailDepo.nama_area,
-            kode_plant: dataAsset[0].kode_plant,
-            deskripsi: val.deskripsi,
-            merk: val.merk,
-            satuan: val.satuan,
-            unit: val.unit,
-            lokasi: val.lokasi,
-            grouping: val.grouping,
-            keterangan: val.keterangan,
-            kondisi: kondisi,
-            status_fisik: fisik
-        }
-        await this.props.addOpname(token, data)
-        await this.props.getStockArea(token, '', 1000, 1, 'null')
-        const { dataAdd } = this.props.stock
-        this.setState({kondisi: '', fisik: '', dataId: dataAdd.id})
-        this.openModalAdd()
-        this.openModalUpload()
     }
 
     openModalSum = async () => {
@@ -1005,6 +989,38 @@ class VerifKlaim extends Component {
         }
     }
 
+    chekKlApp = (val) => {
+        const { listKlaim } = this.state
+        const {newKlaim} = this.props.klaim
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < newKlaim.length; i++) {
+                data.push(newKlaim[i].id)
+            }
+            this.setState({listKlaim: data})
+        } else {
+            listKlaim.push(val)
+            this.setState({listKlaim: listKlaim})
+        }
+    }
+
+    chekKlRej = (val) => {
+        const {listKlaim} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listKlaim: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listKlaim.length; i++) {
+                if (listKlaim[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listKlaim[i])
+                }
+            }
+            this.setState({listKlaim: data})
+        }
+    }
     prepareReject = async () => {
         const token = localStorage.getItem("token")
         await this.props.getAllMenu(token, 'reject', 'Klaim')
@@ -1033,13 +1049,126 @@ class VerifKlaim extends Component {
         this.setState({drop: !this.state.drop})
     }
 
+    onChangeHandler = e => {
+        const {size, type} = e.target.files[0]
+        if (size >= 5120000) {
+            this.setState({errMsg: "Maximum upload size 5 MB"})
+            this.uploadAlert()
+        } else if (type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && type !== 'application/vnd.ms-excel' ){
+            this.setState({errMsg: 'Invalid file type. Only excel files are allowed.'})
+            this.uploadAlert()
+        } else {
+            this.setState({fileUpload: e.target.files[0]})
+        }
+    }
+
+    downloadAjuan = () => {
+        const {listKlaim} = this.state
+        const {newKlaim} = this.props.klaim
+        const dataDownload = []
+
+        if (newKlaim.length === 0 || listKlaim.length === 0) {
+            this.setState({confirm: 'rejDownload'})
+            this.openConfirm()
+        } else {
+            for (let i = 0; i < listKlaim.length; i++) {
+                for (let j = 0; j < newKlaim.length; j++) {
+                    if (newKlaim[j].id === listKlaim[i]) {
+                        dataDownload.push(newKlaim[j])
+                    }
+                }
+            }
+    
+            const workbook = new ExcelJS.Workbook();
+            const ws = workbook.addWorksheet('data klaim')
+    
+            // await ws.protect('F1n4NcePm4')
+    
+            const borderStyles = {
+                top: {style:'thin'},
+                left: {style:'thin'},
+                bottom: {style:'thin'},
+                right: {style:'thin'}
+            }
+            
+    
+            ws.columns = [
+                {header: 'NO AJUAN', key: 'c2'},
+                {header: 'PPU', key: 'c3'},
+                {header: 'PA', key: 'c4'},
+                {header: 'KODE VENDOR', key: 'c5'},
+                {header: 'NOMINAL VERIFIKASI', key: 'c6'},
+                {header: 'NO COA', key: 'c7'},
+                {header: 'NAMA COA', key: 'c8'},
+                {header: 'TGL AJUAN', key: 'c9'},
+                {header: 'NILAI YANG DIAJUKAN', key: 'c10'},
+                {header: 'DN AREA', key: 'c11'}
+            ]
+    
+            dataDownload.map((item, index) => { return ( ws.addRow(
+                {
+                    c2: item.no_transaksi,
+                    c3: item.ppu,
+                    c4: item.pa,
+                    c5: item.kode_vendor,
+                    c6: item.nominal,
+                    c7: item.no_coa,
+                    c8: item.nama_coa,
+                    c9: moment(item.start_klaim).format('DD MMMM YYYY'),
+                    c10: item.nilai_ajuan,
+                    c11: item.dn_area
+                }
+            )
+            ) })
+    
+            ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+                row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+                  cell.border = borderStyles;
+                })
+              })
+    
+              ws.columns.forEach(column => {
+                const lengths = column.values.map(v => v.toString().length)
+                const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+                column.width = maxLength + 5
+            })
+    
+            workbook.xlsx.writeBuffer().then(function(buffer) {
+                fs.saveAs(
+                  new Blob([buffer], { type: "application/octet-stream" }),
+                  `Data Upload Ajuan Klaim ${moment().format('DD MMMM YYYY')}.xlsx`
+                )
+            })
+        }
+    }
+
+    uploadAjuan = async () => {
+        const token = localStorage.getItem('token')
+        const data = new FormData()
+        data.append('master', this.state.fileUpload)
+        await this.props.uploadDataKlaim(token, data)
+
+        const {messUpload} = this.props.klaim
+        if (messUpload.length > 0) {
+            this.setState({confirm: 'failUpload'})
+            this.openConfirm()
+            this.openModalUpload()
+        } else {
+            this.setState({confirm: 'upload'})
+            this.openConfirm()
+            this.getDataKlaim()
+            this.openModalUpload()
+        }
+    }
+
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('fullname')
-        const {dataRinci, dropApp, tipeEmail, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, listKlaim, tipeEmail, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataSpvklaim} = this.props.spvklaim
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim } = this.props.klaim
+        const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim, messUpload } = this.props.klaim
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1081,7 +1210,13 @@ class VerifKlaim extends Component {
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : "Klaim"}</div>
                             </div>
-                            <div className={style.secEmail3}>
+                            <div className={style.secEmail4}>
+                                {accKlaim.find(item => item.toString() === level) !== undefined ? (
+                                    <div className='rowCenter'>
+                                        <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload Ajuan</Button>
+                                        <Button className='mr-1' onClick={this.downloadAjuan} color="success" size="lg">Download Ajuan</Button>
+                                    </div>
+                                ) : <div></ div>}
                                 <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
@@ -1091,17 +1226,13 @@ class VerifKlaim extends Component {
                                         {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                     </Input>
                                 </div>
-                                <div></div>
                             </div>
                             <div className={[style.secEmail4]}>
                                 <div className='rowCenter'>
-                                    <div className='rowCenter'>
-                                        <text className='mr-4'>Time:</text>
-                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="pilih">Periode</option>
-                                        </Input>
-                                    </div>
+                                    <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                        <option value="all">Time (All)</option>
+                                        <option value="pilih">Periode</option>
+                                    </Input>
                                     {this.state.time === 'pilih' ?  (
                                         <>
                                             <div className='rowCenter'>
@@ -1145,6 +1276,17 @@ class VerifKlaim extends Component {
                                     <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
                                             <tr>
+                                                {accKlaim.find(item => item.toString() === level) !== undefined && (
+                                                    <th>
+                                                        <input  
+                                                        className='mr-2'
+                                                        type='checkbox'
+                                                        checked={listKlaim.length === 0 ? false : listKlaim.length === newKlaim.length ? true : false}
+                                                        onChange={() => listKlaim.length === newKlaim.length ? this.chekKlRej('all') : this.chekKlApp('all')}
+                                                        />
+                                                        {/* Select */}
+                                                    </th>
+                                                )}
                                                 <th>No</th>
                                                 <th>NO.AJUAN</th>
                                                 <th>COST CENTRE</th>
@@ -1157,33 +1299,100 @@ class VerifKlaim extends Component {
                                                 <th>OPSI</th>
                                             </tr>
                                         </thead>
-                                        {accKlaim.find(item => item.toString() === level) !== undefined ? (
+                                        {accKlaim.find(x => x.toString() === level) !== undefined ? (
                                             <tbody>
                                                 {newKlaim.map(item => {
                                                     return (
-                                                        item.picklaim !== null && 
-                                                        // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
-                                                        item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
-                                                        item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
-                                                        (
+                                                        level ===  '3' ? (
+                                                            item.picklaim !== null && 
+                                                            // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
+                                                            item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                                            item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
+                                                            (
+                                                                <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                                    <th>
+                                                                        <input 
+                                                                        type='checkbox'
+                                                                        checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                                        onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekKlApp(item.id) : () => this.chekKlRej(item.id)}
+                                                                        />
+                                                                    </th>
+                                                                    <th>{newKlaim.indexOf(item) + 1}</th>
+                                                                    <th>{item.no_transaksi}</th>
+                                                                    <th>{item.cost_center}</th>
+                                                                    <th>{item.area}</th>
+                                                                    <th>{item.no_coa}</th>
+                                                                    <th>{item.nama_coa}</th>
+                                                                    <th>{item.keterangan}</th>
+                                                                    <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                                                    <th>{item.history.split(',').reverse()[0]}</th>
+                                                                    <th>
+                                                                        <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
+                                                                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
+                                                                        </Button>
+                                                                        <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                                    </th>
+                                                                </tr>
+                                                            )
+                                                        ) : level ===  '23' ? (
+                                                            item.picklaim !== null && 
+                                                            // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
+                                                            item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                                            dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()) !== undefined
+                                                            && dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
+                                                            && 
+                                                            (
+                                                                <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                                    <th>
+                                                                        <input 
+                                                                        type='checkbox'
+                                                                        checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                                        onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekKlApp(item.id) : () => this.chekKlRej(item.id)}
+                                                                        />
+                                                                    </th>
+                                                                    <th>{newKlaim.indexOf(item) + 1}</th>
+                                                                    <th>{item.no_transaksi}</th>
+                                                                    <th>{item.cost_center}</th>
+                                                                    <th>{item.area}</th>
+                                                                    <th>{item.no_coa}</th>
+                                                                    <th>{item.nama_coa}</th>
+                                                                    <th>{item.keterangan}</th>
+                                                                    <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                                                    <th>{item.history.split(',').reverse()[0]}</th>
+                                                                    <th>
+                                                                        <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
+                                                                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
+                                                                        </Button>
+                                                                        <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                                    </th>
+                                                                </tr>
+                                                            )
+                                                        ) : (
                                                             <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                                <th>{newKlaim.indexOf(item) + 1}</th>
-                                                                <th>{item.no_transaksi}</th>
-                                                                <th>{item.cost_center}</th>
-                                                                <th>{item.area}</th>
-                                                                <th>{item.no_coa}</th>
-                                                                <th>{item.nama_coa}</th>
-                                                                <th>{item.keterangan}</th>
-                                                                <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
-                                                                <th>{item.history.split(',').reverse()[0]}</th>
-                                                                <th>
-                                                                    <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
-                                                                        {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
-                                                                    </Button>
-                                                                    <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
-                                                                </th>
-                                                            </tr>
-                                                        ) 
+                                                                    <th>
+                                                                        <input 
+                                                                        type='checkbox'
+                                                                        checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                                        onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekKlApp(item.id) : () => this.chekKlRej(item.id)}
+                                                                        />
+                                                                    </th>
+                                                                    <th>{newKlaim.indexOf(item) + 1}</th>
+                                                                    <th>{item.no_transaksi}</th>
+                                                                    <th>{item.cost_center}</th>
+                                                                    <th>{item.area}</th>
+                                                                    <th>{item.no_coa}</th>
+                                                                    <th>{item.nama_coa}</th>
+                                                                    <th>{item.keterangan}</th>
+                                                                    <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                                                    <th>{item.history.split(',').reverse()[0]}</th>
+                                                                    <th>
+                                                                        <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
+                                                                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
+                                                                        </Button>
+                                                                        <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                                    </th>
+                                                                </tr>
+                                                        )
                                                         // : (
                                                         //     <div>
                                                         //         <div>{item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()}</div>
@@ -1267,7 +1476,7 @@ class VerifKlaim extends Component {
                             </Row>
                             <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailKlaim.length > 0 ? moment(detailKlaim[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailKlaim.length > 0 ? moment(detailKlaim[0].start_klaim).format('DD MMMM YYYY') : ''} /></Col>
                             </Row>
                         </div>
                         <div className={style.tableDashboard}>
@@ -1290,6 +1499,7 @@ class VerifKlaim extends Component {
                                         <th>COST CENTRE</th>
                                         <th>NO COA</th>
                                         <th>NAMA COA</th>
+                                        <th>DN Area</th>
                                         <th>KETERANGAN TAMBAHAN</th>
                                         <th>PERIODE</th>
                                         <th>NILAI YANG DIAJUKAN</th>
@@ -1329,6 +1539,7 @@ class VerifKlaim extends Component {
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
+                                                <th>{item.dn_area}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
@@ -2009,9 +2220,16 @@ class VerifKlaim extends Component {
                                             value={values.ppu}
                                             onBlur={handleBlur("ppu")}
                                             onChange={handleChange("ppu")}
+                                            minLength={10}
+                                            maxLength={10}
                                             />
                                         </Col>
                                     </Row>
+                                    {errors.ppu ? (
+                                        <text className={style.txtError}>{errors.ppu}</text>
+                                    ) : values.ppu.toString().length !== 10 ?
+                                        <text className={style.txtError}>Mohon diisi hingga 10 digit angka</text>
+                                    : null}
                                     <Row className="mb-2 rowRinci">
                                         <Col md={3}>PA</Col>
                                         <Col md={9} className="colRinci">:  <Input
@@ -2020,9 +2238,16 @@ class VerifKlaim extends Component {
                                             value={values.pa}
                                             onBlur={handleBlur("pa")}
                                             onChange={handleChange("pa")}
+                                            minLength={16}
+                                            maxLength={16}
                                             />
                                         </Col>
                                     </Row>
+                                    {errors.pa ? (
+                                        <text className={style.txtError}>{errors.pa}</text>
+                                    ) : values.pa.toString().length !== 16 ?
+                                        <text className={style.txtError}>Mohon diisi hingga 16 digit angka</text>
+                                    : null}
                                     <Row className="mb-2 rowRinci">
                                         <Col md={3}>Kode Vendor</Col>
                                         <Col md={9} className="colRinci">:  <Input
@@ -2031,9 +2256,16 @@ class VerifKlaim extends Component {
                                             value={values.kode_vendor}
                                             onBlur={handleBlur("kode_vendor")}
                                             onChange={handleChange("kode_vendor")}
+                                            minLength={10}
+                                            maxLength={10}
                                             />
                                         </Col>
                                     </Row>
+                                    {errors.kode_vendor ? (
+                                        <text className={style.txtError}>{errors.kode_vendor}</text>
+                                    ) : values.kode_vendor.toString().length !== 10 ?
+                                        <text className={style.txtError}>Mohon diisi hingga 10 digit</text>
+                                    : null}
                                     <Row className="mb-2 rowRinci">
                                         <Col md={3}>Nominal verifikasi</Col>
                                         <Col md={9} className="colRinci">:  
@@ -2051,6 +2283,9 @@ class VerifKlaim extends Component {
                                             /> */}
                                         </Col>
                                     </Row>
+                                    {errors.nominal ? (
+                                        <text className={style.txtError}>{errors.nominal}</text>
+                                    ) : null}
                                     <div className="modalFoot mt-3">
                                         <div></div>
                                         <div className='btnfoot'>
@@ -2058,8 +2293,9 @@ class VerifKlaim extends Component {
                                                 className="mr-3" 
                                                 size="md" 
                                                 disabled={ 
-                                                    values.ppu === '' ? true 
-                                                    : values.pa === '' ? true 
+                                                    values.ppu.toString().length !== 10 ? true 
+                                                    : values.pa.toString().length !== 16 ? true 
+                                                    : values.kode_vendor.toString().length !== 10 ? true
                                                     : values.nominal === '' ? true 
                                                     : false 
                                                 } 
@@ -2187,7 +2423,7 @@ class VerifKlaim extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
-            <Modal isOpen={this.state.modalConfirm} toggle={this.openConfirm}>
+            <Modal isOpen={this.state.modalConfirm} size={this.state.confirm === 'failUpload' ? 'lg' : 'sm'} toggle={this.openConfirm}>
                 <ModalBody>
                     {this.state.confirm === 'approve' ? (
                         <div>
@@ -2238,6 +2474,20 @@ class VerifKlaim extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, nominal, dan kode vendor telah diisi</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'rejDownload' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Download, Mohon Pilih Data Ajuan Terlebih Dahulu</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'rejUpload' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Upload, Pastikan Template Upload Data Sesuai</div>
+                            </div>
+                        </div>
                     ) : this.state.confirm === 'rejSubmit' ?(
                         <div>
                             <div className={style.cekUpdate}>
@@ -2251,6 +2501,32 @@ class VerifKlaim extends Component {
                             <AiOutlineClose size={80} className={style.red} />
                             <div className={[style.sucUpdate, style.green]}>Gagal Approve, Pastikan Dokumen Lampiran Telah Diapprove</div>
                         </div>
+                        </div>
+                    ) : this.state.confirm === 'upload' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                            <div className={style.sucUpdate}>Berhasil Upload Data Klaim</div>
+                        </div>
+                        </div>
+                    ) : this.state.confirm === 'failUpload' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green, style.mb4]}>Gagal Upload</div>
+                                {messUpload.length > 0 ? messUpload.map(item => {
+                                    return (
+                                        item.map(x => {
+                                            return (
+                                                x !== null &&
+                                                <div className={[style.sucUpdate, style.green, style.mb3]}>{`${x.mess} Pada No Ajuan ${x.no_transaksi}`}</div>
+                                            )
+                                        })
+                                    )
+                                }) : (
+                                    <div></div>
+                                )}
+                            </div>
                         </div>
                     ) : this.state.confirm === 'isAppDoc' ? (
                         <div>
@@ -2472,6 +2748,31 @@ class VerifKlaim extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
+                <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
+                    <ModalHeader>Upload Master User</ModalHeader>
+                    <ModalBody className={style.modalUpload}>
+                        <div className={style.titleModalUpload}>
+                            <text>Upload File: </text>
+                            <div className={style.uploadFileInput}>
+                                <AiOutlineFileExcel size={35} />
+                                <div className="ml-3">
+                                    <Input
+                                    type="file"
+                                    name="file"
+                                    accept=".xls,.xlsx"
+                                    onChange={this.onChangeHandler}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className='btnUpload'>
+                            {/* <Button color="info" onClick={this.DownloadTemplate}>Download Template</Button> */}
+                            <div></div>
+                            <Button className='mr-2' color="primary" disabled={this.state.fileUpload === "" ? true : false } onClick={this.uploadAjuan}>Upload</Button>
+                            <Button onClick={this.openModalUpload}>Cancel</Button>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     }
@@ -2486,7 +2787,8 @@ const mapStateToProps = state => ({
     menu: state.menu,
     reason: state.reason,
     dokumen: state.dokumen,
-    email: state.email
+    email: state.email,
+    spvklaim: state.spvklaim
 })
 
 const mapDispatchToProps = {
@@ -2512,7 +2814,9 @@ const mapDispatchToProps = {
     resetEmail: email.resetError,
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
-    addNotif: notif.addNotif
+    addNotif: notif.addNotif,
+    uploadDataKlaim: klaim.uploadDataKlaim,
+    getSpvklaim: spvklaim.getSpvklaim
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifKlaim)

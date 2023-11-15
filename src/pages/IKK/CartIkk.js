@@ -763,7 +763,7 @@ class CartIkk extends Component {
             jenis_pph: dataTrans.jenis_pph,
             tgl_faktur: tgl_faktur,
             typeniknpwp: typeniknpwp,
-            stat_skb: this.state.tipeSkb
+            stat_skb: this.state.jenisVendor === nonObject ? '' : this.state.tipeSkb
         }
         await this.props.addCart(token, data, dataTrans.id)
     }
@@ -810,7 +810,7 @@ class CartIkk extends Component {
             jenis_pph: dataTrans.jenis_pph,
             tgl_faktur: tgl_faktur,
             typeniknpwp: typeniknpwp,
-            stat_skb: this.state.tipeSkb
+            stat_skb: this.state.jenisVendor === nonObject ? '' : this.state.tipeSkb
         }
         await this.props.editIkk(token, idIkk.id, dataTrans.id, data )
         this.openModalEdit()
@@ -1240,7 +1240,7 @@ class CartIkk extends Component {
         const temp = []
         for (let i = 0; i < dataRek.length; i++) {
             const spending = dataRek[i].rek_spending
-            const plant = dataRek[i].depo === null ? dataRek[i].area : dataRek[i].depo.area
+            const plant = dataRek[i].area
             if (spending !== '0') {
                 temp.push({label: `${spending}~Rekening Spending Card~${plant}`, value: spending})
             }
@@ -2114,12 +2114,12 @@ class CartIkk extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Vendor Memiliki Surat Keterangan Bebas Pajak (SKB)/Surat Keterangan (SKT)</Col>
                                             <Col md={9} className="colRinci">:  
-                                            {this.state.jenisVendor === nonObject 
+                                            {(this.state.jenisVendor === nonObject || this.state.idTrans === '')
                                                 ? <Input
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    disable
-                                                    // value={nonObject}
+                                                    disabled
+                                                    value={nonObject}
                                                 />
                                             : 
                                                 <Input
@@ -2812,12 +2812,12 @@ class CartIkk extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Vendor Memiliki Surat Keterangan Bebas Pajak (SKB)/Surat Keterangan (SKT)</Col>
                                             <Col md={9} className="colRinci">:  
-                                            {this.state.jenisVendor === nonObject 
+                                            {(this.state.jenisVendor === nonObject || this.state.idTrans === '')
                                                 ? <Input
                                                     type= "text" 
                                                     className="inputRinci"
                                                     disabled
-                                                    // value={nonObject}
+                                                    value={nonObject}
                                                 />
                                             : 
                                                 <Input
@@ -3219,7 +3219,21 @@ class CartIkk extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ikk.isLoading || this.props.email.isLoading || this.props.notif.isLoading || this.state.isLoading || this.props.faktur.isLoading || this.props.vendor.isLoading} size="sm">
+                <Modal isOpen={
+                    this.props.ikk.isLoading 
+                    || this.props.email.isLoading 
+                    || this.props.approve.isLoading 
+                    || this.props.finance.isLoading 
+                    || this.props.user.isLoading 
+                    || this.props.dokumen.isLoading 
+                    || this.props.coa.isLoading 
+                    || this.props.notif.isLoading 
+                    || this.props.bank.isLoading 
+                    || this.props.pagu.isLoading 
+                    || this.state.isLoading 
+                    || this.props.faktur.isLoading 
+                    || this.props.vendor.isLoading
+                    } size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>

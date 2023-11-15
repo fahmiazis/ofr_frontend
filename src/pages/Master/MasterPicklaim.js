@@ -124,7 +124,7 @@ class MasterPicklaim extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master coa.xlsx"); //or any other extension
+            link.setAttribute('download', "master picklaim.xlsx"); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -162,14 +162,14 @@ class MasterPicklaim extends Component {
 
     DownloadTemplate = () => {
         axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/coa.xlsx`,
+            url: `${REACT_APP_BACKEND_URL}/masters/picklaim.xlsx`,
             method: 'GET',
             responseType: 'blob',
         }).then((response) => {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "coa.xlsx");
+            link.setAttribute('download', "picklaim.xlsx");
             document.body.appendChild(link);
             link.click();
         });
@@ -836,7 +836,7 @@ class MasterPicklaim extends Component {
                     <div className={style.modalApprove}>
                         <div>
                             <text>
-                                Anda yakin untuk delete coa {detail.region} ?
+                                Anda yakin untuk delete picklaim {detail.region} ?
                             </text>
                         </div>
                         <div className={style.btnApprove}>

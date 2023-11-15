@@ -115,6 +115,10 @@ export default {
         type: 'UPDATE_NILAIKLAIM',
         payload: http(token).patch(`/klaim/upniverif`, qs.stringify(data))
     }),
+    uploadDataKlaim: (token, data) => ({
+        type: 'UPLOAD_KLAIM',
+        payload: http(token).post(`/klaim/upload`, data)
+    }),
     resetKlaim: () => ({
         type: 'RESET_KLAIM'
     })
