@@ -163,7 +163,7 @@ class MasterKpp extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "kpp.xlsx");
+            link.setAttribute('download', "master kpp.xlsx");
             document.body.appendChild(link);
             link.click();
         });

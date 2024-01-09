@@ -35,6 +35,7 @@ import Tracking from '../../components/Ikk/tracking'
 import TableRincian from '../../components/Ikk/tableRincian'
 import Formikk from '../../components/Ikk/formikk'
 import FPD from '../../components/Ikk/FPD'
+import FormList from '../../components/Ikk/FormList'
 import dokumen from '../../redux/actions/dokumen'
 import email from '../../redux/actions/email'
 import Email from '../../components/Ikk/Email'
@@ -1733,15 +1734,17 @@ class AjuanBayarIkk extends Component {
                             <Table bordered responsive hover className={style.tab} id="table-to-xls">
                                 <thead>
                                     <tr>
-                                        <th>
-                                            <input  
-                                            className='mr-2'
-                                            type='checkbox'
-                                            checked={listMut.length === 0 ? false : listMut.length === detailIkk.length ? true : false}
-                                            onChange={() => listMut.length === detailIkk.length ? this.chekRej('all') : this.chekApp('all')}
-                                            />
-                                            Select
-                                        </th>
+                                        {this.state.filter === 'all' ? null : (
+                                            <th>
+                                                <input  
+                                                className='mr-2'
+                                                type='checkbox'
+                                                checked={listMut.length === 0 ? false : listMut.length === detailIkk.length ? true : false}
+                                                onChange={() => listMut.length === detailIkk.length ? this.chekRej('all') : this.chekApp('all')}
+                                                />
+                                                Select
+                                            </th>
+                                        )}
                                         <th>NO</th>
                                         <th>No FPD</th>
                                         <th>Cabang</th>
@@ -1759,13 +1762,15 @@ class AjuanBayarIkk extends Component {
                                     {detailIkk.length !== 0 && detailIkk.map(item => {
                                         return (
                                             <tr>
-                                                <th>
-                                                    <input 
-                                                    type='checkbox'
-                                                    checked={listMut.find(element => element === item.id) !== undefined ? true : false}
-                                                    onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
-                                                    />
-                                                </th>
+                                                {this.state.filter === 'all' ? null : (
+                                                    <th>
+                                                        <input 
+                                                        type='checkbox'
+                                                        checked={listMut.find(element => element === item.id) !== undefined ? true : false}
+                                                        onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                        />
+                                                    </th>
+                                                )}
                                                 <th scope="row">{detailIkk.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.area}</th>
@@ -1876,19 +1881,12 @@ class AjuanBayarIkk extends Component {
                     <hr />
                     <div className="modalFoot ml-3">
                         <div>
-                            <ReactHtmlToExcel
-                                id="test-table-xls-button"
-                                className="btn btn-warning mr-2"
-                                table="form-list"
-                                filename={`Data Ikk ${moment().format('DD MMMM YYYY')}`}
-                                sheet="Dokumentasi"
-                                buttonText="Download"
-                            />
+                            <Button color='primary' onClick={() => this.props.history.push('/formlistikk')}>Download</Button>
                         </div>
                         <div className="btnFoot">
                             {this.state.filter === 'all' ? null : (
                                 <>
-                                    <Button color="success mr-2" onClick={this.openModalApplist}>
+                                    <Button color="success" className='mr-2' onClick={this.openModalApplist}>
                                         Approve
                                     </Button>
                                     <Button 
@@ -2431,6 +2429,9 @@ class AjuanBayarIkk extends Component {
                         <div></div>
                     )}
                 </ModalBody>
+                <div className='row justify-content-md-center mb-4'>
+                    <Button size='lg' onClick={() => this.openConfirm(false)} color='primary'>OK</Button>
+                </div>
             </Modal>
             <Modal isOpen={this.state.alert} size="sm">
                 <ModalBody>

@@ -170,9 +170,9 @@ class IKK extends Component {
             this.setState({modalConfirm: false})
         } else {
             this.setState({modalConfirm: true})
-            setTimeout(() => {
-                this.setState({modalConfirm: false})
-             }, 3000)
+            // setTimeout(() => {
+            //     this.setState({modalConfirm: false})
+            //  }, 3000)
         }
     }
 
@@ -449,7 +449,7 @@ class IKK extends Component {
         const {item, type} = (this.props.location && this.props.location.state) || {}
         if (type === 'approve') {
             this.getDataIkk()
-            this.prosesDetail(item)
+            // this.prosesDetail(item)
         } else if (dataCek !== undefined && dataCek !== null) {
             const data = {
                 no_transaksi: dataCek
@@ -2320,6 +2320,9 @@ class IKK extends Component {
                         <div></div>
                     )}
                 </ModalBody>
+                <div className='row justify-content-md-center mb-4'>
+                    <Button size='lg' onClick={() => this.openConfirm(false)} color='primary'>OK</Button>
+                </div>
             </Modal>
             <Modal isOpen={this.state.alert} size="sm">
                 <ModalBody>
@@ -2337,7 +2340,7 @@ class IKK extends Component {
                 </ModalHeader>
                 <ModalBody>
                 <Container>
-                        {dataDoc.length >= 0 && (
+                        {dataDoc.length > 0 && (
                             <Row className="mt-3 mb-4">
                                 <Col md={12} lg={12} className='mb-2' >
                                     <div className="btnDocIo mb-2 ml-4" >
@@ -2473,7 +2476,7 @@ class IKK extends Component {
                 <ModalHeader>Dokumen</ModalHeader>
                 <ModalBody>
                     <div className={style.readPdf}>
-                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} />
+                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} dataFile={this.state.fileName} />
                     </div>
                     <hr/>
                     <div className={style.foot}>

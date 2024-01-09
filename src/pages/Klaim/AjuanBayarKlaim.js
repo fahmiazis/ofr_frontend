@@ -1765,15 +1765,17 @@ class AjuanBayarKlaim extends Component {
                             <Table bordered responsive hover className={style.tab} id="table-to-xls">
                                 <thead>
                                     <tr className='tbklaim'>
-                                        <th>
-                                            <input  
-                                            className='mr-2'
-                                            type='checkbox'
-                                            checked={listMut.length === 0 ? false : listMut.length === detailKlaim.length ? true : false}
-                                            onChange={() => listMut.length === detailKlaim.length ? this.chekRej('all') : this.chekApp('all')}
-                                            />
-                                            Select
-                                        </th>
+                                        {this.state.filter === 'all' ? null : (
+                                            <th>
+                                                <input  
+                                                className='mr-2'
+                                                type='checkbox'
+                                                checked={listMut.length === 0 ? false : listMut.length === detailKlaim.length ? true : false}
+                                                onChange={() => listMut.length === detailKlaim.length ? this.chekRej('all') : this.chekApp('all')}
+                                                />
+                                                Select
+                                            </th>
+                                        )}
                                         <th>NO</th>
                                         <th>No FPD</th>
                                         <th>Cabang</th>
@@ -1791,13 +1793,15 @@ class AjuanBayarKlaim extends Component {
                                     {detailKlaim.length !== 0 && detailKlaim.map(item => {
                                         return (
                                             <tr>
-                                                <th>
-                                                    <input 
-                                                    type='checkbox'
-                                                    checked={listMut.find(element => element === item.id) !== undefined ? true : false}
-                                                    onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
-                                                    />
-                                                </th>
+                                                {this.state.filter === 'all' ? null : (
+                                                    <th>
+                                                        <input 
+                                                        type='checkbox'
+                                                        checked={listMut.find(element => element === item.id) !== undefined ? true : false}
+                                                        onChange={listMut.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                        />
+                                                    </th>
+                                                )}
                                                 <th scope="row">{detailKlaim.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.area}</th>
@@ -1908,14 +1912,7 @@ class AjuanBayarKlaim extends Component {
                     <hr />
                     <div className="modalFoot ml-3">
                         <div>
-                            <ReactHtmlToExcel
-                                id="test-table-xls-button"
-                                className="btn btn-warning mr-2"
-                                table="form-list"
-                                filename={`Data Klaim ${moment().format('DD MMMM YYYY')}`}
-                                sheet="Dokumentasi"
-                                buttonText="Download"
-                            />
+                            <Button color='primary' onClick={() => this.props.history.push('/formlistklm')}>Download</Button>
                         </div>
                         <div className="btnFoot">
                             {this.state.filter === 'all' ? null : (
@@ -2480,6 +2477,9 @@ class AjuanBayarKlaim extends Component {
                         <div></div>
                     )}
                 </ModalBody>
+                <div className='row justify-content-md-center mb-4'>
+                    <Button size='lg' onClick={() => this.openConfirm(false)} color='primary'>OK</Button>
+                </div>
             </Modal>
             <Modal isOpen={this.state.alert} size="sm">
                 <ModalBody>

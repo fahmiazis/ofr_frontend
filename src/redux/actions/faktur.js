@@ -3,9 +3,9 @@ import http from '../../helpers/http'
 import qs from 'qs'
 
 export default {
-    getFaktur: (token, search) => ({
+    getFaktur: (token, data) => ({
         type: 'GET_FAKTUR',
-        payload: http(token).get(`/faktur/all?search=${search}`),
+        payload: http(token).patch(`/faktur/all`, qs.stringify(data)),
     }),
     getAllFaktur: (token, limit, search, page) => ({
         type: 'GET_ALL',

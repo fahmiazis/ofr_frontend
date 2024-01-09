@@ -179,7 +179,7 @@ class MasterTarif extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "tarif.xlsx");
+            link.setAttribute('download', "master tarif.xlsx");
             document.body.appendChild(link);
             link.click();
         });
@@ -428,6 +428,7 @@ class MasterTarif extends Component {
                                                 <th>GL Jurnal</th>
                                                 <th>GL Name</th>
                                                 <th>Jenis Transaksi</th>
+                                                <th>PO/NON PO</th>
                                                 <th>Grouping</th>
                                                 <th>OP/BADAN</th>
                                                 <th>Jenis PPh</th>
@@ -449,6 +450,7 @@ class MasterTarif extends Component {
                                                     <td>{item.gl_jurnal}</td>
                                                     <td>{item.gl_name}</td>
                                                     <td>{item.jenis_transaksi}</td>
+                                                    <td>{item.po}</td>
                                                     <td>{item.grouping}</td>
                                                     <td>{item.type_transaksi}</td>
                                                     <td>{item.jenis_pph}</td>

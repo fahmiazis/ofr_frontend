@@ -197,6 +197,7 @@ class Tracking extends Component {
                                                     <button class="step-icon"><FaFileSignature size={30} className="center2" /></button>
                                                     </div>
                                                     <h4 class="step-title">{item.jabatan}</h4>
+                                                    <h4 class="step-title">{item.nama}</h4>
                                                 </div>
                                             )
                                         })}
@@ -255,6 +256,7 @@ class Tracking extends Component {
                                                     <button class="step-icon"><FaFileSignature size={30} className="center2" /></button>
                                                     </div>
                                                     <h4 class="step-title">{item.jabatan}</h4>
+                                                    <h4 class="step-title">{item.nama}</h4>
                                                 </div>
                                             )
                                         })}

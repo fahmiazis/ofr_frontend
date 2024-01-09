@@ -193,14 +193,16 @@ class NavStock extends Component {
                                         </div>
                                     </button> */}
                                 </>
-                            ) : level === '4' || level === '14' ? (
+                            ) : level === '4' || level === '14' || level === '24' || level === '34' || level === '102'? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goProses({route: 'veriffintax', type: 'kasbon'})}>
-                                        <MdVerifiedUser size={220} className="picHome" />
-                                        <div className="titCard">
-                                            Verifikasi Tax (Non Kasbon)
-                                        </div>
-                                    </button>
+                                    {level === '102' ? null : (
+                                        <button className="cardNav1" onClick={() => this.goProses({route: 'veriffintax', type: 'kasbon'})}>
+                                            <MdVerifiedUser size={220} className="picHome" />
+                                            <div className="titCard">
+                                                Verifikasi Tax (Non Kasbon)
+                                            </div>
+                                        </button>
+                                    )}
                                     <button className="cardNav1" onClick={() => this.goRoute('reptaxops')}>
                                         <HiOutlineDocumentReport size={220} className="picHome" />
                                         <div className="titCard">
@@ -213,12 +215,12 @@ class NavStock extends Component {
                                             Verifikasi Tax (Non Kasbon)
                                         </div>
                                     </button> */}
-                                    <button className="cardNav1" onClick={() => this.goRoute('revops')}>
+                                    {/* <button className="cardNav1" onClick={() => this.goRoute('revops')}>
                                         <BiRevision size={220} className="picHome" />
                                         <div className="titCard">
                                             Revisi Operasional
                                         </div>
-                                    </button>
+                                    </button> */}
                                 </>
                             ) : level === '7' || level === '8' || level === '9' || level === '101' ? (
                                 <>

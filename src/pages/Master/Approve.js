@@ -296,7 +296,7 @@ class Approve extends Component {
 
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, alert, upload, errMsg} = this.state
-        const {dataApprove, dataName, isGet, alertM, alertMsg, alertUpload, page, detailApp, idName} = this.props.approve
+        const {dataApprove, dataName, alertM, alertMsg, alertUpload, page, detailApp, idName} = this.props.approve
         const { dataRole } = this.props.user
         const { dataDepo } = this.props.depo
         const level = localStorage.getItem('level')
@@ -798,7 +798,7 @@ class Approve extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit} size="lg">
-                    <ModalHeader toggle={this.openModalEdit}>Edit Approval</ModalHeader>
+                    <ModalHeader>Edit Approval</ModalHeader>
                     <Formik
                     initialValues={{
                         jenis: detail.jenis,

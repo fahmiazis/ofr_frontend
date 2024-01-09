@@ -119,6 +119,26 @@ export default {
         type: 'UPLOAD_KLAIM',
         payload: http(token).post(`/klaim/upload`, data)
     }),
+    deleteOutlet: (token, id) => ({
+        type: 'DELETE_OUTLET',
+        payload: http(token).delete(`/klaim/outlet/del/${id}`)
+    }),
+    getOutlet: (token, id) => ({
+        type: 'GET_OUTLET',
+        payload: http(token).get(`/klaim/outlet/get/${id}`)
+    }),
+    uploadOutlet: (token, data) => ({
+        type: 'UPLOAD_OUTLET',
+        payload: http(token).patch(`/klaim/outlet/upload`, data)
+    }),
+    updateOutlet: (token, data) => ({
+        type: 'UPDATE_OUTLET',
+        payload: http(token).patch(`/klaim/outlet/update`, data)
+    }),
+    addOutlet: (token, data) => ({
+        type: 'ADD_OUTLET',
+        payload: http(token).patch(`/klaim/outlet/add`, data)
+    }),
     resetKlaim: () => ({
         type: 'RESET_KLAIM'
     })

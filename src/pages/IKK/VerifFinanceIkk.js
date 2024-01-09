@@ -41,6 +41,8 @@ import fs from "file-saver"
 import email from '../../redux/actions/email'
 import NumberInput from '../../components/NumberInput'
 import Email from '../../components/Ikk/Email'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
@@ -134,16 +136,94 @@ class VerifIkk extends Component {
             tipeEmail: '',
             dataRej: {},
             statEmail: '',
-            modResmail: false
+            modResmail: false,
+            dataZip: [],
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    checkDoc = (val) => {
+        const { dataZip } = this.state
+        const {dataDoc} = this.props.ikk
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataDoc.length; i++) {
+                data.push(dataDoc[i].id)
+            }
+            this.setState({dataZip: data})
+        } else {
+            dataZip.push(val)
+            this.setState({dataZip: dataZip})
+        }
+    }
+
+    unCheckDoc = (val) => {
+        const {dataZip} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({dataZip: data})
+        } else {
+            const data = []
+            for (let i = 0; i < dataZip.length; i++) {
+                if (dataZip[i] === val) {
+                    data.push()
+                } else {
+                    data.push(dataZip[i])
+                }
+            }
+            this.setState({dataZip: data})
+        }
     }
 
     submitStock = async () => {
         const token = localStorage.getItem('token')
         await this.props.submitStock(token)
         this.getDataCart()
+    }
+
+    approveZip = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc, dataZip} = this.state
+        const { detailIkk } = this.props.ikk
+        const tempno = {
+            no: detailIkk[0].no_transaksi,
+            name: 'Draft Pengajuan Ikk'
+        }
+        const data = {
+            list: dataZip
+        }
+        await this.props.approveDokumen(token, idDoc, data)
+        await this.props.getDocIkk(token, tempno)
+        this.setState({confirm: 'isAppDoc'})
+        this.openConfirm()
+        this.openModalAppZip()
+    }
+
+    openModalAppZip = () => {
+        this.setState({openAppZip: !this.state.openAppZip})
+    }
+
+    rejectZip = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc, dataZip} = this.state
+        const { detailIkk } = this.props.ikk
+        const tempno = {
+            no: detailIkk[0].no_transaksi,
+            name: 'Draft Pengajuan Ikk'
+        }
+        const data = {
+            list: dataZip
+        }
+        await this.props.rejectDokumen(token, idDoc, data)
+        await this.props.getDocIkk(token, tempno)
+        this.setState({confirm: 'isRejDoc'})
+        this.openConfirm()
+        this.openModalRejZip()
+    }
+
+    openModalRejZip = () => {
+        this.setState({openRejZip: !this.state.openRejZip})
     }
 
     onChangeUpload = e => {
@@ -942,6 +1022,28 @@ class VerifIkk extends Component {
         }
     }
 
+    downloadDataZip = () => {
+        const {dataZip} = this.state
+        const {dataDoc} = this.props.ikk
+        let zip = new JSZip();
+    
+        const remoteZips = dataDoc.map(async (item) => {
+            const cekData = dataZip.find(e => e === item.id)
+            if (cekData !== undefined) {
+                const response = await fetch(`${REACT_APP_BACKEND_URL}/show/doc/${item.id}`);
+                const data = await response.blob();
+                zip.file(`${item.desc} ~ ${item.history}`, data);
+                return data;
+            }
+        })
+
+        Promise.all(remoteZips).then(() => {
+            zip.generateAsync({ type: "blob" }).then((content) => {
+              saveAs(content, `Dokumen Lampiran ${dataDoc[0].no_transaksi} ${moment().format('DDMMYYYY h:mm:ss')}.zip`);
+            })
+          })
+    }
+
     getAppIkk = async (val) => {
         const token = localStorage.getItem("token")
         const tempno = {
@@ -1282,7 +1384,7 @@ class VerifIkk extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, filter, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listIkk} = this.state
+        const {dataRinci, dataZip, filter, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listIkk} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailIkk, ttdIkk, dataDoc, newIkk } = this.props.ikk
@@ -2172,7 +2274,7 @@ class VerifIkk extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ikk.isLoading || this.props.dokumen.isLoading || this.props.email.isLoading} size="sm">
+                <Modal isOpen={this.props.ikk.isLoading || this.props.dokumen.isLoading || this.props.notif.isLoading || this.props.email.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2315,6 +2417,9 @@ class VerifIkk extends Component {
                         <div></div>
                     )}
                 </ModalBody>
+                <div className='row justify-content-md-center mb-4'>
+                    <Button size='lg' onClick={() => this.openConfirm(false)} color='primary'>OK</Button>
+                </div>
             </Modal>
             <Modal isOpen={this.state.alert} size="sm">
                 <ModalBody>
@@ -2332,12 +2437,33 @@ class VerifIkk extends Component {
                 </ModalHeader>
                 <ModalBody>
                     <Container>
+                        {dataDoc.length > 0 && (
+                            <Row className="mt-3 mb-4">
+                                <Col md={12} lg={12} className='mb-2' >
+                                    <div className="btnDocIo mb-2 ml-4" >
+                                        <Input 
+                                            type='checkbox'
+                                            checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
+                                            onChange={() => dataZip.length === dataDoc.length ? this.unCheckDoc('all') : this.checkDoc('all')}
+                                        />
+                                        Ceklis All
+                                    </div>
+                                </Col>
+                            </Row>
+                        )}
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
-                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
+                                            <div className="btnDocIo mb-2 ml-4" >
+                                                <Input 
+                                                    type='checkbox'
+                                                    checked={dataZip.find(element => element === x.id) !== undefined ? true : false}
+                                                    onChange={dataZip.find(element => element === x.id) === undefined ? () => this.checkDoc(x.id) : () => this.unCheckDoc(x.id)}
+                                                />
+                                                {x.desc === null ? 'Lampiran' : x.desc}
+                                            </div>
                                                 {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
                                                 x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
                                                 : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
@@ -2378,11 +2504,24 @@ class VerifIkk extends Component {
                         })}
                     </Container>
                 </ModalBody>
-                <ModalFooter>
-                    <Button className="mr-2" color="secondary" onClick={this.openModalDoc}>
-                        Close
-                    </Button>
-                </ModalFooter>
+                <div className="modalFoot ml-3">
+                    <div className="btnFoot">
+                        <Button disabled={dataZip.length === 0} className="mr-2" color="success" onClick={this.openModalAppZip}>
+                            Approve Document
+                        </Button>
+                        <Button disabled={dataZip.length === 0} className="mr-2" color="danger" onClick={this.openModalRejZip}>
+                            Reject Document
+                        </Button>
+                    </div>
+                    <div className="btnFoot">
+                        <Button disabled={dataZip.length === 0} className="mr-2" color="primary" onClick={this.downloadDataZip}>
+                            Download Document
+                        </Button>
+                        <Button color="secondary" onClick={this.openModalDoc}>
+                            Close
+                        </Button>
+                    </div>
+                </div>
             </Modal>
             <Modal isOpen={this.state.openPdf} size="xl" toggle={this.openModalPdf} centered={true}>
                 <ModalHeader>Dokumen</ModalHeader>
@@ -2534,6 +2673,42 @@ class VerifIkk extends Component {
                                     Resend Email
                                 </Button>
                                 <Button className="mr-3" onClick={this.openModResmail}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.openAppZip} toggle={this.openModalAppZip} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk approve     
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.approveZip()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalAppZip}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.openRejZip} toggle={this.openModalRejZip} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk reject     
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.rejectZip()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalRejZip}>Tidak</Button>
                             </div>
                         </div>
                     </ModalBody>

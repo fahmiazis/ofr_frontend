@@ -25,6 +25,7 @@ import spvklaim from './spvklaim'
 import reservoir from './reservoir'
 import taxcode from './taxcode'
 import glikk from './glikk'
+import scylla from './scylla'
 
 //transaksi
 import klaim from './klaim'
@@ -59,6 +60,7 @@ export default combineReducers({
   reservoir,
   taxcode,
   glikk,
+  scylla,
   notif,
   verven,
   picklaim,

@@ -7,7 +7,7 @@ import { Container, Collapse, Nav, Navbar,
 import logo from "../../assets/img/logo.png"
 import style from '../../assets/css/input.module.css'
 import {FaSearch, FaUserCircle, FaBars} from 'react-icons/fa'
-import {AiOutlineFileExcel, AiFillCheckCircle} from 'react-icons/ai'
+import {AiOutlineFileExcel, AiFillCheckCircle, AiOutlineClose} from 'react-icons/ai'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
 import dokumen from '../../redux/actions/dokumen'
@@ -16,6 +16,7 @@ import {connect} from 'react-redux'
 import moment from 'moment'
 import auth from '../../redux/actions/auth'
 import {default as axios} from 'axios'
+import depo from '../../redux/actions/depo'
 import Sidebar from "../../components/Header";
 import NavBar from '../../components/NavBar'
 import MaterialTitlePanel from "../../components/material_title_panel";
@@ -26,6 +27,12 @@ const dokumenSchema = Yup.object().shape({
     name: Yup.string().required(),
     stat_upload: Yup.number().required(),
 });
+
+const nameSchema = Yup.object().shape({
+    name: Yup.string().required("must be filled"),
+    type: Yup.string().required("must be filled"),
+    kode_plant: Yup.string().required("must be filled")
+})
 
 class MasterDokumen extends Component {
     constructor(props) {
@@ -62,7 +69,10 @@ class MasterDokumen extends Component {
             dataTrans: [],
             menu: '',
             transaksi: '',
-            modalDel: false
+            modalDel: false,
+            nameDocs: {},
+            modalApprove: false,
+            editModalName: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -135,6 +145,7 @@ class MasterDokumen extends Component {
 
     changeMenu = (val) => {
         const {dataAll} = this.props.menu
+        console.log(dataAll)
         const dataTrans =  []
         dataAll.map(item => {
             return (item.kode_menu === val && dataTrans.push(item))
@@ -183,24 +194,54 @@ class MasterDokumen extends Component {
     openModalDownload = () => {
         this.setState({modalUpload: !this.state.modalUpload})
     }
+    openModalApprove = () => {
+        this.setState({modalApprove: !this.state.modalApprove})
+    }
+
+    openDocumentName = () => {
+        this.setState({approveName: !this.state.approveName})
+    }
+    
+    addDocumentName = async (value) => {
+        const token = localStorage.getItem("token")
+        await this.props.createNameDocument(token, value)
+        this.openDocumentName()
+        this.getDataDokumen()
+        this.setState({confirm: 'addname'})
+        this.openConfirm()
+    }
 
     addDokumen = async (val) => {
         const token = localStorage.getItem("token")
-        const { menu, transaksi } = this.state
+        const { menu, transaksi, nameDocs } = this.state
+        const { idName } = this.props.dokumen
+        console.log(nameDocs)
         const data = {
             name: val.name,
-            jenis: menu,
-            type: transaksi,
-            stat_upload: val.stat_upload
+            jenis: idName.menu,
+            type: idName.name,
+            stat_upload: val.stat_upload,
+            kode_plant: nameDocs.kode_plant
         }
         await this.props.addDokumen(token, data)
         const {isAdd} = this.props.dokumen
         if (isAdd) {
+            await this.props.getDetailDocument(token, idName.name, idName.kode_plant)
             this.setState({confirm: 'add'})
             this.openConfirm()
             this.openModalAdd()
             this.getDataDokumen()
         }
+    }
+
+    editDocumentName = async (value) => {
+        const token = localStorage.getItem("token")
+        const {idName} = this.props.dokumen
+        await this.props.updateNameDocument(token, value, idName.id)
+        this.openEditName()
+        this.getDataDokumen()
+        this.setState({confirm: 'editname'})
+        this.openConfirm()
     }
 
     DownloadMaster = () => {
@@ -246,16 +287,19 @@ class MasterDokumen extends Component {
 
     editDokumen = async (val, id) => {
         const token = localStorage.getItem("token")
-        const { menu, transaksi } = this.state
+        const { menu, transaksi, nameDocs } = this.state
+        const {idName} = this.props.dokumen
         const data = {
             name: val.name,
-            jenis: menu,
-            type: transaksi,
-            stat_upload: val.stat_upload
+            jenis: idName.menu,
+            type: idName.name,
+            stat_upload: val.stat_upload,
+            kode_plant: nameDocs.kode_plant
         }
         await this.props.updateDokumen(token, id, data)
         const {isUpdate} = this.props.dokumen
         if (isUpdate) {
+            await this.props.getDetailDocument(token, idName.name, idName.kode_plant)
             this.setState({confirm: 'edit'})
             this.openConfirm()
             this.openModalEdit()
@@ -263,8 +307,25 @@ class MasterDokumen extends Component {
         }
     }
 
+    prosesOpenEdit = async (val) => {
+        const token = localStorage.getItem("token")
+        await this.props.getTempDoc(token, val.id)
+        const {idName} = this.props.dokumen
+        const {dataAll} = this.props.menu
+        const dataTrans =  []
+        dataAll.map(item => {
+            return (item.kode_menu === idName.menu && dataTrans.push(item))
+        })
+        this.setState({dataTrans: dataTrans})
+        this.openEditName()
+    }
+
+    openEditName = () => {
+        this.setState({editModalName: !this.state.editModalName})
+    }
+
     componentDidUpdate() {
-        const {isError, isUpload, isExport} = this.props.dokumen
+        const {isError, isUpload, isExport, isUpdate, isAdd, isCreate, isEditName} = this.props.dokumen
         if (isError) {
             this.props.resetError()
             this.showAlert()
@@ -279,6 +340,22 @@ class MasterDokumen extends Component {
         } else if (isExport) {
             this.props.resetError()
             this.DownloadMaster()
+        } else if (isUpdate === false) {
+            this.setState({confirm: 'falseUpdate'})
+            this.openConfirm()
+            this.props.resetError()
+        } else if (isAdd === false) {
+            this.setState({confirm: 'falseAdd'})
+            this.openConfirm()
+            this.props.resetError()
+        } else if (isCreate === false) {
+            this.setState({confirm: 'falseAddName'})
+            this.openConfirm()
+            this.props.resetError()
+        } else if (isEditName === false) {
+            this.setState({confirm: 'falseUpName'})
+            this.openConfirm()
+            this.props.resetError()
         }
     }
 
@@ -292,7 +369,14 @@ class MasterDokumen extends Component {
     async componentDidMount() {
         const token = localStorage.getItem("token")
         await this.props.getAllMenu(token, 'proses')
+        this.getDataDepo()
         this.getDataDokumen()
+    }
+
+    getDataDepo = async () => {
+        const token = localStorage.getItem("token")
+        await this.props.getDepo(token, 1000, '')
+        // const { dataDepo } = this.props.depo
     }
 
     getDataDokumen = async (value) => {
@@ -300,7 +384,7 @@ class MasterDokumen extends Component {
         const { page } = this.props.dokumen
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
-        await this.props.getDokumen(token, limit, search, page.currentPage)
+        await this.props.getNameDocument(token, limit, search, page.currentPage)
         this.setState({limit: value === undefined ? 10 : value.limit})
     }
 
@@ -313,12 +397,27 @@ class MasterDokumen extends Component {
         this.setState({ open });
     }
 
+    deleteDataDocument = async (values) => {
+        const token = localStorage.getItem("token")
+        await this.props.deleteDokumen(token, values)
+        await this.props.getDetailDocument(token, this.state.nameDocs.name, this.state.nameDocs.kode_plant)
+    }
+
+    getDataDetailDokumen = async (val) => {
+        this.setState({nameDocs: val})
+        const token = localStorage.getItem("token")
+        await this.props.getTempDoc(token, val.id)
+        await this.props.getDetailDocument(token, val.name, val.kode_plant)
+        this.openModalApprove()
+    }
+
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, alert, upload, errMsg, dataTrans} = this.state
         const { dataAll, nameMenu } = this.props.menu
-        const {dataDokumen, isGet, alertM, alertMsg, alertUpload, page} = this.props.dokumen
+        const {dataDokumen, dataName, detailName, isGet, alertM, alertMsg, alertUpload, page, idName} = this.props.dokumen
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
+        const { dataDepo } = this.props.depo
 
         const contentHeader =  (
             <div className={style.navbar}>
@@ -386,7 +485,7 @@ class MasterDokumen extends Component {
                                 </div>
                                 <div className='secEmail'>
                                     <div className={style.headEmail}>
-                                        <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
+                                        <Button className='mr-1' onClick={() => this.openDocumentName()} color="primary" size="lg">Add</Button>
                                         {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
                                         <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button> */}
                                     </div>
@@ -402,34 +501,36 @@ class MasterDokumen extends Component {
                                         </Input>
                                     </div>
                                 </div>
-                                {isGet === false ? (
+                                {dataName.length === 0 ? (
                                     <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>Nama dokumen</th>
-                                                <th>Menu</th>
-                                                <th>Transaksi</th>
-                                                <th>Status upload</th>
+                                                <th>Nama Transaksi</th>
+                                                <th>Tipe</th>
+                                                <th>Kode Plant</th>
+                                                <th>Status</th>
+                                                <th>Opsi</th>
                                             </tr>
                                         </thead>
                                     </Table>
-                                    </div>                    
+                                    </div>
                                 ) : (
                                     <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>Nama dokumen</th>
-                                                <th>Menu</th>
-                                                <th>Transaksi</th>
-                                                <th>Status upload</th>
+                                                <th>Nama Transaksi</th>
+                                                <th>Tipe</th>
+                                                <th>Kode Plant</th>
+                                                <th>Status</th>
+                                                <th>Opsi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                        {dataDokumen.length !== 0 && dataDokumen.map(item => {
+                                        {/* {dataDokumen.length !== 0 && dataDokumen.map(item => {
                                                 return (
                                             <tr onClick={() => this.openDraftEdit(item)}>
                                                 <th scope="row">{(dataDokumen.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
@@ -438,7 +539,22 @@ class MasterDokumen extends Component {
                                                 <td>{item.type}</td>
                                                 <td>{item.stat_upload === 1 ? 'Harus upload' : 'Tidak harus upload'}</td>
                                             </tr>
-                                                )})}
+                                        )})} */}
+                                        {dataName.length !== 0 && dataName.map(item => {
+                                            return (
+                                            <tr>
+                                                <th scope="row">{(dataName.indexOf(item) + 1)}</th>
+                                                <td>{item.name}</td>
+                                                <td>{item.type}</td>
+                                                <td>{item.kode_plant}</td>
+                                                <td>{item.status === null ? 'active' : item.status}</td>
+                                                <td className='rowGeneral'>
+                                                    <Button color="info" onClick={() => this.getDataDetailDokumen(item)}>Detail</Button>
+                                                    <Button onClick={() => this.prosesOpenEdit(item)} className='ml-2' color="success">Update</Button>
+                                                    <Button onClick={() => this.delName(item)} className='ml-2' color="danger">Delete</Button>
+                                                </td>
+                                            </tr>
+                                        )})}
                                         </tbody>
                                     </Table>
                                     </div>
@@ -491,21 +607,11 @@ class MasterDokumen extends Component {
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="select" 
-                                name="select"
-                                value={this.state.menu}
+                                name="menu"
+                                disabled
+                                value={idName.menu}
                                 onChange={e => this.changeMenu(e.target.value)}
-                                >
-                                    <option>-Pilih-</option>
-                                    {nameMenu.length > 0 && nameMenu.map(item => {
-                                        return (
-                                            <option value={item.name}>{item.name}</option>
-                                        )
-                                    })}
-                                </Input>
-                                {this.state.menu === '' ? (
-                                        <text className={style.txtError}>must be filled</text>
-                                    ) : null}
+                                />
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
@@ -514,22 +620,11 @@ class MasterDokumen extends Component {
                             </text>
                             <div className="col-md-9">
                                 <Input
-                                type="select" 
-                                name="select"
-                                disabled={dataTrans.length === 0}
-                                value={this.state.transaksi}
+                                name="transaksi"
+                                disabled
+                                value={idName.name}
                                 onChange={e => this.changeTrans(e.target.value)}
-                                >
-                                    <option>-Pilih-</option>
-                                    {dataTrans.length > 0 && dataTrans.map(item => {
-                                        return (
-                                            <option value={item.name}>{item.name}</option>
-                                        )
-                                    })}
-                                </Input>
-                                {dataTrans.length === 0 || this.state.transaksi === '' ? (
-                                    <text className={style.txtError}>must be filled</text>
-                                ) : null}
+                                />
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
@@ -600,21 +695,11 @@ class MasterDokumen extends Component {
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="select" 
-                                name="select"
-                                value={this.state.menu}
+                                name="menu"
+                                disabled
+                                value={idName.menu}
                                 onChange={e => this.changeMenu(e.target.value)}
-                                >
-                                    <option>-Pilih-</option>
-                                    {nameMenu.length > 0 && nameMenu.map(item => {
-                                        return (
-                                            <option value={item.name}>{item.name}</option>
-                                        )
-                                    })}
-                                </Input>
-                                {this.state.menu === '' ? (
-                                        <text className={style.txtError}>must be filled</text>
-                                    ) : null}
+                                />
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
@@ -623,22 +708,11 @@ class MasterDokumen extends Component {
                             </text>
                             <div className="col-md-9">
                                 <Input
-                                type="select" 
-                                name="select"
-                                disabled={dataTrans.length === 0}
-                                value={this.state.transaksi}
+                                name="transaksi"
+                                disabled
+                                value={idName.name}
                                 onChange={e => this.changeTrans(e.target.value)}
-                                >
-                                    <option>-Pilih-</option>
-                                    {dataTrans.length > 0 && dataTrans.map(item => {
-                                        return (
-                                            <option value={item.name}>{item.name}</option>
-                                        )
-                                    })}
-                                </Input>
-                                {dataTrans.length === 0 || this.state.transaksi === '' ? (
-                                    <text className={style.txtError}>must be filled</text>
-                                ) : null}
+                                />
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
@@ -676,6 +750,320 @@ class MasterDokumen extends Component {
                     )}
                     </Formik>
                 </Modal>
+                <Modal toggle={this.openDocumentName} isOpen={this.state.approveName} size="lg">
+                    <ModalHeader toggle={this.openDocumentName}>Add Template Dokumen</ModalHeader>
+                    <Formik
+                    initialValues={{
+                        name: "",
+                        kode_plant: '',
+                        type: '',
+                        status: '',
+                        menu: ''
+                    }}
+                    validationSchema={nameSchema}
+                    onSubmit={(values) => {this.addDocumentName(values)}}
+                    >
+                    {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                    <ModalBody>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Menu
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="select" 
+                                name="select"
+                                value={values.menu}
+                                onBlur={handleBlur("menu")}
+                                onChange={(e) => {
+                                        handleChange("menu")(e) 
+                                        this.changeMenu(e.target.value)
+                                    }
+                                }
+                                // onChange={e => this.changeMenu(e.target.value)}
+                                >
+                                    <option>-Pilih-</option>
+                                    {nameMenu.length > 0 && nameMenu.map(item => {
+                                        return (
+                                            <option value={item.name}>{item.name}</option>
+                                        )
+                                    })}
+                                </Input>
+                                {values.menu === '' ? (
+                                        <text className={style.txtError}>must be filled</text>
+                                    ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Nama Transaksi
+                            </text>
+                            <div className="col-md-9">
+                                <Input
+                                type="select" 
+                                name="select"
+                                disabled={dataTrans.length === 0}
+                                value={values.name}
+                                onBlur={handleBlur("name")}
+                                onChange={handleChange('name')}
+                                >
+                                    <option>-Pilih-</option>
+                                    {dataTrans.length > 0 && dataTrans.map(item => {
+                                        return (
+                                            <option value={item.name}>{item.name}</option>
+                                        )
+                                    })}
+                                </Input>
+                                {dataTrans.length === 0 || values.name === '' ? (
+                                    <text className={style.txtError}>must be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Tipe
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select"
+                                name="type"
+                                value={values.type}
+                                onChange={handleChange("type")}
+                                onBlur={handleBlur("type")}
+                                >
+                                    <option>-Pilih Tipe-</option>
+                                    <option value='all'>All</option>
+                                    <option value='area'>Area</option>
+                                </Input>
+                                {errors.type ? (
+                                    <text className={style.txtError}>Must Be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Area
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select"
+                                name="select"
+                                value={values.kode_plant}
+                                onChange={handleChange("kode_plant")}
+                                onBlur={handleBlur("kode_plant")}
+                                >
+                                    <option>-Pilih Area-</option>
+                                    <option 
+                                    color={values.type === "all" ? 'primary' : 'danger'} 
+                                    disabled={values.type === "all" ? false : true} 
+                                    value='all'>
+                                        All
+                                    </option>
+                                    {dataDepo.length !== 0 && dataDepo.map(item => {
+                                        return (
+                                            <option 
+                                            color={values.type === "area" ? 'primary' : 'danger'} 
+                                            disabled={values.type === "area" ? false : true} 
+                                            value={item.kode_plant}>
+                                                {item.kode_plant + '-' + item.area}
+                                            </option>
+                                        )
+                                    })}
+                                </Input>
+                                {errors.kode_plant ? (
+                                    <text className={style.txtError}>Must Be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Status
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select"
+                                name="status"
+                                value={values.status}
+                                onChange={handleChange("status")}
+                                onBlur={handleBlur("status")}
+                                >
+                                    <option>-Pilih Tipe-</option>
+                                    <option value='active'>Active</option>
+                                    <option value='inactive'>Inactive</option>
+                                </Input>
+                                {errors.status ? (
+                                    <text className={style.txtError}>Must Be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <hr/>
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button className="mr-2" onClick={handleSubmit} color="primary">Save</Button>
+                                <Button className="" onClick={this.openDocumentName}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                    )}
+                    </Formik>
+                </Modal>
+                <Modal toggle={this.openEditName} isOpen={this.state.editModalName} size="lg">
+                    <ModalHeader toggle={this.openEditName}>Edit Template Dokumen</ModalHeader>
+                    <Formik
+                    initialValues={{
+                        name: idName.name,
+                        kode_plant: idName.kode_plant,
+                        type: idName.type,
+                        status: idName.status,
+                        menu: idName.menu
+                    }}
+                    validationSchema={nameSchema}
+                    onSubmit={(values) => {this.editDocumentName(values)}}
+                    >
+                    {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                    <ModalBody>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Menu
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="select" 
+                                name="select"
+                                value={values.menu}
+                                onBlur={handleBlur("menu")}
+                                onChange={(e) => {
+                                    handleChange("menu")(e) 
+                                    this.changeMenu(e.target.value)
+                                    }
+                                }
+                                >
+                                    <option>-Pilih-</option>
+                                    {nameMenu.length > 0 && nameMenu.map(item => {
+                                        return (
+                                            <option value={item.name}>{item.name}</option>
+                                        )
+                                    })}
+                                </Input>
+                                {values.menu === '' ? (
+                                        <text className={style.txtError}>must be filled</text>
+                                    ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Nama Transaksi
+                            </text>
+                            <div className="col-md-9">
+                                <Input
+                                type="select" 
+                                name="select"
+                                value={values.name}
+                                onBlur={handleBlur("name")}
+                                onChange={handleChange('name')}
+                                >
+                                    <option>-Pilih-</option>
+                                    {dataTrans.length > 0 && dataTrans.map(item => {
+                                        return (
+                                            <option value={item.name}>{item.name}</option>
+                                        )
+                                    })}
+                                </Input>
+                                {values.name === '' ? (
+                                    <text className={style.txtError}>must be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Tipe
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select"
+                                name="type"
+                                value={values.type}
+                                onChange={handleChange("type")}
+                                onBlur={handleBlur("type")}
+                                >
+                                    <option>-Pilih Tipe-</option>
+                                    <option value='all'>All</option>
+                                    <option value='area'>Area</option>
+                                </Input>
+                                {errors.type ? (
+                                    <text className={style.txtError}>Must Be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Area
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select"
+                                name="select"
+                                value={values.kode_plant}
+                                onChange={handleChange("kode_plant")}
+                                onBlur={handleBlur("kode_plant")}
+                                >
+                                    <option>-Pilih Area-</option>
+                                    <option 
+                                    color={values.type === "all" ? 'primary' : 'danger'} 
+                                    disabled={values.type === "all" ? false : true} 
+                                    value='all'>
+                                        All
+                                    </option>
+                                    {dataDepo.length !== 0 && dataDepo.map(item => {
+                                        return (
+                                            <option 
+                                            color={values.type === "area" ? 'primary' : 'danger'} 
+                                            disabled={values.type === "area" ? false : true} 
+                                            value={item.kode_plant}>
+                                                {item.kode_plant + '-' + item.area}
+                                            </option>
+                                        )
+                                    })}
+                                </Input>
+                                {errors.kode_plant ? (
+                                    <text className={style.txtError}>Must Be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Status
+                            </text>
+                            <div className="col-md-9">
+                            <Input 
+                                type="select"
+                                name="status"
+                                value={values.status}
+                                onChange={handleChange("status")}
+                                onBlur={handleBlur("status")}
+                                >
+                                    <option>-Pilih Tipe-</option>
+                                    <option value='active'>Active</option>
+                                    <option value='inactive'>Inactive</option>
+                                </Input>
+                                {errors.status ? (
+                                    <text className={style.txtError}>Must Be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <hr/>
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button className="mr-2" onClick={handleSubmit} color="primary">Save</Button>
+                                <Button className="" onClick={this.openEditName}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                    )}
+                    </Formik>
+                </Modal>
                 <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
                     <ModalHeader>Upload Master Dokumen</ModalHeader>
                     <ModalBody className={style.modalUpload}>
@@ -700,7 +1088,7 @@ class MasterDokumen extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.state.modalConfirm} toggle={this.openConfirm} size="sm">
+                <Modal isOpen={this.state.modalConfirm} toggle={this.openConfirm} size="md">
                     <ModalBody>
                         {this.state.confirm === 'edit' ? (
                         <div className={style.cekUpdate}>
@@ -719,29 +1107,100 @@ class MasterDokumen extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Mengupload Master Dokumen</div>
                             </div>
                             </div>
+                        ) : this.state.confirm === 'addname' ? (
+                            <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={style.sucUpdate}>Berhasil Menambahkan Template Document</div>
+                            </div>
+                        ) : this.state.confirm === 'editname' ? (
+                            <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={style.sucUpdate}>Berhasil Update Template Document</div>
+                            </div>
+                        ) : this.state.confirm === 'delname' ? (
+                            <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={style.sucUpdate}>Berhasil Menghapus Template Document</div>
+                            </div>
                         ) : this.state.confirm === 'del' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
                                 <div className={style.sucUpdate}>Berhasil Menghapus Dokumen</div>
+                            </div>
+                        ) : this.state.confirm === 'falseUpdate' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Update Dokumen</div>
+                                    <div className={[style.sucUpdate, style.green]}>Nama Dokumen telah terdaftar</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'falseAdd' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Add Dokumen</div>
+                                    <div className={[style.sucUpdate, style.green]}>Nama Dokumen telah terdaftar</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'falseAddName' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Add Template</div>
+                                    <div className={[style.sucUpdate, style.green]}>Template telah terdaftar</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'falseUpName' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Update Template</div>
+                                    <div className={[style.sucUpdate, style.green]}>Template telah terdaftar</div>
+                                </div>
                             </div>
                         ) : (
                             <div></div>
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.state.modalDel} toggle={this.openModalDel} centered={true}>
+                <Modal size="xl" toggle={this.openModalApprove} isOpen={this.state.modalApprove}>
+                    <ModalHeader>
+                        List Document
+                    </ModalHeader>
                     <ModalBody>
-                        <div className={style.modalApprove}>
-                            <div>
-                                <text>
-                                    Anda yakin untuk delete {detail.name} ?
-                                </text>
-                            </div>
-                            <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.delReason()}>Ya</Button>
-                                <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
-                            </div>
+                        <div className={style.headEmail}>
+                            <Button color="success" size="lg" className="mb-4" onClick={this.openModalAdd} >Add</Button>
                         </div>
+                        <Table striped bordered hover responsive className={style.tab}>
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nama dokumen</th>
+                                    <th>Menu</th>
+                                    <th>Transaksi</th>
+                                    <th>Status upload</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {detailName.length !== 0 && detailName.map(item => {
+                                    return (
+                                        <tr>
+                                        <th>{detailName.indexOf(item) + 1}</th>
+                                        <td>{item.name}</td>
+                                        <td>{item.jenis}</td>
+                                        <td>{item.type}</td>
+                                        <td>{item.stat_upload === 1 ? 'Harus upload' : 'Tidak harus upload'}</td>
+                                        <td>
+                                            <Button color="danger" className="mr-4" onClick={() => this.deleteDataDocument(item.id)}>Delete</Button>
+                                            <Button color="info" onClick={() => this.openModalEdit(this.setState({detail: item}))}>Update</Button>
+                                        </td>
+                                    </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </Table>
                     </ModalBody>
                 </Modal>
                 <Modal isOpen={this.props.dokumen.isLoading ? true: false} size="sm">
@@ -771,7 +1230,8 @@ class MasterDokumen extends Component {
 
 const mapStateToProps = state => ({
     dokumen: state.dokumen,
-    menu: state.menu
+    menu: state.menu,
+    depo: state.depo
 })
 
 const mapDispatchToProps = {
@@ -784,7 +1244,15 @@ const mapDispatchToProps = {
     nextPage: dokumen.nextPage,
     exportMaster: dokumen.exportMaster,
     getAllMenu: menu.getAllMenu,
-    deleteDokumen: dokumen.deleteDokumen
+    deleteDokumen: dokumen.deleteDokumen,
+    getDepo: depo.getDepo,
+    createNameDocument: dokumen.createNameDocument,
+    updateNameDocument: dokumen.updateNameDocument,
+    getNameDocument: dokumen.getNameDocument,
+    getDetailDocument: dokumen.getDetailDocument,
+    deleteNameDocument: dokumen.deleteNameDocument,
+    getDetailId: dokumen.getDetailId,
+    getTempDoc: dokumen.getTempDoc
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(MasterDokumen)

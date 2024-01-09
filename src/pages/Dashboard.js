@@ -135,6 +135,8 @@ class Klaim extends Component {
             newIkk: [],
             filterOps: 'available',
             newOps: [],
+            filterKasbon: 'available',
+            newKasbon: [],
             typeTrans: '',
             statKlaim: 'all',
             statOps: 'all',
@@ -145,6 +147,9 @@ class Klaim extends Component {
             timeOps: 'pilih',
             time1Ops: moment().startOf('month').format('YYYY-MM-DD'),
             time2Ops: moment().endOf('month').format('YYYY-MM-DD'),
+            timeKasbon: 'pilih',
+            time1Kasbon: moment().startOf('month').format('YYYY-MM-DD'),
+            time2Kasbon: moment().endOf('month').format('YYYY-MM-DD'),
             timeIkk: 'pilih',
             time1Ikk: moment().startOf('month').format('YYYY-MM-DD'),
             time2Ikk: moment().endOf('month').format('YYYY-MM-DD'),
@@ -276,7 +281,7 @@ class Klaim extends Component {
         const {detailOps} = this.props.ops
         const {detailIkk} = this.props.ikk
         const {typeTrans} = this.state
-        const cek = typeTrans === 'klaim' ? detailKlaim : typeTrans === 'ops' ? detailOps : detailIkk
+        const cek = typeTrans === 'klaim' ? detailKlaim : typeTrans === 'ops' || typeTrans === 'kasbon' ? detailOps : detailIkk
         let total = 0
         for (let i = 0; i < cek.length; i++) {
             total += parseInt(cek[i].nilai_ajuan)
@@ -371,6 +376,7 @@ class Klaim extends Component {
         this.getDataKlaim()
         this.getDataIkk()
         this.getDataOps()
+        this.getDataKasbon()
     }
 
     componentDidUpdate() {
@@ -445,8 +451,9 @@ class Klaim extends Component {
     }
 
     getDataKlaim = async (value) => {
+        const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilterKlaim('available')
+        this.changeFilterKlaim(level === '5' ? 'all' : 'available')
     }
 
     changeFilterKlaim = async (val) => {
@@ -475,8 +482,9 @@ class Klaim extends Component {
     }
 
     getDataIkk = async (value) => {
+        const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilterIkk('available')
+        this.changeFilterIkk(level === '5' ? 'all' : 'available')
     }
 
     changeFilterIkk = async (val) => {
@@ -507,8 +515,9 @@ class Klaim extends Component {
     }
 
     getDataOps = async (value) => {
+        const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilterOps('available')
+        this.changeFilterOps(level === '5' ? 'all' : 'available')
     }
 
     changeFilterOps = async (val) => {
@@ -520,7 +529,7 @@ class Klaim extends Component {
         const status = statOps
         const tipe = status === '3' || status === '4' ? 'verif' : status === '6' ? 'ajuan bayar' : 'approve'
         const newOps = []
-        await this.props.getOps(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2)
+        await this.props.getOps(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
         this.setState({filterOps: val, newOps: newOps})
     }
 
@@ -532,8 +541,39 @@ class Klaim extends Component {
         const cekTime2 = time2Ops === '' ? 'undefined' : time2Ops
         const tipe = val === '3' || val === '4' ? 'verif' : val === '6' ? 'ajuan bayar' : 'approve'
         const status = val
-        await this.props.getOps(token, status, 'all', 'all', filterOps, tipe, 'undefined', cekTime1, cekTime2)
+        await this.props.getOps(token, status, 'all', 'all', filterOps, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
         this.setState({statOps: val})
+    }
+
+    getDataKasbon = async (value) => {
+        const level = localStorage.getItem('level')
+        this.setState({limit: value === undefined ? 10 : value.limit})
+        this.changeFilterKasbon(level === '5' ? 'all' : 'available')
+    }
+
+    changeFilterKasbon = async (val) => {
+        const {statKasbon, time1Kasbon, time2Kasbon} = this.state
+        const level = localStorage.getItem('level')
+        const token = localStorage.getItem("token")
+        const cekTime1 = time1Kasbon === '' ? 'undefined' : time1Kasbon
+        const cekTime2 = time2Kasbon === '' ? 'undefined' : time2Kasbon
+        const status = statKasbon
+        const tipe = status === '3' || status === '4' ? 'verif' : status === '6' ? 'ajuan bayar' : 'approve'
+        const newKasbon = []
+        await this.props.getKasbon(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
+        this.setState({filterKasbon: val, newKasbon: newKasbon})
+    }
+
+    changeStatKasbon = async (val) => {
+        const {filterKasbon, time1Kasbon, time2Kasbon} = this.state
+        const level = localStorage.getItem('level')
+        const token = localStorage.getItem("token")
+        const cekTime1 = time1Kasbon === '' ? 'undefined' : time1Kasbon
+        const cekTime2 = time2Kasbon === '' ? 'undefined' : time2Kasbon
+        const tipe = val === '3' || val === '4' ? 'verif' : val === '6' ? 'ajuan bayar' : 'approve'
+        const status = val
+        await this.props.getKasbon(token, status, 'all', 'all', filterKasbon, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
+        this.setState({statKasbon: val})
     }
 
     getDataList = async () => {
@@ -556,6 +596,10 @@ class Klaim extends Component {
             await this.props.getApproval(token, tempno)
             this.openModalRinci()
         } else if (val.type === 'ops') {
+            await this.props.getDetailOps(token, tempno)
+            await this.props.getApprovalOps(token, tempno)
+            this.openModalRinci()
+        } else if (val.type === 'kasbon') {
             await this.props.getDetailOps(token, tempno)
             await this.props.getApprovalOps(token, tempno)
             this.openModalRinci()
@@ -737,7 +781,7 @@ class Klaim extends Component {
     openProsesModalDoc = async (val) => {
         const token = localStorage.getItem("token")
         const {typeTrans} = this.state
-        const nameDoc = typeTrans === 'klaim' ? 'Draft Pengajuan Klaim' : typeTrans === 'ops' ? 'Draft Pengajuan Ops' : 'Draft Pengajuan Ikk'
+        const nameDoc = typeTrans === 'klaim' ? 'Draft Pengajuan Klaim' : typeTrans === 'ops' || typeTrans === 'kasbon' ? 'Draft Pengajuan Ops' : 'Draft Pengajuan Ikk'
         const tempno = {
             no: val.no_transaksi,
             name: nameDoc
@@ -746,6 +790,9 @@ class Klaim extends Component {
             await this.props.getDocKlaim(token, tempno)
             this.openModalDoc()
         } else if (typeTrans === 'ops') {
+            await this.props.getDocOps(token, tempno)
+            this.openModalDoc()
+        } else if (typeTrans === 'kasbon') {
             await this.props.getDocOps(token, tempno)
             this.openModalDoc()
         } else {
@@ -960,7 +1007,33 @@ class Klaim extends Component {
         const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' ? 'ajuan bayar' : 'approve'
         const token = localStorage.getItem("token")
         const status = statOps
-        await this.props.getOps(token, filterOps === 'all' ? 'all' : status, 'all', 'all', filterOps, tipe, 'undefined', cekTime1, cekTime2)
+        await this.props.getOps(token, filterOps === 'all' ? 'all' : status, 'all', 'all', filterOps, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
+    }
+
+    changeTimeKasbon = async (val) => {
+        const token = localStorage.getItem("token")
+        this.setState({timeKasbon: val})
+        if (val === 'all') {
+            this.setState({time1Kasbon: '', time2Ops: ''})
+            setTimeout(() => {
+                this.getDataTimeKasbon()
+             }, 500)
+        }
+    }
+
+    selectTimeKasbon = (val) => {
+        this.setState({[val.type]: val.val})
+    }
+
+    getDataTimeKasbon = async () => {
+        const {time1Kasbon, time2Kasbon, filterKasbon, statKasbon} = this.state
+        const cekTime1 = time1Kasbon === '' ? 'undefined' : time1Kasbon
+        const cekTime2 = time2Kasbon === '' ? 'undefined' : time2Kasbon
+        const statNow = statKasbon
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' ? 'ajuan bayar' : 'approve'
+        const token = localStorage.getItem("token")
+        const status = statKasbon
+        await this.props.getKasbon(token, filterKasbon === 'all' ? 'all' : status, 'all', 'all', filterKasbon, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
     }
 
     changeTimeIkk = async (val) => {
@@ -998,10 +1071,11 @@ class Klaim extends Component {
         const { detailKlaim, dataDoc, newKlaim, isLoading } = this.props.klaim
         const { detailIkk, newIkk } = this.props.ikk
         const loadingIkk = this.props.ikk.isLoading
-        const { detailOps, newOps } = this.props.ops
+        const { detailOps, newOps, newKasbon } = this.props.ops
         const loadingOps = this.props.ops.isLoading
-        const docAjuan = typeTrans === 'klaim' ? dataDoc : typeTrans === 'ops' ? this.props.ops.dataDoc : this.props.ikk.dataDoc
-        const dataAjuan = typeTrans === 'klaim' ? detailKlaim : typeTrans === 'ops' ? detailOps : detailIkk
+        const loadingKasbon = this.props.ops.isLoadingKasbon
+        const docAjuan = typeTrans === 'klaim' ? dataDoc : typeTrans === 'ops' || typeTrans === 'kasbon' ? this.props.ops.dataDoc : this.props.ikk.dataDoc
+        const dataAjuan = typeTrans === 'klaim' ? detailKlaim : typeTrans === 'ops' || typeTrans === 'kasbon' ? detailOps : detailIkk
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1250,6 +1324,110 @@ class Klaim extends Component {
                                     )}
                                 </div>
                             </div>
+                            <div className='boxDash'>
+                                <div className='subtitle'>Kasbon</div>
+                                <div className={style.secEmail3}>
+                                    <Button color='primary' onClick={() => this.goRoute('kasbon')}>More Data</Button>
+                                    <div className={style.searchEmail2}>
+                                        <text>Filter:  </text>
+                                        <Input className={style.filter} type="select" value={this.state.filterKasbon} onChange={e => this.changeFilterKasbon(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        </Input>
+                                    </div>
+                                </div>
+                                <div className={[style.secEmail4]}>
+                                    <div className='rowCenter'>
+                                        <div className='rowCenter'>
+                                            {/* <text className='mr-4'>Time:</text> */}
+                                            <Input className={style.filter3} type="select" value={this.state.timeKasbon} onChange={e => this.changeTimeKasbon(e.target.value)}>
+                                                <option value="all">Time (All)</option>
+                                                <option value="pilih">Periode</option>
+                                            </Input>
+                                        </div>
+                                        {this.state.timeKasbon === 'pilih' ?  (
+                                            <>
+                                                <div className='rowCenter'>
+                                                    <text className='bold'>:</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        value={this.state.time1Kasbon}
+                                                        onChange={e => this.selectTimeKasbon({val: e.target.value, type: 'time1Kasbon'})}
+                                                    />
+                                                    <text className='mr-1 ml-1'>To</text>
+                                                    <Input
+                                                        type= "date" 
+                                                        className="inputRinci"
+                                                        value={this.state.time2Kasbon}
+                                                        onChange={e => this.selectTimeKasbon({val: e.target.value, type: 'time2Kasbon'})}
+                                                    />
+                                                    <Button
+                                                    disabled={this.state.time1Kasbon === '' || this.state.time2Kasbon === '' ? true : false} 
+                                                    color='primary' 
+                                                    onClick={this.getDataTimeKasbon} 
+                                                    className='ml-1'>
+                                                        Go
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : null}
+                                    </div>
+                                    <div className={style.searchEmail2}>
+                                        <text>Status:  </text>
+                                        <Input className={style.filter} type="select" value={this.state.statKasbon} onChange={e => this.changeStatKasbon(e.target.value)}>
+                                        <option value='all'>All</option>
+                                            <option value={2} >Pengajuan Area</option>
+                                            <option value={6} >List Ajuan Bayar</option>
+                                            <option value={3} >Verifikasi Finance</option>
+                                            <option value={4} >Verifikasi Tax</option>
+                                        </Input>
+                                    </div>
+                                </div>
+                                <div className={style.tableDashboard}>
+                                    <TblHead tagBody={
+                                        <tbody>
+                                            {newKasbon.map(item => {
+                                                return (
+                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                        <th>{newKasbon.indexOf(item) + 1}</th>
+                                                        <th>{item.no_transaksi}</th>
+                                                        <th>{item.cost_center}</th>
+                                                        <th>{item.area}</th>
+                                                        <th>{item.no_coa}</th>
+                                                        <th>{item.nama_coa}</th>
+                                                        <th>{item.keterangan}</th>
+                                                        <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('MMMM YYYY') - moment(item.periode_akhir).format('MMMM YYYY')}</th>
+                                                        <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
+                                                        <th>
+                                                            {this.state.filterKasbon === "available" && (
+                                                                <Button size='sm' onClick={() => this.goProses({route: 'kasbon', type: 'approve', item: item})}  className='mb-1 mr-1' color='success'>Proses</Button>
+                                                            )}
+                                                            <Button size='sm' className='mb-1' onClick={() => this.prosesDetail({type: 'kasbon', item: item})} color='warning'>Rincian</Button>
+                                                        </th>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    } />
+                                    {loadingKasbon && (
+                                        <div className={style.spin}>
+                                            <Spinner type="grow" color="primary"/>
+                                            <Spinner type="grow" className="mr-3 ml-3" color="success"/>
+                                            <Spinner type="grow" color="warning"/>
+                                            <Spinner type="grow" className="mr-3 ml-3" color="danger"/>
+                                            <Spinner type="grow" color="info"/>
+                                        </div>
+                                    )}
+                                    {(newKasbon.length === 0 || (this.state.filterKasbon === 'completed' && newKasbon.find(({end_ops}) => end_ops !== null) === undefined) || (this.state.filterKasbon === 'bayar' && newKasbon.find(({end_ops}) => end_ops === null) === undefined)) && (
+                                        <div className={style.spin}>
+                                            <text className='textInfo'>Data ajuan tidak ditemukan</text>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                             <div className='boxDash mb-4'>
                                 <div className='subtitle'>Ikhtisar Kas Kecil</div>
                                 <div className={style.secEmail3}>
@@ -1457,7 +1635,7 @@ class Klaim extends Component {
                     </div>
                 </Modal>
                 <Modal className='modalrinci' isOpen={this.state.modalFaa} toggle={this.openModalFaa} size="xl">
-                    {typeTrans === 'klaim' || typeTrans === 'ops' ? (
+                    {typeTrans === 'klaim' || typeTrans === 'ops' || typeTrans === 'kasbon' ? (
                         <ModalHeader>
                             FORM AJUAN AREA
                         </ModalHeader>
@@ -1465,7 +1643,7 @@ class Klaim extends Component {
                     <ModalBody>
                         {typeTrans === 'klaim' ? (
                             <FAA />
-                        ) : typeTrans === 'ops' ? (
+                        ) : typeTrans === 'ops' || typeTrans === 'kasbon' ? (
                             <FAAOps />
                         ) : (
                             <Formikk />
@@ -1489,7 +1667,7 @@ class Klaim extends Component {
                     <ModalBody>
                         {typeTrans === 'klaim' ? (
                             <FPD totalfpd={this.state.totalfpd} />
-                        ) : typeTrans === 'ops' ? (
+                        ) : typeTrans === 'ops' || typeTrans === 'kasbon' ? (
                             <FPDOps totalfpd={this.state.totalfpd} />
                         ) : (
                             <FPDIkk totalfpd={this.state.totalfpd} />
@@ -1669,7 +1847,7 @@ class Klaim extends Component {
                 <ModalBody>
                     {typeTrans === 'klaim' ? (
                             <Tracking />
-                        ) : typeTrans === 'ops' ? (
+                        ) : typeTrans === 'ops' || typeTrans === 'kasbon' ? (
                             <TrackingOps />
                         ) : (
                             <TrackingIkk />
@@ -1724,6 +1902,7 @@ const mapDispatchToProps = {
     getRole: user.getRole,
     getKlaim: klaim.getKlaim,
     getOps: ops.getOps,
+    getKasbon: ops.getKasbon,
     getIkk: ikk.getIkk,
     getDetail: klaim.getDetail,
     getApproval: klaim.getApproval,

@@ -1,8 +1,8 @@
 /* eslint-disable import/no-anonymous-default-export */
 const dokumenState = {
-    isAdd: false,
+    isAdd: null,
     isUpload: false,
-    isUpdate: false,
+    isUpdate: null,
     isGet: false,
     isDetail: false,
     isDelete: false,
@@ -20,7 +20,16 @@ const dokumenState = {
     isShow: null,
     dataShow: '',
     isApprove: null,
-    isReject: null
+    isReject: null,
+    isEditName: null,
+    isCreate: null,
+    isGetName: null,
+    dataName: [],
+    isDetName: true,
+    detailName: [],
+    isDeleteName: null,
+    idName: {},
+    isTempName: null,
 };
 
 export default (state=dokumenState, action) => {
@@ -142,9 +151,6 @@ export default (state=dokumenState, action) => {
                     ...state,
                     isLoading: false,
                     isAdd: false,
-                    isError: true,
-                    alertMsg: action.payload.response.data.message,
-                    alertM: action.payload.response.data.error
                 };
             }
             case 'GET_DOKUMEN_PENDING': {
@@ -170,7 +176,6 @@ export default (state=dokumenState, action) => {
                 return {
                     ...state,
                     isLoading: false,
-                    isAdd: false,
                     isError: true,
                     alertMsg: "Unable connect to server"
                 };
@@ -198,7 +203,6 @@ export default (state=dokumenState, action) => {
                 return {
                     ...state,
                     isLoading: false,
-                    isAdd: false,
                     alertMsg: "Unable connect to server"
                 };
             }
@@ -250,10 +254,7 @@ export default (state=dokumenState, action) => {
                 return {
                     ...state,
                     isLoading: false,
-                    isUpdate: false,
-                    isError: true,
-                    alertMsg: action.payload.response.data.message,
-                    alertM: action.payload.response.data.error
+                    isUpdate: false
                 };
             }
             case 'UPLOAD_MASTER_PENDING': {
@@ -282,6 +283,148 @@ export default (state=dokumenState, action) => {
                     alertUpload: action.payload.response.data.result
                 };
             }
+            case 'CREATE_NAMEDOK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'CREATE_NAMEDOK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isCreate: true,
+                    alertMsg: 'add approve Succesfully'
+                };
+            }
+            case 'CREATE_NAMEDOK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isCreate: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'UPDATE_NAMEDOK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPDATE_NAMEDOK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isEditName: true,
+                    alertMsg: 'edit name approve Succesfully'
+                };
+            }
+            case 'UPDATE_NAMEDOK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isEditName: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'GET_NAMEDOK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GET_NAMEDOK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetName: true,
+                    dataName: action.payload.data.result.rows,
+                    page: action.payload.data.pageInfo,
+                    alertMsg: 'get approve Succesfully',
+                };
+            }
+            case 'GET_NAMEDOK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetName: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'GET_TEMPLATE_NAMEDOK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GET_TEMPLATE_NAMEDOK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isTempName: true,
+                    idName: action.payload.data.result,
+                    alertMsg: 'get detail approve Succesfully',
+                };
+            }
+            case 'GET_TEMPLATE_NAMEDOK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isTempName: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'GET_DETAIL_NAMEDOK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GET_DETAIL_NAMEDOK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDetName: true,
+                    detailName: action.payload.data.result,
+                    alertMsg: 'get detail approve Succesfully',
+                };
+            }
+            case 'GET_DETAIL_NAMEDOK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDetName: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'DELETE_NAMEAPPROVE_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DELETE_NAMEAPPROVE_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDeleteName: true,
+                    alertMsg: 'delete approve Succesfully',
+                };
+            }
+            case 'DELETE_NAMEAPPROVE_REJECTED': {
+                return {
+                    ...state,
+                    isDeleteName: false,
+                    isLoading: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'RESET_DOKUMEN': {
                 return {
                     ...state,
@@ -289,7 +432,15 @@ export default (state=dokumenState, action) => {
                     isUpload: false,
                     isExport: false,
                     isApprove: null,
-                    isReject: null
+                    isReject: null,
+                    isEditName: null,
+                    isCreate: null,
+                    isDetName: null,
+                    isGetName: null,
+                    isTempName: null,
+                    isDeleteName: null,
+                    isUpdate: null,
+                    isAdd: null
                 }
             }
             default: {

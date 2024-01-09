@@ -44,6 +44,7 @@ import JurnalArea from '../../components/Ops/JurnalArea'
 import NumberInput from '../../components/NumberInput'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import ListBbm from '../../components/Ops/ListBbm'
 const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -183,9 +184,9 @@ class Ops extends Component {
             this.setState({modalConfirm: false})
         } else {
             this.setState({modalConfirm: true})
-            setTimeout(() => {
-                this.setState({modalConfirm: false})
-             }, 3000)
+            // setTimeout(() => {
+            //     this.setState({modalConfirm: false})
+            //  }, 3000)
         }
     }
 
@@ -472,7 +473,7 @@ class Ops extends Component {
         const {item, type} = (this.props.location && this.props.location.state) || {}
         if (type === 'approve') {
             this.getDataOps()
-            this.prosesDetail(item)
+            // this.prosesDetail(item)
         } else if (dataCek !== undefined && dataCek !== null) {
             const data = {
                 no_transaksi: dataCek
@@ -1572,7 +1573,7 @@ class Ops extends Component {
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>{filter === 'available' ? 'Proses' : 'Detail'}</Button>
-                                                            <Button size='sm' className='mb-1 mr-1' onClick={() => this.prosesJurnalArea(item)} color='primary'>Jurnal Area</Button>
+                                                            {/* <Button size='sm' className='mb-1 mr-1' onClick={() => this.prosesJurnalArea(item)} color='primary'>Jurnal Area</Button> */}
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
@@ -1922,6 +1923,7 @@ class Ops extends Component {
                                         })}
                                 </tbody>
                             </Table>
+                            <ListBbm />
                         </div>
                     </ModalBody>
                     <div className="modalFoot ml-3">
@@ -2234,6 +2236,9 @@ class Ops extends Component {
                         <div></div>
                     )}
                 </ModalBody>
+                <div className='row justify-content-md-center mb-4'>
+                    <Button size='lg' onClick={() => this.openConfirm(false)} color='primary'>OK</Button>
+                </div>
             </Modal>
             <Modal isOpen={this.state.alert} size="sm">
                 <ModalBody>
@@ -2251,7 +2256,7 @@ class Ops extends Component {
                 </ModalHeader>
                 <ModalBody>
                     <Container>
-                        {dataDoc.length >= 0 && (
+                        {dataDoc.length > 0 && (
                             <Row className="mt-3 mb-4">
                                 <Col md={12} lg={12} className='mb-2' >
                                     <div className="btnDocIo mb-2 ml-4" >
@@ -2280,16 +2285,40 @@ class Ops extends Component {
                                                 />
                                                 {x.desc === null ? 'Lampiran' : x.desc}
                                             </div>
-                                                {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
-                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
-                                                : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
-                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
-                                                : (
-                                                    <BsCircle size={20} />
-                                                )}
+                                            {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                            x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
+                                            : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                            x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
+                                            : (
+                                                <BsCircle size={20} />
+                                            )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
-                                            <div className='mt-3'>
-                                                <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
+                                            <div className='mt-3 mb-3'>
+                                                {this.state.filter === 'available' ? (
+                                                    <div>
+                                                        <Button 
+                                                        color="success" 
+                                                        onClick={() => {this.setState({idDoc: x.id}); this.openModalAppDoc()}}
+                                                        >
+                                                            Approve
+                                                        </Button>
+                                                        <Button 
+                                                        className='ml-1' 
+                                                        color="danger" 
+                                                        onClick={() => {this.setState({idDoc: x.id}); this.openModalRejDoc()}}
+                                                        >
+                                                            Reject
+                                                        </Button>
+                                                        <Button className='ml-1' color='warning' onClick={() => this.docHistory(x)}>history</Button>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <Button color='warning' onClick={() => this.docHistory(x)}>history</Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className={style.readPdf}>
+                                                <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${x.id}`} dataFile={x} />
                                             </div>
                                             {/* <div className="colDoc">
                                                 <input
@@ -2323,6 +2352,9 @@ class Ops extends Component {
                     </Container>
                 </ModalBody>
                 <ModalFooter>
+                    <Button disabled={dataZip.length === 0} className="mr-2" color="primary" onClick={this.downloadDataZip}>
+                        Download Document
+                    </Button>
                     <Button className="mr-2" color="secondary" onClick={this.openModalDoc}>
                         Close
                     </Button>
@@ -2346,7 +2378,7 @@ class Ops extends Component {
                 <ModalHeader>Dokumen</ModalHeader>
                 <ModalBody>
                     <div className={style.readPdf}>
-                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} />
+                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} dataFile={this.state.fileName}/>
                     </div>
                     <hr/>
                     <div className={style.foot}>

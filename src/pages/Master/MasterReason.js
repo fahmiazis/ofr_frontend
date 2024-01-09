@@ -115,7 +115,7 @@ class MasterReason extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master bank.xlsx"); //or any other extension
+            link.setAttribute('download', "master reason.xlsx"); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -160,7 +160,7 @@ class MasterReason extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "bank.xlsx");
+            link.setAttribute('download', "master reason.xlsx");
             document.body.appendChild(link);
             link.click();
         });

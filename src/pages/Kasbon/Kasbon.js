@@ -40,6 +40,8 @@ import Email from '../../components/Ops/Email'
 import FAA from '../../components/Ops/FAA'
 import FPD from '../../components/Ops/FPD'
 import JurnalArea from '../../components/Ops/JurnalKasbon'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -139,10 +141,66 @@ class Kasbon extends Component {
             docCon: false,
             tipeEmail: '',
             dataRej: {},
-            jurnalArea: false
+            jurnalArea: false,
+            dataZip: [],
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    checkDoc = (val) => {
+        const { dataZip } = this.state
+        const {dataDoc} = this.props.ops
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataDoc.length; i++) {
+                data.push(dataDoc[i].id)
+            }
+            this.setState({dataZip: data})
+        } else {
+            dataZip.push(val)
+            this.setState({dataZip: dataZip})
+        }
+    }
+
+    unCheckDoc = (val) => {
+        const {dataZip} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({dataZip: data})
+        } else {
+            const data = []
+            for (let i = 0; i < dataZip.length; i++) {
+                if (dataZip[i] === val) {
+                    data.push()
+                } else {
+                    data.push(dataZip[i])
+                }
+            }
+            this.setState({dataZip: data})
+        }
+    }
+
+    downloadDataZip = () => {
+        const {dataZip} = this.state
+        const {dataDoc} = this.props.ops
+        let zip = new JSZip();
+    
+        const remoteZips = dataDoc.map(async (item) => {
+            const cekData = dataZip.find(e => e === item.id)
+            if (cekData !== undefined) {
+                const response = await fetch(`${REACT_APP_BACKEND_URL}/show/doc/${item.id}`);
+                const data = await response.blob();
+                zip.file(`${item.desc} ~ ${item.history}`, data);
+                return data;
+            }
+        })
+
+        Promise.all(remoteZips).then(() => {
+            zip.generateAsync({ type: "blob" }).then((content) => {
+              saveAs(content, `Dokumen Lampiran ${dataDoc[0].no_transaksi} ${moment().format('DDMMYYYY h:mm:ss')}.zip`);
+            })
+          })
     }
 
     submitStock = async () => {
@@ -378,7 +436,7 @@ class Kasbon extends Component {
         const {item, type} = (this.props.location && this.props.location.state) || {}
         if (type === 'approve') {
             this.getDataOps()
-            this.prosesDetail(item)
+            // this.prosesDetail(item)
         } else if (dataCek !== undefined && dataCek !== null) {
             const data = {
                 no_transaksi: dataCek
@@ -915,7 +973,7 @@ class Kasbon extends Component {
     }
 
     openModalDoc = () => {
-        this.setState({modalDoc: !this.state.modalDoc})
+        this.setState({modalDoc: !this.state.modalDoc, dataZip: []})
     }
 
     approveDoc = async () => {
@@ -1101,7 +1159,7 @@ class Kasbon extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataZip, dataRinci, dropApp, dataItem, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
@@ -1743,23 +1801,69 @@ class Kasbon extends Component {
                 </ModalHeader>
                 <ModalBody>
                     <Container>
+                        {dataDoc.length > 0 && (
+                            <Row className="mt-3 mb-4">
+                                <Col md={12} lg={12} className='mb-2' >
+                                    <div className="btnDocIo mb-2 ml-4" >
+                                        <Input 
+                                            type='checkbox'
+                                            checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
+                                            onChange={() => dataZip.length === dataDoc.length ? this.unCheckDoc('all') : this.checkDoc('all')}
+                                        />
+                                        Ceklis All
+                                    </div>
+                                </Col>
+                            </Row>
+                        )}
+
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
                                 x.path !== null &&
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null && (
                                         <Col md={12} lg={12} className='mb-2' >
-                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
-                                                {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
-                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
-                                                : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
-                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
-                                                : (
-                                                    <BsCircle size={20} />
-                                                )}
+                                            <div className="btnDocIo mb-2 ml-4" >
+                                                <Input 
+                                                    type='checkbox'
+                                                    checked={dataZip.find(element => element === x.id) !== undefined ? true : false}
+                                                    onChange={dataZip.find(element => element === x.id) === undefined ? () => this.checkDoc(x.id) : () => this.unCheckDoc(x.id)}
+                                                />
+                                                {x.desc === null ? 'Lampiran' : x.desc}
+                                            </div>
+                                            {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                            x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
+                                            : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                            x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
+                                            : (
+                                                <BsCircle size={20} />
+                                            )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
-                                            <div>
-                                                <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
+                                            <div className='mt-3 mb-3'>
+                                                {this.state.filter === 'available' ? (
+                                                    <div>
+                                                        <Button 
+                                                        color="success" 
+                                                        onClick={() => {this.setState({idDoc: x.id}); this.openModalAppDoc()}}
+                                                        >
+                                                            Approve
+                                                        </Button>
+                                                        <Button 
+                                                        className='ml-1' 
+                                                        color="danger" 
+                                                        onClick={() => {this.setState({idDoc: x.id}); this.openModalRejDoc()}}
+                                                        >
+                                                            Reject
+                                                        </Button>
+                                                        <Button className='ml-1' color='warning' onClick={() => this.docHistory(x)}>history</Button>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <Button color='warning' onClick={() => this.docHistory(x)}>history</Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className={style.readPdf}>
+                                                <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${x.id}`} dataFile={x} />
                                             </div>
                                             {/* <div className="colDoc">
                                                 <input
@@ -1778,6 +1882,9 @@ class Kasbon extends Component {
                     </Container>
                 </ModalBody>
                 <ModalFooter>
+                    <Button disabled={dataZip.length === 0} className="mr-2" color="primary" onClick={this.downloadDataZip}>
+                        Download Document
+                    </Button>
                     <Button className="mr-2" color="secondary" onClick={this.openModalDoc}>
                         Close
                     </Button>

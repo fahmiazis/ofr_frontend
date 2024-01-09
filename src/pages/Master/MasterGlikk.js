@@ -113,7 +113,7 @@ class MasterGlikk extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master glikk.xlsx"); //or any other extension
+            link.setAttribute('download', "master gl ikk.xlsx"); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -158,7 +158,7 @@ class MasterGlikk extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "glikk.xlsx");
+            link.setAttribute('download', "master gl ikk.xlsx");
             document.body.appendChild(link);
             link.click();
         });

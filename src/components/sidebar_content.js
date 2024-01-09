@@ -258,6 +258,10 @@ const SidebarContent = props => {
               <FiUser size={20} className="mr-2"/>
               Master SPV Klaim
             </button>
+            <button onClick={() => goHome('scylla')} className={stile.btnSide}>
+              <BsClipboardData size={20} className="mr-2"/>
+              Master Scylla
+            </button>
             <button onClick={() => goHome('role')} className={stile.btnSide}>
               <FiUser size={20} className="mr-2"/>
               Master Role

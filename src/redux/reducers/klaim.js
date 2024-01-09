@@ -1,6 +1,7 @@
 /* eslint-disable import/no-anonymous-default-export */
 const klaimState = {
     isAdd: null,
+    dataAdd: {},
     isAddDetail: false,
     isUpdate: false,
     isUpload: null,
@@ -57,7 +58,13 @@ const klaimState = {
     updateNilai: null,
     uploadKlaim: null,
     dataUpload: [],
-    messUpload: []
+    messUpload: [],
+    isUploadOut: null,
+    isUpdateOut: null,
+    isAddOut: null,
+    isGetOut: null,
+    isDelOut: null,
+    klaimOutlet: []
 };
 
 export default (state=klaimState, action) => {
@@ -252,6 +259,7 @@ export default (state=klaimState, action) => {
                     ...state,
                     isLoading: false,
                     isAdd: true,
+                    dataAdd: action.payload.data.result,
                     alertMsg: 'add cart klaim succesfully',
                 };
             }
@@ -763,6 +771,122 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'DELETE_OUTLET_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DELETE_OUTLET_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDelOut: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'DELETE_OUTLET_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDelOut: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'GET_OUTLET_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GET_OUTLET_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetOut: true,
+                    klaimOutlet: action.payload.data.result,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'GET_OUTLET_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetOut: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'UPLOAD_OUTLET_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPLOAD_OUTLET_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUploadOut: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'UPLOAD_OUTLET_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUploadOut: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'UPDATE_OUTLET_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPDATE_OUTLET_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpdateOut: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'UPDATE_OUTLET_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpdateOut: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'ADD_OUTLET_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'ADD_OUTLET_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isAddOut: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'ADD_OUTLET_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isAddOut: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'RESET_KLAIM': {
                 return {
                     ...state,
@@ -789,6 +913,11 @@ export default (state=klaimState, action) => {
                     detailId: null,
                     updateNilai: null,
                     uploadKlaim: null,
+                    isUploadOut: null,
+                    isUpdateOut: null,
+                    isAddOut: null,
+                    isGetOut: null,
+                    isDelOut: null,
                     messUpload: []
                 }
             }

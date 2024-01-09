@@ -309,6 +309,7 @@ class Account extends Component {
                                         name='fullname'
                                         id="inputEmail3"
                                         value={values.fullname}
+                                        disabled
                                         onChange={handleChange("fullname")}
                                         onBlur={handleBlur("fullname")}
                                         placeholder="Full Name" 

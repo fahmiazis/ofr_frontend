@@ -3,9 +3,9 @@ import http from '../../helpers/http'
 import qs from 'qs'
 
 export default {
-    getVendor: (token) => ({
+    getVendor: (token, data) => ({
         type: 'GET_VENDOR',
-        payload: http(token).get(`/vendor/all`),
+        payload: http(token).patch(`/vendor/all`, qs.stringify(data)),
     }),
     getAllVendor: (token, limit, search, page) => ({
         type: 'GET_ALL',

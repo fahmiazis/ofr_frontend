@@ -48,12 +48,16 @@ import { saveAs } from 'file-saver'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const vendorSchema = Yup.object().shape({
-    nama: Yup.string().required(),
-    jenis: Yup.string().required(),
-    no_npwp: Yup.string().required(),
-    no_ktp: Yup.string().required(),
-    alamat: Yup.string().required()
-});
+    nama: Yup.string().required('must be filled'),
+    jenis: Yup.string().required('must be filled'),
+    no_npwp: Yup.number().required('must be filled'),
+    no_ktp: Yup.number(),
+    alamat: Yup.string().required('must be filled'),
+    datef_skb: Yup.date(),
+    datel_skb: Yup.date(),
+    no_skb: Yup.string(),
+    no_skt: Yup.string()
+})
 
 const alasanSchema = Yup.object().shape({
     alasan: Yup.string()
@@ -157,7 +161,9 @@ class IKK extends Component {
             modalId: false,
             statEmail: '',
             modResmail: false,
-            appDoc: false
+            appDoc: false,
+            type_skb: '',
+            fileName: {}
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -244,9 +250,9 @@ class IKK extends Component {
     onChangeUpload = e => {
         const {size, type} = e.target.files[0]
         this.setState({fileUpload: e.target.files[0]})
-        if (size >= 20000000) {
-            this.setState({errMsg: "Maximum upload size 20 MB"})
-            this.uploadAlert()
+        if (size >= 25000000) {
+            this.setState({errMsg: "Maximum upload size 25 MB", confirm: 'maxUpload'})
+            this.openConfirm()
         } else if (
             type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && 
             type !== 'application/vnd.ms-excel' && 
@@ -257,8 +263,11 @@ class IKK extends Component {
             type !== 'application/octet-stream' && type !== 'multipart/x-zip' && 
             type !== 'application/x-rar-compressed' && type !== 'image/jpeg' && type !== 'image/png'
             ) {
-            this.setState({errMsg: 'Invalid file type. Only excel, pdf, zip, and rar files are allowed.'})
-            this.uploadAlert()
+            this.setState({
+                errMsg: 'Invalid file type. Only excel, pdf, zip, png, jpg and rar files are allowed.',
+                confirm: 'onlyUpload'
+            })
+            this.openConfirm()
         } else {
             const { noTrans } = this.props.verven
             const { detail } = this.state
@@ -268,7 +277,7 @@ class IKK extends Component {
             const token = localStorage.getItem('token')
             const data = new FormData()
             data.append('document', e.target.files[0])
-            this.props.uploadDocVerven(token, noTrans, detail.id, data)
+            this.props.uploadDocVerven(token, detail.no_transaksi, detail.id, data)
         }
     }
 
@@ -276,11 +285,11 @@ class IKK extends Component {
         const {size, type} = e.target.files[0]
         this.setState({fileUpload: e.target.files[0]})
         if (size >= 20000000) {
-            this.setState({errMsg: "Maximum upload size 20 MB"})
-            this.uploadAlert()
+            this.setState({errMsg: "Maximum upload size 25 MB"})
+            this.openConfirm()
         } else if (type !== 'image/jpeg' && type !== 'image/png') {
             this.setState({errMsg: 'Invalid file type. Only image files are allowed.'})
-            this.uploadAlert()
+            this.openConfirm()
         } else {
             const {dataRinci} = this.state
             const token = localStorage.getItem('token')
@@ -294,11 +303,11 @@ class IKK extends Component {
         const {size, type} = e.target.files[0]
         this.setState({fileUpload: e.target.files[0]})
         if (size >= 20000000) {
-            this.setState({errMsg: "Maximum upload size 20 MB"})
-            this.uploadAlert()
+            this.setState({errMsg: "Maximum upload size 25 MB"})
+            this.openConfirm()
         } else if (type !== 'image/jpeg' && type !== 'image/png') {
             this.setState({errMsg: 'Invalid file type. Only image files are allowed.'})
-            this.uploadAlert()
+            this.openConfirm()
         } else {
             const { dataId } = this.state
             const token = localStorage.getItem('token')
@@ -306,16 +315,6 @@ class IKK extends Component {
             data.append('document', e.target.files[0])
             this.props.uploadImage(token, dataId, data)
         }
-    }
-
-    uploadAlert = () => {
-        this.setState({upload: true, modalUpload: false })
-       
-         setTimeout(() => {
-            this.setState({
-                upload: false
-            })
-         }, 10000)
     }
 
     getApproveStock = async (value) => { 
@@ -477,8 +476,9 @@ class IKK extends Component {
 
     componentDidUpdate() {
         const token = localStorage.getItem("token")
-        const { isApprove,   } = this.props.verven
-        const { isReject, isUpload } = this.props.verven
+        const { isApprove } = this.props.verven
+        const { isReject, isUpload, isAdd } = this.props.verven
+        const {type_skb} = this.state
         const { isSend } = this.props.email
         if (isApprove === false) {
             this.setState({confirm: 'rejApprove'})
@@ -489,7 +489,8 @@ class IKK extends Component {
             const { noTrans } = this.props.verven
             const data = {
                 no: noTrans,
-                name: 'Pengajuan area'
+                name: 'Pengajuan area',
+                tipeSkb: type_skb === '' ? 'tidak' : type_skb === 'SKB' || type_skb === 'SKT' ? 'ya' : type_skb
             }
             this.props.getDocument(token, data)
             this.props.resetVerven()
@@ -502,6 +503,11 @@ class IKK extends Component {
             this.setState({confirm: 'rejSend'})
             this.openConfirm()
             this.props.resetEmail()
+        } else if (isAdd === false) {
+            console.log('masuk king')
+            this.setState({confirm: 'addFalse'})
+            this.openConfirm()
+            this.props.resetVerven()
         }
     }
 
@@ -719,13 +725,15 @@ class IKK extends Component {
     prosesEditId = async (val) => {
         const token = localStorage.getItem("token")
         await this.props.getDetailId(token, val.id)
+        const {idVerven} = this.props.verven
+        this.setState({type_skb: idVerven.type_skb})
         this.openEdit()
     }
 
     prosesEdit = async (val) => {
         const token = localStorage.getItem("token")
         const { detailVerven, idVerven } = this.props.verven
-        
+
         await this.props.editVerven(token, idVerven.id, val)
 
         const noData = {
@@ -1065,6 +1073,25 @@ class IKK extends Component {
         }
     }
 
+    cekDok = async (val) => {
+        const { dataDoc } = this.props.verven
+        const verifDoc = []
+        const tempDoc = []
+        for (let i = 0; i < dataDoc.length; i++) {
+            if (dataDoc[i].stat_upload === 1 && dataDoc[i].path !== null) {
+                verifDoc.push(dataDoc[i])
+                tempDoc.push(dataDoc[i])
+            } else if (dataDoc[i].stat_upload === 1) {
+                tempDoc.push(dataDoc[i])
+            }
+        }
+        if (verifDoc.length === tempDoc.length) {
+            this.modalConfirmAdd(val)
+        } else {
+            this.openConfirm(this.setState({confirm: 'verifdoc'}))
+        }
+    }
+
     showDokumen = async (value) => {
         const token = localStorage.getItem('token')
         await this.props.showDokumen(token, value.id)
@@ -1191,14 +1218,15 @@ class IKK extends Component {
         console.log(noTrans)
         const data = {
             no: noTrans,
-            name: 'Pengajuan area'
+            name: 'Pengajuan area',
+            modalOpen: 'ya'
         }
         await this.props.getDocument(token, data)
         this.openModalAdd()
     }
 
     openModalAdd = () => {
-        this.setState({modalAdd: !this.state.modalAdd})
+        this.setState({modalAdd: !this.state.modalAdd, type_skb: ''})
     }
 
     getRincian = async (val) => {
@@ -1385,13 +1413,19 @@ class IKK extends Component {
     getDraftAdd = async () => {
         const {dataAdd} = this.state
         const { noTrans } = this.props.verven
+        const tipe = this.state.type_skb
         const dataSend = {
             nama: dataAdd.nama,
             jenis: dataAdd.jenis,
             no_npwp: dataAdd.no_npwp,
-            no_ktp: dataAdd.no_ktp,
+            no_ktp: dataAdd.jenis === 'Orang Pribadi' ? dataAdd.no_ktp : '',
             alamat: dataAdd.alamat,
-            no: noTrans
+            no: noTrans,
+            type_skb: tipe,
+            no_skb: dataAdd.no_skb,
+            no_skt: dataAdd.no_skt,
+            datef_skb: dataAdd.datef_skb,
+            datel_skb: dataAdd.datel_skb
         }
         const token = localStorage.getItem("token")
         this.openModalAppDoc()
@@ -1436,6 +1470,22 @@ class IKK extends Component {
         this.setState({dataRinci: val, dataId: val.id})
         await this.props.getDetailItem(token, val.id)
         this.openModalStock()
+    }
+
+    selectTipeSkb = async (val) => {
+        const token = localStorage.getItem("token")
+        const {noTrans} = this.props.verven
+        if (val === '') {
+            this.setState({type_skb: val})
+        } else {
+            const data = {
+                no: noTrans,
+                name: 'Pengajuan area',
+                tipeSkb: val === '' ? 'tidak' : val === 'SKB' || val === 'SKT' ? 'ya' : val
+            }
+            await this.props.getDocument(token, data)
+            this.setState({type_skb: val})
+        }
     }
 
     openModalStock = () => {
@@ -1500,7 +1550,7 @@ class IKK extends Component {
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { draftEmail } = this.props.email
-        const {newVerven, detailVerven, idVerven, dataDoc} = this.props.verven
+        const {newVerven, detailVerven, idVerven, dataDoc, messAdd} = this.props.verven
         const changeSepar = toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
         // const pages = this.props.depo.page
 
@@ -1771,10 +1821,14 @@ class IKK extends Component {
                         jenis: '',
                         no_npwp: '',
                         no_ktp: '',
-                        alamat: ''
+                        alamat: '',
+                        datef_skb: '',
+                        datel_skb: '',
+                        no_skb: '',
+                        no_skt: ''
                     }}
                     validationSchema={vendorSchema}
-                    onSubmit={(values) => {this.modalConfirmAdd(values)}}
+                    onSubmit={(values) => {this.cekDok(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
@@ -1823,15 +1877,16 @@ class IKK extends Component {
                                 <Input 
                                     type="name"
                                     name="no_npwp"
-                                    value={values.no_npwp.replace(/(\d{2})(\d{3})(\d{3})(\d{1})(\d{3})(\d{3})/, '$1.$2.$3.$4-$5.$6')}
+                                    value={values.no_npwp}
+                                    // .replace(/(\d{2})(\d{3})(\d{3})(\d{1})(\d{3})(\d{3})/, '$1.$2.$3.$4-$5.$6')
                                     onBlur={handleBlur("no_npwp")}
                                     onChange={handleChange("no_npwp")}
                                     minLength={15}
                                     maxLength={15}
                                     className='spaceChar'
                                 />
-                                {values.no_npwp.toString().length < 15 || values.no_npwp.toString().length > 15  ? (
-                                    <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                {values.no_npwp.toString().length !== 15 || errors.no_npwp ? (
+                                    <text className={style.txtError}>must be filled with number & 15 digits characters</text>
                                 ) : null}
                             </div>
                         </div>
@@ -1843,15 +1898,16 @@ class IKK extends Component {
                                 <Input 
                                     type="name"
                                     name="no_ktp"
-                                    value={values.no_ktp}
+                                    disabled={values.jenis === 'Badan' || values.jenis === '' ? true : false}
+                                    value={values.jenis === 'Orang Pribadi' ? values.no_ktp : ''}
                                     onBlur={handleBlur("no_ktp")}
                                     onChange={handleChange("no_ktp")}
                                     minLength={16}
                                     maxLength={16}
                                     className='spaceChar'
                                 />
-                                {values.no_ktp.toString().length < 16 || values.no_ktp.toString().length > 16  ? (
-                                    <text className={style.txtError}>must be filled with 16 digits characters</text>
+                                {values.jenis === 'Orang Pribadi' && (values.no_ktp.toString().length !== 16 || errors.no_ktp)  ? (
+                                    <text className={style.txtError}>must be filled with number & 16 digits characters</text>
                                 ) : null}
                             </div>
                         </div>
@@ -1872,6 +1928,93 @@ class IKK extends Component {
                                 ) : null}
                             </div>
                         </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Vendor Memiliki SKB / SKT
+                            </text>
+                            <div className="col-md-9">
+                                <Input
+                                    type= "select" 
+                                    value={this.state.type_skb}
+                                    onChange={(e) => this.selectTipeSkb(e.target.value)}
+                                    >
+                                        <option value=''>Pilih</option>
+                                        <option value="SKT">SKT</option>
+                                        <option value="SKB">SKB</option>
+                                        <option value="tidak">Tidak</option>
+                                </Input>
+                                {this.state.type_skb === '' ? (
+                                    <text className={style.txtError}>Must be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        {(this.state.type_skb === 'SKT' || this.state.type_skb === 'SKB') && (
+                            <>
+                            {this.state.type_skb === 'SKB' && (
+                                <div className={style.addModalDepo}>
+                                    <text className="col-md-3">
+                                        No SKB
+                                    </text>
+                                    <div className="col-md-9">
+                                        <Input 
+                                        type="name" 
+                                        name="no_skb"
+                                        value={values.no_skb}
+                                        onBlur={handleBlur("no_skb")}
+                                        onChange={handleChange("no_skb")}
+                                        />
+                                        {errors.no_skb ? (
+                                            <text className={style.txtError}>{errors.no_skb}</text>
+                                        ) : null}
+                                    </div>
+                                </div>
+                            )}
+                            {this.state.type_skb === 'SKT' && (
+                                <div className={style.addModalDepo}>
+                                    <text className="col-md-3">
+                                        No SKT
+                                    </text>
+                                    <div className="col-md-9">
+                                        <Input 
+                                        type="name" 
+                                        name="no_skt"
+                                        value={values.no_skt}
+                                        onBlur={handleBlur("no_skt")}
+                                        onChange={handleChange("no_skt")}
+                                        />
+                                        {errors.no_skt ? (
+                                            <text className={style.txtError}>{errors.no_skt}</text>
+                                        ) : null}
+                                    </div>
+                                </div>
+                            )}
+                            <div className={style.addModalDepo}>
+                                <text className="col-md-3">
+                                    Periode SKB / SKT
+                                </text>
+                                <div className="col-md-9 rowCenter">
+                                    <Input
+                                    type= "date"
+                                    value={moment(values.datef_skb).format('YYYY-MM-DD')}
+                                    onBlur={handleBlur("datef_skb")}
+                                    onChange={handleChange("datef_skb")}
+                                    />
+                                    <text className='mr-1 ml-1'>To</text>
+                                    <Input
+                                    type= "date"
+                                    value={moment(values.datel_skb).format('YYYY-MM-DD')}
+                                    onBlur={handleBlur("datel_skb")}
+                                    onChange={handleChange("datel_skb")}
+                                    />
+                                </div>
+                            </div>
+                            {errors.datef_skb || errors.datel_skb ? (
+                                <text className={style.txtError}>must be filled</text>
+                            ) : values.datef_skb > values.datel_skb ? (
+                                <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
+                            ) : null }
+                            </>
+                        )}
                         <hr/>
                         <div className={style.addModalDepo}>
                             <text className="col-md-12 mt-4">
@@ -1899,7 +2042,8 @@ class IKK extends Component {
                                                 onClick={() => this.setState({detail: x})}
                                                 onChange={this.onChangeUpload}
                                                 />
-                                                <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                                <text className="txtError ml-4">Maximum file upload is 25 Mb</text>
+                                                <text className="txtError ml-4">Only excel, pdf, zip, png, jpg and rar files are allowed</text>
                                             </div>
                                         </Col>
                                     ) : (
@@ -1913,7 +2057,8 @@ class IKK extends Component {
                                                 onChange={this.onChangeUpload}
                                                 />
                                             </div>
-                                            <text className="txtError">Maximum file upload is 20 Mb</text>
+                                            <text className="txtError">Maximum file upload is 25 Mb</text>
+                                            <text className="txtError">Only excel, pdf, zip, png, jpg and rar files are allowed</text>
                                         </Col>
                                     )}
                                 </Row>
@@ -1923,7 +2068,23 @@ class IKK extends Component {
                         <div className={style.foot}>
                             <div></div>
                             <div>
-                                <Button className="mr-2" onClick={handleSubmit} color="primary">Submit</Button>
+                                <Button 
+                                className="mr-2" 
+                                onClick={handleSubmit} 
+                                color="primary"
+                                disabled={
+                                    this.state.type_skb === '' ? true
+                                    : this.state.type_skb === 'SKT' && 
+                                    (values.no_skt === '' || values.datef_skb === '' || values.datel_skb === '') ? true 
+                                    : this.state.type_skb === 'SKB' &&
+                                    (values.no_skb === '' || values.datef_skb === '' || values.datel_skb === '') ? true 
+                                    : (values.nama === '' || values.no_npwp.length !== 15 || errors.no_npwp) ? true 
+                                    : values.jenis === 'Orang Pribadi' && (values.nama === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true
+                                    : false
+                                }
+                                >
+                                    Submit
+                                </Button>
                                 <Button className="mr-3" onClick={this.openModalAdd}>Cancel</Button>
                             </div>
                         </div>
@@ -1938,7 +2099,11 @@ class IKK extends Component {
                         nama: idVerven.nama,
                         no_npwp: idVerven.npwp,
                         no_ktp: idVerven.nik,
-                        alamat: idVerven.alamat
+                        alamat: idVerven.alamat,
+                        datef_skb: idVerven.datef_skb,
+                        datel_skb: idVerven.datel_skb,
+                        no_skb: idVerven.no_skb,
+                        no_skt: idVerven.no_skt
                     }}
                     validationSchema={vendorSchema}
                     onSubmit={(values) => {this.prosesEdit(values)}}
@@ -1970,15 +2135,16 @@ class IKK extends Component {
                                 <Input 
                                     type="name"
                                     name="no_npwp"
-                                    value={values.no_npwp.replace(/(\d{2})(\d{3})(\d{3})(\d{1})(\d{3})(\d{3})/, '$1.$2.$3.$4-$5.$6')}
+                                    value={values.no_npwp}
+                                    // .replace(/(\d{2})(\d{3})(\d{3})(\d{1})(\d{3})(\d{3})/, '$1.$2.$3.$4-$5.$6')
                                     onBlur={handleBlur("no_npwp")}
                                     onChange={handleChange("no_npwp")}
                                     minLength={15}
                                     maxLength={15}
                                     className='spaceChar'
                                 />
-                                {values.no_npwp.toString().length < 15 || values.no_npwp.toString().length > 15  ? (
-                                    <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                {values.no_npwp.toString().length !== 15 || errors.no_npwp ? (
+                                    <text className={style.txtError}>must be filled with number & 15 digits characters</text>
                                 ) : null}
                             </div>
                         </div>
@@ -1997,8 +2163,8 @@ class IKK extends Component {
                                     maxLength={16}
                                     className='spaceChar'
                                 />
-                                {values.no_ktp.toString().length < 16 || values.no_ktp.toString().length > 16  ? (
-                                    <text className={style.txtError}>must be filled with 16 digits characters</text>
+                                {values.no_ktp.toString().length !== 16 || errors.no_ktp  ? (
+                                    <text className={style.txtError}>must be filled with number & 16 digits characters</text>
                                 ) : null}
                             </div>
                         </div>
@@ -2019,11 +2185,117 @@ class IKK extends Component {
                                 ) : null}
                             </div>
                         </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Vendor Memiliki SKB / SKT
+                            </text>
+                            <div className="col-md-9">
+                                <Input
+                                    type= "select" 
+                                    // value={values.type_skb}
+                                    // onBlur={handleBlur("type_skb")}
+                                    // onChange={handleChange("type_skb")}
+                                    value={this.state.type_skb}
+                                    onChange={(e) => this.selectTipeSkb(e.target.value)}
+                                    >
+                                        <option value=''>Pilih</option>
+                                        <option value="SKT">SKT</option>
+                                        <option value="SKB">SKB</option>
+                                        <option value="tidak">Tidak</option>
+                                </Input>
+                                {this.state.type_skb === '' ? (
+                                    <text className={style.txtError}>Must be filled</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        {(this.state.type_skb === 'SKT' || this.state.type_skb === 'SKB') && (
+                            <>
+                            {this.state.type_skb === 'SKB' && (
+                                <div className={style.addModalDepo}>
+                                    <text className="col-md-3">
+                                        No SKB
+                                    </text>
+                                    <div className="col-md-9">
+                                        <Input 
+                                        type="name" 
+                                        name="no_skb"
+                                        value={values.no_skb}
+                                        onBlur={handleBlur("no_skb")}
+                                        onChange={handleChange("no_skb")}
+                                        />
+                                        {errors.no_skb ? (
+                                            <text className={style.txtError}>{errors.no_skb}</text>
+                                        ) : null}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {this.state.type_skb === 'SKT' && (
+                                <div className={style.addModalDepo}>
+                                    <text className="col-md-3">
+                                        No SKT
+                                    </text>
+                                    <div className="col-md-9">
+                                        <Input 
+                                        type="name" 
+                                        name="no_skt"
+                                        value={values.no_skt}
+                                        onBlur={handleBlur("no_skt")}
+                                        onChange={handleChange("no_skt")}
+                                        />
+                                        {errors.no_skt ? (
+                                            <text className={style.txtError}>{errors.no_skt}</text>
+                                        ) : null}
+                                    </div>
+                                </div>
+                            )}
+                            <div className={style.addModalDepo}>
+                                <text className="col-md-3">
+                                    Periode SKB / SKT
+                                </text>
+                                <div className="col-md-9 rowCenter">
+                                    <Input
+                                    type= "date"
+                                    value={moment(values.datef_skb).format('YYYY-MM-DD')}
+                                    onBlur={handleBlur("datef_skb")}
+                                    onChange={handleChange("datef_skb")}
+                                    />
+                                    <text className='mr-1 ml-1'>To</text>
+                                    <Input
+                                    type= "date"
+                                    value={moment(values.datel_skb).format('YYYY-MM-DD')}
+                                    onBlur={handleBlur("datel_skb")}
+                                    onChange={handleChange("datel_skb")}
+                                    />
+                                </div>
+                            </div>
+                            {errors.datef_skb || errors.datel_skb ? (
+                                <text className={style.txtError}>must be filled</text>
+                            ) : values.datef_skb > values.datel_skb ? (
+                                <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
+                            ) : null }
+                            </>
+                        )}
                         <hr/>
                         <div className={style.foot}>
                             <div></div>
                             <div>
-                                <Button className="mr-2" onClick={handleSubmit} color="primary">Save</Button>
+                                <Button 
+                                className="mr-2" 
+                                onClick={handleSubmit} 
+                                color="primary"
+                                disabled={
+                                    this.state.type_skb === '' ? true
+                                    : this.state.type_skb === 'SKT' && 
+                                    (values.no_skt === '' || values.datef_skb === '' || values.datel_skb === '') ? true 
+                                    : this.state.type_skb === 'SKB' &&
+                                    (values.no_skb === '' || values.datef_skb === '' || values.datel_skb === '') ? true 
+                                    : (values.nama === '' || values.no_npwp.length !== 15 || errors.no_npwp) ? true 
+                                    : (values.nama === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true
+                                    : false
+                                }>
+                                    Save
+                                </Button>
                                 <Button className="mr-3" onClick={this.openEdit}>Cancel</Button>
                             </div>
                         </div>
@@ -2068,6 +2340,10 @@ class IKK extends Component {
                                         <th>No KTP</th>
                                         <th>No NPWP</th>
                                         <th>Alamat</th>
+                                        <th>Vendor Memiliki SKB / SKT</th>
+                                        <th>No SKB</th>
+                                        <th>No SKT</th>
+                                        <th>Periode SKB / SKT</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -2088,6 +2364,10 @@ class IKK extends Component {
                                                 <th>{item.nik}</th>
                                                 <th>{item.npwp}</th>
                                                 <th>{item.alamat}</th>
+                                                <th>{item.type_skb === null ? 'Tidak' : item.type_skb}</th>
+                                                <th>{item.no_skb === null ? '-' : item.no_skb}</th>
+                                                <th>{item.no_skt === null ? '-' : item.no_skt}</th>
+                                                <th>{item.datef_skb === null ? '-' : `${moment(item.datef_skb).format('DD MMMM YYYY')} - ${moment(item.datef_skb).format('DD MMMM YYYY')}`}</th>
                                                 <th>{item.isreject === 1 ? 'reject' : '-'}</th>
                                             </tr>
                                             )
@@ -2240,6 +2520,7 @@ class IKK extends Component {
                     <Container>
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
+                                x.path !== null &&
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
@@ -2255,15 +2536,27 @@ class IKK extends Component {
                                             <div>
                                                 <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
                                             </div>
-                                            {/* <div className="colDoc">
-                                                <input
-                                                className="ml-4"
-                                                type="file"
-                                                onClick={() => this.setState({detail: x})}
-                                                onChange={this.onChangeUpload}
-                                                />
-                                                <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
-                                            </div> */}
+                                            {level === '5' 
+                                            && detailVerven[0] !== null
+                                            && detailVerven[0] !== undefined 
+                                            && detailVerven[0].status_reject === 1 
+                                            && detailVerven[0].status_transaksi !== 0 
+                                            && (
+                                                <>
+                                                <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+                                                <div className="colDoc">
+                                                    <input
+                                                    type="file"
+                                                    className='ml-4'
+                                                    onClick={() => this.setState({detail: x})}
+                                                    onChange={this.onChangeUpload}
+                                                    />
+                                                    <text className="txtError ml-4">Maximum file upload is 25 Mb</text>
+                                                    <text className="txtError ml-4">Only excel, pdf, zip, png, jpg and rar files are allowed</text>
+                                                </div>
+                                                </>
+                                            )}
+                                            
                                         </Col>
                                     ) : (
                                         // <Col md={6} lg={6} className="colDoc">
@@ -2399,7 +2692,7 @@ class IKK extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.verven.isLoading || this.props.menu.isLoading || this.props.verven.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading} size="sm">
+                <Modal isOpen={this.props.verven.isLoading || this.props.menu.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2603,6 +2896,14 @@ class IKK extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Reject</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'addFalse' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                                <div className={[style.sucUpdate, style.green]}>{messAdd}</div>
+                            </div>
+                        </div>
                     ) : this.state.confirm === 'inputVerif' ? (
                         <div>
                             <div className={style.cekUpdate}>
@@ -2610,10 +2911,37 @@ class IKK extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Update Nilai Yang Diterima</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'verifdoc' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                                <div className={[style.sucUpdate, style.green]}>Pastikan seluruh dokumen lampiran telah diupload</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'maxUpload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Upload Dokumen</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Pastikan Size Dokumen Tidak Lebih Dari 25 MB</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'onlyUpload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Upload Dokumen</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Web Hanya Menerima Tipe Dokumen excel, pdf, zip, png, jpg dan rar </div>
+                            </div>
+                        </div>
                     ) : (
                         <div></div>
                     )}
                 </ModalBody>
+                <div className='row justify-content-md-center mb-4'>
+                    <Button size='lg' onClick={() => this.openConfirm(false)} color='primary'>OK</Button>
+                </div>
             </Modal>
             <Modal isOpen={this.state.openPdf} size="xl" toggle={this.openModalPdf} centered={true}>
                 <ModalHeader>Dokumen</ModalHeader>

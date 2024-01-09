@@ -852,6 +852,9 @@ html,body{
     background-color: transparent;
     align-self: flex-start;
 }
+.secondary{
+    color: #9b9b9b;
+}
 .mainRinci{
     display: flex;
     flex-direction: row;

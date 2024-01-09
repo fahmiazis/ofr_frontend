@@ -40,6 +40,7 @@ import dokumen from '../../redux/actions/dokumen'
 import FAA from '../../components/Klaim/FAA'
 import FPD from '../../components/Klaim/FPD'
 import Countdown from 'react-countdown'
+import ListOutlet from '../../components/Klaim/ListOutlet'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 const {REACT_APP_BACKEND_URL} = process.env
@@ -188,9 +189,9 @@ class Klaim extends Component {
             this.setState({modalConfirm: false})
         } else {
             this.setState({modalConfirm: true})
-            setTimeout(() => {
-                this.setState({modalConfirm: false})
-             }, 3000)
+            // setTimeout(() => {
+            //     this.setState({modalConfirm: false})
+            //  }, 3000)
         }
     }
     
@@ -411,13 +412,6 @@ class Klaim extends Component {
         this.props.history.push(`/${val}`)
     }
 
-    getDetailStock = async (value) => {
-        const token = localStorage.getItem("token")
-        this.setState({dataItem: value})
-        await this.props.getDetailStock(token, value.id)
-        this.openModalRinci()
-    }
-
     deleteStock = async (value) => {
         const token = localStorage.getItem("token")
         await this.props.deleteStock(token, value.id)
@@ -445,7 +439,7 @@ class Klaim extends Component {
         const {item, type} = (this.props.location && this.props.location.state) || {}
         if (type === 'approve') {
             this.getDataKlaim()
-            this.prosesDetail(item)
+            // this.prosesDetail(item)
         } else if (dataCek !== undefined && dataCek !== null) {
             const data = {
                 no_transaksi: dataCek
@@ -581,6 +575,7 @@ class Klaim extends Component {
         await this.props.getDetail(token, tempno)
         await this.props.getApproval(token, tempno)
         await this.props.getDocKlaim(token, data)
+        await this.props.getOutlet(token, val.id)
         this.openModalRinci()
     }
 
@@ -704,6 +699,7 @@ class Klaim extends Component {
         await this.props.getDetail(token, tempno)
         await this.props.getApproval(token, tempno)
         await this.props.getDocKlaim(token, data)
+        await this.props.getOutlet(token, val.id)
         this.openModalRinci()
         this.openProsesModalDoc(sendDoc)
     }
@@ -1875,7 +1871,7 @@ class Klaim extends Component {
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
+                                                <th>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 0 ? 'Ya' : ''}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
                                                 <th>{item.ppu}</th>
@@ -1889,6 +1885,7 @@ class Klaim extends Component {
                                         })}
                                 </tbody>
                             </Table>
+                            <ListOutlet />
                         </div>
                     </ModalBody>
                     <div className="modalFoot ml-3">
@@ -2368,6 +2365,9 @@ class Klaim extends Component {
                         <div></div>
                     )}
                 </ModalBody>
+                <div className='row justify-content-md-center mb-4'>
+                    <Button size='lg' onClick={() => this.openConfirm(false)} color='primary'>OK</Button>
+                </div>
             </Modal>
             <Modal isOpen={this.state.alert} size="sm">
                 <ModalBody>
@@ -2385,7 +2385,7 @@ class Klaim extends Component {
                 </ModalHeader>
                 <ModalBody>
                 <Container>
-                        {dataDoc.length >= 0 && (
+                        {dataDoc.length > 0 && (
                             <Row className="mt-3 mb-4">
                                 <Col md={12} lg={12} className='mb-2' >
                                     <div className="btnDocIo mb-2 ml-4" >
@@ -2422,8 +2422,32 @@ class Klaim extends Component {
                                                 <BsCircle size={20} />
                                             )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
-                                            <div className='mt-3'>
-                                                <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
+                                            <div className='mt-3 mb-3'>
+                                                {this.state.filter === 'available' ? (
+                                                    <div>
+                                                        <Button 
+                                                        color="success" 
+                                                        onClick={() => {this.setState({idDoc: x.id}); this.openModalAppDoc()}}
+                                                        >
+                                                            Approve
+                                                        </Button>
+                                                        <Button 
+                                                        className='ml-1' 
+                                                        color="danger" 
+                                                        onClick={() => {this.setState({idDoc: x.id}); this.openModalRejDoc()}}
+                                                        >
+                                                            Reject
+                                                        </Button>
+                                                        <Button className='ml-1' color='warning' onClick={() => this.docHistory(x)}>history</Button>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <Button color='warning' onClick={() => this.docHistory(x)}>history</Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className={style.readPdf}>
+                                                <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${x.id}`} dataFile={x} />
                                             </div>
                                             {/* <div className="colDoc">
                                                 <input
@@ -2481,7 +2505,7 @@ class Klaim extends Component {
                 <ModalHeader>Dokumen</ModalHeader>
                 <ModalBody>
                     <div className={style.readPdf}>
-                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} />
+                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} dataFile={this.state.fileName} />
                     </div>
                     <hr/>
                     <div className={style.foot}>
@@ -2620,7 +2644,8 @@ const mapDispatchToProps = {
     rejectDokumen: dokumen.rejectDokumen,
     updateNilaiVerif: klaim.updateNilaiVerif,
     addNotif: notif.addNotif,
-    getResmail: email.getResmail
+    getResmail: email.getResmail,
+    getOutlet: klaim.getOutlet,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Klaim)

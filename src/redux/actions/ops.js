@@ -39,6 +39,10 @@ export default {
         type: 'GET_OPS',
         payload: http(token).get(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${kasbon}&realisasi=${realisasi}&search=${search === undefined ? '' : search}`),
     }),
+    getKasbon: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search) => ({
+        type: 'GET_KASBON',
+        payload: http(token).get(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${'kasbon'}&realisasi=${realisasi}&search=${search === undefined ? '' : search}`),
+    }),
     getDetail: (token, no) => ({
         type: 'DETAIL_OPS',
         payload: http(token).patch(`/ops/detail`, qs.stringify(no)),
@@ -126,6 +130,26 @@ export default {
     updateNilaiVerif: (token, data) => ({
         type: 'UPDATE_NILAIOPS',
         payload: http(token).patch(`/ops/upniverif`, qs.stringify(data))
+    }),
+    deleteBbm: (token, id) => ({
+        type: 'DELETE_BBM',
+        payload: http(token).delete(`/ops/bbm/del/${id}`)
+    }),
+    getBbm: (token, id) => ({
+        type: 'GET_BBM',
+        payload: http(token).get(`/ops/bbm/get/${id}`)
+    }),
+    uploadBbm: (token, data) => ({
+        type: 'UPLOAD_BBM',
+        payload: http(token).patch(`/ops/bbm/upload`, data)
+    }),
+    updateBbm: (token, data) => ({
+        type: 'UPDATE_BBM',
+        payload: http(token).patch(`/ops/bbm/update`, data)
+    }),
+    addBbm: (token, data) => ({
+        type: 'ADD_BBM',
+        payload: http(token).patch(`/ops/bbm/add`, data)
     }),
     resetOps: () => ({
         type: 'RESET_OPS'

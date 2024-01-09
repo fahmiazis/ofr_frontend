@@ -11,7 +11,7 @@ import {FaSearch, FaUserCircle, FaBars} from 'react-icons/fa'
 import {AiOutlineFileExcel, AiFillCheckCircle} from 'react-icons/ai'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import depo from '../../redux/actions/depo'
+import scylla from '../../redux/actions/scylla'
 import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
 import auth from '../../redux/actions/auth'
@@ -22,28 +22,18 @@ import SidebarContent from "../../components/sidebar_content";
 import NavBar from '../../components/NavBar'
 const {REACT_APP_BACKEND_URL} = process.env
 
-const depoSchema = Yup.object().shape({
+const scyllaSchema = Yup.object().shape({
+    kd_reg: Yup.string().required('must be filled'),
+    region: Yup.string().required('must be filled'),
+    kd_sap2: Yup.string().required('must be filled'),
     kode_plant: Yup.string().required('must be filled'),
+    kode_depo: Yup.string().required('must be filled'),
+    initial_depo: Yup.string().required('must be filled'),
+    nm_depo: Yup.string().required('must be filled'),
     area: Yup.string().required('must be filled'),
     channel: Yup.string().required('must be filled'),
-    distribution: Yup.string().required('must be filled'),
-    status_area: Yup.string().required('must be filled'),
-    profit_center: Yup.string().required('must be filled'),
-    cost_center: Yup.string().required('must be filled'),
-    kode_sap_1: Yup.string().required('must be filled'),
-    kode_sap_2: Yup.string().validateSync(''),
-    nom: Yup.string().required('must be filled'),
-    om: Yup.string().required('must be filled'),
-    bm: Yup.string().required('must be filled'),
-    aos: Yup.string().required('must be filled'),
-    pic_finance: Yup.string().required('must be filled'),
-    spv_finance: Yup.string().required('must be filled'),
-    asman_finance: Yup.string().required('must be filled'),
-    manager_finance: Yup.string().required('must be filled'),
-    pic_klaim: Yup.string().required('must be filled'),
-    manager_klaim: Yup.string().required('must be filled'),
-    pic_tax: Yup.string().required('must be filled'),
-    manager_tax: Yup.string().required('must be filled'),
+    status: Yup.string().required('must be filled'),
+    system: Yup.string().required('must be filled')
 })
 
 const genSchema = Yup.object().shape({
@@ -51,7 +41,7 @@ const genSchema = Yup.object().shape({
 });
 
 
-class MasterDepo extends Component {
+class MasterScylla extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -90,13 +80,13 @@ class MasterDepo extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.depo
+        const { page } = this.props.scylla
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.depo
+        const { page } = this.props.scylla
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.prevLink)
     }
@@ -113,14 +103,14 @@ class MasterDepo extends Component {
 
     DownloadTemplate = () => {
         axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/depo.xlsx`,
+            url: `${REACT_APP_BACKEND_URL}/masters/scylla.xlsx`,
             method: 'GET',
             responseType: 'blob',
         }).then((response) => {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master depo.xlsx");
+            link.setAttribute('download', "master scylla.xlsx");
             document.body.appendChild(link);
             link.click();
         });
@@ -171,15 +161,15 @@ class MasterDepo extends Component {
         this.setState({modalUpload: !this.state.modalUpload})
     }
 
-    addDepo = async (values) => {
+    addScylla = async (values) => {
         const token = localStorage.getItem("token")
-        await this.props.addDepo(token, values)
-        const {isAdd} = this.props.depo
+        await this.props.addScylla(token, values)
+        const {isAdd} = this.props.scylla
         if (isAdd) {
             this.setState({confirm: 'add'})
             this.openConfirm()
             this.openModalAdd()
-            this.getDataDepo()
+            this.getDataScylla()
         }
     }
 
@@ -203,20 +193,20 @@ class MasterDepo extends Component {
         await this.props.uploadMaster(token, data)
     }
 
-    editDepo = async (values, id) => {
+    editScylla = async (values, id) => {
         const token = localStorage.getItem("token")
-        await this.props.updateDepo(token, id, values)
-        const {isUpdate} = this.props.depo
+        await this.props.updateScylla(token, id, values)
+        const {isUpdate} = this.props.scylla
         if (isUpdate) {
             this.setState({confirm: 'edit'})
             this.openConfirm()
-            this.getDataDepo()
+            this.getDataScylla()
             this.openModalEdit()
         }
     }
 
     componentDidUpdate() {
-        const {isError, isUpload, isExport} = this.props.depo
+        const {isError, isUpload, isExport} = this.props.scylla
         if (isError) {
             this.props.resetError()
             this.showAlert()
@@ -226,7 +216,7 @@ class MasterDepo extends Component {
                 this.setState({modalUpload: false})
              }, 2000)
              setTimeout(() => {
-                this.getDataDepo()
+                this.getDataScylla()
              }, 2100)
         } else if (isExport) {
             this.props.resetError()
@@ -235,7 +225,7 @@ class MasterDepo extends Component {
     }
 
     DownloadMaster = () => {
-        const {link} = this.props.depo
+        const {link} = this.props.scylla
         axios({
             url: `${link}`,
             method: 'GET',
@@ -244,29 +234,29 @@ class MasterDepo extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master depo.xlsx"); //or any other extension
+            link.setAttribute('download', "master scylla.xlsx"); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
     }
 
     componentDidMount() {
-        this.getDataDepo()
+        this.getDataScylla()
     }
 
     onSearch = (e) => {
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            this.getDataDepo({limit: 10, search: this.state.search})
+            this.getDataScylla({limit: 10, search: this.state.search})
         }
     }
 
-    getDataDepo = async (value) => {
+    getDataScylla = async (value) => {
         const token = localStorage.getItem("token")
-        const { page } = this.props.depo
+        const { page } = this.props.scylla
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
-        await this.props.getDepo(token, limit, search, page.currentPage)
+        await this.props.getScylla(token, limit, search, page.currentPage)
         this.setState({limit: value === undefined ? 10 : value.limit})
     }
 
@@ -305,7 +295,7 @@ class MasterDepo extends Component {
 
     render() {
         const {dropOpen, detail, upload, errMsg} = this.state
-        const {dataDepo, isGet, alertM, alertMsg, alertUpload, page} = this.props.depo
+        const {dataScylla, isGet, alertM, alertMsg, alertUpload, page} = this.props.scylla
         const {dataRole} = this.props.user
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
@@ -356,7 +346,7 @@ class MasterDepo extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master Area</div>
+                                    <div className={style.titleDashboard}>Master Depo Scylla</div>
                                 </div>
                                 <div className={style.secHeadDashboard}>
                                     <div>
@@ -366,9 +356,9 @@ class MasterDepo extends Component {
                                             {this.state.limit}
                                         </DropdownToggle>
                                         <DropdownMenu>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataDepo({limit: 10, search: ''})}>10</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataDepo({limit: 20, search: ''})}>20</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataDepo({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataScylla({limit: 10, search: ''})}>10</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataScylla({limit: 20, search: ''})}>20</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataScylla({limit: 50, search: ''})}>50</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -397,85 +387,40 @@ class MasterDepo extends Component {
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th onClick={() => this.prosesGenerate('aos')}>
-                                                    Kode Plant
-                                                </th>
-                                                <th>Nama Area</th>
-                                                <th>Channel</th>
-                                                <th>Distribution</th>
-                                                <th>Status Depo</th>
-                                                <th>Profit Center</th>
-                                                <th>Cost Center</th>
-                                                <th>Kode SAP 1</th>
-                                                <th>Kode SAP 2</th>
-                                                <th onClick={() => this.prosesGenerate('nom')}>
-                                                    Nama NOM
-                                                </th>
-                                                <th onClick={() => this.prosesGenerate('om')}>
-                                                    Nama OM
-                                                </th>
-                                                <th onClick={() => this.prosesGenerate('bm')}>
-                                                    Nama BM
-                                                </th>
-                                                <th onClick={() => this.prosesGenerate('aos')}>
-                                                    Nama AOS
-                                                </th>
-                                                <th onClick={() => this.prosesGenerate('pic_finance')}>
-                                                    PIC FINANCE
-                                                </th>
-                                                <th onClick={() => this.prosesGenerate('spv_finance')}>
-                                                    SPV FINANCE</th>
-                                                <th onClick={() => this.prosesGenerate('asman_finance')}>
-                                                    ASMAN FINANCE
-                                                </th>
-                                                <th onClick={() => this.prosesGenerate('manager_finance')}>
-                                                    MANAGER FINANCE
-                                                </th>
-                                                <th onClick={() => this.prosesGenerate('pic_klaim')}>
-                                                    PIC KLAIM
-                                                </th>
-                                                <th onClick={() => this.prosesGenerate('manager_klaim')}>
-                                                    MANAGER KLAIM
-                                                </th>
-                                                <th onClick={() => this.prosesGenerate('pic_tax')}>
-                                                    PIC TAX
-                                                </th>
-                                                <th onClick={() => this.prosesGenerate('manager_tax')}>
-                                                    MANAGER TAX
-                                                </th>
+                                                <th>kd_reg</th>
+                                                <th>region</th>
+                                                <th>kd_sap2</th>
+                                                <th>kode_plant</th>
+                                                <th>kode_depo</th>
+                                                <th>initial_depo</th>
+                                                <th>nm_depo</th>
+                                                <th>area</th>
+                                                <th>channel</th>
+                                                <th>status</th>
+                                                <th>system</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {dataDepo.length !== 0 && dataDepo.map(item => {
+                                            {dataScylla.length !== 0 && dataScylla.map(item => {
                                                 return (
                                                 <tr onClick={() => this.openModalEdit(this.setState({detail: item}))}>
-                                                    <th scope="row">{(dataDepo.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
-                                                    <td>{item.kode_plant}</td>
-                                                    <td>{item.area}</td>
-                                                    <td>{item.channel}</td>
-                                                    <td>{item.distribution}</td>
-                                                    <td>{item.status_area}</td>
-                                                    <td>{item.profit_center}</td>
-                                                    <td>{item.cost_center}</td>
-                                                    <td>{item.kode_sap_1}</td>
-                                                    <td>{item.kode_sap_2}</td>
-                                                    <td>{item.nom}</td>
-                                                    <td>{item.om}</td>
-                                                    <td>{item.bm}</td>
-                                                    <td>{item.aos}</td>
-                                                    <td>{item.pic_finance}</td>
-                                                    <td>{item.spv_finance}</td>
-                                                    <td>{item.asman_finance}</td>
-                                                    <td>{item.manager_finance}</td>
-                                                    <td>{item.pic_klaim}</td>
-                                                    <td>{item.manager_klaim}</td>
-                                                    <td>{item.pic_tax}</td>
-                                                    <td>{item.manager_tax}</td>
+                                                    <th scope="row">{(dataScylla.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
+                                                    <th>{item.kd_reg}</th>
+                                                    <th>{item.region}</th>
+                                                    <th>{item.kd_sap2}</th>
+                                                    <th>{item.kode_plant}</th>
+                                                    <th>{item.kode_depo}</th>
+                                                    <th>{item.initial_depo}</th>
+                                                    <th>{item.nm_depo}</th>
+                                                    <th>{item.area}</th>
+                                                    <th>{item.channel}</th>
+                                                    <th>{item.status}</th>
+                                                    <th>{item.system}</th>
                                                 </tr>
                                                 )})}
                                         </tbody>
                                     </Table>
-                                    {dataDepo.length === 0 && (
+                                    {dataScylla.length === 0 && (
                                         <div className={style.spin}>
                                             Data tidak ditemukan
                                         </div>
@@ -556,7 +501,7 @@ class MasterDepo extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd} size="lg">
-                    <ModalHeader>Add Depo</ModalHeader>
+                    <ModalHeader>Add Depo Scylla</ModalHeader>
                     <Formik
                     initialValues={{
                         area: "",
@@ -581,12 +526,12 @@ class MasterDepo extends Component {
                         pic_tax: "",
                         manager_tax: "",
                     }}
-                    validationSchema={depoSchema}
-                    onSubmit={(values) => {this.addDepo(values)}}
+                    validationSchema={scyllaSchema}
+                    onSubmit={(values) => {this.addScylla(values)}}
                     >
                     {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <div className={style.bodyDepo}>
-                    <ModalBody className={style.addDepo}>
+                    <ModalBody className={style.addScylla}>
                         <div className="col-md-6">
                             <div className={style.addModalDepo}>
                                 <text className="col-md-4">
@@ -676,7 +621,7 @@ class MasterDepo extends Component {
                                     onChange={handleChange("status_area")}
                                     onBlur={handleBlur("status_area")}
                                     >
-                                        <option>-Pilih Status Depo-</option>
+                                        <option>-Pilih Status-</option>
                                         <option value="Cabang SAP">Cabang SAP</option>
                                         <option value="Cabang Scylla">Cabang Scylla</option>
                                         <option value="Depo SAP">Depo SAP</option>
@@ -976,7 +921,7 @@ class MasterDepo extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit} size="lg">
-                    <ModalHeader toggle={this.openModalEdit}>Edit Master Depo</ModalHeader>
+                    <ModalHeader toggle={this.openModalEdit}>Edit Master Depo Scylla</ModalHeader>
                     <Formik
                     initialValues={{
                         area: detail.area === null ? '' : detail.area,
@@ -1001,12 +946,12 @@ class MasterDepo extends Component {
                         pic_tax: detail.pic_tax === null ? '' : detail.pic_tax,
                         manager_tax: detail.manager_tax === null ? '' : detail.manager_tax,
                     }}
-                    validationSchema={depoSchema}
-                    onSubmit={(values) => {this.editDepo(values, detail.id)}}
+                    validationSchema={scyllaSchema}
+                    onSubmit={(values) => {this.editScylla(values, detail.id)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                         <div className={style.bodyDepo}>
-                        <ModalBody className={style.addDepo}>
+                        <ModalBody className={style.addScylla}>
                         <div className="col-md-6">
                             <div className={style.addModalDepo}>
                                 <text className="col-md-4">
@@ -1396,7 +1341,7 @@ class MasterDepo extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
-                    <ModalHeader>Upload Master Depo</ModalHeader>
+                    <ModalHeader>Upload Master Depo Scylla</ModalHeader>
                     <ModalBody className={style.modalUpload}>
                         <div className={style.titleModalUpload}>
                             <text>Upload File: </text>
@@ -1424,12 +1369,12 @@ class MasterDepo extends Component {
                         {this.state.confirm === 'edit' ? (
                         <div className={style.cekUpdate}>
                             <AiFillCheckCircle size={80} className={style.green} />
-                            <div className={style.sucUpdate}>Berhasil Memperbarui Depo</div>
+                            <div className={style.sucUpdate}>Berhasil Memperbarui Depo Scylla</div>
                         </div>
                         ) : this.state.confirm === 'add' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menambahkan Depo</div>
+                                <div className={style.sucUpdate}>Berhasil Menambahkan Depo Scylla</div>
                             </div>
                         ) : this.state.confirm === 'generate' ? (
                             <div className={style.cekUpdate}>
@@ -1440,7 +1385,7 @@ class MasterDepo extends Component {
                             <div>
                                 <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Mengupload Master Depo</div>
+                                <div className={style.sucUpdate}>Berhasil Mengupload Master Depo Scylla</div>
                             </div>
                             </div>
                         ) : (
@@ -1448,7 +1393,7 @@ class MasterDepo extends Component {
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.depo.isLoading ? true: false} size="sm">
+                <Modal isOpen={this.props.scylla.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1458,7 +1403,7 @@ class MasterDepo extends Component {
                         </div>
                         </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.depo.isUpload ? true: false} size="sm">
+                <Modal isOpen={this.props.scylla.isUpload ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1474,21 +1419,21 @@ class MasterDepo extends Component {
 }
 
 const mapStateToProps = state => ({
-    depo: state.depo,
+    scylla: state.scylla,
     user: state.user
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
-    addDepo: depo.addDepo,
-    updateDepo: depo.updateDepo,
-    getDepo: depo.getDepo,
-    resetError: depo.resetError,
-    uploadMaster: depo.uploadMaster,
-    nextPage: depo.nextPage,
-    exportMaster: depo.exportMaster,
+    addScylla: scylla.addScylla,
+    updateScylla: scylla.updateScylla,
+    getScylla: scylla.getScylla,
+    resetError: scylla.resetError,
+    uploadMaster: scylla.uploadMaster,
+    nextPage: scylla.nextPage,
+    exportMaster: scylla.exportMaster,
     getRole: user.getRole,
     generateUser: user.generateUser
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(MasterDepo)
+export default connect(mapStateToProps, mapDispatchToProps)(MasterScylla)

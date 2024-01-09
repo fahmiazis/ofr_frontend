@@ -202,7 +202,7 @@ class Home extends Component {
                         <div className="titHome">Welcome to web finance</div>
                         <div className="txtChoose">Please select an option</div>
                         <div className="mainBody">
-                            {level === '4' || level === '14' ? null : (
+                            {level === '4' || level === '14' || level === '24' || level === '34' || level === '102' ? null : (
                                 <button className="cardHome1" onClick={() => this.goRoute('navklaim')}>
                                     <FaHandshake size={220} className="picHome" />
                                     <div className="titCard">

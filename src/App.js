@@ -25,7 +25,7 @@ import PayKlaim from './pages/Klaim/PayKlaim'
 import NavAjuan from './pages/Klaim/NavAjuan'
 import KlaimFaa from './components/Klaim/FAA'
 import KlaimFpd from './components/Klaim/FPD'
-import FormList from './components/FormList'
+import FormList from './components/Klaim/FormList'
 
 //Operasional
 import NavOps from './pages/Ops/NavOps'
@@ -69,6 +69,7 @@ import VerifRealKasbon from './pages/Kasbon/VerifRealKasbon'
 
 //Master
 import MasterDepo from './pages/Master/MasterDepo'
+import MasterScylla from './pages/Master/MasterScylla'
 import MasterDokumen from './pages/Master/MasterDokumen'
 import MasterCoa from './pages/Master/MasterCoa'
 import MasterBank from './pages/Master/MasterBank'
@@ -341,6 +342,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/glikk'>
                     <MasterGlikk />
+                </PrivateRoute>
+                <PrivateRoute path='/scylla'>
+                    <MasterScylla />
                 </PrivateRoute>
             </Switch>
         </BrowserRouter>

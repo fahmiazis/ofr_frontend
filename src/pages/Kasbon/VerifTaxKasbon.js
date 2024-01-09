@@ -41,6 +41,8 @@ import email from '../../redux/actions/email'
 import Email from '../../components/Ops/Email'
 import fs from "file-saver"
 import NumberInput from '../../components/NumberInput'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 
 const nonObject = 'Non Object PPh'
 const {REACT_APP_BACKEND_URL} = process.env
@@ -132,10 +134,44 @@ class VerifKasbon extends Component {
             time2: moment().format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
+            dataZip: [],
             docCon: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    checkDoc = (val) => {
+        const { dataZip } = this.state
+        const {dataDoc} = this.props.ops
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataDoc.length; i++) {
+                data.push(dataDoc[i].id)
+            }
+            this.setState({dataZip: data})
+        } else {
+            dataZip.push(val)
+            this.setState({dataZip: dataZip})
+        }
+    }
+
+    unCheckDoc = (val) => {
+        const {dataZip} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({dataZip: data})
+        } else {
+            const data = []
+            for (let i = 0; i < dataZip.length; i++) {
+                if (dataZip[i] === val) {
+                    data.push()
+                } else {
+                    data.push(dataZip[i])
+                }
+            }
+            this.setState({dataZip: data})
+        }
     }
 
     submitStock = async () => {
@@ -201,6 +237,50 @@ class VerifKasbon extends Component {
     getApproveStock = async (value) => { 
         const token = localStorage.getItem('token')
         await this.props.getApproveStock(token, value.no, value.nama)
+    }
+
+    approveZip = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc, dataZip} = this.state
+        const { detailOps } = this.props.ops
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
+        const data = {
+            list: dataZip
+        }
+        await this.props.approveDokumen(token, idDoc, data)
+        await this.props.getDocOps(token, tempno)
+        this.setState({confirm: 'isAppDoc'})
+        this.openConfirm()
+        this.openModalAppZip()
+    }
+
+    openModalAppZip = () => {
+        this.setState({openAppZip: !this.state.openAppZip})
+    }
+
+    rejectZip = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc, dataZip} = this.state
+        const { detailOps } = this.props.ops
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
+        const data = {
+            list: dataZip
+        }
+        await this.props.rejectDokumen(token, idDoc, data)
+        await this.props.getDocOps(token, tempno)
+        this.setState({confirm: 'isRejDoc'})
+        this.openConfirm()
+        this.openModalRejZip()
+    }
+
+    openModalRejZip = () => {
+        this.setState({openRejZip: !this.state.openRejZip})
     }
 
     rejectOps = async (val) => {
@@ -1160,6 +1240,28 @@ class VerifKasbon extends Component {
             this.setState({listMut: data})
         }
     }
+
+    downloadDataZip = () => {
+        const {dataZip} = this.state
+        const {dataDoc} = this.props.ops
+        let zip = new JSZip();
+    
+        const remoteZips = dataDoc.map(async (item) => {
+            const cekData = dataZip.find(e => e === item.id)
+            if (cekData !== undefined) {
+                const response = await fetch(`${REACT_APP_BACKEND_URL}/show/doc/${item.id}`);
+                const data = await response.blob();
+                zip.file(`${item.desc} ~ ${item.history}`, data);
+                return data;
+            }
+        })
+
+        Promise.all(remoteZips).then(() => {
+            zip.generateAsync({ type: "blob" }).then((content) => {
+              saveAs(content, `Dokumen Lampiran ${dataDoc[0].no_transaksi} ${moment().format('DDMMYYYY h:mm:ss')}.zip`);
+            })
+          })
+    }
     
     confirmIdent = async (val) => {
         const token = localStorage.getItem("token")
@@ -1202,7 +1304,7 @@ class VerifKasbon extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dropApp, dataItem, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
+        const {dataRinci, dataZip, dataItem, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
@@ -2138,7 +2240,7 @@ class VerifKasbon extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.props.dokumen.isLoading || this.props.email.isLoading} size="sm">
+                <Modal isOpen={this.props.ops.isLoading || this.props.dokumen.isLoading || this.props.notif.isLoading || this.props.email.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2298,13 +2400,34 @@ class VerifKasbon extends Component {
                 </ModalHeader>
                 <ModalBody>
                     <Container>
+                        {dataDoc.length > 0 && (
+                            <Row className="mt-3 mb-4">
+                                <Col md={12} lg={12} className='mb-2' >
+                                    <div className="btnDocIo mb-2 ml-4" >
+                                        <Input 
+                                            type='checkbox'
+                                            checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
+                                            onChange={() => dataZip.length === dataDoc.length ? this.unCheckDoc('all') : this.checkDoc('all')}
+                                        />
+                                        Ceklis All
+                                    </div>
+                                </Col>
+                            </Row>
+                        )}
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
                                 x.path !== null &&
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null && (
                                         <Col md={12} lg={12} className='mb-2' >
-                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
+                                            <div className="btnDocIo mb-2 ml-4" >
+                                                <Input 
+                                                    type='checkbox'
+                                                    checked={dataZip.find(element => element === x.id) !== undefined ? true : false}
+                                                    onChange={dataZip.find(element => element === x.id) === undefined ? () => this.checkDoc(x.id) : () => this.unCheckDoc(x.id)}
+                                                />
+                                                {x.desc === null ? 'Lampiran' : x.desc}
+                                            </div>
                                                 {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
                                                 x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
                                                 : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
@@ -2332,25 +2455,24 @@ class VerifKasbon extends Component {
                         })}
                     </Container>
                 </ModalBody>
-                <ModalFooter>
-                    <Button className="mr-2" color="secondary" onClick={this.openModalDoc}>
-                        Close
-                    </Button>
-                    {/* {this.state.stat === 'DIPINJAM SEMENTARA' && (dataDoc.length === 0 || dataDoc.find(({status}) => status === 1) === undefined) ? (
-                        <Button color="primary" disabled onClick={this.updateStatus}>
-                            Save 
+                <div className="modalFoot ml-3">
+                    <div className="btnFoot">
+                        <Button disabled={dataZip.length === 0} className="mr-2" color="success" onClick={this.openModalAppZip}>
+                            Approve Document
                         </Button>
-                    ) : this.state.stat === 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.updateStatus}>
-                            Save 
+                        <Button disabled={dataZip.length === 0} className="mr-2" color="danger" onClick={this.openModalRejZip}>
+                            Reject Document
                         </Button>
-                    )}
-                    {this.state.stat !== 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.openModalDoc}>
-                            Save 
+                    </div>
+                    <div className="btnFoot">
+                        <Button disabled={dataZip.length === 0} className="mr-2" color="primary" onClick={this.downloadDataZip}>
+                            Download Document
                         </Button>
-                    )} */}
-                </ModalFooter>
+                        <Button color="secondary" onClick={this.openModalDoc}>
+                            Close
+                        </Button>
+                    </div>
+                </div>
             </Modal>
             <Modal isOpen={this.state.openPdf} size="xl" toggle={this.openModalPdf} centered={true}>
                 <ModalHeader>Dokumen</ModalHeader>
@@ -2482,6 +2604,42 @@ class VerifKasbon extends Component {
                                     Submit & Send Email
                                 </Button>
                                 <Button className="mr-3" onClick={this.openDraftEmail}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.openAppZip} toggle={this.openModalAppZip} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk approve     
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.approveZip()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalAppZip}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.openRejZip} toggle={this.openModalRejZip} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk reject     
+                                    <text className={style.verif}> </text>
+                                    pada tanggal
+                                    <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.rejectZip()}>Ya</Button>
+                                <Button color="secondary" onClick={this.openModalRejZip}>Tidak</Button>
                             </div>
                         </div>
                     </ModalBody>

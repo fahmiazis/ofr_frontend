@@ -136,6 +136,7 @@ class TableRincian extends Component {
                     name="subject"
                     value={this.state.subject}
                     onChange={e => this.onEnter(e.target)}
+                    disabled
                     // onBlur={handleBlur("subject")}
                     // onChange={handleChange("subject")}
                     />

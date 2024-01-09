@@ -18,6 +18,8 @@ import MaterialTitlePanel from "../../components/material_title_panel";
 import SidebarContent from "../../components/sidebar_content";
 import moment from 'moment'
 import NavBar from '../../components/NavBar'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 
 const fakturSchema = Yup.object().shape({
@@ -85,6 +87,48 @@ class MasterFaktur extends Component {
         this.menuButtonClick = this.menuButtonClick.bind(this);
     }
 
+    downloadTemplate = () => {
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data klaim')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [					
+            {header: 'NOMOR_FAKTUR', key: 'c1'},
+            {header: 'TANGGAL_FAKTUR', key: 'c2'},
+            {header: 'NPWP', key: 'c3'},
+            {header: 'NAMA', key: 'c4'},
+            {header: 'JUMLAH_DPP', key: 'c5'},
+            {header: 'JUMLAH_PPN', key: 'c6'},
+        ]
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+                cell.border = borderStyles;
+            })
+        })
+
+        ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+                new Blob([buffer], { type: "application/octet-stream" }),
+                `Template upload faktur ${moment().format('DD MMMM YYYY')}.xlsx`
+            )
+        })
+    }
+
     showAlert = () => {
         this.setState({alert: true, modalEdit: false, modalAdd: false, modalUpload: false })
        
@@ -123,7 +167,7 @@ class MasterFaktur extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master coa.xlsx"); //or any other extension
+            link.setAttribute('download', "master faktur.xlsx"); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -162,14 +206,14 @@ class MasterFaktur extends Component {
 
     DownloadTemplate = () => {
         axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/coa.xlsx`,
+            url: `${REACT_APP_BACKEND_URL}/masters/faktur.xlsx`,
             method: 'GET',
             responseType: 'blob',
         }).then((response) => {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "coa.xlsx");
+            link.setAttribute('download', "template faktur.xlsx");
             document.body.appendChild(link);
             link.click();
         });
@@ -778,7 +822,7 @@ class MasterFaktur extends Component {
                             </div>
                         </div>
                         <div className={style.btnUpload}>
-                            <Button color="info" onClick={this.DownloadTemplate}>Download Template</Button>
+                            <Button color="info" onClick={this.downloadTemplate}>Download Template</Button>
                             <Button color="primary" disabled={this.state.fileUpload === "" ? true : false } onClick={this.uploadMaster}>Upload</Button>
                             <Button onClick={this.openModalUpload}>Cancel</Button>
                         </div>
@@ -907,7 +951,7 @@ class MasterFaktur extends Component {
                     <div className={style.modalApprove}>
                         <div>
                             <text>
-                                Anda yakin untuk delete coa {detail.no_ktp} ?
+                                Anda yakin untuk delete faktur {detail.no_ktp} ?
                             </text>
                         </div>
                         <div className={style.btnApprove}>

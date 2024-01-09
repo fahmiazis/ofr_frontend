@@ -9,9 +9,10 @@ import { Container, Collapse, Nav, Navbar,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
 import approve from '../../redux/actions/approve'
 import {BsCircle} from 'react-icons/bs'
+import { CiCirclePlus, CiEdit } from "react-icons/ci";
 import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList} from 'react-icons/fa'
 import Sidebar from "../../components/Header";
-import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
+import { AiOutlineFileExcel, AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
@@ -26,7 +27,7 @@ import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import finance from '../../redux/actions/finance'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -44,8 +45,14 @@ import coa from '../../redux/actions/coa'
 import NumberInput from '../../components/NumberInput'
 import Email from '../../components/Ops/Email'
 import email from '../../redux/actions/email'
+import ListBbm from '../../components/Ops/ListBbm'
+import readXlsxFile from 'read-excel-file'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
+
 const {REACT_APP_BACKEND_URL} = process.env
 const nonObject = 'Non Object PPh'
+const nonPph = 'Non PPh'
 
 const opsSchema = Yup.object().shape({
     keterangan: Yup.string().required("must be filled"),
@@ -64,6 +71,13 @@ const addSchema = Yup.object().shape({
     dpp: Yup.number(),
     ppn: Yup.number(),
     // nilai_ajuan: Yup.string().required("must be filled"),
+})
+
+const bbmSchema = Yup.object().shape({
+    no_pol: Yup.string().required("must be filled"),
+    nominal: Yup.number().required('must be filled'),
+    liter: Yup.number().required('must be filled'),
+    km: Yup.number().required('must be filled')
 })
 
 const alasanSchema = Yup.object().shape({
@@ -167,18 +181,504 @@ class RevisiOps extends Component {
             noNik: '',
             nama: '',
             alamat: '',
+            showOptions: false,
             tgl_faktur: '',
             isLoading: false,
             typeniknpwp: '',
-            type_kasbon: 'kasbon',
+            type_kasbon: '',
             modalRev: false,
             openDraft: false,
             message: '',
             subject: '',
-            tipeSkb: ''
+            tipeSkb: '',
+            statBbm: '',
+            dataBbm: [],
+            detBbm: {},
+            modalBbm: false,
+            modalAddBbm: false,
+            modalDelBbm: false,
+            detModBbm: false,
+            modUpBbm: false,
+            fileUpload: {},
+            messUpload: [],
+            duplikat: [],
+            dataDel: {},
+            typeOut: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    openBbm = (val) => {
+        this.setState({ modalBbm: !this.state.modalBbm })
+    }
+
+    openAddBbm = (val) => {
+        this.setState({ modalAddBbm: !this.state.modalAddBbm })
+    }
+
+    openDetBbm = () => {
+        this.setState({ detModBbm: !this.state.detModBbm })
+    }
+
+    openUpBbm = (val) => {
+        this.setState({ modUpBbm: !this.state.modUpBbm, fileUpload: '' })
+    }
+
+    downloadBbm = () => {
+        const { dataBbm } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data bbm')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        }
+
+
+        ws.columns = [
+            { header: 'No Pol', key: 'c1' },
+            { header: 'Besar Pengisisan BBM (Liter)', key: 'c2' },
+            { header: 'KM Pengisian', key: 'c3' },
+            { header: 'Nominal', key: 'c4' }
+        ]
+
+        dataBbm.map((item, index) => {
+            return (ws.addRow(
+                {
+                    c1: item.no_pol,
+                    c2: item.liter,
+                    c3: item.km,
+                    c4: item.nominal
+                }
+            )
+            )
+        })
+
+        ws.eachRow({ includeEmpty: true }, function (row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function (cell, colNumber) {
+                cell.border = borderStyles;
+            })
+        })
+
+        ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function (buffer) {
+            fs.saveAs(
+                new Blob([buffer], { type: "application/octet-stream" }),
+                `Data BBM Operasional ${moment().format('DD MMMM YYYY')}.xlsx`
+            )
+        })
+    }
+
+
+    addDataBbm = async (val) => {
+        const { dataBbm, modalEdit } = this.state
+        const { idOps } = this.props.ops
+        const token = localStorage.getItem('token')
+        const data = {
+            liter: val.liter,
+            km: val.km,
+            nominal: val.nominal,
+            no_pol: val.no_pol
+        }
+        if (dataBbm.length > 0) {
+            const cek = dataBbm.find(({ no_pol }) => (data.no_pol !== '' && no_pol === data.no_pol))
+            if (cek !== undefined) {
+                this.setState({ confirm: 'rejAddBbm' })
+                this.openConfirm()
+            } else {
+                if (modalEdit === true) {
+                    const send = {
+                        id: idOps.id,
+                        ...data
+                    }
+                    await this.props.addBbm(token, send)
+                    await this.props.getBbm(token, idOps.id)
+                    const { opsBbm } = this.props.ops
+                    this.setState({ dataBbm: opsBbm })
+
+                    const valBbm = opsBbm.reduce((accumulator, object) => {
+                        return accumulator + parseFloat(object.nominal);
+                    }, 0)
+                    this.setState({nilai_ajuan: valBbm})
+                    setTimeout(() => {
+                        this.formulaTax()
+                    }, 100)
+
+                    await this.editCartOps(idOps)
+                    this.setState({ confirm: 'sucAddBbm' })
+                    this.openConfirm()
+                    this.openAddBbm()
+                } else {
+                    dataBbm.push(data)
+                    this.setState({ dataBbm: dataBbm })
+                    
+                    const valBbm = dataBbm.reduce((accumulator, object) => {
+                        return accumulator + parseFloat(object.nominal);
+                    }, 0)
+                    this.setState({nilai_ajuan: valBbm})
+                    setTimeout(() => {
+                        this.formulaTax()
+                    }, 100)
+
+                    this.setState({ confirm: 'sucAddBbm' })
+                    this.openConfirm()
+                    this.openAddBbm()
+                }
+            }
+        } else {
+            if (modalEdit === true) {
+                const send = {
+                    id: idOps.id,
+                    ...data
+                }
+                await this.props.addBbm(token, send)
+                await this.props.getBbm(token, idOps.id)
+                const { opsBbm } = this.props.ops
+                this.setState({ dataBbm: opsBbm })
+
+                const valBbm = opsBbm.reduce((accumulator, object) => {
+                    return accumulator + parseFloat(object.nominal);
+                }, 0)
+                this.setState({nilai_ajuan: valBbm})
+                setTimeout(() => {
+                    this.formulaTax()
+                }, 100)
+
+                await this.editCartOps(idOps)
+                this.setState({ confirm: 'sucAddBbm' })
+                this.openConfirm()
+                this.openAddBbm()
+            } else {
+                dataBbm.push(data)
+                this.setState({ dataBbm: dataBbm })
+
+                const valBbm = dataBbm.reduce((accumulator, object) => {
+                    return accumulator + parseFloat(object.nominal);
+                }, 0)
+                this.setState({nilai_ajuan: valBbm})
+                setTimeout(() => {
+                    this.formulaTax()
+                }, 100)
+
+                this.setState({ confirm: 'sucAddBbm' })
+                this.openConfirm()
+                this.openAddBbm()
+            }
+        }
+    }
+
+    editDataBbm = async (val) => {
+        const { dataBbm, detBbm, modalEdit } = this.state
+        const { idOps } = this.props.ops
+        const token = localStorage.getItem('token')
+        const data = {
+            liter: val.liter,
+            km: val.km,
+            nominal: val.nominal,
+            no_pol: val.no_pol
+        }
+        const dataUp = []
+        if (dataBbm.length > 0) {
+            for (let i = 0; i < dataBbm.length; i++) {
+                const dataCek = JSON.stringify(dataBbm[i])
+                if (JSON.stringify(detBbm) === dataCek) {
+                    const cek = dataBbm.find(({ no_pol }) => (data.no_pol !== '' && no_pol === data.no_pol && no_pol !== detBbm.no_pol))
+                    if (cek !== undefined) {
+                        console.log()
+                    } else {
+                        dataUp.push(data)
+                    }
+                } else {
+                    dataUp.push(dataBbm[i])
+                }
+            }
+            if (dataUp.length === dataBbm.length) {
+                if (modalEdit === true) {
+                    const send = {
+                        id: idOps.id,
+                        idBbm: detBbm.id,
+                        ...data
+                    }
+                    await this.props.updateBbm(token, send)
+                    await this.props.getBbm(token, idOps.id)
+                    const { opsBbm } = this.props.ops
+                    this.setState({ dataBbm: opsBbm })
+
+                    const valBbm = opsBbm.reduce((accumulator, object) => {
+                        return accumulator + parseFloat(object.nominal);
+                    }, 0)
+                    this.setState({nilai_ajuan: valBbm})
+                    setTimeout(() => {
+                        this.formulaTax()
+                    }, 100)
+
+                    await this.editCartOps(idOps)
+                    this.setState({ confirm: 'editBbm' })
+                    this.openConfirm()
+                    this.openDetBbm()
+                } else {
+                    this.setState({ dataBbm: dataUp })
+
+                    const valBbm = dataUp.reduce((accumulator, object) => {
+                        return accumulator + parseFloat(object.nominal);
+                    }, 0)
+                    this.setState({nilai_ajuan: valBbm})
+                    setTimeout(() => {
+                        this.formulaTax()
+                    }, 100)
+
+                    this.setState({ confirm: 'editBbm' })
+                    this.openConfirm()
+                    this.openDetBbm()
+                }
+            } else {
+                this.setState({ confirm: 'rejEditBbm' })
+                this.openConfirm()
+            }
+        }
+    }
+
+    delDataBbm = async () => {
+        const { dataBbm, dataDel, modalEdit } = this.state
+        const { idOps } = this.props.ops
+        const token = localStorage.getItem('token')
+        const data = []
+        for (let i = 0; i < dataBbm.length; i++) {
+            const dataCek = JSON.stringify(dataBbm[i])
+            if (JSON.stringify(dataDel) === dataCek) {
+                if (modalEdit === true && dataDel.id !== undefined) {
+                    await this.props.deleteBbm(token, dataDel.id)
+                } else {
+                    console.log('delete')
+                }
+            } else {
+                data.push(dataBbm[i])
+            }
+        }
+        if (modalEdit === true && dataDel.id !== undefined) {
+            this.confirmDel()
+            this.setState({ dataBbm: data, typeOut: 'delout' })
+
+            const valBbm = data.reduce((accumulator, object) => {
+                return accumulator + parseFloat(object.nominal);
+            }, 0)
+            this.setState({nilai_ajuan: valBbm})
+            setTimeout(() => {
+                this.formulaTax()
+            }, 100)
+
+            await this.editCartOps(idOps)
+            this.setState({ confirm: 'delBbm' })
+            this.openConfirm()
+        } else {
+            this.confirmDel()
+            this.setState({ dataBbm: data })
+
+            const valBbm = data.reduce((accumulator, object) => {
+                return accumulator + parseFloat(object.nominal);
+            }, 0)
+            this.setState({nilai_ajuan: valBbm})
+            setTimeout(() => {
+                this.formulaTax()
+            }, 100)
+
+            this.setState({ confirm: 'delBbm' })
+            this.openConfirm()
+        }
+    }
+
+    confirmDel = () => {
+        this.setState({ modalDelBbm: !this.state.modalDelBbm })
+    }
+
+    setDetBbm = (val) => {
+        const { dataBbm } = this.state
+        const data = {
+            liter: val.liter,
+            km: val.km,
+            nominal: val.nominal,
+            no_pol: val.no_pol
+        }
+        dataBbm.push(data)
+        this.setState({ dataBbm: dataBbm })
+    }
+
+    uploadDataBbm = async (val) => {
+        const { dataBbm, fileUpload, modalEdit } = this.state
+        const { idOps } = this.props.ops
+        const token = localStorage.getItem('token')
+        const dataTemp = []
+        const rows = await readXlsxFile(fileUpload)
+        const dataCek = []
+        const count = []
+        const parcek = [
+            'No Pol',
+            'Besar Pengisisan BBM (Liter)',
+            'KM Pengisian',
+            'Nominal'
+        ]
+        const valid = rows[0]
+        for (let i = 0; i < parcek.length; i++) {
+            if (valid[i] === parcek[i]) {
+                count.push(1)
+            }
+        }
+        if (count.length === parcek.length) {
+            rows.shift()
+            const noIdent = []
+            const result = []
+            for (let i = 0; i < rows.length; i++) {
+                console.log('masuk cek duplikat')
+                const dataOps = rows[i]
+                const noid = dataOps[0]
+                noIdent.push(noid)
+            }
+
+            const obj = {}
+
+            noIdent.forEach(item => {
+                if (!obj[item]) { obj[item] = 0 }
+                obj[item] += 1
+            })
+
+            for (const prop in obj) {
+                if (obj[prop] >= 2) {
+                    result.push(prop)
+                }
+            }
+            if (result.length > 0) {
+                this.openUpBbm()
+                this.setState({ confirm: 'dupUpload', duplikat: result })
+                this.openConfirm()
+            } else {
+                for (let i = 0; i < rows.length; i++) {
+                    const dataOps = rows[i]
+                    const data = {
+                        no_pol: dataOps[0],
+                        liter: dataOps[1] ,
+                        km: dataOps[2],
+                        nominal: dataOps[3],
+                    }
+
+                    const nominal = dataOps[3]
+                    const liter = dataOps[1]
+                    const km = dataOps[2]
+
+                    const dataNominal = nominal === null || (nominal.toString().split('').filter((item) => isNaN(parseFloat(item))).length > 0)
+                        ? { no_transaksi: `Row ke ${i + 2}`, mess: 'Pastikan Nominal Diisi dengan Sesuai' }
+                        : null
+                    const dataLiter = liter === null || (liter.toString().split('').filter((item) => isNaN(parseFloat(item))).length > 0)
+                        ? { no_transaksi: `Row ke ${i + 2}`, mess: 'Pastikan Data Liter Diisi dengan Sesuai' }
+                        : null
+                    const dataKm = km === null || (km.toString().split('').filter((item) => isNaN(parseFloat(item))).length > 0)
+                        ? { no_transaksi: `Row ke ${i + 2}`, mess: 'Pastikan Data KM Diisi dengan Sesuai' }
+                        : null
+
+                    if (dataLiter !== null || dataKm !== null || dataNominal !== null) {
+                        const mesTemp = [dataLiter, dataKm, dataNominal]
+                        dataCek.push(mesTemp)
+                    } else {
+                        const cek = dataBbm.find(({ no_pol }) => (data.no_pol !== '' && no_pol === data.no_pol))
+                        if (cek !== undefined) {
+                            cek.liter = data.liter
+                            cek.km = data.km
+                            cek.nominal = data.nominal
+                        } else {
+                            dataTemp.push(data)
+                        }
+                    }
+
+                }
+                console.log(dataCek)
+                console.log(dataTemp)
+                if (dataCek.length > 0 || rows.length === 0) {
+                    console.log('masuk failed king')
+
+                    this.setState({ messUpload: dataCek })
+                    this.openUpBbm()
+                    this.setState({ confirm: 'failUpload' })
+                    this.openConfirm()
+                } else {
+                    console.log('masuk success king')
+                    if (modalEdit === true) {
+                        const comb = [...dataBbm, ...dataTemp]
+                        const send = {
+                            id: idOps.id,
+                            list: comb
+                        }
+                        await this.props.uploadBbm(token, send)
+                        await this.props.getBbm(token, idOps.id)
+                        const { opsBbm } = this.props.ops
+                        this.setState({ dataBbm: opsBbm })
+                       
+                        const valBbm = opsBbm.reduce((accumulator, object) => {
+                            return accumulator + parseFloat(object.nominal);
+                        }, 0)
+                        this.setState({nilai_ajuan: valBbm})
+                        setTimeout(() => {
+                            this.formulaTax()
+                        }, 100)
+                        
+                        this.openUpBbm()
+                        await this.editCartOps(idOps)
+                        this.setState({ confirm: 'upload' })
+                        this.openConfirm()
+                    } else {
+                        const comb = [...dataBbm, ...dataTemp]
+                        this.setState({ dataBbm: comb })
+                        
+                        const valBbm = comb.reduce((accumulator, object) => {
+                            return accumulator + parseFloat(object.nominal);
+                        }, 0)
+                        this.setState({nilai_ajuan: valBbm})
+                        setTimeout(() => {
+                            this.formulaTax()
+                        }, 100)
+
+                        this.openUpBbm()
+                        this.setState({ confirm: 'upload' })
+                        this.openConfirm()
+                    }
+                }
+            }
+        } else {
+            this.openUpBbm()
+            this.setState({ confirm: 'falseUpload' })
+            this.openConfirm()
+        }
+    }
+
+    openOpsBbm = async () => {
+        const token = localStorage.getItem("token")
+        const { idOps } = this.props.ops
+        await this.props.getBbm(token, idOps.id)
+        const { opsBbm } = this.props.ops
+        this.setState({ dataBbm: opsBbm })
+        this.openBbm()
+    }
+
+    onChangeHandler = e => {
+        const { size, type } = e.target.files[0]
+        if (size >= 5120000) {
+            this.setState({ errMsg: "Maximum upload size 5 MB" })
+            this.openConfirm()
+        } else if (type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && type !== 'application/vnd.ms-excel') {
+            this.setState({ errMsg: 'Invalid file type. Only excel files are allowed.' })
+            this.openConfirm()
+        } else {
+            this.setState({ fileUpload: e.target.files[0] })
+        }
     }
 
     submitStock = async () => {
@@ -188,14 +688,29 @@ class RevisiOps extends Component {
     }
 
     onChangeUpload = e => {
-        const {size, type} = e.target.files[0]
+        const {size, type, name} = e.target.files[0]
         this.setState({fileUpload: e.target.files[0]})
-        if (size >= 20000000) {
-            this.setState({errMsg: "Maximum upload size 20 MB"})
-            this.uploadAlert()
-        } else if (type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && type !== 'application/vnd.ms-excel' && type !== 'application/pdf' && type !== 'application/x-7z-compressed' && type !== 'application/vnd.rar' && type !== 'application/zip' && type !== 'application/x-zip-compressed' && type !== 'application/octet-stream' && type !== 'multipart/x-zip' && type !== 'application/x-rar-compressed') {
-            this.setState({errMsg: 'Invalid file type. Only excel, pdf, zip, and rar files are allowed.'})
-            this.uploadAlert()
+        const tipe = name.split('.')[name.split('.').length - 1]
+        if (size >= 25000000) {
+            this.setState({errMsg: "Maximum upload size 25 MB", confirm: 'maxUpload'})
+            this.openConfirm()
+        } else if (
+            tipe !== 'rar' && tipe !== 'pdf' && tipe !== 'xls' && tipe !== 'xlsx' &&
+            tipe !== 'jpg' && tipe !== 'png' && tipe !== 'zip' && tipe !== '7z' &&
+            type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && 
+            type !== 'application/vnd.ms-excel' && 
+            type !== 'application/pdf' && 
+            type !== 'application/x-7z-compressed' && 
+            type !== 'application/vnd.rar' && 
+            type !== 'application/zip' && type !== 'application/x-zip-compressed' && 
+            type !== 'application/octet-stream' && type !== 'multipart/x-zip' && 
+            type !== 'application/x-rar-compressed' && type !== 'image/jpeg' && type !== 'image/png'
+            ) {
+            this.setState({
+                errMsg: 'Invalid file type. Only excel, pdf, zip, png, jpg and rar files are allowed.',
+                confirm: 'onlyUpload'
+            })
+            this.openConfirm()
         } else {
             const { detailOps } = this.props.ops
             const { detail } = this.state
@@ -211,11 +726,11 @@ class RevisiOps extends Component {
         const {size, type} = e.target.files[0]
         this.setState({fileUpload: e.target.files[0]})
         if (size >= 20000000) {
-            this.setState({errMsg: "Maximum upload size 20 MB"})
-            this.uploadAlert()
+            this.setState({errMsg: "Maximum upload size 25 MB"})
+            this.openConfirm()
         } else if (type !== 'image/jpeg' && type !== 'image/png') {
             this.setState({errMsg: 'Invalid file type. Only image files are allowed.'})
-            this.uploadAlert()
+            this.openConfirm()
         } else {
             const {dataRinci} = this.state
             const token = localStorage.getItem('token')
@@ -229,11 +744,11 @@ class RevisiOps extends Component {
         const {size, type} = e.target.files[0]
         this.setState({fileUpload: e.target.files[0]})
         if (size >= 20000000) {
-            this.setState({errMsg: "Maximum upload size 20 MB"})
-            this.uploadAlert()
+            this.setState({errMsg: "Maximum upload size 25 MB"})
+            this.openConfirm()
         } else if (type !== 'image/jpeg' && type !== 'image/png') {
             this.setState({errMsg: 'Invalid file type. Only image files are allowed.'})
-            this.uploadAlert()
+            this.openConfirm()
         } else {
             const { dataId } = this.state
             const token = localStorage.getItem('token')
@@ -400,18 +915,43 @@ class RevisiOps extends Component {
     }
 
     componentDidUpdate() {
-        const { isApprove, isReject } = this.props.ops
+        const { isApprove, isUpload, isReject, isUpdateBbm, isUploadBbm, isAddBbm, isDelBbm } = this.props.ops
+        const token = localStorage.getItem("token")
         if (isApprove === false) {
             this.setState({confirm: 'rejApprove'})
             this.openConfirm()
             this.openModalApprove()
             this.openModalRinci()
             this.props.resetOps()
+        } else if (isUpload === true) {
+            const { detailOps } = this.props.ops
+            const tempno = {
+                no: detailOps[0].no_transaksi,
+                name: 'Draft Pengajuan Operasional'
+            }
+            this.props.getDocOps(token, tempno)
+            this.props.resetOps()
         } else if (isReject === false) {
             this.setState({confirm: 'rejReject'})
             this.openConfirm()
             this.openModalReject()
             this.openModalRinci()
+            this.props.resetOps()
+        } else if (isUploadBbm === false) {
+            this.setState({ confirm: 'falseUpload' })
+            this.openConfirm()
+            this.props.resetOps()
+        } else if (isUpdateBbm === false) {
+            this.setState({ confirm: 'rejEditBbm' })
+            this.openConfirm()
+            this.props.resetOps()
+        } else if (isAddBbm === false) {
+            this.setState({ confirm: 'rejAddBbm' })
+            this.openConfirm()
+            this.props.resetOps()
+        } else if (isDelBbm === false) {
+            this.setState({ confirm: 'rejDelBbm' })
+            this.openConfirm()
             this.props.resetOps()
         }
     }
@@ -624,8 +1164,12 @@ class RevisiOps extends Component {
             subject: subject,
             no: detailOps[0].no_transaksi,
             tipe: 'ops',
+            menu: 'pengajuan ops',
+            proses: 'revisi',
+            route: 'ops'
         }
         await this.props.sendEmail(token, tempno)
+        await this.props.addNotif(token, tempno)
         if (val === 'reject') {
             this.getDataOps()
             this.setState({confirm: 'reject'})
@@ -938,6 +1482,7 @@ class RevisiOps extends Component {
         await this.props.getDetailId(token, val)
         await this.props.getFinRek(token)
         await this.props.getDetailFinance(token)
+        await this.props.getBbm(token, val)
         const { dataRek } = this.props.finance
         const spending = dataRek[0].rek_spending
         const zba = dataRek[0].rek_zba
@@ -972,8 +1517,14 @@ class RevisiOps extends Component {
             tipeVendor: idOps.penanggung_pajak,
             status_npwp: idOps.status_npwp === 0 ? 'Tidak' : idOps.status_npwp === 1 ? 'Ya' : nonObject,
             dataSelFaktur: { no_faktur: idOps.no_faktur },
-            tipeSkb: idOps.stat_skb
+            type_kasbon: idOps.type_kasbon,
+            tipeSkb: idOps.stat_skb,
+            statBbm: idOps.stat_bbm
         })
+
+        const { opsBbm } = this.props.ops
+        this.setState({ dataBbm: opsBbm })
+
         const cekNpwp = idOps.no_npwp === '' || idOps.no_npwp === null ? null : idOps.no_npwp
 
         this.selectCoa({value: idOps.no_coa, label: `${idOps.no_coa} ~ ${idOps.nama_coa}`})
@@ -1180,34 +1731,36 @@ class RevisiOps extends Component {
     }
 
     formulaTax = (val, type) => {
-        const {dataTrans, nilai_ajuan, tipeVendor, tipePpn, nilai_dpp, nilai_ppn, type_kasbon} = this.state
+        const {dataTrans, nilai_ajuan, tipeVendor, tipePpn, nilai_dpp, nilai_ppn, type_kasbon, tipeSkb} = this.state
         const nilai = nilai_ajuan
         const tipe = tipeVendor
         console.log(dataTrans)
         if (dataTrans.jenis_pph === 'Non PPh' || dataTrans.jenis_pph === undefined) {
             this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: nilai, tipeVendor: tipe})
         } else {
+            const tarifPph = tipeSkb === 'SKB' ? '0%' : tipeSkb === 'SKT' ? '0.05%' : dataTrans.tarif_pph
+            const grossup = tipeSkb === 'SKB' ? '1%' : tipeSkb === 'SKT' ? '1%' : dataTrans.dpp_grossup
             if (tipePpn === 'Ya' && type_kasbon !== 'kasbon') {
                 if (tipe === 'PMA') {
                     const nilai_buku = nilai_dpp
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph) / 100)
+                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(tarifPph))
                     const nilai_vendor = Math.ceil((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 } else if (tipe === 'Vendor') {
                     const nilai_buku = nilai_dpp
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph) / 100)
+                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(tarifPph))
                     const nilai_vendor = Math.ceil((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 }
             } else {
                 if (tipe === 'PMA') {
-                    const nilai_buku = Math.ceil(parseFloat(nilai) / parseFloat(dataTrans.dpp_grossup) * 100)
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph) / 100)
+                    const nilai_buku = Math.ceil(parseFloat(nilai) / parseFloat(grossup))
+                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(tarifPph))
                     const nilai_vendor = nilai
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 } else if (tipe === 'Vendor') {
                     const nilai_buku = nilai
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(dataTrans.tarif_pph) / 100)
+                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(tarifPph))
                     const nilai_vendor = Math.ceil(parseFloat(nilai) - parseFloat(nilai_utang))
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 }
@@ -1271,9 +1824,12 @@ class RevisiOps extends Component {
         const token = localStorage.getItem("token")
         const {idOps} = this.props.ops
         const {detFinance} = this.props.finance
+        const { dataBbm, typeOut } = this.state
+        
         const { dataTrans, nilai_buku, nilai_ajuan, nilai_utang, tgl_faktur, type_kasbon,
             nilai_vendor, tipeVendor, tipePpn, nilai_dpp, nilai_ppn, typeniknpwp,
             dataSelFaktur, noNpwp, noNik, nama, alamat, status_npwp } = this.state
+        
         const data = {
             no_coa: this.state.no_coa,
             keterangan: val.keterangan,
@@ -1284,11 +1840,11 @@ class RevisiOps extends Component {
             nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : val.nama_tujuan,
             tujuan_tf: this.state.tujuan_tf,
             tiperek: this.state.tiperek,
-            status_npwp: status_npwp === 'Tidak' ? 0 : status_npwp === 'Ya' && 1,
-            nama_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' && nama,
-            no_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' && noNpwp,
-            nama_ktp: status_npwp === 'Tidak' ? nama : status_npwp === 'Ya' && '',
-            no_ktp: status_npwp === 'Tidak' ? noNik : status_npwp === 'Ya' && '',
+            status_npwp: status_npwp === 'Tidak' ? 0 : status_npwp === 'Ya' ? 1 : 2,
+            nama_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' ? nama : '',
+            no_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' ? noNpwp : '',
+            nama_ktp: status_npwp === 'Tidak' ? nama : status_npwp === 'Ya' ? '' : '',
+            no_ktp: status_npwp === 'Tidak' ? noNik : status_npwp === 'Ya' ? '' : '',
             periode: '',
             nama_vendor: nama,
             alamat_vendor: alamat,
@@ -1303,24 +1859,35 @@ class RevisiOps extends Component {
             nilai_utang: parseInt(nilai_utang),
             nilai_vendor: parseInt(nilai_vendor),
             nilai_bayar: parseInt(nilai_vendor),
-            jenis_pph: dataTrans.jenis_pph,
+            jenis_pph: this.state.jenisVendor === nonObject ? nonPph : this.state.tipeSkb === 'SKB' ? nonPph : this.state.tipeSkb === 'SKT' ? 'PPh Pasal 4(2)' : dataTrans.jenis_pph,
             tgl_faktur: tgl_faktur,
             typeniknpwp: typeniknpwp,
             type_kasbon: type_kasbon === 'kasbon' ? 'kasbon' : null,
             type_po: val.type_po,
             no_po: val.no_po,
             nilai_po: val.nilai_po,
-            nilai_pr: val.nilai_pr
+            nilai_pr: val.nilai_pr,
+            stat_skb: this.state.jenisVendor === nonObject ? '' : this.state.tipeSkb,
+            stat_bbm: this.state.statBbm,
+            km:  '',
+            liter: '',
+            no_pol: ''
         }
         const tempno = {
             no: idOps.no_transaksi,
             id: idOps.id
         }
-        await this.props.editOps(token, idOps.id, dataTrans.id, data )
-        await this.props.appRevisi(token, tempno)
-        this.openConfirm(this.setState({confirm: 'editcart'}))
-        await this.props.getDetail(token, tempno)
-        this.openEdit()
+        if (this.state.statBbm === 'ya' && dataBbm.length === 0 && typeOut !== 'delout') {
+            this.setState({ confirm: 'nullBbm' })
+            this.openConfirm()
+        } else {
+            await this.props.editOps(token, idOps.id, dataTrans.id, data )
+            await this.props.appRevisi(token, tempno)
+            this.setState({confirm: 'editcart'})
+            this.openConfirm()
+            await this.props.getDetail(token, tempno)
+            // this.openEdit()
+        }
     }
 
     onEnterVal = (val) => {
@@ -1346,22 +1913,38 @@ class RevisiOps extends Component {
     }
 
     inputNik = (val) => {
-        const {noNik} = this.state
-        const cek = noNik.split('')
-        if (cek.length > 1 && val === '') {
-            this.setState({noNik: noNik})
+        // const {noNik} = this.state
+        // const cek = noNik.split('')
+        // if (cek.length > 1 && val === '') {
+        //     this.setState({noNik: noNik})
+        // } else {
+        //     this.setState({noNik: val, typeniknpwp: 'manual'})
+        // }
+        if( val.length === 16 ) {
+            this.setState({ showOptions : true })
         } else {
-            this.setState({noNik: val, typeniknpwp: 'manual'})
+            this.setState(
+                { showOptions : false },
+                console.log('Option lenght is short {} {}', val, val.length)
+            )
         }
     }
 
     inputNpwp = (val) => {
-        const {noNpwp} = this.state
-        const cek = noNpwp.split('')
-        if (cek.length > 1 && val === '') {
-            this.setState({noNpwp: noNpwp})
+        // const {noNpwp} = this.state
+        // const cek = noNpwp.split('')
+        // if (cek.length > 1 && val === '') {
+        //     this.setState({noNpwp: noNpwp})
+        // } else {
+        //     this.setState({noNpwp: val, typeniknpwp: 'manual'})
+        // }
+        if( val.length === 15 ) {
+            this.setState({ showOptions : true })
         } else {
-            this.setState({noNpwp: val, typeniknpwp: 'manual'})
+            this.setState(
+                { showOptions : false },
+                console.log('Option lenght is short {} {}', val, val.length)
+            )
         }
     }
 
@@ -1374,8 +1957,13 @@ class RevisiOps extends Component {
         if (data === undefined) {
             console.log()
         } else {
-            if (data.no_npwp === 'TIDAK ADA') {
-                this.setState({dataList: data, nama: data.nama, alamat: data.alamat, noNpwp: data.no_npwp, noNik: data.no_ktp, typeniknpwp: 'auto'})
+            const tipeSkb = data.type_skb === null || data.type_skb === '' ? 'tidak' 
+            : data.type_skb !== 'tidak' && moment(data.datel_skb).format('DD/MM/YYYY') < moment().format('DD/MM/YYYY') ? 'tidak' 
+            : data.type_skb
+
+            if (data.no_npwp === 'TIDAK ADA' || data.no_npwp === '' || data.no_npwp === null) {
+                this.setState({dataList: data, tipeSkb: tipeSkb, nama: data.nama, alamat: data.alamat, noNpwp: data.no_npwp, noNik: data.no_ktp, typeniknpwp: 'auto'})
+                this.formulaTax()
             } else {
                 await this.props.getFaktur(token, data.no_npwp)
                 const {dataFaktur} = this.props.faktur
@@ -1391,15 +1979,54 @@ class RevisiOps extends Component {
                         diffDays < 90 && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
                     )
                 })
-                this.setState({dataList: data, nama: data.nama, alamat: data.alamat, noNpwp: data.no_npwp, noNik: data.no_ktp, fakturList: temp, typeniknpwp: 'auto'})
+                this.setState({dataList: data, tipeSkb: tipeSkb, nama: data.nama, alamat: data.alamat, noNpwp: data.no_npwp, noNik: data.no_ktp, fakturList: temp, typeniknpwp: 'auto'})
+                this.formulaTax()
             }
         }
     }
 
+    inputAlamat = (val) => {
+        this.setState({alamat: val})
+    }
+
+    selectFaktur = (e) => {
+        const {dataFaktur} = this.props.faktur
+        const idVal = e.value
+        const data = dataFaktur.find(({id}) => id === idVal)
+        if (data === undefined) {
+            console.log()
+        } else {
+            const nilai_ajuan = parseFloat(data.jumlah_dpp) + parseFloat(data.jumlah_ppn)
+            this.setState({dataSelFaktur: data, nilai_ajuan: nilai_ajuan, nilai_dpp: data.jumlah_dpp, nilai_ppn: data.jumlah_ppn, tgl_faktur: data.tgl_faktur})
+            setTimeout(() => {
+                this.formulaTax()
+             }, 500)
+        }
+    }
+
+    enterDPP = (val) => {
+        const {nilai_ppn} = this.state
+        const nilai_ajuan = parseFloat(val) + parseFloat(nilai_ppn)
+        this.setState({nilai_ajuan: nilai_ajuan, nilai_dpp: val})
+        setTimeout(() => {
+            this.formulaTax()
+         }, 500)
+    }
+
+    enterPPN = (val) => {
+        const {nilai_dpp} = this.state
+        const nilai_ajuan = parseFloat(val) + parseFloat(nilai_dpp)
+        this.setState({nilai_ajuan: nilai_ajuan, nilai_ppn: val})
+        setTimeout(() => {
+            this.formulaTax()
+         }, 500)
+    }
+
+
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, type_kasbon, dataItem, listMut, dataTrans, listReason, dataMenu, listMenu} = this.state
+        const {showOptions, type_kasbon,duplikat, dataBbm, detBbm, messUpload, statBbm, dataTrans, listReason, dataMenu, listMenu} = this.state
         const { detFinance } = this.props.finance
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, newOps, dataDoc, idOps } = this.props.ops
@@ -1691,6 +2318,7 @@ class RevisiOps extends Component {
                                         })}
                                 </tbody>
                             </Table>
+                            <ListBbm />
                         </div>
                     </ModalBody>
                     <div className="modalFoot ml-3">
@@ -2220,7 +2848,7 @@ class RevisiOps extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal submit revisi, pastikan semua data reject telah diupdate</div>
+                                <div className={[style.sucUpdate, style.green]}>Gagal submit revisi, pastikan semua data reject telah diperbaiki</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'isApprove' ? (
@@ -2237,10 +2865,140 @@ class RevisiOps extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Submit Revisi</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'maxUpload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Upload Dokumen</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Pastikan Size Dokumen Tidak Lebih Dari 25 MB</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'onlyUpload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Upload Dokumen</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Web Hanya Menerima Tipe Dokumen excel, pdf, zip, png, jpg dan rar </div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'sucAddBbm' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Menambahkan Data BBM</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'editBbm' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Mengupdate Data BBM</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'delBbm' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Mendelete Data BBM</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'rejAddBbm' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Menambahkan Data BBM</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>No Pol telah terdaftar </div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'rejEditBbm' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Mengupdate Data BBM</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>No Pol telah terdaftar </div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'rejDelBbm' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Mendelete Data BBM</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Server sedang ada masalah</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'upload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={style.sucUpdate}>Berhasil Upload Data BBM</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'nullBbm' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Menyimpan Data</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Pastikan Data BBM telah diisi</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'failUpload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green, style.mb4]}>Gagal Upload</div>
+
+                                {messUpload.length > 0 ? messUpload.map(item => {
+                                    return (
+                                        item.map(x => {
+                                            return (
+                                                x !== null &&
+                                                <div className={[style.sucUpdate, style.green, style.mb3]}>{`${x.mess} Pada ${x.no_transaksi}`}</div>
+                                            )
+                                        })
+                                    )
+                                }) : (
+                                    <div></div>
+                                )}
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'dupUpload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green, style.mb4]}>Gagal Upload</div>
+                                <div className={[style.sucUpdate, style.green, style.mb4]}>Terdapat Duplikasi pada no pol berikut</div>
+                                {duplikat.length > 0 ? duplikat.map(item => {
+                                    return (
+                                        <div className={[style.sucUpdate, style.green, style.mb3]}>{item}</div>
+                                    )
+                                }) : (
+                                    <div></div>
+                                )}
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'failSubChek' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                                <div className={[style.sucUpdate, style.green]}>Pastikan Data BBM Telah Ditambahkan</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'falseUpload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Upload</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Pastikan Upload File Menggunakan Template Yang Telah Disediakan</div>
+                            </div>
+                        </div>
                     ) : (
                         <div></div>
                     )}
                 </ModalBody>
+                <div className='row justify-content-md-center mb-4'>
+                    <Button size='lg' onClick={() => this.openConfirm(false)} color='primary'>OK</Button>
+                </div>
             </Modal>
             <Modal isOpen={this.state.alert} size="sm">
                 <ModalBody>
@@ -2280,7 +3038,7 @@ class RevisiOps extends Component {
                                                     onClick={() => this.setState({detail: x})}
                                                     onChange={this.onChangeUpload}
                                                     />
-                                                    <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
+                                                    <text className="txtError ml-4">Maximum file upload is 25 Mb</text>
                                                 </div>
                                             )}
                                             
@@ -2297,7 +3055,7 @@ class RevisiOps extends Component {
                                                         onChange={this.onChangeUpload}
                                                         />
                                                     </div>
-                                                    <text className="txtError">Maximum file upload is 20 Mb</text>
+                                                    <text className="txtError">Maximum file upload is 25 Mb</text>
                                                 </>
                                             )}
                                         </Col>
@@ -2431,7 +3189,54 @@ class RevisiOps extends Component {
                                             {this.state.jenisTrans === '' ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
-                                            {idOps.type_kasbon === 'kasbon' && (
+                                            {/* {statBbm === 'ya' && this.state.idTrans !== '' && (
+                                                <>
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>No Pol</Col>
+                                                        <Col md={9} className="colRinci">:  <Input
+                                                            type= "text" 
+                                                            className="inputRinci"
+                                                            value={values.no_pol}
+                                                            onBlur={handleBlur("no_pol")}
+                                                            onChange={handleChange('no_pol')}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                    {values.no_pol === '' || values.no_pol === null ? (
+                                                        <text className={style.txtError}>must be filled</text>
+                                                    ) : null}
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>Besar Pengisisan BBM (Liter)</Col>
+                                                        <Col md={9} className="colRinci">: 
+                                                            <NumberInput
+                                                                // isDisabled={this.state.jenisVendor === '' ? true : false}
+                                                                className="inputRinci1"
+                                                                value={values.liter}
+                                                                // placeholder={this.state.jenisTrans}
+                                                                onValueChange={val => setFieldValue("liter", val.floatValue)}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                    {values.liter === 0 || values.liter === null ? (
+                                                        <text className={style.txtError}>must be filled</text>
+                                                    ) : null}
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>KM Pengisian</Col>
+                                                        <Col md={9} className="colRinci">: 
+                                                            <NumberInput
+                                                                className="inputRinci1"
+                                                                value={values.km}
+                                                                // placeholder={this.state.jenisTrans}
+                                                                onValueChange={val => setFieldValue("km", val.floatValue)}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                    {values.km === 0 || values.km === null ? (
+                                                        <text className={style.txtError}>must be filled</text>
+                                                    ) : null}
+                                                </>
+                                            )} */}
+                                            {type_kasbon === 'kasbon' && (
                                                 <>
                                                     <Row className="mb-2 rowRinci">
                                                         <Col md={3}>Tipe PO</Col>
@@ -2528,19 +3333,23 @@ class RevisiOps extends Component {
                                                 <Col md={3}>Memiliki NPWP</Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     disabled={
-                                                        this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
+                                                        this.state.idTrans === '' ? true 
+                                                        : this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
                                                         : this.state.jenisVendor === nonObject ? true
                                                         : this.state.jenisVendor === 'Badan' ? true 
                                                         : false
                                                     }
                                                     type= "select" 
                                                     className="inputRinci"
-                                                    value={this.state.status_npwp}
+                                                    value={(this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? nonObject : this.state.status_npwp}
                                                     onChange={e => this.selectNpwp(e.target.value)}
                                                     >
                                                         <option value=''>Pilih</option>
                                                         <option value="Ya">Ya</option>
                                                         <option value="Tidak">Tidak</option>
+                                                        {(this.state.idTrans === ''  || this.state.jenisVendor === nonObject) && (
+                                                            <option value={nonObject}>{nonObject}</option>
+                                                        )}
                                                     </Input>
                                                 </Col>
                                             </Row>
@@ -2561,17 +3370,22 @@ class RevisiOps extends Component {
                                                     onChange={handleChange("no_npwp")}
                                                     /> */}
                                                     <Select
-                                                        isDisabled={this.state.status_npwp === 'Ya' ? false : true}
+                                                        isDisabled={(this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? true : this.state.status_npwp === 'Ya' ? false : true}
                                                         className="inputRinci2"
-                                                        options={this.state.listNpwp}
+                                                        options={showOptions ? this.state.listNpwp : []}
                                                         onChange={e => this.selectNikNpwp({val: e, type: 'npwp'})}
                                                         onInputChange={e => this.inputNpwp(e)}
                                                         isSearchable
-                                                        value={this.state.status_npwp === 'Ya' ? {value: this.state.noNpwp, label: this.state.noNpwp} : { value: '', label: '' }}
+                                                        components={
+                                                            {
+                                                              DropdownIndicator: () => null,
+                                                            }
+                                                        }
+                                                        value={(this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? { value: '', label: '' } : this.state.status_npwp === 'Ya' ? {value: this.state.noNpwp, label: this.state.noNpwp} : { value: '', label: '' }}
                                                     />
                                                 </Col>
                                             </Row>
-                                            {this.state.status_npwp === 'Ya' && this.state.typeniknpwp === 'manual' && this.state.noNpwp.length <= 15 && this.state.noNpwp.length >= 15  ? (
+                                            {this.state.status_npwp === 'Ya' && this.state.typeniknpwp === 'manual' && this.state.noNpwp.length < 15 && this.state.noNpwp.length > 15  ? (
                                                 <text className={style.txtError}>must be filled with 15 digits characters</text>
                                             ) : null}
                                             {/* <Row className="mb-2 rowRinci">
@@ -2603,17 +3417,22 @@ class RevisiOps extends Component {
                                                     onChange={handleChange("no_ktp")}
                                                     /> */}
                                                     <Select
-                                                        isDisabled={this.state.status_npwp === 'Tidak' ? false : true}
+                                                        isDisabled={(this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? true : this.state.status_npwp === 'Tidak' ? false : true}
                                                         className="inputRinci2"
-                                                        options={this.state.listNik}
+                                                        options={showOptions ? this.state.listNik : []}
                                                         onChange={e => this.selectNikNpwp({val: e, type: 'nik'})}
                                                         onInputChange={e => this.inputNik(e)}
                                                         isSearchable
-                                                        value={this.state.status_npwp === 'Tidak' ? {value: this.state.noNik, label: this.state.noNik} : { value: '', label: '' }}
+                                                        components={
+                                                            {
+                                                              DropdownIndicator: () => null,
+                                                            }
+                                                        }
+                                                        value={(this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? { value: '', label: '' } : this.state.status_npwp === 'Tidak' ? {value: this.state.noNik, label: this.state.noNik} : { value: '', label: '' }}
                                                     />
                                                 </Col>
                                             </Row>
-                                            {this.state.status_npwp === 'Tidak' && this.state.typeniknpwp === 'manual' && this.state.noNik.length <= 16 && this.state.noNik.length >= 16 ? (
+                                            {this.state.status_npwp === 'Tidak' && this.state.typeniknpwp === 'manual' && this.state.noNik.length < 16 && this.state.noNik.length > 16 ? (
                                                 <text className={style.txtError}>must be filled with 16 digits characters</text>
                                             ) : null}
                                             {/* <Row className="mb-2 rowRinci">
@@ -2635,13 +3454,14 @@ class RevisiOps extends Component {
                                                 <Col md={3}>Nama Vendor/NPWP/KTP</Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     type= "text" 
-                                                    disabled={
-                                                        this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
-                                                        : this.state.jenisVendor === nonObject ? true
-                                                        : false
-                                                    }
+                                                    // disabled={
+                                                    //     this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
+                                                    //     : this.state.jenisVendor === nonObject ? true
+                                                    //     : false
+                                                    // }
+                                                    disabled
                                                     className="inputRinci"
-                                                    value={this.state.nama}
+                                                    value={(this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? nonObject : this.state.nama}
                                                     // onBlur={handleBlur("nama_vendor")}
                                                     onChange={e => this.inputNama(e.target.value)}
                                                     />
@@ -2655,12 +3475,13 @@ class RevisiOps extends Component {
                                                 <Col md={9} className="colRinci">:  <Input
                                                     type= "text" 
                                                     className="inputRinci"
-                                                    disabled={
-                                                        this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
-                                                        : this.state.jenisVendor === nonObject ? true
-                                                        : false
-                                                    }
-                                                    value={this.state.alamat}
+                                                    // disabled={
+                                                    //     this.state.jenisVendor === nonObject && listGl.find((e) => e === parseInt(this.state.no_coa)) !== undefined ? false
+                                                    //     : this.state.jenisVendor === nonObject ? true
+                                                    //     : false
+                                                    // }
+                                                    disabled
+                                                    value={(this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? nonObject : this.state.alamat}
                                                     // onBlur={handleBlur("alamat_vendor")}
                                                     onChange={e => this.inputAlamat(e.target.value)}
                                                     />
@@ -2803,7 +3624,8 @@ class RevisiOps extends Component {
                                                 <Col md={3}>Nilai Yang Diajukan</Col>
                                                 <Col md={9} className="colRinci">:  <NumberInput
                                                     disabled={
-                                                        type_kasbon === 'kasbon' && this.state.idTrans !== '' ? false
+                                                        statBbm === 'ya' ? true
+                                                        : type_kasbon === 'kasbon' && this.state.idTrans !== '' ? false
                                                         : this.state.idTrans === '' ? true 
                                                         : this.state.tipePpn === "Ya" || this.state.tipePpn === "" ? true
                                                         : false
@@ -2814,40 +3636,42 @@ class RevisiOps extends Component {
                                                 />
                                                 </Col>
                                             </Row>
-                                            {this.state.nilai_ajuan === 0 && this.state.tipePpn === "Tidak" ? (
+                                            {(this.state.nilai_ajuan === 0 || this.state.nilai_ajuan === undefined) && this.state.tipePpn === "Tidak" ? (
                                                 <text className={style.txtError}>must be filled with number</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Vendor Memiliki Surat Keterangan Bebas Pajak (SKB)/Surat Keterangan (SKT)</Col>
-                                                <Col md={9} className="colRinci">:  
-                                                {(this.state.jenisVendor === nonObject || this.state.idTrans === '')
-                                                    ? <Input
-                                                        type= "text" 
-                                                        className="inputRinci"
-                                                        disabled
-                                                        value={nonObject}
-                                                    />
-                                                : 
-                                                    <Input
-                                                    type= "select" 
+                                            <Col md={3}>Vendor Memiliki SKB / SKT</Col>
+                                            <Col md={9} className="colRinci">:  
+                                            {(this.state.jenisVendor === nonObject || this.state.idTrans === '')
+                                                ? <Input
+                                                    type= "text" 
                                                     className="inputRinci"
-                                                    value={this.state.tipeSkb}
-                                                    disabled={this.state.idTrans === '' ? true : false}
-                                                    // value={values.penanggung_pajak}
-                                                    // onBlur={handleBlur("penanggung_pajak")}
-                                                    onChange={e => {this.selectSkb(e.target.value)}}
-                                                    >
-                                                        <option value=''>Pilih</option>
-                                                        <option value="ya">Ya</option>
-                                                        <option value="tidak">Tidak</option>
-                                                    </Input>
-                                                }
-                                                    
-                                                </Col>
-                                            </Row>
-                                            {this.state.jenisVendor !== nonObject && this.state.tipeSkb === '' ? (
-                                                <text className={style.txtError}>must be filled</text>
-                                            ) : null}
+                                                    disabled
+                                                    value={nonObject}
+                                                />
+                                            : 
+                                                <Input
+                                                type= "select" 
+                                                className="inputRinci"
+                                                value={this.state.tipeSkb}
+                                                disabled
+                                                // disabled={this.state.idTrans === '' ? true : false}
+                                                // value={values.penanggung_pajak}
+                                                // onBlur={handleBlur("penanggung_pajak")}
+                                                onChange={e => {this.selectSkb(e.target.value)}}
+                                                >
+                                                    <option value=''>Pilih</option>
+                                                    <option value="SKB">SKB</option>
+                                                    <option value="SKT">SKT</option>
+                                                    <option value="tidak">Tidak</option>
+                                                </Input>
+                                            }
+                                                
+                                            </Col>
+                                        </Row>
+                                        {this.state.jenisVendor !== nonObject && this.state.tipeSkb === '' ? (
+                                            <text className={style.txtError}>must be filled</text>
+                                        ) : null}
                                             <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Nilai Yang Dibukukan</Col>
                                                 <Col md={9} className="colRinci">:  <Input
@@ -2864,7 +3688,10 @@ class RevisiOps extends Component {
                                                     type= "text" 
                                                     className="inputRinci"
                                                     disabled
-                                                    value={dataTrans.jenis_pph}
+                                                    value={this.state.jenisVendor === nonObject ? nonPph
+                                                    : this.state.tipeSkb === 'SKB' ? nonPph 
+                                                    : this.state.tipeSkb === 'SKT' ? 'PPh Pasal 4(2)' 
+                                                    : dataTrans.jenis_pph}
                                                     />
                                                 </Col>
                                             </Row>
@@ -2952,7 +3779,7 @@ class RevisiOps extends Component {
                                                     >
                                                         <option value=''>Pilih</option>
                                                         <option value="PMA">PMA</option>
-                                                        <option value="Outlet">Outlet</option>
+                                                        <option value="Outlest">Outlest</option>
                                                     </Input>
                                                 </Col>
                                             </Row>
@@ -3012,8 +3839,8 @@ class RevisiOps extends Component {
                                                     type= "text" 
                                                     className="inputRinci"
                                                     disabled={this.state.digit === 0 ? true : false}
-                                                    minLength={this.state.digit}
-                                                    maxLength={this.state.digit}
+                                                    minLength={this.state.digit === null ? 10 : this.state.digit}
+                                                    maxLength={this.state.digit === null ? 16 : this.state.digit}
                                                     value={values.norek_ajuan}
                                                     onBlur={handleBlur("norek_ajuan")}
                                                     onChange={handleChange("norek_ajuan")}
@@ -3021,7 +3848,9 @@ class RevisiOps extends Component {
                                                 )}
                                                 </Col>
                                             </Row>
-                                            {(errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit) && this.state.tujuan_tf !== 'PMA'? (
+                                            {this.state.digit !== null && values.norek_ajuan.length !== this.state.digit && this.state.tujuan_tf !== 'PMA'? (
+                                                <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                            ) : this.state.digit === null && (values.norek_ajuan.length < 10 || values.norek_ajuan.length > 16) && this.state.tujuan_tf !== 'PMA'? (
                                                 <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                             ) : this.state.tujuan_tf === 'PMA' && this.state.norek.length !== this.state.digit ? (
                                                 <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
@@ -3029,17 +3858,61 @@ class RevisiOps extends Component {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="modalFoot mt-3">
+                                {statBbm === 'ya' && this.state.idTrans !== '' && dataBbm.length > 0 &&
+                                    <>
+                                        <div className='mt-3 mb-3'>
+                                            List Data BBM
+                                        </div>
+                                        <Table striped bordered hover responsive className={style.tab}>
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>No Pol</th>
+                                                    <th>Besar Pengisisan BBM (Liter)</th>
+                                                    <th>KM Pengisian</th>
+                                                    <th>Nominal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {dataBbm.length !== 0 && dataBbm.map(item => {
+                                                    return (
+                                                        <tr>
+                                                            <th>{dataBbm.indexOf(item) + 1}</th>
+                                                            <td>{item.no_pol}</td>
+                                                            <td>{item.liter}</td>
+                                                            <td>{item.km}</td>
+                                                            <td>{item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</td>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </Table>
+                                    </>
+                                }
+                                {statBbm === 'ya' && this.state.idTrans !== '' ? (
+                                    <div className='row justify-content-md-center mt-4 mb-4'>
+                                        <div className='mainRinci2' onClick={this.openOpsBbm}>
+                                            <CiCirclePlus size={70} className='mb-2 secondary' color='secondary' />
+                                            <div className='secondary'>Tambah Data BBM</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className='row justify-content-md-center mt-4 mb-4'>
+                                    </div>
+                                )}
+                                <div className="modalFoot mt-4">
                                     <div></div>
                                     <div className='btnfoot'>
                                         <Button 
                                             className="mr-3" 
                                             size="md" 
                                             disabled={this.state.no_coa === '' ? true 
-                                            // : values.status_npwp === 'Ya' && values.no_npwp === '' ? true 
-                                            // : values.status_npwp === 'Tidak' &&  values.no_ktp === '' ? true 
+                                            : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp === '' ) ? true 
+                                            : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
                                             // : values.norek_ajuan.length < this.state.digit ? true 
                                             : this.state.tujuan_tf === '' ? true
+                                            : this.state.jenisVendor !== nonObject && this.state.tipeSkb === '' ? true
+                                            : this.state.tipePpn === "Tidak" && (this.state.nilai_ajuan === 0 || this.state.nilai_ajuan === undefined) ? true
                                             : false } 
                                             color="primary" 
                                             onClick={handleSubmit}>
@@ -3051,6 +3924,273 @@ class RevisiOps extends Component {
                             </>
                             )}
                             </Formik>
+                    </ModalBody>
+                </Modal>
+                <Modal size="xl" toggle={this.openBbm} isOpen={this.state.modalBbm}>
+                    <ModalHeader>
+                        List Data BBM
+                    </ModalHeader>
+                    <ModalBody>
+                        <div className='rowCenter mb-3'>
+                            <Button color="success" size="lg" className="mr-2" onClick={this.openAddBbm} >Add</Button>
+                            <Button color="primary" size="lg" className="mr-2" onClick={this.openUpBbm} >Upload</Button>
+                            <Button color="warning" size="lg" className="mr-2" onClick={this.downloadBbm} >Download</Button>
+                        </div>
+                        <Table striped bordered hover responsive className={style.tab}>
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Pol</th>
+                                    <th>Besar Pengisisan BBM (Liter)</th>
+                                    <th>KM Pengisian</th>
+                                    <th>Nominal</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dataBbm.length !== 0 && dataBbm.map(item => {
+                                    return (
+                                        <tr>
+                                        <th>{dataBbm.indexOf(item) + 1}</th>
+                                        <td>{item.no_pol}</td>
+                                        <td>{item.liter}</td>
+                                        <td>{item.km}</td>
+                                        <td>{item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</td>
+                                        <td>
+                                            {/* {this.state.modalEdit === true ? (
+                                                <Button color="danger" className="mr-4" onClick={() => this.confirmDel(this.setState({dataDel: item}))}>Delete</Button>
+                                            ) : (
+                                            <> */}
+                                            <Button color="danger" className="mr-2" onClick={() => this.confirmDel(this.setState({dataDel: item}))}>Delete</Button>
+                                            <Button color="info" onClick={() => this.openDetBbm(this.setState({detBbm: item}))}>Update</Button>
+                                            {/* </>
+                                            )} */}
+                                        </td>
+                                    </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </Table>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.modalAddBbm} size="lg">
+                    <ModalHeader>Add Data Bbm</ModalHeader>
+                    <Formik
+                    initialValues={{
+                        liter: 0,
+                        km: 0,
+                        nominal: 0,
+                        no_pol: ''
+                    }}
+                    validationSchema={bbmSchema}
+                    onSubmit={(values) => {this.addDataBbm(values)}}
+                    >
+                    {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                    <ModalBody>
+                        <Row className="mb-2 rowRinci">
+                            <Col md={3}>No Pol</Col>
+                            <Col md={9} className="colRinci">:  <Input
+                                type= "text" 
+                                className="inputRinci"
+                                value={values.no_pol}
+                                onBlur={handleBlur("no_pol")}
+                                onChange={handleChange('no_pol')}
+                                />
+                            </Col>
+                        </Row>
+                        {values.no_pol === '' || values.no_pol === null || values.no_pol === undefined ? (
+                            <text className={style.txtError}>must be filled</text>
+                        ) : null}
+                        <Row className="mb-2 rowRinci">
+                            <Col md={3}>Besar Pengisisan BBM (Liter)</Col>
+                            <Col md={9} className="colRinci">: 
+                                <NumberInput
+                                    // isDisabled={this.state.jenisVendor === '' ? true : false}
+                                    className="inputRinci1"
+                                    value={values.liter}
+                                    // placeholder={this.state.jenisTrans}
+                                    onValueChange={val => setFieldValue("liter", val.floatValue)}
+                                />
+                            </Col>
+                        </Row>
+                        {values.liter === 0 || values.liter === undefined ? (
+                            <text className={style.txtError}>must be filled</text>
+                        ) : null}
+                        <Row className="mb-2 rowRinci">
+                            <Col md={3}>KM Pengisian</Col>
+                            <Col md={9} className="colRinci">: 
+                                <NumberInput
+                                    className="inputRinci1"
+                                    value={values.km}
+                                    // placeholder={this.state.jenisTrans}
+                                    onValueChange={val => setFieldValue("km", val.floatValue)}
+                                />
+                            </Col>
+                        </Row>
+                        {values.km === 0 || values.km === undefined ? (
+                            <text className={style.txtError}>must be filled</text>
+                        ) : null}
+                        <Row className="mb-2 rowRinci">
+                            <Col md={3}>Nominal</Col>
+                            <Col md={9} className="colRinci">: 
+                                <NumberInput
+                                    className="inputRinci1"
+                                    value={values.nominal}
+                                    // placeholder={this.state.jenisTrans}
+                                    onValueChange={val => setFieldValue("nominal", val.floatValue)}
+                                />
+                            </Col>
+                        </Row>
+                        {values.nominal === 0 || values.nominal === undefined ? (
+                            <text className={style.txtError}>must be filled</text>
+                        ) : null}
+                        <hr/>
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button 
+                                className="mr-2" 
+                                onClick={handleSubmit} color="primary"
+                                disabled={
+                                    (values.no_pol === undefined || values.km === undefined || values.liter === undefined || values.nominal === undefined) ? true
+                                    : (values.no_pol === '' || values.km === 0 || values.liter === 0 || values.nominal === 0) ? true 
+                                : false} 
+                                >Save</Button>
+                                <Button className="" onClick={this.openAddBbm}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                    )}
+                    </Formik>
+                </Modal>
+                <Modal isOpen={this.state.detModBbm} size="lg">
+                    <ModalHeader>Update Data Bbm</ModalHeader>
+                    <Formik
+                    initialValues={{
+                        liter: detBbm.liter,
+                        km: detBbm.km,
+                        nominal: detBbm.nominal,
+                        no_pol: detBbm.no_pol
+                    }}
+                    validationSchema={bbmSchema}
+                    onSubmit={(values) => {this.editDataBbm(values)}}
+                    >
+                    {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                    <ModalBody>
+                        <Row className="mb-2 rowRinci">
+                            <Col md={3}>No Pol</Col>
+                            <Col md={9} className="colRinci">:  <Input
+                                type= "text" 
+                                className="inputRinci"
+                                value={values.no_pol}
+                                onBlur={handleBlur("no_pol")}
+                                onChange={handleChange('no_pol')}
+                                />
+                            </Col>
+                        </Row>
+                        {values.no_pol === '' || values.no_pol === null || values.no_pol === undefined ? (
+                            <text className={style.txtError}>must be filled</text>
+                        ) : null}
+                        <Row className="mb-2 rowRinci">
+                            <Col md={3}>Besar Pengisisan BBM (Liter)</Col>
+                            <Col md={9} className="colRinci">: 
+                                <NumberInput
+                                    // isDisabled={this.state.jenisVendor === '' ? true : false}
+                                    className="inputRinci1"
+                                    value={values.liter}
+                                    // placeholder={this.state.jenisTrans}
+                                    onValueChange={val => setFieldValue("liter", val.floatValue)}
+                                />
+                            </Col>
+                        </Row>
+                        {values.liter === 0 || values.liter === undefined ? (
+                            <text className={style.txtError}>must be filled</text>
+                        ) : null}
+                        <Row className="mb-2 rowRinci">
+                            <Col md={3}>KM Pengisian</Col>
+                            <Col md={9} className="colRinci">: 
+                                <NumberInput
+                                    className="inputRinci1"
+                                    value={values.km}
+                                    // placeholder={this.state.jenisTrans}
+                                    onValueChange={val => setFieldValue("km", val.floatValue)}
+                                />
+                            </Col>
+                        </Row>
+                        {values.km === 0 || values.km === undefined ? (
+                            <text className={style.txtError}>must be filled</text>
+                        ) : null}
+                        <Row className="mb-2 rowRinci">
+                            <Col md={3}>Nominal</Col>
+                            <Col md={9} className="colRinci">: 
+                                <NumberInput
+                                    className="inputRinci1"
+                                    value={values.nominal}
+                                    // placeholder={this.state.jenisTrans}
+                                    onValueChange={val => setFieldValue("nominal", val.floatValue)}
+                                />
+                            </Col>
+                        </Row>
+                        {values.nominal === 0 || values.nominal === undefined ? (
+                            <text className={style.txtError}>must be filled</text>
+                        ) : null}
+                        <hr/>
+                        <div className={style.foot}>
+                            <div></div>
+                            <div>
+                                <Button 
+                                className="mr-2" 
+                                onClick={handleSubmit} color="primary"
+                                disabled={
+                                    (values.no_pol === undefined || values.km === undefined || values.liter === undefined || values.nominal === undefined) ? true
+                                    : (values.no_pol === '' || values.km === 0 || values.liter === 0 || values.nominal === 0) ? true 
+                                    : false }
+                                >Save</Button>
+                                <Button className="" onClick={this.openDetBbm}>Cancel</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                    )}
+                    </Formik>
+                </Modal>
+                <Modal isOpen={this.state.modUpBbm} >
+                    <ModalHeader>Upload Data</ModalHeader>
+                    <ModalBody className={style.modalUpload}>
+                        <div className={style.titleModalUpload}>
+                            <text>Upload File: </text>
+                            <div className={style.uploadFileInput}>
+                                <AiOutlineFileExcel size={35} />
+                                <div className="ml-3">
+                                    <Input
+                                        type="file"
+                                        name="file"
+                                        accept=".xls,.xlsx"
+                                        onChange={this.onChangeHandler}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className='btnUpload'>
+                            {/* <Button color="info" onClick={this.DownloadTemplate}>Download Template</Button> */}
+                            <div></div>
+                            <Button className='mr-2' color="primary" disabled={this.state.fileUpload === "" ? true : false} onClick={this.uploadDataBbm}>Upload</Button>
+                            <Button onClick={this.openUpBbm}>Cancel</Button>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.modalDelBbm} toggle={this.confirmDel} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk delete data bbm ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.delDataBbm()}>Ya</Button>
+                                <Button color="secondary" onClick={this.confirmDel}>Tidak</Button>
+                            </div>
+                        </div>
                     </ModalBody>
                 </Modal>
                 <Modal toggle={this.openDraftEmail} isOpen={this.state.openDraft} size='xl'>
@@ -3127,7 +4267,12 @@ const mapDispatchToProps = {
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
     getFinRek: finance.getFinRek,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif,
+    uploadBbm: ops.uploadBbm,
+    updateBbm: ops.updateBbm,
+    addBbm: ops.addBbm,
+    getBbm: ops.getBbm,
+    deleteBbm: ops.deleteBbm
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(RevisiOps)

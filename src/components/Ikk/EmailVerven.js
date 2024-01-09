@@ -133,6 +133,7 @@ class EmailVerven extends Component {
                     <Input 
                     type='textarea'
                     name="subject"
+                    disabled
                     value={this.state.subject}
                     onChange={e => this.onEnter(e.target)}
                     // onBlur={handleBlur("subject")}

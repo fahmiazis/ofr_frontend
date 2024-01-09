@@ -3,7 +3,7 @@ import {  Table, ButtonDropdown, Input, Button, Col,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
 import moment from 'moment'
 import {connect} from 'react-redux'
-import style from '../assets/css/input.module.css'
+import style from '../../assets/css/input.module.css'
 
 class FormList extends Component {
   render() {

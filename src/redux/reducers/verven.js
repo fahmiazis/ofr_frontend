@@ -62,7 +62,8 @@ const verifvenState = {
     isIdVerven: null,
     dataAddVer: {},
     noTrans: '',
-    isGenNo: null
+    isGenNo: null,
+    messAdd: ''
 };
 
 export default (state=verifvenState, action) => {
@@ -259,7 +260,7 @@ export default (state=verifvenState, action) => {
                     ...state,
                     isLoading: false,
                     isAdd: false,
-                    isError: true,
+                    messAdd: action.payload.response.data !== undefined ? 'NO KTP Atau NO NPWP Telah Terdaftar Dan Pastikan Pengisian Data Dengan Benar' : "Unable connect to server",
                     alertMsg: "Unable connect to server"
                 };
             }

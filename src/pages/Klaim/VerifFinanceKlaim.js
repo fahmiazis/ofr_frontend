@@ -38,9 +38,12 @@ import Tracking from '../../components/Klaim/tracking'
 import dokumen from '../../redux/actions/dokumen'
 import email from '../../redux/actions/email'
 import Email from '../../components/Klaim/Email'
+import ListOutlet from '../../components/Klaim/ListOutlet'
 import ExcelJS from "exceljs"
 import fs from "file-saver"
 import NumberInput from '../../components/NumberInput'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 const {REACT_APP_BACKEND_URL} = process.env
 const accKlaim = ['3', '13', '23']
 
@@ -125,10 +128,44 @@ class VerifKlaim extends Component {
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             tipeEmail: '',
             dataRej: {},
-            listKlaim: []
+            listKlaim: [],
+            dataZip: [],
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    checkDoc = (val) => {
+        const { dataZip } = this.state
+        const {dataDoc} = this.props.klaim
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataDoc.length; i++) {
+                data.push(dataDoc[i].id)
+            }
+            this.setState({dataZip: data})
+        } else {
+            dataZip.push(val)
+            this.setState({dataZip: dataZip})
+        }
+    }
+
+    unCheckDoc = (val) => {
+        const {dataZip} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({dataZip: data})
+        } else {
+            const data = []
+            for (let i = 0; i < dataZip.length; i++) {
+                if (dataZip[i] === val) {
+                    data.push()
+                } else {
+                    data.push(dataZip[i])
+                }
+            }
+            this.setState({dataZip: data})
+        }
     }
 
     submitStock = async () => {
@@ -171,6 +208,28 @@ class VerifKlaim extends Component {
             data.append('document', e.target.files[0])
             this.props.uploadPicture(token, dataRinci.no_asset, data)
         }
+    }
+
+    downloadDataZip = () => {
+        const {dataZip} = this.state
+        const {dataDoc} = this.props.klaim
+        let zip = new JSZip();
+    
+        const remoteZips = dataDoc.map(async (item) => {
+            const cekData = dataZip.find(e => e === item.id)
+            if (cekData !== undefined) {
+                const response = await fetch(`${REACT_APP_BACKEND_URL}/show/doc/${item.id}`);
+                const data = await response.blob();
+                zip.file(`${item.desc} ~ ${item.history}`, data);
+                return data;
+            }
+        })
+
+        Promise.all(remoteZips).then(() => {
+            zip.generateAsync({ type: "blob" }).then((content) => {
+              saveAs(content, `Dokumen Lampiran ${dataDoc[0].no_transaksi} ${moment().format('DDMMYYYY h:mm:ss')}.zip`);
+            })
+          })
     }
 
     uploadGambar = e => {
@@ -287,13 +346,6 @@ class VerifKlaim extends Component {
 
     goRoute(val) {
         this.props.history.push(`/${val}`)
-    }
-
-    getDetailStock = async (value) => {
-        const token = localStorage.getItem("token")
-        this.setState({dataItem: value})
-        await this.props.getDetailStock(token, value.id)
-        this.openModalRinci()
     }
 
     deleteStock = async (value) => {
@@ -435,6 +487,7 @@ class VerifKlaim extends Component {
         await this.props.getDetail(token, tempno)
         await this.props.getApproval(token, tempno)
         await this.props.getDocKlaim(token, data)
+        await this.props.getOutlet(token, val.id)
         this.openModalRinci()
     }
 
@@ -852,7 +905,6 @@ class VerifKlaim extends Component {
         this.setState({confirm: 'isAppDoc'})
         this.openConfirm()
         this.openModalAppDoc()
-        
     }
 
     openModalAppDoc = () => {
@@ -876,6 +928,50 @@ class VerifKlaim extends Component {
 
     openModalRejDoc = () => {
         this.setState({openRejDoc: !this.state.openRejDoc})
+    }
+
+    approveZip = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc, dataZip} = this.state
+        const { detailKlaim } = this.props.klaim
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            name: 'Draft Pengajuan Klaim'
+        }
+        const data = {
+            list: dataZip
+        }
+        await this.props.approveDokumen(token, idDoc, data)
+        await this.props.getDocKlaim(token, tempno)
+        this.setState({confirm: 'isAppDoc'})
+        this.openConfirm()
+        this.openModalAppZip()
+    }
+
+    openModalAppZip = () => {
+        this.setState({openAppZip: !this.state.openAppZip})
+    }
+
+    rejectZip = async () => {
+        const token = localStorage.getItem('token')
+        const {idDoc, dataZip} = this.state
+        const { detailKlaim } = this.props.klaim
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            name: 'Draft Pengajuan Klaim'
+        }
+        const data = {
+            list: dataZip
+        }
+        await this.props.rejectDokumen(token, idDoc, data)
+        await this.props.getDocKlaim(token, tempno)
+        this.setState({confirm: 'isRejDoc'})
+        this.openConfirm()
+        this.openModalRejZip()
+    }
+
+    openModalRejZip = () => {
+        this.setState({openRejZip: !this.state.openRejZip})
     }
 
     openModalAdd = () => {
@@ -1142,6 +1238,124 @@ class VerifKlaim extends Component {
         }
     }
 
+    downloadTandaTerima = () => {
+        const {listKlaim} = this.state
+        const {newKlaim} = this.props.klaim
+        const {dataSpvklaim} = this.props.spvklaim
+        const dataDownload = []
+
+        if (newKlaim.length === 0 || listKlaim.length === 0) {
+            this.setState({confirm: 'rejDownload'})
+            this.openConfirm()
+        } else {
+            for (let i = 0; i < listKlaim.length; i++) {
+                for (let j = 0; j < newKlaim.length; j++) {
+                    if (newKlaim[j].id === listKlaim[i]) {
+                        dataDownload.push(newKlaim[j])
+                    }
+                }
+            }
+    
+            const workbook = new ExcelJS.Workbook();
+            const ws = workbook.addWorksheet('data klaim')
+    
+            // await ws.protect('F1n4NcePm4')
+    
+            const borderStyles = {
+                top: {style:'thin'},
+                left: {style:'thin'},
+                bottom: {style:'thin'},
+                right: {style:'thin'}
+            }
+            
+    
+            ws.columns = [
+                {header: 'No', key: 'c1'},
+                {header: 'No. FPD', key: 'c2'},
+                {header: 'Nama Distributor', key: 'c3'},
+                {header: 'Area', key: 'c4'},
+                {header: 'Channel GT/MT', key: 'c5'},
+                {header: 'Nama Program', key: 'c6'},
+                {header: 'No. DN', key: 'c7'},
+                {header: 'Nilai DN', key: 'c8'},
+                {header: 'Nilai Verifikasi', key: 'c9'},
+                {header: 'Selisih', key: 'c10'},
+                {header: 'No. PPU', key: 'c11'},
+                {header: 'No. PA', key: 'c12'},
+                {header: 'Tipe Klaim', key: 'c13'},
+                {header: 'Keterangan', key: 'c14'},
+                {header: 'PIC', key: 'c15'},
+                {header: 'AGING/BUKAN AGING', key: 'c16'}
+            ]
+    
+            dataDownload.map((item, index) => { return ( ws.addRow(
+                {
+                    c1: index + 1,
+                    c2: item.no_transaksi,
+                    c3: "Pinus Merah Abadi, PT",
+                    c4: item.depo.area,
+                    c5: item.scarea !== null ? item.scarea.channel : '',
+                    c6: item.nama_program,
+                    c7: item.dn_area,
+                    c8: parseFloat(item.nilai_ajuan).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    c9: parseFloat(item.nominal).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    c10: parseFloat(parseFloat(item.nominal) - parseFloat(item.nilai_ajuan)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    c11: item.ppu,
+                    c12: item.pa,
+                    c13: 'TIDAK SETTING SYSTEM & TIDAK POTONG TAGIHAN',
+                    c14: item.keterangan,
+                    c15: item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()) !== undefined
+                        && dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()).pic_klaim,
+                    c16: ''
+                }
+            )
+            ) })
+
+            ws.addRow(
+                {
+                    c7: 'TOTAL :',
+                    c8: dataDownload.reduce((accumulator, object) => {
+                        return accumulator + parseFloat(object.nilai_ajuan);
+                    }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    c9: dataDownload.reduce((accumulator, object) => {
+                        return accumulator + parseFloat(object.nominal);
+                    }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    c10: parseFloat(dataDownload.reduce((accumulator, object) => {
+                        return accumulator + parseFloat(object.nominal);
+                    }, 0) - dataDownload.reduce((accumulator, object) => {
+                        return accumulator + parseFloat(object.nilai_ajuan);
+                    }, 0)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    c11: '',
+                    c12: '',
+                    c13: '',
+                    c14: '',
+                    c15: '',
+                    c16: ''
+                }
+            )
+    
+            ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+                row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+                  cell.border = borderStyles;
+                })
+              })
+    
+              ws.columns.forEach(column => {
+                const lengths = column.values.map(v => v.toString().length)
+                const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+                column.width = maxLength + 5
+            })
+    
+            workbook.xlsx.writeBuffer().then(function(buffer) {
+                fs.saveAs(
+                  new Blob([buffer], { type: "application/octet-stream" }),
+                  `Tanda Terima FPD Klaim ${moment().format('DD MMMM YYYY')}.xlsx`
+                )
+            })
+        }
+    }
+
     uploadAjuan = async () => {
         const token = localStorage.getItem('token')
         const data = new FormData()
@@ -1164,7 +1378,7 @@ class VerifKlaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('fullname')
-        const {dataRinci, listKlaim, tipeEmail, listMut, drop, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, listKlaim, tipeEmail, listMut, dataZip, listReason, dataMenu, listMenu, detailDoc} = this.state
         const {dataSpvklaim} = this.props.spvklaim
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
@@ -1213,8 +1427,17 @@ class VerifKlaim extends Component {
                             <div className={style.secEmail4}>
                                 {accKlaim.find(item => item.toString() === level) !== undefined ? (
                                     <div className='rowCenter'>
-                                        <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload Ajuan</Button>
-                                        <Button className='mr-1' onClick={this.downloadAjuan} color="success" size="lg">Download Ajuan</Button>
+                                        <Button className='mr-1' onClick={this.downloadTandaTerima} color="primary" size="lg">Download Tanda Terima</Button>
+                                    </div>
+                                ) : <div></ div>}
+                                <div className={style.searchEmail2}>
+                                </div>
+                            </div>
+                            <div className={style.secEmail4}>
+                                {accKlaim.find(item => item.toString() === level) !== undefined ? (
+                                    <div className='rowCenter'>
+                                        <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload Template</Button>
+                                        <Button className='mr-1' onClick={this.downloadAjuan} color="success" size="lg">Download Template</Button>
                                     </div>
                                 ) : <div></ div>}
                                 <div className={style.searchEmail2}>
@@ -1546,9 +1769,9 @@ class VerifKlaim extends Component {
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
-                                                <th>{item.status_npwp === 0 ? '-' : item.nama_npwp}</th>
-                                                <th>{item.status_npwp === 0 ? '-' : item.no_npwp}</th>
+                                                <th>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : ''}</th>
+                                                <th>{item.status_npwp === 1 ? item.nama_npwp : '-'}</th>
+                                                <th>{item.status_npwp === 1 ? item.no_npwp : '-' }</th>
                                                 <th>{item.status_npwp === 0 ? item.nama_ktp : '-'}</th>
                                                 <th>{item.status_npwp === 0 ? item.no_ktp : '-'}</th>
                                                 <th>{item.ppu}</th>
@@ -1562,6 +1785,7 @@ class VerifKlaim extends Component {
                                         })}
                                 </tbody>
                             </Table>
+                            <ListOutlet />
                         </div>
                     </ModalBody>
                     <div className="modalFoot ml-3">
@@ -2377,7 +2601,7 @@ class VerifKlaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading || this.props.email.isLoading} size="sm">
+                <Modal isOpen={this.props.klaim.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading || this.props.notif.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2423,7 +2647,7 @@ class VerifKlaim extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
-            <Modal isOpen={this.state.modalConfirm} size={this.state.confirm === 'failUpload' ? 'lg' : 'sm'} toggle={this.openConfirm}>
+            <Modal isOpen={this.state.modalConfirm} size="lg" toggle={this.openConfirm}>
                 <ModalBody>
                     {this.state.confirm === 'approve' ? (
                         <div>
@@ -2546,6 +2770,9 @@ class VerifKlaim extends Component {
                         <div></div>
                     )}
                 </ModalBody>
+                <div className='row justify-content-md-center mb-4'>
+                    <Button size='lg' onClick={() => this.openConfirm(false)} color='primary'>OK</Button>
+                </div>
             </Modal>
             <Modal isOpen={this.state.alert} size="sm">
                 <ModalBody>
@@ -2563,12 +2790,34 @@ class VerifKlaim extends Component {
                 </ModalHeader>
                 <ModalBody>
                     <Container>
+                        {dataDoc.length > 0 && (
+                            <Row className="mt-3 mb-4">
+                                <Col md={12} lg={12} className='mb-2' >
+                                    <div className="btnDocIo mb-2 ml-4" >
+                                        <Input 
+                                            type='checkbox'
+                                            checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
+                                            onChange={() => dataZip.length === dataDoc.length ? this.unCheckDoc('all') : this.checkDoc('all')}
+                                        />
+                                        Ceklis All
+                                    </div>
+                                </Col>
+                            </Row>
+                        )}
+
                         {dataDoc !== undefined && dataDoc.map(x => {
                             return (
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} className='mb-2' >
-                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
+                                            <div className="btnDocIo mb-2 ml-4" >
+                                                <Input 
+                                                    type='checkbox'
+                                                    checked={dataZip.find(element => element === x.id) !== undefined ? true : false}
+                                                    onChange={dataZip.find(element => element === x.id) === undefined ? () => this.checkDoc(x.id) : () => this.unCheckDoc(x.id)}
+                                                />
+                                                {x.desc === null ? 'Lampiran' : x.desc}
+                                            </div>
                                                 {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
                                                 x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
                                                 : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
@@ -2609,31 +2858,31 @@ class VerifKlaim extends Component {
                         })}
                     </Container>
                 </ModalBody>
-                <ModalFooter>
-                    <Button className="mr-2" color="secondary" onClick={this.openModalDoc}>
-                        Close
-                    </Button>
-                    {/* {this.state.stat === 'DIPINJAM SEMENTARA' && (dataDoc.length === 0 || dataDoc.find(({status}) => status === 1) === undefined) ? (
-                        <Button color="primary" disabled onClick={this.updateStatus}>
-                            Save 
+                {/* </hr> */}
+                <div className="modalFoot ml-3">
+                    <div className="btnFoot">
+                        <Button disabled={dataZip.length === 0} className="mr-2" color="success" onClick={this.openModalAppZip}>
+                            Approve Document
                         </Button>
-                    ) : this.state.stat === 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.updateStatus}>
-                            Save 
+                        <Button disabled={dataZip.length === 0} className="mr-2" color="danger" onClick={this.openModalRejZip}>
+                            Reject Document
                         </Button>
-                    )}
-                    {this.state.stat !== 'DIPINJAM SEMENTARA' && (
-                        <Button color="primary" onClick={this.openModalDoc}>
-                            Save 
+                    </div>
+                    <div className="btnFoot">
+                        <Button disabled={dataZip.length === 0} className="mr-2" color="primary" onClick={this.downloadDataZip}>
+                            Download Document
                         </Button>
-                    )} */}
-                </ModalFooter>
+                        <Button color="secondary" onClick={this.openModalDoc}>
+                            Close
+                        </Button>
+                    </div>
+                </div>
             </Modal>
             <Modal isOpen={this.state.openPdf} size="xl" toggle={this.openModalPdf} centered={true}>
                 <ModalHeader>Dokumen</ModalHeader>
                 <ModalBody>
                     <div className={style.readPdf}>
-                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} />
+                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} dataFile={this.state.fileName}/>
                     </div>
                     <hr/>
                     <div className={style.foot}>
@@ -2715,6 +2964,42 @@ class VerifKlaim extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal isOpen={this.state.openAppZip} toggle={this.openModalAppZip} centered={true}>
+                <ModalBody>
+                    <div className={style.modalApprove}>
+                        <div>
+                            <text>
+                                Anda yakin untuk approve     
+                                <text className={style.verif}> </text>
+                                pada tanggal
+                                <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                            </text>
+                        </div>
+                        <div className={style.btnApprove}>
+                            <Button color="primary" onClick={() => this.approveZip()}>Ya</Button>
+                            <Button color="secondary" onClick={this.openModalAppZip}>Tidak</Button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
+            <Modal isOpen={this.state.openRejZip} toggle={this.openModalRejZip} centered={true}>
+                <ModalBody>
+                    <div className={style.modalApprove}>
+                        <div>
+                            <text>
+                                Anda yakin untuk reject     
+                                <text className={style.verif}> </text>
+                                pada tanggal
+                                <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
+                            </text>
+                        </div>
+                        <div className={style.btnApprove}>
+                            <Button color="primary" onClick={() => this.rejectZip()}>Ya</Button>
+                            <Button color="secondary" onClick={this.openModalRejZip}>Tidak</Button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
             <Modal isOpen={this.state.docHist} toggle={this.docHistory}>
                 <ModalBody>
                     <div className='mb-4'>History Dokumen</div>
@@ -2749,7 +3034,7 @@ class VerifKlaim extends Component {
                     </ModalBody>
                 </Modal>
                 <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
-                    <ModalHeader>Upload Master User</ModalHeader>
+                    <ModalHeader>Upload Data</ModalHeader>
                     <ModalBody className={style.modalUpload}>
                         <div className={style.titleModalUpload}>
                             <text>Upload File: </text>
@@ -2816,7 +3101,8 @@ const mapDispatchToProps = {
     sendEmail: email.sendEmail,
     addNotif: notif.addNotif,
     uploadDataKlaim: klaim.uploadDataKlaim,
-    getSpvklaim: spvklaim.getSpvklaim
+    getSpvklaim: spvklaim.getSpvklaim,
+    getOutlet: klaim.getOutlet,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifKlaim)
