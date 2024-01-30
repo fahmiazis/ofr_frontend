@@ -1163,7 +1163,7 @@ class CartKlaim extends Component {
         const { detFinance } = this.props.finance
         const { dataOutlet } = this.state
 
-        if (dataOutlet.length === 0 && this.state.tiperek === 'Rekening Spending Card') {
+        if (dataOutlet.length === 0 && this.state.tujuan_tf === 'Outlet') {
             this.setState({ confirm: 'nullOutlet' })
             this.openConfirm()
         } else {
@@ -1172,7 +1172,7 @@ class CartKlaim extends Component {
                 keterangan: val.keterangan,
                 periode_awal: val.periode_awal,
                 periode_akhir: val.periode_akhir,
-                nilai_ajuan: this.state.tiperek === 'Rekening Spending Card' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
+                nilai_ajuan: this.state.tujuan_tf === 'Outlet' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
                     return accumulator + parseFloat(object.nilai_ajuan);
                 }, 0) : 0) : this.state.nilai_ajuan,
                 bank_tujuan: this.state.bank,
@@ -1193,7 +1193,7 @@ class CartKlaim extends Component {
             }
             await this.props.addCart(token, data)
 
-            if (this.state.tiperek === 'Rekening Spending Card') {
+            if (this.state.tujuan_tf === 'Outlet') {
                 const { dataAdd } = this.props.klaim
                 const send = {
                     id: dataAdd.id,
@@ -1218,7 +1218,7 @@ class CartKlaim extends Component {
         const { detFinance } = this.props.finance
         const { dataOutlet, typeOut } = this.state
 
-        if (dataOutlet.length === 0 && typeOut !== 'delout' && this.state.tiperek === 'Rekening Spending Card') {
+        if (dataOutlet.length === 0 && typeOut !== 'delout' && this.state.tujuan_tf === 'Outlet') {
             this.setState({ confirm: 'nullOutlet' })
             this.openConfirm()
         } else {
@@ -1227,7 +1227,7 @@ class CartKlaim extends Component {
                 keterangan: val.keterangan,
                 periode_awal: val.periode_awal,
                 periode_akhir: val.periode_akhir,
-                nilai_ajuan: this.state.tiperek === 'Rekening Spending Card' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
+                nilai_ajuan: this.state.tujuan_tf === 'Outlet' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
                     return accumulator + parseFloat(object.nilai_ajuan);
                 }, 0) : 0) : this.state.nilai_ajuan,
                 bank_tujuan: this.state.bank,
@@ -1443,8 +1443,9 @@ class CartKlaim extends Component {
     }
 
     prepBank = (val) => {
+        const cekVal = val === 'Bank Mandiri' ? 'BANK MANDIRI' : val
         const { dataBank } = this.props.bank
-        const data = dataBank.find(({ bank }) => bank === val)
+        const data = dataBank.find(({name}) => name ===  cekVal)
         if (data === undefined) {
             this.setState()
         } else {
@@ -1837,10 +1838,10 @@ class CartKlaim extends Component {
                                             <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Nilai Yang Diajukan</Col>
                                                 <Col md={9} className="colRinci">:  <NumberInput
-                                                    value={this.state.tiperek === 'Rekening Spending Card' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
+                                                    value={this.state.tujuan_tf === 'Outlet' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
                                                         return accumulator + parseFloat(object.nilai_ajuan);
                                                     }, 0) : 0) : this.state.nilai_ajuan}
-                                                    disabled={this.state.tiperek === 'Rekening Spending Card' || this.state.tiperek === '' ? true : false}
+                                                    disabled={this.state.tujuan_tf === 'Outlet' ? true : false}
                                                     className="inputRinci1"
                                                     onValueChange={val => this.onEnterVal(val.floatValue)}
                                                     // onValueChange={val => setFieldValue("nilai_ajuan", val.floatValue)}
@@ -1936,7 +1937,9 @@ class CartKlaim extends Component {
                                             {values.nama_tujuan === '' && this.state.tujuan_tf !== 'PMA' ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
-                                            {dataOutlet.length > 0 && this.state.tiperek === 'Rekening Spending Card' &&
+                                            {((dataOutlet.length > 0 && this.state.tujuan_tf === 'Outlet') 
+                                            // || (dataOutlet.length > 0 && this.state.tujuan_tf === 'Outlet')
+                                            ) &&
                                                 <>
                                                     <div className='mt-3 mb-3'>
                                                         List Outlet
@@ -1971,7 +1974,10 @@ class CartKlaim extends Component {
                                                     </Table>
                                                 </>
                                             }
-                                            {this.state.tiperek === 'Rekening Spending Card' ? (
+                                            {(this.state.tujuan_tf === 'Outlet' 
+                                            // || (this.state.tujuan_tf === 'Outlet')
+                                            ) 
+                                            ? (
                                                 <div className='row justify-content-md-center mb-4'>
                                                     <div className='mainRinci2' onClick={this.openOutlet}>
                                                         <CiCirclePlus size={70} className='mb-2 secondary' color='secondary' />
@@ -2453,7 +2459,7 @@ class CartKlaim extends Component {
                         <Button color='primary' onClick={this.openModalUpload}>Done</Button>
                     </ModalFooter>
                 </Modal>
-                <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
+                <Modal isOpen={this.state.modalEdit} size="xl">
                     <ModalHeader>
                         Edit Ajuan Klaim
                     </ModalHeader>
@@ -2623,10 +2629,10 @@ class CartKlaim extends Component {
                                             <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Nilai Yang Diajukan</Col>
                                                 <Col md={9} className="colRinci">:  <NumberInput
-                                                    value={this.state.tiperek === 'Rekening Spending Card' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
+                                                    value={this.state.tujuan_tf === 'Outlet' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
                                                         return accumulator + parseFloat(object.nilai_ajuan);
                                                     }, 0) : 0) : this.state.nilai_ajuan}
-                                                    disabled={this.state.tiperek === 'Rekening Spending Card' || this.state.tiperek === '' ? true : false}
+                                                    disabled={this.state.tujuan_tf === 'Outlet' ? true : false}
                                                     className="inputRinci1"
                                                     onValueChange={val => this.onEnterVal(val.floatValue)}
                                                 />
@@ -2669,6 +2675,7 @@ class CartKlaim extends Component {
                                                             className="inputRinci2"
                                                             options={this.state.bankList}
                                                             onChange={this.selectBank}
+                                                            value={{label: this.state.bank, value: this.state.digit}}
                                                         />
                                                     )}
                                                 </Col>
@@ -2722,7 +2729,9 @@ class CartKlaim extends Component {
                                             {values.nama_tujuan === '' && this.state.tujuan_tf !== 'PMA' ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
-                                            {dataOutlet.length > 0 && this.state.tiperek === 'Rekening Spending Card' &&
+                                            {((dataOutlet.length > 0 && this.state.tujuan_tf === 'Outlet') 
+                                            // || (dataOutlet.length > 0 && this.state.tujuan_tf === 'Outlet')
+                                            ) &&
                                                 <>
                                                     <div className='mt-3 mb-3'>
                                                         List Outlet
@@ -2757,7 +2766,9 @@ class CartKlaim extends Component {
                                                     </Table>
                                                 </>
                                             }
-                                            {this.state.tiperek === 'Rekening Spending Card' ? (
+                                            {(this.state.tujuan_tf === 'Outlet'
+                                            // || (this.state.tujuan_tf === 'Outlet')
+                                            ) ? (
                                                 <div className='row justify-content-md-center mb-4'>
                                                     <div className='mainRinci2' onClick={this.openKlaimOutlet}>
                                                         <CiCirclePlus size={70} className='mb-2 secondary' color='secondary' />

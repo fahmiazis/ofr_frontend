@@ -24,7 +24,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -180,7 +180,9 @@ class VerifKasbon extends Component {
             docHist: false,
             detailDoc: {},
             docCon: false,
-            stat_kasbon: ''
+            stat_kasbon: '',
+            tipeEmail: '',
+            dataRej: {}
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -275,11 +277,7 @@ class VerifKasbon extends Component {
             stat_kasbon: resStat === '' ? 'open' : resStat
         }
         await this.props.revisiKasbon(token, data)
-        this.getDataOps()
-        this.setState({confirm: 'reject'})
-        this.openConfirm()
-        this.openModalReject()
-        this.openModalRinci()
+        this.dataSendEmail('reject')
     }
 
     dropApp = () => {
@@ -691,7 +689,7 @@ class VerifKasbon extends Component {
         }
         if (level === '4' || level === '14') {
             await this.props.submitRealisasi(token, tempno)
-            this.dataSendEmail()
+            this.dataSendEmail('approve')
             // const cek = []
             // detailOps.map(item => {
             //     return ((item.dpp !== null && item.ppn !== null && item.nilai_utang !== null) && cek.push(item))
@@ -710,7 +708,7 @@ class VerifKasbon extends Component {
             // }
         } else {
             await this.props.submitRealisasi(token, tempno)
-            this.dataSendEmail()
+            this.dataSendEmail('approve')
         }
     }
 
@@ -719,11 +717,16 @@ class VerifKasbon extends Component {
         const { detailOps } = this.props.ops
         const { draftEmail } = this.props.email
         const { message, subject } = this.state
+        const level = localStorage.getItem('level')
         const cc = draftEmail.cc
         const tempcc = []
         for (let i = 0; i < cc.length; i++) {
             tempcc.push(cc[i].email)
         }
+        const tipeProses = val === 'reject' ? 'reject perbaikan'  : level === '2' ? 'verifikasi' : 'selesai'
+        const tipeRoute = val === 'reject' ? 'realkasbon' : level === '2' ? 'verifrealkasbon' : 'realkasbon'
+        // const tipeMenu = level === '4' || level === '14' || level === '24' || level === '34' || level === '24' || level === '34' ? 'list ajuan bayar' : 'verifikasi ops'
+        const tipeMenu = 'verifikasi realisasi kasbon'
         const tempno = {
             draft: draftEmail,
             nameTo: draftEmail.to.username,
@@ -732,15 +735,28 @@ class VerifKasbon extends Component {
             message: message,
             subject: subject,
             no: detailOps[0].no_transaksi,
-            tipe: 'ops',
+            tipe: 'kasbon',
+            menu: tipeMenu,
+            proses: tipeProses,
+            route: tipeRoute
         }
         await this.props.sendEmail(token, tempno)
-        this.getDataOps()
-        this.setState({confirm: 'isApprove'})
-        this.openConfirm()
-        this.openDraftEmail()
-        this.openModalApprove()
-        this.openModalRinci()
+        await this.props.addNotif(token, tempno)
+        if (val === 'reject') {
+            this.getDataOps()
+            this.setState({confirm: 'reject'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalReject()
+            this.openModalRinci()
+        } else {
+            this.getDataOps()
+            this.setState({confirm: 'isApprove'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalApprove()
+            this.openModalRinci()
+        }
     }
 
     prepSendEmail = async () => {
@@ -759,11 +775,38 @@ class VerifKasbon extends Component {
         const tempno = {
             no: detailOps[0].no_transaksi,
             kode: detailOps[0].kode_plant,
-            jenis: 'ops',
+            jenis: 'kasbon',
             tipe: tipe,
             menu: cekMenu 
         }
         await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'app'})
+        this.openDraftEmail()
+    }
+
+    prepReject = async (val) => {
+        const { detailOps } = this.props.ops
+        const level = localStorage.getItem("level")
+        const token = localStorage.getItem("token")
+        const app = detailOps[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const cekMenu = level === '2' ? 'Verifikasi Finance Realisasi Kasbon (Operasional)' : 'Verifikasi Tax Realisasi Kasbon (Operasional)'
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            kode: detailOps[0].kode_plant,
+            jenis: 'kasbon',
+            tipe: tipe,
+            menu: cekMenu 
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
         this.openDraftEmail()
     }
 
@@ -1211,6 +1254,16 @@ class VerifKasbon extends Component {
         }
     }
 
+    printData = (val) => {
+        const {detailOps} = this.props.ops
+        localStorage.setItem('printData', detailOps[0].no_transaksi)
+        const newWindow = window.open(`/${val}`, '_blank', 'noopener,noreferrer')
+        if (newWindow) {
+            newWindow.opener = null
+        }
+        // this.props.history.push(`/${val}`)
+    }
+
     chekApp = (val) => {
         const { listMut } = this.state
         const {detailOps} = this.props.ops
@@ -1285,7 +1338,7 @@ class VerifKasbon extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, type_kasbon, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
+        const { tipeEmail, dataRinci, type_kasbon, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason, arrReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, idOps } = this.props.ops
@@ -1742,7 +1795,7 @@ class VerifKasbon extends Component {
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('opsfaa')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -1760,7 +1813,7 @@ class VerifKasbon extends Component {
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('opsfpd')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -2088,7 +2141,7 @@ class VerifKasbon extends Component {
                     alasan: "",
                     }}
                     validationSchema={alasanSchema}
-                    onSubmit={(values) => {this.rejectOps(values)}}
+                    onSubmit={(values) => {this.prepReject(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
@@ -2158,7 +2211,7 @@ class VerifKasbon extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.props.dokumen.isLoading || this.props.email.isLoading} size="sm">
+                <Modal isOpen={this.props.ops.isLoading || this.props.dokumen.isLoading || this.props.email.isLoading || this.props.notif.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2489,7 +2542,7 @@ class VerifKasbon extends Component {
                                 <Button
                                     disabled={this.state.message === '' ? true : false} 
                                     className="mr-2"
-                                    onClick={() => this.approveDataOps()} 
+                                    onClick={() => tipeEmail === 'reject' ? this.rejectOps(this.state.dataRej) : this.approveDataOps()} 
                                     color="primary"
                                 >
                                     Submit & Send Email
@@ -2550,7 +2603,7 @@ const mapDispatchToProps = {
     getVendor: vendor.getVendor,
     getFaktur: faktur.getFaktur,
     getBank: bank.getBank,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifKasbon)

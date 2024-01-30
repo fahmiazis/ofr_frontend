@@ -356,7 +356,7 @@ class AjuanBayarKlaim extends Component {
             no: noTrans,
             tipe: 'klaim',
             jenis: 'ajuan',
-            menu: tipeMenu,
+            menu: tipeMenu + ' klaim',
             proses: tipeProses,
             route: tipeRoute
         }
@@ -602,7 +602,7 @@ class AjuanBayarKlaim extends Component {
     }
 
     componentDidUpdate() {
-        const { isApplist, isRejectList } = this.props.klaim
+        const { isApplist, isRejectList, subBayar } = this.props.klaim
         console.log(this.state.no_transfer, this.state.tgl_transfer)
         if (isApplist === false) {
             this.setState({confirm: 'rejApprove'})
@@ -613,6 +613,10 @@ class AjuanBayarKlaim extends Component {
             this.setState({confirm: 'rejReject'})
             this.openConfirm()
             this.openModalReject()
+            this.props.resetKlaim()
+        } else if (subBayar === false) {
+            this.setState({confirm: 'rejsubBayar'})
+            this.openConfirm()
             this.props.resetKlaim()
         }
     }
@@ -856,18 +860,26 @@ class AjuanBayarKlaim extends Component {
     }
 
     prosesSubmit = async () => {
+        const token = localStorage.getItem("token")
         const {listKlaim} = this.state
         const {dataKlaim} = this.props.klaim
         const data = []
-        for (let i = 0; i < listKlaim.length; i++) {
-            for (let j = 0; j < dataKlaim.length; j++) {
-                if (dataKlaim[j].no_transaksi === listKlaim[i]) {
-                    data.push(dataKlaim[j])
+        if (listKlaim.length > 0) {
+            for (let i = 0; i < listKlaim.length; i++) {
+                for (let j = 0; j < dataKlaim.length; j++) {
+                    if (dataKlaim[j].no_transaksi === listKlaim[i]) {
+                        data.push(dataKlaim[j])
+                    }
                 }
             }
+            await this.props.genNomorTransfer(token)
+            const {noTransfer} = this.props.klaim
+            this.setState({dataDownload: data, no_transfer: noTransfer})
+            this.modalSubmitPre()
+        } else {
+            this.setState({confirm: 'failSubChek'})
+            this.openConfirm()
         }
-        this.setState({dataDownload: data})
-        this.modalSubmitPre()
     }
 
     modalSubmitPre = () => {
@@ -1659,6 +1671,8 @@ class AjuanBayarKlaim extends Component {
                                 <Col md={3} xl={3} sm={3}>No Transaksi</Col>
                                 <Col md={4} xl={4} sm={4} className="inputStock">:<Input 
                                 name='no_transfer'
+                                value={this.state.no_transfer}
+                                disabled
                                 onChange={e => this.updateData({target: e.target, key: e.key})} 
                                 className="ml-3" /></Col>
                             </Row>
@@ -2350,7 +2364,7 @@ class AjuanBayarKlaim extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading || this.props.email.isLoading} size="sm">
+                <Modal isOpen={this.props.klaim.isLoading || this.props.email.isLoading || this.props.notif.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2471,6 +2485,22 @@ class AjuanBayarKlaim extends Component {
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, dan nominal telah diisi</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'rejsubBayar' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>No Transaksi telah terdaftar</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'failSubChek' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                                <div className={[style.sucUpdate, style.green]}>Pilih data Operasional yg ingin diajukan terlebih dahulu</div>
                             </div>
                         </div>
                     ) : (
@@ -2717,6 +2747,7 @@ const mapDispatchToProps = {
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
     getDraftAjuan: email.getDraftAjuan,
+    genNomorTransfer: klaim.genNomorTransfer,
     addNotif: notif.addNotif
 }
 

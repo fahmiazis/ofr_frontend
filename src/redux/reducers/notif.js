@@ -217,8 +217,7 @@ export default (state=notifState, action) => {
                     ...state,
                     isLoading: false,
                     isError: true,
-                    alertMsg: action.payload.response.data.message,
-                    alertM: action.payload.response.data.error
+                    alertMsg: 'failed update notif',
                 };
             }
             case 'ADD_NOTIF_PENDING': {
@@ -242,8 +241,7 @@ export default (state=notifState, action) => {
                     ...state,
                     isLoading: false,
                     isError: true,
-                    alertMsg: action.payload.response.data.message,
-                    alertM: action.payload.response.data.error
+                    alertMsg: 'failed create notif',
                 };
             }
             case 'RESET_NOTIF': {

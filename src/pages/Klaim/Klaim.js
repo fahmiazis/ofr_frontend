@@ -201,7 +201,9 @@ class Klaim extends Component {
         if (val === 'all') {
             const data = []
             for (let i = 0; i < dataDoc.length; i++) {
-                data.push(dataDoc[i].id)
+                if (dataDoc[i].path !== null) {
+                    data.push(dataDoc[i].id)
+                }
             }
             this.setState({dataZip: data})
         } else {
@@ -509,6 +511,20 @@ class Klaim extends Component {
               saveAs(content, `Dokumen Lampiran ${dataDoc[0].no_transaksi} ${moment().format('DDMMYYYY h:mm:ss')}.zip`);
             })
           })
+    }
+
+    prosesModalBukti = async () => {
+        const token = localStorage.getItem("token")
+        const { detailKlaim } = this.props.klaim
+        const tempno = {
+            no: detailKlaim[0].no_pembayaran
+        }
+        await this.props.getDocBayar(token, tempno)
+        this.modalBukti()
+    }
+
+    modalBukti = () => {
+        this.setState({openBukti: !this.state.openBukti})
     }
 
     openConfirm = () => {
@@ -1022,7 +1038,13 @@ class Klaim extends Component {
     }
 
     printData = (val) => {
-        this.props.history.push(`/${val}`)
+        const {detailKlaim} = this.props.klaim
+        localStorage.setItem('printData', detailKlaim[0].no_transaksi)
+        const newWindow = window.open(`/${val}`, '_blank', 'noopener,noreferrer')
+        if (newWindow) {
+            newWindow.opener = null
+        }
+        // this.props.history.push(`/${val}`)
     }
 
     changeView = (val) => {
@@ -1331,7 +1353,7 @@ class Klaim extends Component {
         const {listReject, dataRinci, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc, filter, dataZip} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim } = this.props.klaim
+        const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim, docBukti } = this.props.klaim
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1462,6 +1484,7 @@ class Klaim extends Component {
                                             <tr>
                                                 <th>No</th>
                                                 <th>NO.AJUAN</th>
+                                                <th>NO.DN</th>
                                                 <th>COST CENTRE</th>
                                                 <th>AREA</th>
                                                 <th>NO.COA</th>
@@ -1478,6 +1501,7 @@ class Klaim extends Component {
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>{index + 1}</th>
                                                         <th>{item.no_transaksi}</th>
+                                                        <th>{item.dn_area}</th>
                                                         <th>{item.cost_center}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
@@ -1507,6 +1531,7 @@ class Klaim extends Component {
                                             <tr>
                                                 <th>No</th>
                                                 <th>NO.AJUAN</th>
+                                                <th>NO.DN</th>
                                                 <th>COST CENTRE</th>
                                                 <th>AREA</th>
                                                 <th>NO.COA</th>
@@ -1523,6 +1548,7 @@ class Klaim extends Component {
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>{index + 1}</th>
                                                         <th>{item.no_transaksi}</th>
+                                                        <th>{item.dn_area}</th>
                                                         <th>{item.cost_center}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
@@ -1572,204 +1598,6 @@ class Klaim extends Component {
                     </MaterialTitlePanel>
                 </Sidebar>
                 <Modal isOpen={this.state.modalAdd} toggle={this.openModalAdd} size="lg">
-                    <ModalHeader>
-                        Tambah Data Asset
-                    </ModalHeader>
-                    {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
-                        <div>{alertM}</div>
-                    </Alert> */}
-                    <ModalBody>
-                        <div className="mainRinci2">
-                            {/* <div className="leftRinci2 mb-5">
-                                <div className="titRinci">{dataRinci.nama_asset}</div>
-                                <img src={detailAsset.pict === undefined || detailAsset.pict.length === 0 ? placeholder : `${REACT_APP_BACKEND_URL}/${detailAsset.pict[detailAsset.pict.length - 1].path}`} className="imgRinci" />
-                                <Input type="file" className='mt-2' onChange={this.uploadPicture}>Upload Picture</Input>
-                            </div> */}
-                            <Formik
-                            initialValues = {{
-                                deskripsi: '',
-                                merk: '',
-                                satuan: '',
-                                unit: 1,
-                                lokasi: '',
-                                grouping: '',
-                                keterangan: '',
-                            }}
-                            validationSchema = {addStockSchema}
-                            onSubmit={(values) => {this.addStock(values)}}
-                            >
-                            {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
-                                <div className="rightRinci2">
-                                    <div>
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Deskripsi</Col>
-                                            <Col md={9} className="colRinci">:  <Input 
-                                                type='text'
-                                                className="inputRinci" 
-                                                value={values.deskripsi}
-                                                onBlur={handleBlur("deskripsi")}
-                                                onChange={handleChange("deskripsi")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.deskripsi ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Merk</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.merk}
-                                                onBlur={handleBlur("merk")}
-                                                onChange={handleChange("merk")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.merk ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Satuan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "select" 
-                                                className="inputRinci"
-                                                value={values.satuan}
-                                                onBlur={handleBlur("satuan")}
-                                                onChange={handleChange("satuan")}
-                                                >
-                                                    <option>{values.satuan}</option>
-                                                    <option>-Pilih Satuan-</option>
-                                                    <option value="UNIT">UNIT</option>
-                                                    <option value="PAKET">PAKET</option>
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {errors.satuan ? (
-                                            <text className={style.txtError}>{errors.satuan}</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Unit</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.unit}
-                                                onBlur={handleBlur("unit")}
-                                                onChange={handleChange("unit")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.unit ? (
-                                            <text className={style.txtError}>{errors.unit}</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Lokasi</Col>
-                                            <Col md={9} className="colRinci">:
-                                            <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.lokasi}
-                                                onBlur={handleBlur("lokasi")}
-                                                onChange={handleChange("lokasi")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.lokasi ? (
-                                            <text className={style.txtError}>{errors.lokasi}</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Status Fisik</Col>
-                                            <Col md={9} className="colRinci">:  <Input 
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type="select"
-                                                className="inputRinci" 
-                                                value={this.state.fisik} 
-                                                onBlur={handleBlur("status_fisik")}
-                                                onChange={e => { handleChange("status_fisik"); this.selectStatus(e.target.value, this.state.kondisi)} }
-                                                >
-                                                    {/* <option>{values.status_fisik}</option> */}
-                                                    <option>-Pilih Status Fisik-</option>
-                                                    <option value="ada">Ada</option>
-                                                    {/* <option value="tidak ada">Tidak Ada</option> */}
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {this.state.fisik === '' ? (
-                                            <text className={style.txtError}>Must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Kondisi</Col>
-                                            <Col md={9} className="colRinci">:  <Input 
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type="select"
-                                                className="inputRinci" 
-                                                value={this.state.kondisi} 
-                                                onBlur={handleBlur("kondisi")}
-                                                onChange={e => { handleChange("kondisi"); this.selectStatus(this.state.fisik, e.target.value)} }
-                                                >
-                                                    {/* <option>{values.kondisi}</option> */}
-                                                    <option>-Pilih Kondisi-</option>
-                                                    <option value="baik">Baik</option>
-                                                    {/* <option value="rusak">Rusak</option>
-                                                    <option value="">-</option> */}
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {this.state.kondisi === '' ? (
-                                            <text className={style.txtError}>Must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Status Aset</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "select" 
-                                                className="inputRinci"
-                                                value={values.grouping}
-                                                onBlur={handleBlur("grouping")}
-                                                onChange={handleChange("grouping")}
-                                                // onClick={() => this.listStatus(detailAsset.no_asset)}
-                                                >
-                                                    <option>{values.grouping}</option>
-                                                    {/* <option>-Pilih Status Aset-</option> */}
-                                                    {/* {dataStatus.length > 0 && dataStatus.map(item => {
-                                                        return (
-                                                            <option value={item.status}>{item.status}</option>
-                                                        )
-                                                    })} */}
-                                                </Input>
-                                            </Col>
-                                        </Row>
-                                        {errors.grouping ? (
-                                            <text className={style.txtError}>Must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Keterangan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled={level === '5' || level === '6' ? false : true}
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.keterangan}
-                                                onBlur={handleBlur("keterangan")}
-                                                onChange={handleChange("keterangan")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.keterangan ? (
-                                            <text className={style.txtError}>{errors.keterangan}</text>
-                                        ) : null}
-                                    </div>
-                                    <ModalFooter>
-                                        <Button className="btnFootRinci1 mr-3" size="md" disabled={level === '5' || level === '6' ? false : true} color="primary" onClick={handleSubmit}>Save</Button>
-                                        <Button className="btnFootRinci1" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
-                                    </ModalFooter>
-                                </div>
-                            )}
-                            </Formik>
-                        </div>
-                    </ModalBody>
                 </Modal>
                 <Modal isOpen={this.state.modalUpload} toggle={this.openModalUpload} size="lg">
                     <ModalHeader>
@@ -1813,7 +1641,7 @@ class Klaim extends Component {
                             </Row>
                             <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailKlaim.length > 0 ? moment(detailKlaim[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailKlaim.length > 0 ? moment(detailKlaim[0].start_klaim).format('DD MMMM YYYY') : ''} /></Col>
                             </Row>
                         </div>
                         <div className={style.tableDashboard}>
@@ -1892,7 +1720,10 @@ class Klaim extends Component {
                         <div className="btnFoot">
                             <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
                             <Button className="mr-2" color="warning"  onClick={() => this.openModalFaa()}>FAA</Button>
-                            <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
+                            <Button className="mr-2" color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
+                            {detailKlaim.length > 0 && detailKlaim[0].status_transaksi === 8 && (
+                                <Button color="success"  onClick={() => this.prosesModalBukti()}>Bukti Bayar</Button>
+                            )}
                         </div>
                         <div className="btnFoot">
                             {filter === 'available' || 
@@ -1902,7 +1733,7 @@ class Klaim extends Component {
                                 <Button className='mr-2' color="warning"  onClick={() => this.prosesStatEmail(detailKlaim)}>Status Email</Button>
                             )}
                             {filter !== 'available' && filter !== 'revisi' ? (
-                                (filter === 'bayar' || filter === 'completed') &&
+                                (filter === 'bayar' || filter === 'completed') && level === '5' &&
                                 <Button className="mr-2"  color="danger" onClick={this.openNilaiVerif}>
                                     Input Nilai Diterima
                                 </Button>
@@ -2392,7 +2223,7 @@ class Klaim extends Component {
                                         <Input 
                                             type='checkbox'
                                             checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
-                                            onChange={() => dataZip.length === dataDoc.length ? this.unCheckDoc('all') : this.checkDoc('all')}
+                                            onChange={() => dataZip.length > 0 ? this.unCheckDoc('all') : this.checkDoc('all')}
                                         />
                                         Ceklis All
                                     </div>
@@ -2604,6 +2435,41 @@ class Klaim extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal size="xl" isOpen={this.state.openBukti} toggle={this.modalBukti}>
+                <ModalHeader>
+                   Kelengkapan Bukti Bayar
+                </ModalHeader>
+                <ModalBody>
+                <Container>
+                        {docBukti !== undefined && docBukti.map(x => {
+                            return (
+                                <Row className="mt-3 mb-4">
+                                    {x.path !== null ? (
+                                        <Col md={12} lg={12} className='mb-2' >
+                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
+                                            {x.status === 0 ? (
+                                                <AiOutlineClose size={20} />
+                                            ) : x.status === 3 ? (
+                                                <AiOutlineCheck size={20} />
+                                            ) : (
+                                                <BsCircle size={20} />
+                                            )}
+                                            <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+                                        </Col>
+                                    ) : (
+                                        null
+                                    )}
+                                </Row>
+                            )
+                        })}
+                    </Container>
+                </ModalBody>
+                <ModalFooter>
+                    <Button color="secondary" onClick={this.modalBukti}>
+                        Close
+                    </Button>
+                </ModalFooter>
+            </Modal>
             </>
         )
     }
@@ -2646,6 +2512,7 @@ const mapDispatchToProps = {
     addNotif: notif.addNotif,
     getResmail: email.getResmail,
     getOutlet: klaim.getOutlet,
+    getDocBayar: klaim.getDocBayar,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Klaim)

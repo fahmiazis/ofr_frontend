@@ -151,7 +151,9 @@ class VerifOps extends Component {
         if (val === 'all') {
             const data = []
             for (let i = 0; i < dataDoc.length; i++) {
-                data.push(dataDoc[i].id)
+                if (dataDoc[i].path !== null) {
+                    data.push(dataDoc[i].id)
+                }
             }
             this.setState({dataZip: data})
         } else {
@@ -720,7 +722,7 @@ class VerifOps extends Component {
         const {dataOps, noDis} = this.props.ops
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const type = level === '4' || level === '14' ? 'non kasbon' : 'undefined' 
+        const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         const status = level === '2' ? 3 : 4
         const statusAll = 'all'
         const {time1, time2} = this.state
@@ -765,7 +767,7 @@ class VerifOps extends Component {
         const {time1, time2, filter} = this.state
         const token = localStorage.getItem("token")
         const level = localStorage.getItem('level')
-        const type = level === '4' || level === '14' ? 'non kasbon' : 'undefined' 
+        const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
@@ -798,7 +800,7 @@ class VerifOps extends Component {
         }
         if (level === '4' || level === '14' || level === '24' || level === '34') {
             await this.props.submitVerif(token, tempno)
-            this.dataSendEmail()
+            this.dataSendEmail('approve')
             // const cek = []
             // detailOps.map(item => {
             //     return ((item.dpp !== null && item.ppn !== null && item.nilai_utang !== null) && cek.push(item))
@@ -815,6 +817,9 @@ class VerifOps extends Component {
             //     this.openConfirm()
             //     this.openModalApprove()
             // }
+        } else if (detailOps.find(({type_kasbon}) => type_kasbon === 'kasbon') !== undefined && detailOps.find(({jenis_pph}) => jenis_pph !== 'Non PPh') !== undefined) {
+            await this.props.submitVerif(token, tempno)
+            this.dataSendEmail('approve')
         } else {
             await this.props.submitVerif(token, tempno)
             // this.dataSendEmail()
@@ -829,6 +834,7 @@ class VerifOps extends Component {
     dataSendEmail = async (val) => {
         const level = localStorage.getItem("level")
         const token = localStorage.getItem("token")
+        const { listReject } = this.state
         const { detailOps } = this.props.ops
         const { draftEmail } = this.props.email
         const { message, subject } = this.state
@@ -837,10 +843,12 @@ class VerifOps extends Component {
         for (let i = 0; i < cc.length; i++) {
             tempcc.push(cc[i].email)
         }
-        const tipeProses = val === 'reject' ? 'reject perbaikan' : level === '4' || level === '14' ? 'approve' : 'verifikasi'
-        const tipeRoute = val === 'reject' ? 'revops' : level === '4' || level === '14'  ? 'listops' : 'veriffintax'
-        // const tipeMenu = level === '4' || level === '14' ? 'list ajuan bayar' : 'verifikasi ops'
-        const tipeMenu = 'list ajuan bayar'
+        const cekKasbon = detailOps.find(({type_kasbon}) => type_kasbon === 'kasbon')
+        const tipeKasbon = cekKasbon !== undefined ? 'kasbon' : 'ops'
+        const tipeProses = val === 'reject' ? 'reject perbaikan' : tipeKasbon === 'kasbon' ? 'verifikasi kasbon' : 'list ajuan bayar'
+        const tipeRoute = val === 'reject' ? 'revops' : tipeKasbon === 'kasbon' ? 'verifkasbon' : 'listops'
+        // const tipeMenu = level === '4' || level === '14' || level === '24' || level === '34' ? 'list ajuan bayar' : 'verifikasi ops'
+        const tipeMenu = tipeKasbon === 'kasbon' ? 'verifikasi kasbon' : 'list ajuan bayar'
         const tempno = {
             draft: draftEmail,
             nameTo: draftEmail.to.username,
@@ -849,7 +857,7 @@ class VerifOps extends Component {
             message: message,
             subject: subject,
             no: detailOps[0].no_transaksi,
-            tipe: 'ops',
+            tipe: tipeKasbon,
             menu: tipeMenu,
             proses: tipeProses,
             route: tipeRoute
@@ -965,7 +973,7 @@ class VerifOps extends Component {
         }
     }
 
-    prosesDownload = () => {
+    prosesDownload = async () => {
         const {listOps} = this.state
         const {dataOps} = this.props.ops
         const data = []
@@ -978,6 +986,35 @@ class VerifOps extends Component {
         }
         this.setState({dataDownload: data})
         this.openDownload()
+    }
+
+    prosesDownloadFinance = async () => {
+        const token = localStorage.getItem("token")
+        const {listOps} = this.state
+        const {dataOps} = this.props.ops
+        const data = []
+        for (let i = 0; i < listOps.length; i++) {
+            for (let j = 0; j < dataOps.length; j++) {
+                if (dataOps[j].no_transaksi === listOps[i]) {
+                    data.push(dataOps[j])
+                }
+            }
+        }
+        const dataSend = {
+            list: listOps
+        }
+        this.setState({dataDownload: data})
+        await this.props.downloadFormVerif(token, dataSend)
+
+        const {time1, time2, filter} = this.state
+        const level = localStorage.getItem('level')
+        const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
+        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, this.state.search)
+        
+        this.downloadExcel()
     }
 
     openDownload = () => {
@@ -1036,8 +1073,8 @@ class VerifOps extends Component {
                 c9: item.norek_ajuan,
                 c10: item.nama_tujuan,
                 c11: item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-',
-                c12: item.status_npwp === 0 ? '' : item.nama_npwp,
-                c13: item.status_npwp === 0 ? '' : item.no_npwp,
+                c12: item.status_npwp === 1 ? item.nama_npwp : '',
+                c13: item.status_npwp === 1 ? item.no_npwp : '',
                 c14: item.status_npwp === 0 ? item.nama_ktp : '',
                 c15: item.status_npwp === 0 ? item.no_ktp : '',
                 c16: item.dpp,
@@ -1055,7 +1092,12 @@ class VerifOps extends Component {
               cell.border = borderStyles;
             })
           })
-          
+        
+        ws.columns.forEach((column, index) => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
 
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
@@ -1070,7 +1112,7 @@ class VerifOps extends Component {
         const {time1, time2, filter} = this.state
         const token = localStorage.getItem("token")
         const level = localStorage.getItem('level')
-        const type = level === '4' || level === '14' ? 'non kasbon' : 'undefined' 
+        const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
@@ -1253,7 +1295,7 @@ class VerifOps extends Component {
     cekDataDoc = () => {
         const { dataDoc, detailOps } = this.props.ops
         const level = localStorage.getItem("level")
-        if (level === '4' || level === '14') {
+        if (level === '4' || level === '14' || level === '24' || level === '34') {
             const resData = detailOps.find(({stat_skb}) => stat_skb === 'ya')
             if (resData !== undefined) {
                 const cekDoc = dataDoc.find(({desc}) => desc === 'Dokumen SKB')
@@ -1424,6 +1466,16 @@ class VerifOps extends Component {
         
     }
 
+    printData = (val) => {
+        const {detailOps} = this.props.ops
+        localStorage.setItem('printData', detailOps[0].no_transaksi)
+        const newWindow = window.open(`/${val}`, '_blank', 'noopener,noreferrer')
+        if (newWindow) {
+            newWindow.opener = null
+        }
+        // this.props.history.push(`/${val}`)
+    }
+
     prepareReject = async () => {
         const token = localStorage.getItem("token")
         await this.props.getAllMenu(token, 'reject', 'Operasional')
@@ -1459,7 +1511,7 @@ class VerifOps extends Component {
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
-        const type = level === '4' || level === '14' ? 'non kasbon' : 'undefined' 
+        const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1527,7 +1579,17 @@ class VerifOps extends Component {
                                             )}
                                             <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
                                         </>
-                                    ) : null}
+                                    ) : level === '2' ? (
+                                        <Button 
+                                        className='mr-1' 
+                                        color="success" 
+                                        size="lg" 
+                                        onClick={this.prosesDownloadFinance}
+                                        disabled={this.state.listOps.length > 0 ? false : true}
+                                        >
+                                            Download
+                                        </Button>
+                                    ) : null }
                                 </div>
                             </div>
                             <div className={[style.secEmail4]}>
@@ -1581,7 +1643,7 @@ class VerifOps extends Component {
                                     <Table bordered responsive hover className={style.tab} id="table-ops">
                                         <thead>
                                             <tr>
-                                                {level === '14' && (
+                                                {(level === '14' || level === '2') && (
                                                     <th>
                                                         <input  
                                                         className='mr-2'
@@ -1603,13 +1665,14 @@ class VerifOps extends Component {
                                                 <th>TIPE KASBON</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
+                                                <th>STATUS DOWNLOAD</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {newOps.map(item => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        {level === '14' && (
+                                                        {(level === '14' || level === '2') && (
                                                             <th>
                                                                 <input 
                                                                 type='checkbox'
@@ -1632,6 +1695,7 @@ class VerifOps extends Component {
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>{filter === 'available' ? 'Proses' : 'Detail'}</Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
+                                                        <th>{item.status_download === 1 ? 'Telah Download' : 'Belum Download'}</th>
                                                     </tr>
                                                 )
                                             })}
@@ -1922,7 +1986,7 @@ class VerifOps extends Component {
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('opsfaa')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -1940,7 +2004,7 @@ class VerifOps extends Component {
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('opsfpd')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -2413,7 +2477,11 @@ class VerifOps extends Component {
                                 <Button 
                                 color="primary" 
                                 onClick={() => level === '4' || level === '14' || level === '24' || level === '34' ? 
-                                this.prepSendEmail() : this.approveDataOps()}
+                                    this.prepSendEmail() : detailOps.find(({type_kasbon}) => type_kasbon === 'kasbon') !== undefined && 
+                                    detailOps.find(({type_kasbon}) => type_kasbon === 'kasbon') !== undefined && detailOps.find(({jenis_pph}) => jenis_pph !== 'Non PPh') !== undefined
+                                    ? this.prepSendEmail() 
+                                    : this.approveDataOps()
+                                }
                                 >
                                     Ya
                                 </Button>
@@ -2571,7 +2639,7 @@ class VerifOps extends Component {
                                         <Input 
                                             type='checkbox'
                                             checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
-                                            onChange={() => dataZip.length === dataDoc.length ? this.unCheckDoc('all') : this.checkDoc('all')}
+                                            onChange={() => dataZip.length > 0 ? this.unCheckDoc('all') : this.checkDoc('all')}
                                         />
                                         Ceklis All
                                     </div>
@@ -2885,7 +2953,8 @@ const mapDispatchToProps = {
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
     addNotif: notif.addNotif,
-    getResmail: email.getResmail
+    getResmail: email.getResmail,
+    downloadFormVerif: ops.downloadFormVerif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifOps)

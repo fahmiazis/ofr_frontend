@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import style from '../../assets/css/input.module.css'
 import {connect} from 'react-redux'
+import klaim from '../../redux/actions/klaim'
 import {  Table, ButtonDropdown, Input, Button, Col,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
 import moment from 'moment'
@@ -11,13 +12,31 @@ class FPD extends Component {
         totalfpd: 0
     }
 
-    componentDidMount() {
-        const {detailKlaim} = this.props.klaim
-        let total = 0
-        for (let i = 0; i < detailKlaim.length; i++) {
-            total += parseInt(detailKlaim[i].nilai_ajuan)
+    async componentDidMount() {
+        const dataCek = localStorage.getItem('printData')
+        if (dataCek !== undefined && dataCek !== null) {
+            const token = localStorage.getItem("token")
+            const tempno = {
+                no: dataCek
+            }
+            await this.props.getDetail(token, tempno)
+            await this.props.getApproval(token, tempno)
+
+            const {detailKlaim} = this.props.klaim
+            let total = 0
+            for (let i = 0; i < detailKlaim.length; i++) {
+                total += parseInt(detailKlaim[i].nilai_ajuan)
+            }
+            this.setState({totalfpd: total})
+            localStorage.removeItem('printData')
+        } else {
+            const {detailKlaim} = this.props.klaim
+            let total = 0
+            for (let i = 0; i < detailKlaim.length; i++) {
+                total += parseInt(detailKlaim[i].nilai_ajuan)
+            }
+            this.setState({totalfpd: total})
         }
-        this.setState({totalfpd: total})
     }
 
   render() {
@@ -72,7 +91,7 @@ class FPD extends Component {
                     </Col>
                 </Row>
             </div>
-            <div className='bold'>{detailKlaim.length > 0 ? detailKlaim[0].area : ''}, {moment(detailKlaim.length > 0 ? moment(detailKlaim[0].updatedAt).format('DD MMMM YYYY') : '').format('DD MMMM YYYY')}</div>
+            <div className='bold'>{detailKlaim.length > 0 ? detailKlaim[0].area : ''}, {detailKlaim.length > 0 ? moment(detailKlaim[0].start_klaim).format('DD MMMM YYYY') : moment().format('DD MMMM YYYY')}</div>
             <Table borderless responsive className="tabPreview mt-4">
                 <thead>
                     <tr>
@@ -195,4 +214,9 @@ const mapStateToProps = state => ({
     reason: state.reason
 })
 
-export default connect(mapStateToProps)(FPD)
+const mapDispatchToProps = {
+    getDetail: klaim.getDetail,
+    getApproval: klaim.getApproval,
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(FPD)

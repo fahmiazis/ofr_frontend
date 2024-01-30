@@ -64,7 +64,10 @@ const klaimState = {
     isAddOut: null,
     isGetOut: null,
     isDelOut: null,
-    klaimOutlet: []
+    klaimOutlet: [],
+    genPemb: null,
+    noTransfer: '',
+    isFormKlaim: null
 };
 
 export default (state=klaimState, action) => {
@@ -507,6 +510,30 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'GENERATE_NOPEMB_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GENERATE_NOPEMB_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    genPemb: true,
+                    noTransfer: action.payload.data.no_transfer,
+                    alertMsg: 'success submit bayar Succesfully',
+                };
+            }
+            case 'GENERATE_NOPEMB_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    genPemb: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'SUBMIT_BAYAR_PENDING': {
                 return {
                     ...state,
@@ -887,6 +914,29 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'DOWNLOAD_FORM_KLAIM_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DOWNLOAD_FORM_KLAIM_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isFormKlaim: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'DOWNLOAD_FORM_KLAIM_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isFormKlaim: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'RESET_KLAIM': {
                 return {
                     ...state,
@@ -918,7 +968,9 @@ export default (state=klaimState, action) => {
                     isAddOut: null,
                     isGetOut: null,
                     isDelOut: null,
-                    messUpload: []
+                    messUpload: [],
+                    genPemb: null,
+                    isFormKlaim: null
                 }
             }
             default: {

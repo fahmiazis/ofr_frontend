@@ -2533,9 +2533,6 @@ class IKK extends Component {
                                                     <BsCircle size={20} />
                                                 )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
-                                            <div>
-                                                <Button color='success' onClick={() => this.docHistory(x)}>history</Button>
-                                            </div>
                                             {level === '5' 
                                             && detailVerven[0] !== null
                                             && detailVerven[0] !== undefined 
@@ -2556,6 +2553,34 @@ class IKK extends Component {
                                                 </div>
                                                 </>
                                             )}
+                                            <div className='mt-3 mb-3'>
+                                                {this.state.filter === 'available' ? (
+                                                    <div>
+                                                        <Button 
+                                                        color="success" 
+                                                        onClick={() => {this.setState({idDoc: x.id}); this.openAppDoc()}}
+                                                        >
+                                                            Approve
+                                                        </Button>
+                                                        <Button 
+                                                        className='ml-1' 
+                                                        color="danger" 
+                                                        onClick={() => {this.setState({idDoc: x.id}); this.openModalRejDoc()}}
+                                                        >
+                                                            Reject
+                                                        </Button>
+                                                        <Button className='ml-1' color='warning' onClick={() => this.docHistory(x)}>history</Button>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <Button color='warning' onClick={() => this.docHistory(x)}>history</Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className={style.readPdf}>
+                                                <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${x.id}`} dataFile={x} />
+                                            </div>
+                                            
                                             
                                         </Col>
                                     ) : (

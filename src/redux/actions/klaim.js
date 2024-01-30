@@ -83,6 +83,10 @@ export default {
         type: 'SUBMIT_VERIF',
         payload: http(token).patch(`/klaim/verif`, qs.stringify(data))
     }),
+    genNomorTransfer: (token) => ({
+        type: 'GENERATE_NOPEMB',
+        payload: http(token).patch(`/klaim/genbayar`)
+    }),
     submitAjuanBayar: (token, data) => ({
         type: 'SUBMIT_BAYAR',
         payload: http(token).patch(`/klaim/subbayar`, data)
@@ -138,6 +142,10 @@ export default {
     addOutlet: (token, data) => ({
         type: 'ADD_OUTLET',
         payload: http(token).patch(`/klaim/outlet/add`, data)
+    }),
+    downloadFormVerif: (token, list) => ({
+        type: 'DOWNLOAD_FORM_KLAIM',
+        payload: http(token).patch(`/klaim/download`, list)
     }),
     resetKlaim: () => ({
         type: 'RESET_KLAIM'

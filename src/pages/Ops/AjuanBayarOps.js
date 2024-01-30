@@ -323,11 +323,13 @@ class AjuanBayarOps extends Component {
             no: noTrans,
             tipe: 'ops',
             jenis: 'ajuan',
-            menu: tipeMenu,
+            menu: tipeMenu + ' ops',
             proses: tipeProses,
             route: tipeRoute
         }
         await this.props.sendEmail(token, tempno)
+        await this.props.addNotif(token, tempno)
+        
         if (tipeTrans === 'submit') {
             this.getDataOps()
             this.setState({confirm: 'submit'})
@@ -567,7 +569,7 @@ class AjuanBayarOps extends Component {
     }
 
     componentDidUpdate() {
-        const { isApplist, isRejectList } = this.props.ops
+        const { isApplist, isRejectList, subBayar } = this.props.ops
         console.log(this.state.no_transfer, this.state.tgl_transfer)
         if (isApplist === false) {
             this.setState({confirm: 'rejApprove'})
@@ -579,6 +581,19 @@ class AjuanBayarOps extends Component {
             this.openConfirm()
             this.openModalReject()
             this.props.resetOps()
+        } else if (subBayar === false) {
+            this.setState({confirm: 'rejsubBayar'})
+            this.openConfirm()
+            this.props.resetOps()
+        }
+    }
+
+    printData = (val) => {
+        const {detailOps} = this.props.ops
+        localStorage.setItem('download', detailOps[0].no_pembayaran)
+        const newWindow = window.open(`/${val}`, '_blank', 'noopener,noreferrer')
+        if (newWindow) {
+            newWindow.opener = null
         }
     }
 
@@ -822,18 +837,26 @@ class AjuanBayarOps extends Component {
     }
 
     prosesSubmit = async () => {
+        const token = localStorage.getItem("token")
         const {listOps} = this.state
         const {dataOps} = this.props.ops
         const data = []
-        for (let i = 0; i < listOps.length; i++) {
-            for (let j = 0; j < dataOps.length; j++) {
-                if (dataOps[j].no_transaksi === listOps[i]) {
-                    data.push(dataOps[j])
+        if (listOps.length > 0) {
+            for (let i = 0; i < listOps.length; i++) {
+                for (let j = 0; j < dataOps.length; j++) {
+                    if (dataOps[j].no_transaksi === listOps[i]) {
+                        data.push(dataOps[j])
+                    }
                 }
             }
+            await this.props.genNomorTransfer(token)
+            const {noTransfer} = this.props.ops
+            this.setState({dataDownload: data, no_transfer: noTransfer})
+            this.modalSubmitPre()
+        } else {
+            this.setState({confirm: 'failSubChek'})
+            this.openConfirm()
         }
-        this.setState({dataDownload: data})
-        this.modalSubmitPre()
     }
 
     modalSubmitPre = () => {
@@ -1622,7 +1645,9 @@ class AjuanBayarOps extends Component {
                                 <Col md={3} xl={3} sm={3}>No Transaksi</Col>
                                 <Col md={4} xl={4} sm={4} className="inputStock">:<Input 
                                 name='no_transfer'
+                                value={this.state.no_transfer}
                                 onChange={e => this.updateData({target: e.target, key: e.key})} 
+                                disabled
                                 className="ml-3" /></Col>
                             </Row>
                             <Row className="ptStock inputStock">
@@ -1875,7 +1900,7 @@ class AjuanBayarOps extends Component {
                     <hr />
                     <div className="modalFoot ml-3">
                         <div>
-                            <Button color='primary' onClick={() => this.props.history.push('/formlistops')}>Download</Button>
+                            <Button color='primary' onClick={() => this.printData('formlistops')}>Download</Button>
                         </div>
                         <div className="btnFoot">
                             {this.state.filter === 'all' ? null : (
@@ -2300,7 +2325,7 @@ class AjuanBayarOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.props.email.isLoading} size="sm">
+                <Modal isOpen={this.props.ops.isLoading || this.props.email.isLoading || this.props.notif.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2420,6 +2445,22 @@ class AjuanBayarOps extends Component {
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, dan nominal telah diisi</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'rejsubBayar' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>No Transaksi telah terdaftar</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'failSubChek' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                                <div className={[style.sucUpdate, style.green]}>Pilih data Operasional yg ingin diajukan terlebih dahulu</div>
                             </div>
                         </div>
                     ) : (
@@ -2679,6 +2720,7 @@ const mapDispatchToProps = {
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
     getDraftAjuan: email.getDraftAjuan,
+    genNomorTransfer: ops.genNomorTransfer,
     addNotif: notif.addNotif
 }
 

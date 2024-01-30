@@ -23,7 +23,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -964,9 +964,14 @@ class AjuanBayarIkk extends Component {
             subject: subject,
             no: detailIkk[0].no_pembayaran,
             tipe: 'ikk',
-            jenis: 'ajuan'
+            jenis: 'ajuan',
+            menu: 'pembayaran ajuan ikk',
+            proses: 'selesai pembayaran',
+            route: 'ikk'
         }
         await this.props.sendEmail(token, tempno)
+        await this.props.addNotif(token, tempno)
+
         this.getDataIkk()
         this.setState({confirm: 'isApprove'})
         this.openConfirm()
@@ -2941,7 +2946,7 @@ const mapDispatchToProps = {
     getDraftAjuan: email.getDraftAjuan,
     sendEmail: email.sendEmail,
     resetEmail: email.resetError,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarIkk)

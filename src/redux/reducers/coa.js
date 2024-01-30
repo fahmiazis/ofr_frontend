@@ -20,6 +20,7 @@ const coaState = {
     isAll: false,
     isUpload: false,
     allCoa: [],
+    nomCoa: [],
     listGl: [],
     dataPph:{
         pph21: '21050107',
@@ -82,6 +83,7 @@ export default (state=coaState, action) => {
                     isGet: true,
                     dataCoa: action.payload.data.result,
                     allCoa: action.payload.data.length,
+                    nomCoa: action.payload.data.nomcoa,
                     listGl: action.payload.data.listGl,
                     alertMsg: 'get coa Succesfully'
                 };

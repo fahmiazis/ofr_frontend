@@ -17,6 +17,7 @@ import Sidebar from "../../components/Header";
 import MaterialTitlePanel from "../../components/material_title_panel";
 import SidebarContent from "../../components/sidebar_content";
 import NavBar from '../../components/NavBar'
+import moment from 'moment'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const tarifSchema = Yup.object().shape({
@@ -379,7 +380,7 @@ class MasterTarif extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master VerifTax</div>
+                                    <div className={style.titleDashboard}>Master Tarif</div>
                                 </div>
                                 <div className={style.secHeadDashboard} >
                                     <div>
@@ -435,9 +436,13 @@ class MasterTarif extends Component {
                                                 <th>NPWP/NIK</th>
                                                 <th>Tax Type</th>
                                                 <th>Tax Code</th>
+                                                <th>Nominal Minimal</th>
+                                                <th>Nominal Maximal</th>
                                                 <th>Tarif PPh</th>
                                                 <th>Tarif DPP Non Grossup</th>
                                                 <th>Tarif DPP Grossup</th>
+                                                <th>Start Periode</th>
+                                                <th>End Periode</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -457,9 +462,13 @@ class MasterTarif extends Component {
                                                     <td>{item.status_npwp}</td>
                                                     <td>{item.tax_type}</td>
                                                     <td>{item.tax_code}</td>
-                                                    <td>{item.tarif_pph}</td>
-                                                    <td>{item.dpp_nongrossup}</td>
-                                                    <td>{item.dpp_grossup}</td>
+                                                    <td>{item.min_nominal === null ? '0' : item.min_nominal}</td>
+                                                    <td>{item.max_nominal === null ? '-' : item.max_nominal}</td>
+                                                    <td>{parseFloat(item.tarif_pph.split("%")[0]) * 100}%</td>
+                                                    <td>{parseFloat(item.dpp_nongrossup.split("%")[0]) * 100}%</td>
+                                                    <td>{parseFloat(item.dpp_grossup.split("%")[0]) * 100}%</td>
+                                                    <td>{item.start_period === null ? '20 Desember 2023' : moment(item.start_period).format('DD MMMM YYYY')}</td>
+                                                    <td>{item.end_period === null ? '-' : moment(item.end_period).format('DD MMMM YYYY')}</td>
                                                 </tr>
                                             )})}
                                         </tbody>

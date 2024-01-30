@@ -58,7 +58,8 @@ const ikkState = {
     submitBukti: null,
     detailReport: [],
     isDetRep: false,
-    updateNilai: null
+    updateNilai: null,
+    isFormIkk: null
 };
 
 export default (state=ikkState, action) => {
@@ -788,6 +789,29 @@ export default (state=ikkState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'DOWNLOAD_FORM_IKK_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DOWNLOAD_FORM_IKK_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isFormIkk: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'DOWNLOAD_FORM_IKK_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isFormIkk: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'RESET_IKK': {
                 return {
                     ...state,
@@ -814,7 +838,8 @@ export default (state=ikkState, action) => {
                     isDocBukti: null,
                     submitBukti: null,
                     isDetRep: null,
-                    updateNilai: null
+                    updateNilai: null,
+                    isFormIkk: null
                 }
             }
             default: {

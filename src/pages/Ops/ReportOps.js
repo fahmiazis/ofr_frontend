@@ -945,7 +945,7 @@ class ReportOps extends Component {
             })
           })
 
-          ws.columns.forEach(column => {
+        ws.columns.forEach(column => {
             const lengths = column.values.map(v => v.toString().length)
             const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
             column.width = maxLength + 5
@@ -1110,7 +1110,7 @@ class ReportOps extends Component {
                             c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                             c6: '',
                             c7: 'SA',
-                            c8: item.depo.area,
+                            c8: item.depo.pic.username,
                             c9: 'IDR',
                             c10:iter + 1,
                             c11: iter === 0 ? dataPph.kasbon : iter === 1 && dataPph.bankops,
@@ -1152,7 +1152,7 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.area,
+                                c8: item.depo.pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
                                 c11: iter === 0 ? item.depo.gl_kk : iter === 1 && dataPph.bankops,
@@ -1192,7 +1192,7 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.area,
+                                c8: item.depo.pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
                                 c11: iter === 0 ? item.depo.gl_kk 
@@ -1239,7 +1239,7 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.area,
+                                c8: item.depo.pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
                                 c11: iter === 0 ? item.depo.gl_kk 
@@ -1283,7 +1283,7 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.area,
+                                c8: item.depo.pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
                                 c11: iter === 0 ? item.depo.gl_kk 
@@ -1337,7 +1337,7 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.area,
+                                c8: item.depo.pic.username,
                                 c9: 'IDR',
                                 c10:iter + 1,
                                 c11: iter === 0 ? item.veriftax.gl_jurnal : iter === 1 && dataPph.bankops,
@@ -1377,7 +1377,7 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.area,
+                                c8: item.depo.pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
                                 c11: iter === 0 ? item.veriftax.gl_jurnal 
@@ -1423,7 +1423,7 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.area,
+                                c8: item.depo.pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
                                 c11: iter === 0 ? item.veriftax.gl_jurnal
@@ -1466,7 +1466,7 @@ class ReportOps extends Component {
                                     c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                     c6: '',
                                     c7: 'SA',
-                                    c8: item.depo.area,
+                                    c8: item.depo.pic.username,
                                     c9: 'IDR',
                                     c10: iter + 1,
                                     c11: iter === 0 ? item.veriftax.gl_jurnal 
@@ -2837,7 +2837,7 @@ class ReportOps extends Component {
                                                         <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                         <th></th>
                                                         <th>SA</th>
-                                                        <th>{item.finance.pic_finance}</th>
+                                                        <th>{item.depo.pic.username}</th>
                                                         <th>IDR</th>
                                                         <th>{iter + 1}</th>
                                                         <th>{iter === 0 ? item.depo.gl_kk : iter === 1 && dataPph.bankops}</th>
@@ -2880,7 +2880,7 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.area}</th>
+                                                            <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
                                                             <th>{iter === 0 ? item.depo.gl_kk : iter === 1 && dataPph.bankops}</th>
@@ -2922,7 +2922,7 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.area}</th>
+                                                            <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
                                                             <th>{iter === 0 ? item.depo.gl_kk 
@@ -2971,7 +2971,7 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.area}</th>
+                                                            <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
                                                             <th>{iter === 0 ? item.depo.gl_kk 
@@ -3017,7 +3017,7 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.area}</th>
+                                                            <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
                                                             <th>{iter === 0 ? item.depo.gl_kk 
@@ -3073,7 +3073,7 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.area}</th>
+                                                            <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
                                                             <th>{iter === 0 ? item.veriftax.gl_jurnal : iter === 1 && dataPph.bankops}</th>
@@ -3115,7 +3115,7 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.area}</th>
+                                                            <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
                                                             <th>{iter === 0 ? item.veriftax.gl_jurnal 
@@ -3163,7 +3163,7 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.area}</th>
+                                                            <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
                                                             <th>{iter === 0 ? item.veriftax.gl_jurnal
@@ -3208,7 +3208,7 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.area}</th>
+                                                            <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
                                                             <th>{iter === 0 ? item.veriftax.gl_jurnal 

@@ -14,7 +14,8 @@ export default function AllPages(props) {
   const { pdf, dataFile } = props
   const genData = dataFile === undefined ? 'file.pdf' : dataFile.path.split('/')
   const cekDoc = genData[2].split('.')
-
+  console.log(cekDoc)
+  console.log(cekDoc[cekDoc.length - 1])
   return (
     filePict.find(item => item === cekDoc[cekDoc.length - 1]) !== undefined ? 
     <div>

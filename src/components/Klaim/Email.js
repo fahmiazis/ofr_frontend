@@ -85,7 +85,7 @@ class TableRincian extends Component {
                             className='ml-1'
                             // onChange={listTo.find(element => element === item.name) === undefined ? () => this.checkToApp(item.name) : () => this.checkToRej(item.name)}
                             />
-                            <text className='ml-4'>{`${draftEmail.to.role.name}: ${draftEmail.to.username}`}</text>
+                            <text className='ml-4'>{`${draftEmail.to.role.name}: ${draftEmail.to.fullname}`}</text>
                         </div>
                     ) : draftEmail.to.length > 0 && draftEmail.to.map(item => {
                         return (
@@ -97,7 +97,7 @@ class TableRincian extends Component {
                                 className='ml-1'
                                 // onChange={listTo.find(element => element === item.name) === undefined ? () => this.checkToApp(item.name) : () => this.checkToRej(item.name)}
                                 />
-                                <text className='ml-4'>{`${item.role.name}: ${item.username}`}</text>
+                                <text className='ml-4'>{`${item.role.name}: ${item.fullname}`}</text>
                             </div>
                         )
                     }
@@ -120,7 +120,7 @@ class TableRincian extends Component {
                                 className='ml-1'
                                 // onChange={listCc.find(element => element === item.name) === undefined ? () => this.checkApp(item.name) : () => this.checkRej(item.name)}
                                 />
-                                <text className='ml-4'>{`${item.role.name}: ${item.username}`}</text>
+                                <text className='ml-4'>{`${item.role.name}: ${item.fullname}`}</text>
                             </div>
                         )
                     })}
@@ -177,9 +177,9 @@ class TableRincian extends Component {
                             <th>BANK</th>
                             <th>NOMOR REKENING</th>
                             <th>ATAS NAMA</th>
-                            <th>MEMILIKI NPWP</th>
+                            {/* <th>MEMILIKI NPWP</th>
                             <th>NAMA SESUAI NPWP</th>
-                            <th>NOMOR NPWP</th>
+                            <th>NOMOR NPWP</th> */}
                             <th>NILAI YANG DIBAYARKAN</th>
                             <th>TANGGAL TRANSFER</th>
                             <th>Status</th>
@@ -199,9 +199,9 @@ class TableRincian extends Component {
                                     <th>{item.bank_tujuan}</th>
                                     <th>{item.norek_ajuan}</th>
                                     <th>{item.nama_tujuan}</th>
-                                    <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
+                                    {/* <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
                                     <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                    <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                    <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th> */}
                                     <th>{item.nilai_bayar}</th>
                                     <th>{item.tanggal_transfer}</th>
                                     <th>{item.isreject === 1 ? 'reject' : '-'}</th>

@@ -33,6 +33,8 @@ import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
+import FAA from '../../components/Klaim/FAA'
+import FPD from '../../components/Klaim/FPD'
 import klaim from '../../redux/actions/klaim'
 import Tracking from '../../components/Klaim/tracking'
 import dokumen from '../../redux/actions/dokumen'
@@ -130,6 +132,7 @@ class VerifKlaim extends Component {
             dataRej: {},
             listKlaim: [],
             dataZip: [],
+            dataDownload: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -141,7 +144,9 @@ class VerifKlaim extends Component {
         if (val === 'all') {
             const data = []
             for (let i = 0; i < dataDoc.length; i++) {
-                data.push(dataDoc[i].id)
+                if (dataDoc[i].path !== null) {
+                    data.push(dataDoc[i].id)
+                }
             }
             this.setState({dataZip: data})
         } else {
@@ -1001,6 +1006,16 @@ class VerifKlaim extends Component {
         }
     }
 
+    printData = (val) => {
+        const {detailKlaim} = this.props.klaim
+        localStorage.setItem('printData', detailKlaim[0].no_transaksi)
+        const newWindow = window.open(`/${val}`, '_blank', 'noopener,noreferrer')
+        if (newWindow) {
+            newWindow.opener = null
+        }
+        // this.props.history.push(`/${val}`)
+    }
+
     menuRej = (val) => {
         const {listMenu} = this.state
         if (val === 'all') {
@@ -1156,6 +1171,116 @@ class VerifKlaim extends Component {
         } else {
             this.setState({fileUpload: e.target.files[0]})
         }
+    }
+
+    prosesDownloadFinance = async () => {
+        const token = localStorage.getItem("token")
+        const {listKlaim} = this.state
+        const {newKlaim} = this.props.klaim
+        const data = []
+        for (let i = 0; i < listKlaim.length; i++) {
+            for (let j = 0; j < newKlaim.length; j++) {
+                if (newKlaim[j].id === listKlaim[i]) {
+                    data.push(newKlaim[j])
+                }
+            }
+        }
+        const dataSend = {
+            list: listKlaim
+        }
+        this.setState({dataDownload: data})
+        await this.props.downloadFormVerif(token, dataSend)
+
+        const {time1, time2, filter} = this.state
+        const level = localStorage.getItem('level')
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
+        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, this.state.search)
+        
+        this.downloadExcel()
+    }
+
+    downloadExcel = async () => {
+        const { dataDownload } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data ajuan')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+            {header: 'NO', key: 'c1'},
+            {header: 'NO AJUAN', key: 'c22'},
+            {header: 'COST CENTRE', key: 'c2'}, 
+            {header: 'NO COA', key: 'c3'},
+            {header: 'NAMA COA', key: 'c4'},
+            {header: 'KETERANGAN TAMBAHAN', key: 'c5'},
+            {header: 'PERIODE', key: 'c6'},
+            {header: 'NILAI YANG DIAJUKAN', key: 'c7'},
+            {header: 'BANK', key: 'c8'},
+            {header: 'NOMOR REKENING', key: 'c9'},
+            {header: 'ATAS NAMA', key: 'c10'},
+            {header: 'DN Area', key: 'c11'},
+            {header: 'NO Surkom', key: 'c12'},
+            {header: 'NO Faktur', key: 'c13'},
+            {header: 'Nama Program', key: 'c14'},
+            {header: 'Nominal Verifikasi', key: 'c15'},
+            {header: 'PPU', key: 'c16'},
+            {header: 'PA', key: 'c17'},
+            {header: 'NILAI YANG DIBAYARKAN', key: 'c18'},
+            {header: 'TANGGAL TRANSFER', key: 'c19'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: index + 1,
+                c22:item.no_transaksi,
+                c2: item.cost_center,
+                c3: item.no_coa,
+                c4: item.nama_coa,
+                c5: item.keterangan,
+                c6: `${moment(item.periode_awal).format('DD/MMMM/YYYY')} - ${moment(item.periode_akhir).format('DD/MMMM/YYYY')}`,
+                c7: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c8: item.bank_tujuan,
+                c9: item.norek_ajuan,
+                c10: item.nama_tujuan,
+                c11: item.dn_area,
+                c12: item.no_surkom,
+                c13: item.no_faktur,
+                c14: item.nama_program,
+                c15: item.nominal,
+                c16: item.ppu,
+                c17: item.pa,
+                c18: item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c19: item.tanggal_transfer !== null ? `${moment(item.tanggal_transfer).format('DD/MMMM/YYYY')}` : '-',
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+        
+        ws.columns.forEach((column, index) => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Data Ajuan Klaim ${moment().format('DD MMMM YYYY')}.xlsx`
+            )
+          })
     }
 
     downloadAjuan = () => {
@@ -1439,7 +1564,21 @@ class VerifKlaim extends Component {
                                         <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload Template</Button>
                                         <Button className='mr-1' onClick={this.downloadAjuan} color="success" size="lg">Download Template</Button>
                                     </div>
-                                ) : <div></ div>}
+                                ) : level === '2' ? (
+                                    <div className='rowCenter'>
+                                        <Button 
+                                        className='mr-1' 
+                                        color="success" 
+                                        size="lg" 
+                                        onClick={this.prosesDownloadFinance}
+                                        disabled={this.state.listKlaim.length > 0 ? false : true}
+                                        >
+                                            Download Ajuan
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div></ div>
+                                )}
                                 <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
@@ -1499,7 +1638,7 @@ class VerifKlaim extends Component {
                                     <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
                                             <tr>
-                                                {accKlaim.find(item => item.toString() === level) !== undefined && (
+                                                {(accKlaim.find(item => item.toString() === level) !== undefined || level === '2') && (
                                                     <th>
                                                         <input  
                                                         className='mr-2'
@@ -1512,6 +1651,7 @@ class VerifKlaim extends Component {
                                                 )}
                                                 <th>No</th>
                                                 <th>NO.AJUAN</th>
+                                                <th>NO.DN AREA</th>
                                                 <th>COST CENTRE</th>
                                                 <th>AREA</th>
                                                 <th>NO.COA</th>
@@ -1520,6 +1660,9 @@ class VerifKlaim extends Component {
                                                 <th>TGL AJUAN</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
+                                                {level === '2' && (
+                                                    <th>STATUS DOWNLOAD</th>
+                                                )}
                                             </tr>
                                         </thead>
                                         {accKlaim.find(x => x.toString() === level) !== undefined ? (
@@ -1542,6 +1685,7 @@ class VerifKlaim extends Component {
                                                                     </th>
                                                                     <th>{newKlaim.indexOf(item) + 1}</th>
                                                                     <th>{item.no_transaksi}</th>
+                                                                    <th>{item.dn_area}</th>
                                                                     <th>{item.cost_center}</th>
                                                                     <th>{item.area}</th>
                                                                     <th>{item.no_coa}</th>
@@ -1575,6 +1719,7 @@ class VerifKlaim extends Component {
                                                                     </th>
                                                                     <th>{newKlaim.indexOf(item) + 1}</th>
                                                                     <th>{item.no_transaksi}</th>
+                                                                    <th>{item.dn_area}</th>
                                                                     <th>{item.cost_center}</th>
                                                                     <th>{item.area}</th>
                                                                     <th>{item.no_coa}</th>
@@ -1601,6 +1746,7 @@ class VerifKlaim extends Component {
                                                                     </th>
                                                                     <th>{newKlaim.indexOf(item) + 1}</th>
                                                                     <th>{item.no_transaksi}</th>
+                                                                    <th>{item.dn_area}</th>
                                                                     <th>{item.cost_center}</th>
                                                                     <th>{item.area}</th>
                                                                     <th>{item.no_coa}</th>
@@ -1631,8 +1777,18 @@ class VerifKlaim extends Component {
                                                 {newKlaim.map(item => {
                                                     return (
                                                         <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            {level === '2' && (
+                                                                <th>
+                                                                    <input 
+                                                                    type='checkbox'
+                                                                    checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                                    onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekKlApp(item.id) : () => this.chekKlRej(item.id)}
+                                                                    />
+                                                                </th>
+                                                            )}
                                                             <th>{newKlaim.indexOf(item) + 1}</th>
                                                             <th>{item.no_transaksi}</th>
+                                                            <th>{item.dn_area}</th>
                                                             <th>{item.cost_center}</th>
                                                             <th>{item.area}</th>
                                                             <th>{item.no_coa}</th>
@@ -1646,6 +1802,9 @@ class VerifKlaim extends Component {
                                                                 </Button>
                                                                 <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                             </th>
+                                                            {level === '2' && (
+                                                                <th>{item.status_download === 1 ? 'Telah Download' : 'Belum Download'}</th>
+                                                            )}
                                                         </tr>
                                                     )
                                                 })}
@@ -1723,17 +1882,15 @@ class VerifKlaim extends Component {
                                         <th>NO COA</th>
                                         <th>NAMA COA</th>
                                         <th>DN Area</th>
+                                        <th>NO Surkom</th>
+                                        <th>NO Faktur</th>
+                                        <th>Nama Program</th>
                                         <th>KETERANGAN TAMBAHAN</th>
                                         <th>PERIODE</th>
                                         <th>NILAI YANG DIAJUKAN</th>
                                         <th>BANK</th>
                                         <th>NOMOR REKENING</th>
                                         <th>ATAS NAMA</th>
-                                        <th>MEMILIKI NPWP</th>
-                                        <th>NAMA SESUAI NPWP</th>
-                                        <th>NOMOR NPWP</th>
-                                        <th>NAMA SESUAI KTP</th>
-                                        <th>NIK</th>
                                         <th>PPU</th>
                                         <th>PA</th>
                                         <th>NOMINAL VERIFIKASi</th>
@@ -1763,17 +1920,15 @@ class VerifKlaim extends Component {
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
                                                 <th>{item.dn_area}</th>
+                                                <th>{item.no_surkom}</th>
+                                                <th>{item.no_faktur}</th>
+                                                <th>{item.nama_program}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : ''}</th>
-                                                <th>{item.status_npwp === 1 ? item.nama_npwp : '-'}</th>
-                                                <th>{item.status_npwp === 1 ? item.no_npwp : '-' }</th>
-                                                <th>{item.status_npwp === 0 ? item.nama_ktp : '-'}</th>
-                                                <th>{item.status_npwp === 0 ? item.no_ktp : '-'}</th>
                                                 <th>{item.ppu}</th>
                                                 <th>{item.pa}</th>
                                                 <th>{item.nominal}</th>
@@ -1815,201 +1970,13 @@ class VerifKlaim extends Component {
                         FORM AJUAN AREA
                     </ModalHeader>
                     <ModalBody>
-                        <div>
-                            {/* <div className="stockTitle">form ajuan area (claim)</div> */}
-                            {/* <div className="ptStock">pt. pinus merah abadi</div> */}
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>cabang / area / depo</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailKlaim.length > 0 ? detailKlaim[0].area : ''} className="ml-3"  /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>no ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled value={detailKlaim.length > 0 ? detailKlaim[0].no_transaksi : ''} className="ml-3" /></Col>
-                            </Row>
-                            <Row className="ptStock inputStock">
-                                <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailKlaim.length > 0 ? moment(detailKlaim[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
-                            </Row>
-                        </div>
-                        <div className={style.tableDashboard}>
-                            <Table bordered responsive hover className={style.tab}>
-                                <thead>
-                                    <tr className='tbklaim'>
-                                        <th>NO</th>
-                                        <th>COST CENTRE</th>
-                                        <th>NO COA</th>
-                                        <th>NAMA COA</th>
-                                        <th>KETERANGAN TAMBAHAN</th>
-                                        <th>PERIODE</th>
-                                        <th>NILAI YANG DIAJUKAN</th>
-                                        <th>BANK</th>
-                                        <th>NOMOR REKENING</th>
-                                        <th>ATAS NAMA</th>
-                                        <th>MEMILIKI NPWP</th>
-                                        <th>NAMA SESUAI NPWP</th>
-                                        <th>NOMOR NPWP</th>
-                                        <th>PPU</th>
-                                        <th>PA</th>
-                                        <th>NOMINAL</th>
-                                        <th>NILAI YANG DIBAYARKAN</th>
-                                        <th>TANGGAL TRANSFER</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {detailKlaim.length !== 0 && detailKlaim.map(item => {
-                                        return (
-                                            <tr>
-                                                <th scope="row">{detailKlaim.indexOf(item) + 1}</th>
-                                                <th>{item.cost_center}</th>
-                                                <th>{item.no_coa}</th>
-                                                <th>{item.nama_coa}</th>
-                                                <th>{item.keterangan}</th>
-                                                <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
-                                                <th>{item.nama_tujuan}</th>
-                                                <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                                <th>-</th>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </Table>
-                        </div>
-                        <Table borderless responsive className="tabPreview mt-4">
-                           <thead>
-                               <tr>
-                                   <th className="buatPre">Dibuat oleh,</th>
-                                   <th className="buatPre">Diperiksa oleh,</th>
-                                   <th className="buatPre">Disetujui oleh,</th>
-                                   <th className="buatPre">Diketahui oleh,</th>
-                               </tr>
-                           </thead>
-                           <tbody className="tbodyPre">
-                               <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.mengetahui !== undefined && ttdKlaim.mengetahui.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdKlaim.mengetahui !== undefined && ttdKlaim.mengetahui.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr>
-                           </tbody>
-                       </Table>
+                        <FAA />
                     </ModalBody>
                     <hr />
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('klmfaa')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -2021,154 +1988,13 @@ class VerifKlaim extends Component {
                 </Modal>
                 <Modal isOpen={this.state.modalFpd} toggle={this.openModalFpd} size="lg">
                     <ModalBody>
-                        <div>
-                            <div className="fpdTit">FORM PERMINTAAN DANA</div>
-                            <div className='fpdTit'>cabang/depo : {detailKlaim.length > 0 ? detailKlaim[0].area : ''}</div>
-                            <div className='fpdTit'>no : {detailKlaim.length > 0 ? detailKlaim[0].no_transaksi : ''}</div>
-                        </div>
-                        <div className={style.tableDashboard}>
-                            <Row>
-                                <Col md={1} className='upper'>
-                                    <div className='liner2'>no</div>
-                                </Col>
-                                <Col md={8} className='upper'>
-                                    <div className='line'>keperluan / <br />keterangan</div>
-                                </Col>
-                                <Col md={3} className='upper'>
-                                    <div className='liner'>rupiah</div>
-                                </Col>
-                            </Row>
-                            {detailKlaim.length !== 0 && detailKlaim.map(item => {
-                                return (
-                                    <Row className='mt-4'>
-                                        <Col md={1} className='upper'>
-                                            <div className='line'>{detailKlaim.indexOf(item) + 1}</div>
-                                        </Col>
-                                        <Col md={8} className='upper'>
-                                            <div className='line2'>{item.keterangan}</div>
-                                            <div className='line mt-1'>NO REK {item.bank_tujuan} {item.norek_ajuan}</div>
-                                        </Col>
-                                        <Col md={3} className='upper'>
-                                            <div className='line'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>
-                                        </Col>
-                                    </Row>
-                                )
-                            })}
-                            <Row className='mt-4'>
-                                <Col md={1} className='upper'>
-                                </Col>
-                                <Col md={8} className='upper'>
-                                    <div className='line'>Total</div>
-                                </Col>
-                                <Col md={3} className='upper'>
-                                    <div className='line'>
-                                        {this.state.totalfpd.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                                    </div>
-                                </Col>
-                            </Row>
-                        </div>
-                        <div className='bold'>{detailKlaim.length > 0 ? detailKlaim[0].area : ''}, {moment(detailKlaim.length > 0 ? moment(detailKlaim[0].updatedAt).format('DD MMMM YYYY') : '').format('DD MMMM YYYY')}</div>
-                        <Table borderless responsive className="tabPreview mt-4">
-                           <thead>
-                               <tr>
-                                   <th className="buatPre">Dibuat oleh,</th>
-                                   <th className="buatPre">Diperiksa oleh,</th>
-                                   <th className="buatPre">Disetujui oleh,</th>
-                               </tr>
-                           </thead>
-                           <tbody className="tbodyPre">
-                               <tr>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
-                                                    return (
-                                                        <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                    )
-                                                })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
-                                                        <th className="headPre">
-                                                            <div className="mb-2">-</div>
-                                                            <div>-</div>
-                                                        </th>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.length === 0 ? (
-                                                        <td className="footPre">-</td>
-                                                    ) : ttdKlaim.pemeriksa !== undefined && ttdKlaim.pemeriksa.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                                   <td className="restTable">
-                                       <Table bordered responsive className="divPre">
-                                            <thead>
-                                                <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
-                                                        return (
-                                                            <th className="headPre">
-                                                                <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                <div>{item.nama === null ? "-" : item.nama}</div>
-                                                            </th>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    {ttdKlaim.penyetuju !== undefined && ttdKlaim.penyetuju.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                </tr>
-                                            </tbody>
-                                       </Table>
-                                   </td>
-                               </tr>
-                           </tbody>
-                       </Table>
+                        <FPD totalfpd={this.state.totalfpd} />
                     </ModalBody>
                     <hr />
-                    <div className="modalFoot ml-3">
+                    <div className="modalFoot ml-3" >
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('klmfpd')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -2797,7 +2623,7 @@ class VerifKlaim extends Component {
                                         <Input 
                                             type='checkbox'
                                             checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
-                                            onChange={() => dataZip.length === dataDoc.length ? this.unCheckDoc('all') : this.checkDoc('all')}
+                                            onChange={() => dataZip.length > 0 ? this.unCheckDoc('all') : this.checkDoc('all')}
                                         />
                                         Ceklis All
                                     </div>
@@ -3103,6 +2929,7 @@ const mapDispatchToProps = {
     uploadDataKlaim: klaim.uploadDataKlaim,
     getSpvklaim: spvklaim.getSpvklaim,
     getOutlet: klaim.getOutlet,
+    downloadFormVerif: klaim.downloadFormVerif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifKlaim)

@@ -1311,6 +1311,20 @@ class IKK extends Component {
         this.openModalStock()
     }
 
+    prosesModalBukti = async () => {
+        const token = localStorage.getItem("token")
+        const { detailIkk } = this.props.ikk
+        const tempno = {
+            no: detailIkk[0].no_pembayaran
+        }
+        await this.props.getDocBayar(token, tempno)
+        this.modalBukti()
+    }
+
+    modalBukti = () => {
+        this.setState({openBukti: !this.state.openBukti})
+    }
+
     openModalStock = () => {
         this.setState({modalStock: !this.state.modalStock})
     }
@@ -1373,7 +1387,7 @@ class IKK extends Component {
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { draftEmail } = this.props.email
-        const { noDis, detailIkk, ttdIkk, dataDoc, newIkk, idIkk } = this.props.ikk
+        const { noDis, detailIkk, ttdIkk, dataDoc, newIkk, idIkk, docBukti } = this.props.ikk
         const changeSepar = toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
         // const pages = this.props.depo.page
 
@@ -1881,7 +1895,7 @@ class IKK extends Component {
                             </Row>
                             <Row className="ptStock inputStock">
                                 <Col md={3} xl={3} sm={3}>tanggal ajuan</Col>
-                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailIkk.length > 0 ? moment(detailIkk[0].updatedAt).format('DD MMMM YYYY') : ''} /></Col>
+                                <Col md={4} xl={4} sm={4} className="inputStock">:<Input disabled className="ml-3" value={detailIkk.length > 0 ? moment(detailIkk[0].start_ikk).format('DD MMMM YYYY') : ''} /></Col>
                             </Row>
                         </div>
                         <div className={style.tableDashboard}>
@@ -1965,7 +1979,10 @@ class IKK extends Component {
                         <div className="btnFoot">
                             <Button className="mr-2" color="info"  onClick={() => this.prosesModalFpd()}>FPD</Button>
                             <Button className="mr-2" color="warning"  onClick={() => this.prosesModalFaa()}>Form Ikk</Button>
-                            <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
+                            <Button className="mr-2" color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
+                            {detailIkk.length > 0 && detailIkk[0].status_transaksi === 8 && (
+                                <Button color="success"  onClick={() => this.prosesModalBukti()}>Bukti Bayar</Button>
+                            )}
                         </div>
                         <div className="btnFoot">
                             {filter === 'available' || 
@@ -1976,7 +1993,7 @@ class IKK extends Component {
                             )}
                             {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? (
                                 <>
-                                    {(filter === 'bayar' || filter === 'completed') && (
+                                    {(filter === 'bayar' || filter === 'completed') && level === '5' && (
                                         <Button className="mr-2"  color="danger" onClick={this.openNilaiVerif}>
                                             Input Nilai Diterima
                                         </Button>
@@ -2550,6 +2567,41 @@ class IKK extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
+                <Modal size="xl" isOpen={this.state.openBukti} toggle={this.modalBukti}>
+                <ModalHeader>
+                   Kelengkapan Bukti Bayar
+                </ModalHeader>
+                <ModalBody>
+                <Container>
+                        {docBukti !== undefined && docBukti.map(x => {
+                            return (
+                                <Row className="mt-3 mb-4">
+                                    {x.path !== null ? (
+                                        <Col md={12} lg={12} className='mb-2' >
+                                            <div className="btnDocIo mb-2" >{x.desc === null ? 'Lampiran' : x.desc}</div>
+                                            {x.status === 0 ? (
+                                                <AiOutlineClose size={20} />
+                                            ) : x.status === 3 ? (
+                                                <AiOutlineCheck size={20} />
+                                            ) : (
+                                                <BsCircle size={20} />
+                                            )}
+                                            <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+                                        </Col>
+                                    ) : (
+                                        null
+                                    )}
+                                </Row>
+                            )
+                        })}
+                    </Container>
+                </ModalBody>
+                <ModalFooter>
+                    <Button color="secondary" onClick={this.modalBukti}>
+                        Close
+                    </Button>
+                </ModalFooter>
+            </Modal>
             </>
         )
     }
@@ -2592,7 +2644,8 @@ const mapDispatchToProps = {
     updateNilaiVerif: ikk.updateNilaiVerif,
     getAllNotif: notif.getAllNotif,
     addNotif: notif.addNotif,
-    getResmail: email.getResmail
+    getResmail: email.getResmail,
+    getDocBayar: ikk.getDocBayar,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(IKK)

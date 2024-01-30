@@ -13,7 +13,7 @@ export default {
     }),
     addNotif: (token, data) => ({
         type: 'ADD_NOTIF',
-        payload: http(token).post(`/notif/add`, qs.stringify(data))
+        payload: http(token).post(`/notif/add`, data)
     }),
     readNotif: (token, id) => ({
         type: 'READ_NOTIF',

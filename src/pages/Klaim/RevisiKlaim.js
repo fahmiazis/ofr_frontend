@@ -1066,6 +1066,7 @@ class RevisiKlaim extends Component {
         const { detailKlaim } = this.props.klaim
         const { draftEmail } = this.props.email
         const { message, subject } = this.state
+        const statusTrans = detailKlaim[0].status_transaksi === 2 ? 'pengajuan' : 'verifikasi'
         const cc = draftEmail.cc
         const tempcc = []
         for (let i = 0; i < cc.length; i++) {
@@ -1080,7 +1081,7 @@ class RevisiKlaim extends Component {
             subject: subject,
             no: detailKlaim[0].no_transaksi,
             tipe: 'klaim',
-            menu: 'pengajuan klaim',
+            menu: `${statusTrans} klaim`,
             proses: 'revisi',
             route: 'klaim'
         }
@@ -1148,7 +1149,7 @@ class RevisiKlaim extends Component {
         const { detFinance } = this.props.finance
         const { dataOutlet, typeOut } = this.state
 
-        if (dataOutlet.length === 0 && typeOut !== 'delout') {
+        if (dataOutlet.length === 0 && typeOut !== 'delout' && this.state.tujuan_tf === "Outlet") {
             this.setState({ confirm: 'nullOutlet' })
             this.openConfirm()
         } else {
@@ -1157,9 +1158,9 @@ class RevisiKlaim extends Component {
                 keterangan: val.keterangan,
                 periode_awal: val.periode_awal,
                 periode_akhir: val.periode_akhir,
-                nilai_ajuan: dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
+                nilai_ajuan: this.state.tujuan_tf === "Outlet" ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
                     return accumulator + parseFloat(object.nilai_ajuan);
-                }, 0) : 0,
+                }, 0) : 0) : this.state.nilai_ajuan,
                 bank_tujuan: this.state.bank,
                 norek_ajuan: this.state.tujuan_tf === "PMA" ? this.state.norek : val.norek_ajuan,
                 nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : val.nama_tujuan,
@@ -1863,10 +1864,10 @@ class RevisiKlaim extends Component {
                                             <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Nilai Yang Diajukan</Col>
                                                 <Col md={9} className="colRinci">:  <NumberInput
-                                                    value={dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
+                                                    value={this.state.tujuan_tf === 'Outlet' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
                                                         return accumulator + parseFloat(object.nilai_ajuan);
-                                                    }, 0) : 0}
-                                                    disabled
+                                                    }, 0) : 0) : this.state.nilai_ajuan}
+                                                    disabled={this.state.tujuan_tf === 'Outlet' || this.state.tiperek === '' ? true : false}
                                                     className="inputRinci1"
                                                     onValueChange={val => setFieldValue("nilai_ajuan", val.floatValue)}
                                                 />
@@ -1962,7 +1963,7 @@ class RevisiKlaim extends Component {
                                             {values.nama_tujuan === '' && this.state.tujuan_tf !== 'PMA' ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
-                                            {dataOutlet.length > 0 &&
+                                            {dataOutlet.length > 0 && this.state.tujuan_tf === 'Outlet' &&
                                                 <>
                                                     <div className='mt-3 mb-3'>
                                                         List Outlet
@@ -1997,12 +1998,16 @@ class RevisiKlaim extends Component {
                                                     </Table>
                                                 </>
                                             }
-                                            <div className='row justify-content-md-center mb-4'>
-                                                <div className='mainRinci2' onClick={this.openKlaimOutlet}>
-                                                    <CiCirclePlus size={70} className='mb-2 secondary' color='secondary' />
-                                                    <div className='secondary'>Tambah Outlet</div>
+                                            {(this.state.tujuan_tf === 'Outlet'
+                                            // || (this.state.tiperek === 'Rekening Spending Card')
+                                            ) && (
+                                                <div className='row justify-content-md-center mb-4'>
+                                                    <div className='mainRinci2' onClick={this.openKlaimOutlet}>
+                                                        <CiCirclePlus size={70} className='mb-2 secondary' color='secondary' />
+                                                        <div className='secondary'>Tambah Outlet</div>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
                                             {/* <Row className="mb-2 rowRinci">
                                             <Col md={3}>Memiliki NPWP</Col>
                                             <Col md={9} className="colRinci">:  <Input

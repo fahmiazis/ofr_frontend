@@ -85,7 +85,7 @@ class TableRincian extends Component {
                             className='ml-1'
                             // onChange={listTo.find(element => element === item.name) === undefined ? () => this.checkToApp(item.name) : () => this.checkToRej(item.name)}
                             />
-                            <text className='ml-4'>{`${draftEmail.to.role.name}: ${draftEmail.to.username}`}</text>
+                            <text className='ml-4'>{`${draftEmail.to.role.name}: ${draftEmail.to.fullname}`}</text>
                         </div>
                     ) : draftEmail.to.length > 0 && draftEmail.to.map(item => {
                         return (
@@ -97,7 +97,7 @@ class TableRincian extends Component {
                                 className='ml-1'
                                 // onChange={listTo.find(element => element === item.name) === undefined ? () => this.checkToApp(item.name) : () => this.checkToRej(item.name)}
                                 />
-                                <text className='ml-4'>{`${item.role.name}: ${item.username}`}</text>
+                                <text className='ml-4'>{`${item.role.name}: ${item.fullname}`}</text>
                             </div>
                         )
                     }
@@ -120,7 +120,7 @@ class TableRincian extends Component {
                                 className='ml-1'
                                 // onChange={listCc.find(element => element === item.name) === undefined ? () => this.checkApp(item.name) : () => this.checkRej(item.name)}
                                 />
-                                <text className='ml-4'>{`${item.role.name}: ${item.username}`}</text>
+                                <text className='ml-4'>{`${item.role.name}: ${item.fullname}`}</text>
                             </div>
                         )
                     })}

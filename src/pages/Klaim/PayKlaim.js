@@ -23,7 +23,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -160,14 +160,29 @@ class AjuanBayarKlaim extends Component {
     }
 
     onUploadBukti = e => {
-        const {size, type} = e.target.files[0]
+        const {size, type, name} = e.target.files[0]
+        const tipe = name.split('.')[name.split('.').length - 1]
         this.setState({fileUpload: e.target.files[0]})
-        if (size >= 20000000) {
-            this.setState({errMsg: "Maximum upload size 20 MB"})
-            this.uploadAlert()
-        } else if (type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && type !== 'application/vnd.ms-excel' && type !== 'application/pdf' && type !== 'application/x-7z-compressed' && type !== 'application/vnd.rar' && type !== 'application/zip' && type !== 'application/x-zip-compressed' && type !== 'application/octet-stream' && type !== 'multipart/x-zip' && type !== 'application/x-rar-compressed') {
-            this.setState({errMsg: 'Invalid file type. Only excel, pdf, zip, and rar files are allowed.'})
-            this.uploadAlert()
+        if (size > 25000000) {
+            this.setState({errMsg: "Maximum upload size 25 MB", confirm: 'maxUpload'})
+            this.openConfirm()
+        } else if (
+            tipe !== 'rar' && tipe !== 'pdf' && tipe !== 'xls' && tipe !== 'xlsx' &&
+            tipe !== 'jpg' && tipe !== 'png' && tipe !== 'zip' && tipe !== '7z' &&
+            type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && 
+            type !== 'application/vnd.ms-excel' && 
+            type !== 'application/pdf' && 
+            type !== 'application/x-7z-compressed' && 
+            type !== 'application/vnd.rar' && 
+            type !== 'application/zip' && type !== 'application/x-zip-compressed' && 
+            type !== 'application/octet-stream' && type !== 'multipart/x-zip' && 
+            type !== 'application/x-rar-compressed' && type !== 'image/jpeg' && type !== 'image/png'
+            ) {
+            this.setState({
+                errMsg: 'Invalid file type. Only excel, pdf, zip, png, jpg and rar files are allowed.',
+                confirm: 'onlyUpload'
+            })
+            this.openConfirm()
         } else {
             const {detail} = this.state
             const token = localStorage.getItem('token')
@@ -694,7 +709,12 @@ class AjuanBayarKlaim extends Component {
     }
 
     printData = (val) => {
-        this.props.history.push(`/${val}`)
+        const {detailKlaim} = this.props.klaim
+        localStorage.setItem('download', detailKlaim[0].no_pembayaran)
+        const newWindow = window.open(`/${val}`, '_blank', 'noopener,noreferrer')
+        if (newWindow) {
+            newWindow.opener = null
+        }
     }
 
     onSearch = async (e) => {
@@ -904,9 +924,14 @@ class AjuanBayarKlaim extends Component {
             subject: subject,
             no: detailKlaim[0].no_pembayaran,
             tipe: 'klaim',
-            jenis: 'ajuan'
+            jenis: 'ajuan',
+            menu: 'pembayaran ajuan klaim',
+            proses: 'selesai pembayaran',
+            route: 'klaim'
         }
         await this.props.sendEmail(token, tempno)
+        await this.props.addNotif(token, tempno)
+        
         this.getDataKlaim()
         this.setState({confirm: 'isApprove'})
         this.openConfirm()
@@ -1139,8 +1164,8 @@ class AjuanBayarKlaim extends Component {
                 c8: item.no_transaksi.slice(0, 19),
                 c9: '',
                 c10: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
-                c11: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : '',
-                c12: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.bank_tujuan,
+                c11: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.sandi_kliring,
+                c12: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.nama_singkat,
                 c13: '',
                 c14: '',
                 c15: '',
@@ -1182,6 +1207,12 @@ class AjuanBayarKlaim extends Component {
               cell.border = borderStyles;
             })
           })
+
+        ws.columns.forEach((column, index) => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
           
 
         workbook.xlsx.writeBuffer().then(function(buffer) {
@@ -1213,8 +1244,8 @@ class AjuanBayarKlaim extends Component {
                 item.no_transaksi.slice(0, 19),
                 "",
                 item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
-                item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : '',
-                item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.bank_tujuan,
+                item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.sandi_kliring,
+                item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.nama_singkat,
                 "",
                 "",
                 "",
@@ -1863,11 +1894,13 @@ class AjuanBayarKlaim extends Component {
                                 Download Form
                             </Button>
                         </div>
-                        <div className="btnFoot">
-                            <Button color="info" onClick={this.prosesModalBukti}>
-                                Submit Pembayaran
-                            </Button>
-                        </div>
+                        {this.state.filter === 'ready' && (
+                            <div className="btnFoot">
+                                <Button color="info" onClick={this.prosesModalBukti}>
+                                    Submit Pembayaran
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </Modal>
                 <Modal size="xl" className='modalrinci' isOpen={this.state.submitPre} toggle={this.modalSubmitPre}>
@@ -2018,8 +2051,8 @@ class AjuanBayarKlaim extends Component {
                                                 <th >{item.no_transaksi.slice(0, 19)}</th>
                                                 <th ></th>
                                                 <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU'}</th>
-                                                <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : ''}</th>
-                                                <th >{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.bank_tujuan}</th>
+                                                <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.sandi_kliring}</th>
+                                                <th >{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.nama_singkat}</th>
                                                 <th ></th>
                                                 <th ></th>
                                                 <th ></th>
@@ -2617,6 +2650,22 @@ class AjuanBayarKlaim extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Gagal Submit, pastikan nilai ppu, pa, dan nominal telah diisi</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'maxUpload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Upload Dokumen</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Pastikan Size Dokumen Tidak Lebih Dari 25 MB</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'onlyUpload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Upload Dokumen</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Web Hanya Menerima Tipe Dokumen excel, pdf, zip, png, jpg dan rar </div>
+                            </div>
+                        </div>
                     ) : (
                         <div></div>
                     )}
@@ -2750,7 +2799,7 @@ class AjuanBayarKlaim extends Component {
                 <ModalHeader>Dokumen</ModalHeader>
                 <ModalBody>
                     <div className={style.readPdf}>
-                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} />
+                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} dataFile={this.state.fileName} />
                     </div>
                     <hr/>
                     <div className={style.foot}>
@@ -2852,7 +2901,7 @@ const mapDispatchToProps = {
     getDraftAjuan: email.getDraftAjuan,
     sendEmail: email.sendEmail,
     resetEmail: email.resetError,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarKlaim)

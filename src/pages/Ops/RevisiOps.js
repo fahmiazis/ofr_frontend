@@ -1150,6 +1150,8 @@ class RevisiOps extends Component {
         const { detailOps } = this.props.ops
         const { draftEmail } = this.props.email
         const { message, subject } = this.state
+        const typeKasbon = detailOps.find(({type_kasbon}) => type_kasbon === 'kasbon') !== undefined ? 'kasbon' : 'ops'
+        const statusTrans = detailOps[0].status_transaksi === 2 ? 'pengajuan' : 'verifikasi'
         const cc = draftEmail.cc
         const tempcc = []
         for (let i = 0; i < cc.length; i++) {
@@ -1163,10 +1165,10 @@ class RevisiOps extends Component {
             message: message,
             subject: subject,
             no: detailOps[0].no_transaksi,
-            tipe: 'ops',
-            menu: 'pengajuan ops',
+            tipe: `${typeKasbon}`,
+            menu: `${statusTrans} ${typeKasbon}`,
             proses: 'revisi',
-            route: 'ops'
+            route: `${typeKasbon}`
         }
         await this.props.sendEmail(token, tempno)
         await this.props.addNotif(token, tempno)
@@ -1921,7 +1923,7 @@ class RevisiOps extends Component {
         //     this.setState({noNik: val, typeniknpwp: 'manual'})
         // }
         if( val.length === 16 ) {
-            this.setState({ showOptions : true })
+            this.getDataVendor(val)
         } else {
             this.setState(
                 { showOptions : false },
@@ -1939,7 +1941,7 @@ class RevisiOps extends Component {
         //     this.setState({noNpwp: val, typeniknpwp: 'manual'})
         // }
         if( val.length === 15 ) {
-            this.setState({ showOptions : true })
+            this.getDataVendor(val)
         } else {
             this.setState(
                 { showOptions : false },
@@ -1948,9 +1950,83 @@ class RevisiOps extends Component {
         }
     }
 
+    getDataVendor = async (val) => {
+        const token = localStorage.getItem("token")
+        const sendData = {
+            noIdent: `${val}`
+        }
+        await this.props.getVendor(token, sendData)
+
+        const { dataVendor } = this.props.vendor
+        const listNpwp = [
+            {value: '', label: '-Pilih-'}
+        ]
+        const listNik = [
+            {value: '', label: '-Pilih-'}
+        ]
+        dataVendor.map(item => {
+            return (
+                item.no_npwp === 'TIDAK ADA' && item.no_ktp !== 'TIDAK ADA' ?
+                    listNik.push({value: item.id, label: item.no_ktp}) 
+                : item.no_ktp === 'TIDAK ADA' && item.no_npwp !== 'TIDAK ADA' ?
+                    listNpwp.push({value: item.id, label: item.no_npwp}) 
+                : listNpwp.push({value: item.id, label: item.no_npwp}) && listNik.push({value: item.id, label: item.no_ktp}) 
+            )
+        })
+        this.setState({listNik: listNik, listNpwp: listNpwp, showOptions : true})
+    }
+
+    inputFaktur = (val) => {
+        // const {dataSelFaktur} = this.state
+        // const data = {
+        //     no_faktur: val
+        // }
+        // const cek = dataSelFaktur.no_faktur.split('')
+        // if (cek.length > 1 && val === '') {
+        //     this.setState({dataSelFaktur: dataSelFaktur})
+        // } else {
+        //     this.setState({dataSelFaktur: data})
+        // }
+        if(val.length >= 16) {
+            this.getDataFaktur(val)
+        } else {
+            console.log(`king ${val}`)
+            this.setState({showOptions : false })
+        }
+    }
+
+    getDataFaktur = async (val) => {
+        const token = localStorage.getItem("token")
+        const { noNpwp } = this.state
+        // if (noNpwp === undefined || noNpwp === '') {
+        //     console.log('npwp kosong')
+        // } else {
+            const sendData = {
+                npwp: `${noNpwp}`,
+                noFaktur: `${val}`
+            }
+            await this.props.getFaktur(token, sendData)
+    
+            const {dataFaktur} = this.props.faktur
+            const temp = [
+                {value: '', label: '-Pilih-'}
+            ]
+            dataFaktur.map(item => {
+                const date1 = new Date(item.tgl_faktur)
+                const date2 = new Date()
+                const diffTime = Math.abs(date2 - date1)
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+                console.log(diffDays)
+                return (
+                    diffDays < 90 && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
+                )
+            })
+            this.setState({fakturList: temp, showOptions : true})
+        // }
+    }
+
 
     selectNikNpwp = async (e) => {
-        const token = localStorage.getItem("token")
         const { dataVendor } = this.props.vendor
         const idVal = e.val.value
         const data = dataVendor.find(({id}) => id === idVal)
@@ -1965,20 +2041,10 @@ class RevisiOps extends Component {
                 this.setState({dataList: data, tipeSkb: tipeSkb, nama: data.nama, alamat: data.alamat, noNpwp: data.no_npwp, noNik: data.no_ktp, typeniknpwp: 'auto'})
                 this.formulaTax()
             } else {
-                await this.props.getFaktur(token, data.no_npwp)
                 const {dataFaktur} = this.props.faktur
                 const temp = [
                     {value: '', label: '-Pilih-'}
                 ]
-                dataFaktur.map(item => {
-                    const date1 = new Date(item.tgl_faktur)
-                    const date2 = new Date()
-                    const diffTime = Math.abs(date2 - date1)
-                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-                    return (
-                        diffDays < 90 && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
-                    )
-                })
                 this.setState({dataList: data, tipeSkb: tipeSkb, nama: data.nama, alamat: data.alamat, noNpwp: data.no_npwp, noNik: data.no_ktp, fakturList: temp, typeniknpwp: 'auto'})
                 this.formulaTax()
             }
@@ -1989,18 +2055,19 @@ class RevisiOps extends Component {
         this.setState({alamat: val})
     }
 
-    selectFaktur = (e) => {
+    selectFaktur = async (val) => {
+        const idVal = val.value
         const {dataFaktur} = this.props.faktur
-        const idVal = e.value
+        console.log(`select faktur ${idVal}`)
         const data = dataFaktur.find(({id}) => id === idVal)
         if (data === undefined) {
             console.log()
         } else {
             const nilai_ajuan = parseFloat(data.jumlah_dpp) + parseFloat(data.jumlah_ppn)
-            this.setState({dataSelFaktur: data, nilai_ajuan: nilai_ajuan, nilai_dpp: data.jumlah_dpp, nilai_ppn: data.jumlah_ppn, tgl_faktur: data.tgl_faktur})
+            this.setState({ dataSelFaktur: data, nilai_ajuan: nilai_ajuan, nilai_dpp: data.jumlah_dpp, nilai_ppn: data.jumlah_ppn, tgl_faktur: data.tgl_faktur})
             setTimeout(() => {
                 this.formulaTax()
-             }, 500)
+            }, 100)
         }
     }
 
@@ -2026,7 +2093,7 @@ class RevisiOps extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {showOptions, type_kasbon,duplikat, dataBbm, detBbm, messUpload, statBbm, dataTrans, listReason, dataMenu, listMenu} = this.state
+        const {showOptions, type_kasbon, duplikat, dataBbm, detBbm, messUpload, statBbm, dataTrans, listReason, dataMenu, listMenu} = this.state
         const { detFinance } = this.props.finance
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, newOps, dataDoc, idOps } = this.props.ops
@@ -3236,7 +3303,7 @@ class RevisiOps extends Component {
                                                     ) : null}
                                                 </>
                                             )} */}
-                                            {type_kasbon === 'kasbon' && (
+                                            {idOps.type_kasbon === 'kasbon' && (
                                                 <>
                                                     <Row className="mb-2 rowRinci">
                                                         <Col md={3}>Tipe PO</Col>
@@ -3515,11 +3582,16 @@ class RevisiOps extends Component {
                                                 <Col md={9} className="colRinci">:  
                                                     <Select
                                                         className="inputRinci2"
-                                                        isDisabled={this.state.tipePpn === "Ya" ? false : true}
-                                                        options={this.state.fakturList}
-                                                        onChange={this.selectFaktur}
-                                                        // onInputChange={e => this.inputFaktur(e)}
-                                                        // isSearchable
+                                                        isDisabled={idOps.type_kasbon === 'kasbon' ? true : this.state.tipePpn === "Ya" ? false : true}
+                                                        options={showOptions ? this.state.fakturList : [{value: '', label: '-Pilih-'}]}
+                                                        onChange={e => this.selectFaktur(e)}
+                                                        onInputChange={e => this.inputFaktur(e)}
+                                                        isSearchable
+                                                        components={
+                                                            {
+                                                              DropdownIndicator: () => null,
+                                                            }
+                                                        }
                                                         value={{value: this.state.dataSelFaktur.no_faktur, label: this.state.dataSelFaktur.no_faktur}}
                                                     />
                                                     {/* <Input

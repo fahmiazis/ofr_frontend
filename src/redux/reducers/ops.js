@@ -43,6 +43,8 @@ const opsState = {
     subVerif: null,
     subRealisasi: null,
     subBayar: null,
+    genPemb: null,
+    noTransfer: '',
     newOps: [],
     editVrf: null,
     isTtdList: null,
@@ -69,6 +71,7 @@ const opsState = {
     dataKasbon: [],
     newKasbon: [],
     isLoadingKasbon: false,
+    isFormOps: null
 };
 
 export default (state = opsState, action) => {
@@ -583,6 +586,30 @@ export default (state = opsState, action) => {
                 alertMsg: "Unable connect to server"
             };
         }
+        case 'GENERATE_NOPEMB_PENDING': {
+            return {
+                ...state,
+                isLoading: true,
+                alertMsg: 'Waiting ...'
+            };
+        }
+        case 'GENERATE_NOPEMB_FULFILLED': {
+            return {
+                ...state,
+                isLoading: false,
+                genPemb: true,
+                noTransfer: action.payload.data.no_transfer,
+                alertMsg: 'success submit bayar Succesfully',
+            };
+        }
+        case 'GENERATE_NOPEMB_REJECTED': {
+            return {
+                ...state,
+                isLoading: false,
+                genPemb: false,
+                alertMsg: "Unable connect to server"
+            };
+        }
         case 'SUBMIT_BAYAR_PENDING': {
             return {
                 ...state,
@@ -961,6 +988,29 @@ export default (state = opsState, action) => {
                 alertMsg: "Unable connect to server"
             };
         }
+        case 'DOWNLOAD_FORM_OPS_PENDING': {
+            return {
+                ...state,
+                isLoading: true,
+                alertMsg: 'Waiting ...'
+            };
+        }
+        case 'DOWNLOAD_FORM_OPS_FULFILLED': {
+            return {
+                ...state,
+                isLoading: false,
+                isFormOps: true,
+                alertMsg: 'get detail coa Succesfully',
+            };
+        }
+        case 'DOWNLOAD_FORM_OPS_REJECTED': {
+            return {
+                ...state,
+                isLoading: false,
+                isFormOps: false,
+                alertMsg: "Unable connect to server"
+            };
+        }
         case 'RESET_OPS': {
             return {
                 ...state,
@@ -980,6 +1030,7 @@ export default (state = opsState, action) => {
                 subVerif: null,
                 subRealisasi: null,
                 editVrf: null,
+                genPemb: null,
                 subBayar: null,
                 isGetReport: null,
                 detailId: null,
@@ -994,6 +1045,7 @@ export default (state = opsState, action) => {
                 isAddBbm: null,
                 isGetBbm: null,
                 isDelBbm: null,
+                isFormOps: null
             }
         }
         default: {

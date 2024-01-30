@@ -950,6 +950,7 @@ class CartOps extends Component {
     closeTransaksi = async () => {
         const token = localStorage.getItem("token")
         const type = localStorage.getItem('tipeKasbon')
+        const tipeKasbon = type === 'kasbon' ? 'kasbon' :'ops'
         const { noops } = this.props.ops
         const { draftEmail } = this.props.email
         const { message, subject } = this.state
@@ -969,10 +970,10 @@ class CartOps extends Component {
             message: message,
             subject: subject,
             no: noops,
-            tipe: 'ops',
-            menu: 'pengajuan ops',
+            tipe: tipeKasbon,
+            menu: `pengajuan ${tipeKasbon}`,
             proses: 'approve',
-            route: 'ops'
+            route: tipeKasbon
         }
         await this.props.sendEmail(token, data)
         await this.props.submitOpsFinal(token, tempno)
@@ -1619,7 +1620,8 @@ class CartOps extends Component {
 
     prepBank = (val) => {
         const { dataBank } = this.props.bank
-        const data = dataBank.find(({bank}) => bank === val)
+        const cekVal = val === 'Bank Mandiri' ? 'BANK MANDIRI' : val
+        const data = dataBank.find(({name}) => name === cekVal)
         console.log({dataBank, val})
         if (data === undefined) {
             this.setState()
@@ -1777,7 +1779,7 @@ class CartOps extends Component {
         // console.log({idOps, stat_npwp: idOps.status_npwp, npwp: idOps.no_npwp, nik: idOps.no_ktp})
         if (vendor === null) {
             const selectOp = allCoa.find(({type_transaksi, jenis_transaksi, status_npwp}) => 
-                                type_transaksi === 'Orang Pribadi'  
+                                type_transaksi === 'Orang Pribadi'
                                 && jenis_transaksi === trans
                                 && status_npwp === cekStat)
 
@@ -2036,42 +2038,68 @@ class CartOps extends Component {
     }
 
     formulaTax = (val, type) => {
+        const { nomCoa } = this.props.coa
         const {dataTrans, nilai_ajuan, tipeVendor, tipePpn, nilai_dpp, nilai_ppn, type_kasbon, tipeSkb} = this.state
         const nilai = nilai_ajuan
         const tipe = tipeVendor
         console.log(dataTrans)
-        if (dataTrans.jenis_pph === 'Non PPh' || dataTrans.jenis_pph === undefined) {
-            this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: nilai, tipeVendor: tipe})
+        if (dataTrans.jenis_pph === undefined) {
+
         } else {
-            const tarifPph = tipeSkb === 'SKB' ? '0%' : tipeSkb === 'SKT' ? '0.05%' : dataTrans.tarif_pph
-            const grossup = tipeSkb === 'SKB' ? '1%' : tipeSkb === 'SKT' ? '1%' : dataTrans.dpp_grossup
-            if (tipePpn === 'Ya' && type_kasbon !== 'kasbon') {
-            // if (tipePpn === 'Ya') {
-                if (tipe === 'PMA') {
-                    const nilai_buku = nilai_dpp
-                    const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
-                    // const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
-                    const nilai_vendor = nilai
-                    this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
-                } else if (tipe === 'Vendor') {
-                    const nilai_buku = nilai_dpp
-                    const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
-                    // const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
-                    const nilai_vendor = Math.round(parseFloat(nilai) - parseFloat(nilai_utang))
-                    this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
-                }
+            const selectCoa = nomCoa.find(({type_transaksi, jenis_transaksi}) => 
+                                    type_transaksi === dataTrans.type_transaksi && 
+                                    jenis_transaksi === dataTrans.jenis_transaksi)
+            const selectCoaFin = nomCoa.find((item) => 
+                                item.type_transaksi === dataTrans.type_transaksi 
+                                && item.jenis_transaksi === dataTrans.jenis_transaksi
+                                && item.status_npwp === dataTrans.status_npwp 
+                                && (nilai > parseFloat(item.min_nominal === null || item.min_nominal === '' || item.min_nominal === undefined ? 0 : item.min_nominal) 
+                                    && nilai <= parseFloat(item.max_nominal === null || item.max_nominal === '' || item.max_nominal === undefined ? nilai : item.max_nominal)
+                                    )
+                                )
+            if (selectCoa === undefined && selectCoaFin === undefined) {
+                // this.openConfirm(this.setState({confirm: 'failJenisTrans'}))
+                // this.setState({idTrans: '', jenisTrans: '', dataTrans: {}, jenisVendor: ''})
+                console.log('masuk undefined formula tax')
             } else {
-                if (tipe === 'PMA') {
-                    const nilai_buku = Math.round(parseFloat(nilai) / parseFloat(grossup))
-                    const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
-                    const nilai_vendor = nilai
-                    this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
-                } else if (tipe === 'Vendor') {
-                    const nilai_buku = nilai
-                    const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
-                    const nilai_vendor = Math.round(parseFloat(nilai) - parseFloat(nilai_utang))
-                    this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
+                console.log('masuk not undefined formula tax')
+                const temp = selectCoaFin === undefined ? selectCoa : selectCoa === undefined ? dataTrans: selectCoaFin
+                console.log(temp)
+                if (temp.jenis_pph === 'Non PPh' || temp.jenis_pph === undefined) {
+                    this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: nilai, tipeVendor: tipe})
+                } else {
+                    const tarifPph = tipeSkb === 'SKB' ? '0%' : tipeSkb === 'SKT' ? '0.05%' : temp.tarif_pph
+                    const grossup = tipeSkb === 'SKB' ? '1%' : tipeSkb === 'SKT' ? '1%' : temp.dpp_grossup
+                    if (tipePpn === 'Ya' && type_kasbon !== 'kasbon') {
+                    // if (tipePpn === 'Ya') {
+                        if (tipe === 'PMA') {
+                            const nilai_buku = nilai_dpp
+                            const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                            // const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
+                            const nilai_vendor = nilai
+                            this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
+                        } else if (tipe === 'Vendor') {
+                            const nilai_buku = nilai_dpp
+                            const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                            // const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
+                            const nilai_vendor = Math.round(parseFloat(nilai) - parseFloat(nilai_utang))
+                            this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
+                        }
+                    } else {
+                        if (tipe === 'PMA') {
+                            const nilai_buku = Math.round(parseFloat(nilai) / parseFloat(grossup))
+                            const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                            const nilai_vendor = nilai
+                            this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
+                        } else if (tipe === 'Vendor') {
+                            const nilai_buku = nilai
+                            const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                            const nilai_vendor = Math.round(parseFloat(nilai) - parseFloat(nilai_utang))
+                            this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
+                        }
+                    }
                 }
+                this.setState({dataTrans: temp})
             }
         }
     }
@@ -3838,6 +3866,7 @@ class CartOps extends Component {
                                                     className="inputRinci2"
                                                     options={this.state.bankList}
                                                     onChange={this.selectBank}
+                                                    value={{label: this.state.bank, value: this.state.digit}}
                                                     />
                                                 )}
                                                 </Col>

@@ -23,14 +23,14 @@ class TableRincian extends Component {
                         <th>BANK</th>
                         <th>NOMOR REKENING</th>
                         <th>ATAS NAMA</th>
-                        <th>MEMILIKI NPWP</th>
+                        {/* <th>MEMILIKI NPWP</th>
                         <th>NAMA SESUAI NPWP</th>
                         <th>NOMOR NPWP</th>
                         <th>NAMA SESUAI KTP</th>
-                        <th>NOMOR KTP</th>
+                        <th>NOMOR KTP</th> */}
                         <th>PPU</th>
                         <th>PA</th>
-                        <th>NOMINAL</th>
+                        <th>NOMINAL VERIFIKASI</th>
                         <th>NILAI YANG DIBAYARKAN</th>
                         <th>TANGGAL TRANSFER</th>
                     </tr>
@@ -49,16 +49,16 @@ class TableRincian extends Component {
                                 <th>{item.bank_tujuan}</th>
                                 <th>{item.norek_ajuan}</th>
                                 <th>{item.nama_tujuan}</th>
-                                <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
+                                {/* <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
                                 <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
                                 <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
-                                <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
+                                <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th> */}
                                 <th>{item.ppu}</th>
                                 <th>{item.pa}</th>
                                 <th>{item.nominal}</th>
                                 <th>{item.nilai_bayar}</th>
-                                <th>{item.tanggal_transfer}</th>
+                                <th>{moment(item.tanggal_transfer).format('DD/MMMM/YYYY')}</th>
                             </tr>
                             )
                         })}

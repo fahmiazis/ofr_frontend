@@ -123,6 +123,10 @@ export default {
         type: 'UPDATE_NILAIIKK',
         payload: http(token).patch(`/ikk/upniverif`, qs.stringify(data))
     }),
+    downloadFormVerif: (token, list) => ({
+        type: 'DOWNLOAD_FORM_IKK',
+        payload: http(token).patch(`/ikk/download`, list)
+    }),
     resetIkk: () => ({
         type: 'RESET_IKK'
     })

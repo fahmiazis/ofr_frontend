@@ -95,6 +95,10 @@ export default {
         type: 'SUBMIT_REALISASI',
         payload: http(token).patch(`/ops/realisasi`, data)
     }),
+    genNomorTransfer: (token) => ({
+        type: 'GENERATE_NOPEMB',
+        payload: http(token).patch(`/ops/genbayar`)
+    }),
     submitAjuanBayar: (token, data) => ({
         type: 'SUBMIT_BAYAR',
         payload: http(token).patch(`/ops/subbayar`, data)
@@ -150,6 +154,10 @@ export default {
     addBbm: (token, data) => ({
         type: 'ADD_BBM',
         payload: http(token).patch(`/ops/bbm/add`, data)
+    }),
+    downloadFormVerif: (token, list) => ({
+        type: 'DOWNLOAD_FORM_OPS',
+        payload: http(token).patch(`/ops/download`, list)
     }),
     resetOps: () => ({
         type: 'RESET_OPS'

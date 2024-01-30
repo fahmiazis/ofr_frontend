@@ -24,7 +24,7 @@ import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -135,7 +135,9 @@ class VerifKasbon extends Component {
             docHist: false,
             detailDoc: {},
             dataZip: [],
-            docCon: false
+            docCon: false,
+            tipeEmail: '',
+            dataRej: {}
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -147,7 +149,9 @@ class VerifKasbon extends Component {
         if (val === 'all') {
             const data = []
             for (let i = 0; i < dataDoc.length; i++) {
-                data.push(dataDoc[i].id)
+                if (dataDoc[i].path !== null) {
+                    data.push(dataDoc[i].id)
+                }
             }
             this.setState({dataZip: data})
         } else {
@@ -302,11 +306,7 @@ class VerifKasbon extends Component {
             type: "verif"
         }
         await this.props.rejectOps(token, data)
-        this.getDataOps()
-        this.setState({confirm: 'reject'})
-        this.openConfirm()
-        this.openModalReject()
-        this.openModalRinci()
+        this.dataSendEmail('reject')
     }
 
     dropApp = () => {
@@ -679,9 +679,9 @@ class VerifKasbon extends Component {
             no: noTrans,
             list: listOps
         }
-        if (level === '4' || level === '14') {
+        if (level === '4' || level === '14' || level === '24' || level === '34') {
             await this.props.submitVerif(token, tempno)
-            this.dataSendEmail()
+            this.dataSendEmail('approve')
             // const cek = []
             // detailOps.map(item => {
             //     return ((item.dpp !== null && item.ppn !== null && item.nilai_utang !== null) && cek.push(item))
@@ -700,7 +700,7 @@ class VerifKasbon extends Component {
             // }
         } else {
             await this.props.submitVerif(token, tempno)
-            this.dataSendEmail()
+            this.dataSendEmail('approve')
         }
     }
 
@@ -714,6 +714,10 @@ class VerifKasbon extends Component {
         for (let i = 0; i < cc.length; i++) {
             tempcc.push(cc[i].email)
         }
+        const tipeProses = val === 'reject' ? 'reject perbaikan'  : 'list ajuan bayar'
+        const tipeRoute = val === 'reject' ? 'revops' : 'listops'
+        // const tipeMenu = level === '4' || level === '14' || level === '24' || level === '34' || level === '24' || level === '34' ? 'list ajuan bayar' : 'verifikasi ops'
+        const tipeMenu = 'list ajuan bayar'
         const tempno = {
             draft: draftEmail,
             nameTo: draftEmail.to.username,
@@ -723,14 +727,27 @@ class VerifKasbon extends Component {
             subject: subject,
             no: detailOps[0].no_transaksi,
             tipe: 'ops',
+            menu: tipeMenu,
+            proses: tipeProses,
+            route: tipeRoute
         }
         await this.props.sendEmail(token, tempno)
-        this.getDataOps()
-        this.setState({confirm: 'isApprove'})
-        this.openConfirm()
-        this.openDraftEmail()
-        this.openModalApprove()
-        this.openModalRinci()
+        await this.props.addNotif(token, tempno)
+        if (val === 'reject') {
+            this.getDataOps()
+            this.setState({confirm: 'reject'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalReject()
+            this.openModalRinci()
+        } else {
+            this.getDataOps()
+            this.setState({confirm: 'isApprove'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalApprove()
+            this.openModalRinci()
+        }
     }
 
     prepSendEmail = async () => {
@@ -754,6 +771,33 @@ class VerifKasbon extends Component {
             menu: cekMenu 
         }
         await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'app'})
+        this.openDraftEmail()
+    }
+
+    prepReject = async (val) => {
+        const { detailOps } = this.props.ops
+        const level = localStorage.getItem("level")
+        const token = localStorage.getItem("token")
+        const app = detailOps[0].appForm
+        const tempApp = []
+        app.map(item => {
+            return (
+                item.status === '1' && tempApp.push(item)
+            )
+        })
+        const tipe = 'reject'
+        const cekMenu = level === '2' ? 'Verifikasi Finance (Operasional)' : 'Verifikasi Tax (Operasional)'
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            kode: detailOps[0].kode_plant,
+            jenis: 'ops',
+            tipe: tipe,
+            menu: cekMenu 
+        }
+        await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: 'reject'})
+        this.setState({dataRej: val})
         this.openDraftEmail()
     }
 
@@ -1080,7 +1124,7 @@ class VerifKasbon extends Component {
     cekDataDoc = () => {
         const { dataDoc, detailOps } = this.props.ops
         const level = localStorage.getItem("level")
-        if (level === '4' || level === '14') {
+        if (level === '4' || level === '14' || level === '24' || level === '34') {
             const resData = detailOps.find(({stat_skb}) => stat_skb === 'ya')
             if (resData !== undefined) {
                 const cekDoc = dataDoc.find(({desc}) => desc === 'Dokumen SKB')
@@ -1241,6 +1285,16 @@ class VerifKasbon extends Component {
         }
     }
 
+    printData = (val) => {
+        const {detailOps} = this.props.ops
+        localStorage.setItem('printData', detailOps[0].no_transaksi)
+        const newWindow = window.open(`/${val}`, '_blank', 'noopener,noreferrer')
+        if (newWindow) {
+            newWindow.opener = null
+        }
+        // this.props.history.push(`/${val}`)
+    }
+
     downloadDataZip = () => {
         const {dataZip} = this.state
         const {dataDoc} = this.props.ops
@@ -1304,7 +1358,7 @@ class VerifKasbon extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dataZip, dataItem, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
+        const {tipeEmail, dataRinci, dataZip, dataItem, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
@@ -1774,7 +1828,7 @@ class VerifKasbon extends Component {
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('opsfaa')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -1792,7 +1846,7 @@ class VerifKasbon extends Component {
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
-                            <Button className="mr-2" color="warning">
+                            <Button className="mr-2" color="warning" onClick={() => this.printData('opsfpd')}>
                                 {/* <TableStock /> */}
                                 Download
                             </Button>
@@ -2182,7 +2236,7 @@ class VerifKasbon extends Component {
                     alasan: "",
                     }}
                     validationSchema={alasanSchema}
-                    onSubmit={(values) => {this.rejectOps(values)}}
+                    onSubmit={(values) => {this.prepReject(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
@@ -2407,7 +2461,7 @@ class VerifKasbon extends Component {
                                         <Input 
                                             type='checkbox'
                                             checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
-                                            onChange={() => dataZip.length === dataDoc.length ? this.unCheckDoc('all') : this.checkDoc('all')}
+                                            onChange={() => dataZip.length > 0 ? this.unCheckDoc('all') : this.checkDoc('all')}
                                         />
                                         Ceklis All
                                     </div>
@@ -2598,7 +2652,7 @@ class VerifKasbon extends Component {
                                 <Button
                                     disabled={this.state.message === '' ? true : false} 
                                     className="mr-2"
-                                    onClick={() => this.approveDataOps()} 
+                                    onClick={() => tipeEmail === 'reject' ? this.rejectOps(this.state.dataRej) : this.approveDataOps()} 
                                     color="primary"
                                 >
                                     Submit & Send Email
@@ -2685,7 +2739,7 @@ const mapDispatchToProps = {
     resetEmail: email.resetError,
     getDraftEmail: email.getDraftEmail,
     sendEmail: email.sendEmail,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifKasbon)

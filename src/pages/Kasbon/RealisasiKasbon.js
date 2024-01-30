@@ -25,7 +25,7 @@ import auth from '../../redux/actions/auth'
 import finance from '../../redux/actions/finance'
 import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
-// import notif from '../redux/actions/notif'
+import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
 import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
@@ -177,7 +177,8 @@ class Kasbon extends Component {
             isLoading: false,
             typeniknpwp: '',
             type_kasbon: 'kasbon',
-            modalRev: false
+            modalRev: false,
+            tipeEmail: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -396,11 +397,7 @@ class Kasbon extends Component {
             no: detailOps[0].no_transaksi
         }
         await this.props.submitRevisi(token, tempno)
-        this.openModalRinci()
-        this.openModalRev()
-        this.getDataOps()
-        this.setState({confirm: 'submit'})
-        this.openConfirm()
+        this.dataSendEmail('revisi')
     }
 
     openModalRev = () => {
@@ -748,10 +745,10 @@ class Kasbon extends Component {
             list: []
         }
         await this.props.submitRealisasi(token, tempno)
-        this.dataSendEmail()
+        this.dataSendEmail('submit')
     }
 
-    prepSendEmail = async () => {
+    prepSendEmail = async (val) => {
         const { detailOps } = this.props.ops
         const level = localStorage.getItem("level")
         const token = localStorage.getItem("token")
@@ -762,8 +759,8 @@ class Kasbon extends Component {
                 item.status === '1' && tempApp.push(item)
             )
         })
-        const tipe = 'submit'
-        const cekMenu = 'Pengajuan Realisasi Kasbon (Operasional)'
+        const tipe = val === 'revisi' ? 'revisi' : 'submit'
+        const cekMenu = val === 'revisi' ? 'Revisi Realisasi Kasbon (Operasional)' : 'Pengajuan Realisasi Kasbon (Operasional)'
         const tempno = {
             no: detailOps[0].no_transaksi,
             kode: detailOps[0].kode_plant,
@@ -772,6 +769,7 @@ class Kasbon extends Component {
             menu: cekMenu 
         }
         await this.props.getDraftEmail(token, tempno)
+        this.setState({tipeEmail: val})
         this.openDraftEmail()
     }
 
@@ -789,6 +787,10 @@ class Kasbon extends Component {
         for (let i = 0; i < cc.length; i++) {
             tempcc.push(cc[i].email)
         }
+        const tipeProses = 'verifikasi'
+        const tipeRoute = 'verifrealkasbon'
+        // const tipeMenu = level === '4' || level === '14' || level === '24' || level === '34' || level === '24' || level === '34' ? 'list ajuan bayar' : 'verifikasi ops'
+        const tipeMenu = 'verifikasi realisasi kasbon'
         const tempno = {
             draft: draftEmail,
             nameTo: draftEmail.to.username,
@@ -797,15 +799,28 @@ class Kasbon extends Component {
             message: message,
             subject: subject,
             no: detailOps[0].no_transaksi,
-            tipe: 'ops',
+            tipe: 'kasbon',
+            menu: tipeMenu,
+            proses: tipeProses,
+            route: tipeRoute
         }
         await this.props.sendEmail(token, tempno)
-        this.getDataOps()
-        this.setState({confirm: 'isApprove'})
-        this.openConfirm()
-        this.openDraftEmail()
-        this.openModalApprove()
-        this.openModalRinci()
+        await this.props.addNotif(token, tempno)
+        if (val === 'revisi') {
+            this.openModalRinci()
+            this.openModalRev()
+            this.getDataOps()
+            this.setState({confirm: 'submit'})
+            this.openDraftEmail()
+            this.openConfirm()
+        } else {
+            this.getDataOps()
+            this.setState({confirm: 'isApprove'})
+            this.openConfirm()
+            this.openDraftEmail()
+            this.openModalApprove()
+            this.openModalRinci()
+        }
     }
 
     openDraftEmail = () => {
@@ -1446,7 +1461,7 @@ class Kasbon extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dataTrans, type_kasbon, listMut, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const { tipeEmail, dataRinci, dataTrans, type_kasbon, listMut, listReason, dataMenu, listMenu, detailDoc} = this.state
         const { detFinance } = this.props.finance
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, idOps } = this.props.ops
@@ -1586,8 +1601,8 @@ class Kasbon extends Component {
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
-                                                        <th>{item.stat_kasbon === null ? 'Open' : 'Close'}</th>
+                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : item.type_kasbon}</th>
+                                                        <th>{item.stat_kasbon === null ? 'Open' : item.stat_kasbon}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button 
@@ -1646,8 +1661,8 @@ class Kasbon extends Component {
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : 'Kasbon'}</th>
-                                                        <th>{item.stat_kasbon === null ? 'Open' : 'Close'}</th>
+                                                        <th>{item.type_kasbon === null ? 'Non Kasbon' : item.type_kasbon}</th>
+                                                        <th>{item.stat_kasbon === null ? 'Open' : item.stat_kasbon}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -1938,7 +1953,7 @@ class Kasbon extends Component {
                         <div className={style.modalApprove}>
                             <div>
                                 <text>
-                                    Anda yakin untuk approve     
+                                    Anda yakin untuk submit     
                                     <text className={style.verif}> </text>
                                     pada tanggal
                                     <text className={style.verif}> {moment().format('DD MMMM YYYY')}</text> ?
@@ -1950,7 +1965,7 @@ class Kasbon extends Component {
                                 ) : (
                                     <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
                                 )} */}
-                                <Button color="primary" onClick={() => this.prepSendEmail()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepSendEmail('submit')}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
                             </div>
                         </div>
@@ -1986,7 +2001,7 @@ class Kasbon extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.prosesSubmitRevisi()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.prepSendEmail('revisi')}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalSub}>Tidak</Button>
                             </div>
                         </div>
@@ -2199,7 +2214,7 @@ class Kasbon extends Component {
                             <Button
                                 disabled={this.state.message === '' ? true : false} 
                                 className="mr-2"
-                                onClick={() => this.approveDataOps()} 
+                                onClick={() => tipeEmail === 'revisi' ? this.prosesSubmitRevisi() : this.approveDataOps()} 
                                 color="primary"
                             >
                                 Approve & Send Email
@@ -3009,7 +3024,7 @@ const mapDispatchToProps = {
     getDetailId: ops.getDetailId,
     getCoa: coa.getCoa,
     submitRevisi: ops.submitRevisi,
-    // notifStock: notif.notifStock
+    addNotif: notif.addNotif
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Kasbon)
