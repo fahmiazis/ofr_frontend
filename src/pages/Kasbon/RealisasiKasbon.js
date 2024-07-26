@@ -132,8 +132,8 @@ class Kasbon extends Component {
             openAppDoc: false,
             openRejDoc: false,
             time: 'pilih',
-            time1: moment().startOf('week').format('YYYY-MM-DD'),
-            time2: moment().format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            time2: moment().endOf('month').format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
             docCon: false,
@@ -793,7 +793,7 @@ class Kasbon extends Component {
         const tipeMenu = 'verifikasi realisasi kasbon'
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,

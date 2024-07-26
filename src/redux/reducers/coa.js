@@ -22,6 +22,11 @@ const coaState = {
     allCoa: [],
     nomCoa: [],
     listGl: [],
+    glLisIn: [],
+    glListrik: [
+        547710,
+        55020001
+    ],
     dataPph:{
         pph21: '21050107',
         pph23: '21050102',
@@ -85,6 +90,7 @@ export default (state=coaState, action) => {
                     allCoa: action.payload.data.length,
                     nomCoa: action.payload.data.nomcoa,
                     listGl: action.payload.data.listGl,
+                    glLisIn: action.payload.data.glLisIn,
                     alertMsg: 'get coa Succesfully'
                 };
             }

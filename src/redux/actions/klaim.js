@@ -35,9 +35,9 @@ export default {
         type: 'SUBMIT_KLAIMFINAL',
         payload: http(token).patch(`/klaim/subfinklaim`, qs.stringify(no))
     }),
-    getKlaim: (token, status, reject, menu, type, category, data, time1, time2, search) => ({
+    getKlaim: (token, status, reject, menu, type, category, data, time1, time2, search, depo) => ({
         type: 'GET_KLAIM',
-        payload: http(token).get(`/klaim/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&search=${search === undefined ? '' : search}`),
+        payload: http(token).patch(`/klaim/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&search=${search === undefined ? '' : search}`, data={depo: depo}),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_KLAIM',
@@ -146,6 +146,26 @@ export default {
     downloadFormVerif: (token, list) => ({
         type: 'DOWNLOAD_FORM_KLAIM',
         payload: http(token).patch(`/klaim/download`, list)
+    }),
+    deleteFakturKl: (token, id) => ({
+        type: 'DELETE_FAKTURKL',
+        payload: http(token).delete(`/klaim/faktur/del/${id}`)
+    }),
+    getFakturKl: (token, id) => ({
+        type: 'GET_FAKTURKL',
+        payload: http(token).get(`/klaim/faktur/get/${id}`)
+    }),
+    uploadFakturKl: (token, data) => ({
+        type: 'UPLOAD_FAKTURKL',
+        payload: http(token).patch(`/klaim/faktur/upload`, data)
+    }),
+    updateFakturKl: (token, data) => ({
+        type: 'UPDATE_FAKTURKL',
+        payload: http(token).patch(`/klaim/faktur/update`, data)
+    }),
+    addFakturKl: (token, data) => ({
+        type: 'ADD_FAKTURKL',
+        payload: http(token).patch(`/klaim/faktur/add`, data)
     }),
     resetKlaim: () => ({
         type: 'RESET_KLAIM'

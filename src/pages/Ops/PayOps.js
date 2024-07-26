@@ -128,7 +128,7 @@ class AjuanBayarOps extends Component {
             subject: '',
             message: '',
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
         }
         this.onSetOpen = this.onSetOpen.bind(this);
@@ -491,8 +491,8 @@ class AjuanBayarOps extends Component {
 
     getDataOps = async (value) => {
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter('bayar')
-        // this.changeFilter('ready')
+        // this.changeFilter('bayar')
+        this.changeFilter('ready')
     }
 
     getDataList = async () => {
@@ -913,7 +913,7 @@ class AjuanBayarOps extends Component {
         to.map(item => { return (tempto.push(item.email)) })
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: tempto.toString(),
             cc: tempcc.toString(),
             message: message,
@@ -1091,12 +1091,13 @@ class AjuanBayarOps extends Component {
 
     mcmExcel = async () => {
         const { detailOps } = this.props.ops
+        const {glListrik} = this.props.coa
         // const nilai =  detailOps.reduce((accumulator, object) => {
         //     return accumulator + parseInt(object.nilai_ajuan);
         // }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
 
         const nilai =  detailOps.reduce((accumulator, object) => {
-            return accumulator + parseInt(object.nilai_ajuan);
+            return accumulator + parseInt(object.nilai_bayar);
         }, 0)
 
         // style: { numFmt: '"Rp"#,##0.00;[Red]\-"£"#,##0.00' }
@@ -1111,7 +1112,23 @@ class AjuanBayarOps extends Component {
             right: {style:'thin'}
         }
 
-        ws.columns = [
+        ws.columns = glListrik.find((e) => e === parseInt(detailOps[0].no_coa)) !== undefined && detailOps[0].tujuan_tf === 'ID Pelanggan' ? 
+        [
+            {header: 'P', key: 'c1'},
+            {header: "1300015005005", key: 'c2'}, 
+            {header: detailOps.length, key: 'c3'},
+            {header: "1", key: 'c4'},
+            {header: "", key: 'c5'},
+            {header: "", key: 'c6'},
+            {header: "", key: 'c7'},
+            {header: "", key: 'c8'},
+            {header: "", key: 'c9'},
+            {header: "", key: 'c10'},
+            {header: "", key: 'c11'},
+            {header: "", key: 'c12'},
+            {header: "", key: 'c13'},
+            {header: "", key: 'c14'},
+        ] : [
             {header: 'P', key: 'c1'},
             {header: moment().format('YYYYMMDD'), key: 'c2'}, 
             {header: "1300015005005", key: 'c3'},
@@ -1158,55 +1175,73 @@ class AjuanBayarOps extends Component {
             {header: '', key: 'c44'}
         ]
 
-        detailOps.map(item => { return ( ws.addRow(
-            {
-                c1: item.norek_ajuan,
-                c2: item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' '), 
-                c3: '',
-                c4: '',
-                c5: '',
-                c6: 'IDR',
-                c7: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : parseFloat(item.nilai_ajuan),
-                c8: item.no_transaksi.slice(0, 19),
-                c9: '',
-                c10: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
-                c11: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.sandi_kliring,
-                c12: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.nama_singkat,
-                c13: '',
-                c14: '',
-                c15: '',
-                c16: '',
-                c17: 'N',
-                c18: '',
-                c19: '',
-                c20: '',
-                c21: '',
-                c22: '',
-                c23: '',
-                c24: '',
-                c25: '',
-                c26: '',
-                c27: '',
-                c28: '',
-                c29: '',
-                c30: '',
-                c31: '',
-                c32: '',
-                c33: '',
-                c34: '',
-                c35: '',
-                c36: '',
-                c37: '',
-                c38: '',
-                c39: 'OUR',
-                c40: '1',
-                c41: 'E',
-                c42: '',
-                c43: '',
-                c44: ''
+        detailOps.map(item => { 
+            if (glListrik.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan') {
+                ws.addRow({
+                    c1: '30305',
+                    c2: "PLN", 
+                    c3: item.id_pelanggan,
+                    c4: "",
+                    c5: "",
+                    c6: 'IDR',
+                    c7: "",
+                    c8: "UBP",
+                    c9: "",
+                    c10: "",
+                    c11: "",
+                    c12: "",
+                    c13: "",
+                    c14: "E"
+                })
+            } else {
+                ws.addRow({
+                    c1: item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan,
+                    c2: item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' '), 
+                    c3: '',
+                    c4: '',
+                    c5: '',
+                    c6: 'IDR',
+                    c7: item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : parseFloat(item.nilai_bayar),
+                    c8: item.no_transaksi.slice(0, 19),
+                    c9: '',
+                    c10: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
+                    c11: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.sandi_kliring,
+                    c12: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.nama_singkat,
+                    c13: '',
+                    c14: '',
+                    c15: '',
+                    c16: '',
+                    c17: 'N',
+                    c18: '',
+                    c19: '',
+                    c20: '',
+                    c21: '',
+                    c22: '',
+                    c23: '',
+                    c24: '',
+                    c25: '',
+                    c26: '',
+                    c27: '',
+                    c28: '',
+                    c29: '',
+                    c30: '',
+                    c31: '',
+                    c32: '',
+                    c33: '',
+                    c34: '',
+                    c35: '',
+                    c36: '',
+                    c37: '',
+                    c38: '',
+                    c39: 'OUR',
+                    c40: '1',
+                    c41: 'E',
+                    c42: '',
+                    c43: '',
+                    c44: ''
+                })
             }
-        )
-        ) })
+        })
 
         ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
             row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
@@ -1230,69 +1265,98 @@ class AjuanBayarOps extends Component {
 
     prosesModalMcm = () => {
         const { detailOps } = this.props.ops
+        const {glListrik} = this.props.coa
         // const nilai =  detailOps.reduce((accumulator, object) => {
         //     return accumulator + parseInt(object.nilai_ajuan);
         // }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
 
         const nilai =  detailOps.reduce((accumulator, object) => {
-            return accumulator + parseInt(object.nilai_ajuan);
+            return accumulator + parseInt(object.nilai_bayar);
         }, 0)
 
-        const tempData = [
+        const rekData = [
             ["P", moment().format('YYYYMMDD'), "1300015005005", detailOps.length, nilai, "", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", ""]
+        ]
+        const idData = [
+            ["P", "1300015005005", detailOps.length, "1", "", "", "", "", "", "", "", "", "",""]
         ]
         for (let i = 0; i < detailOps.length; i++) {
             const item = detailOps[i]
-            const data = [
-                item.norek_ajuan,
-                item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' '),
-                "",
-                "",
-                "",
-                "IDR",
-                item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : parseFloat(item.nilai_ajuan),
-                item.no_transaksi.slice(0, 19),
-                "",
-                item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
-                item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.sandi_kliring,
-                item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.nama_singkat,
-                "",
-                "",
-                "",
-                "",
-                "N",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "OUR",
-                "1",
-                "E",
-                "",
-                "",
-                ""
-            ]
-            tempData.push(data)
+            if (glListrik.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan') {
+                const data = [
+                    '30305',
+                    'PLN',
+                    item.id_pelanggan,
+                    "",
+                    "",
+                    "IDR",
+                    "",
+                    "UBP",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "E"
+                ]
+                idData.push(data)
+            } else {
+                const data = [
+                    item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan,
+                    item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' '),
+                    "",
+                    "",
+                    "",
+                    "IDR",
+                    item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : parseFloat(item.nilai_bayar),
+                    item.no_transaksi.slice(0, 19),
+                    "",
+                    item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
+                    item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.sandi_kliring,
+                    item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.nama_singkat,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "N",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "OUR",
+                    "1",
+                    "E",
+                    "",
+                    "",
+                    ""
+                ]
+                rekData.push(data)
+            }
         }
-        this.setState({csvData: tempData})
-        this.modalMcm()
+        if (idData.length > 1) {
+            this.setState({csvData: idData})
+            this.modalMcm()
+        } else {
+            this.setState({csvData: rekData})
+            this.modalMcm()
+        }
     }
 
     modalMcm = () => {
@@ -1348,6 +1412,7 @@ class AjuanBayarOps extends Component {
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps, docBukti } = this.props.ops
+        const {glInternet, glListrik} = this.props.ops
         // const pages = this.props.depo.page
           
 
@@ -1590,8 +1655,14 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.keterangan}</th>
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>
+                                                    {
+                                                        glInternet.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Indihome' :
+                                                        glListrik.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Listrik Meteran' :
+                                                        item.bank_tujuan
+                                                    }
+                                                </th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
                                                 <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
@@ -1681,10 +1752,16 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.area}</th>
                                                 <th>{item.cost_center}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>
+                                                    {
+                                                        glInternet.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Indihome' :
+                                                        glListrik.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Listrik Meteran' :
+                                                        item.bank_tujuan
+                                                    }
+                                                </th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
@@ -1779,10 +1856,16 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.area}</th>
                                                 <th>{item.cost_center}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>
+                                                    {
+                                                        glInternet.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Indihome' :
+                                                        glListrik.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Listrik Meteran' :
+                                                        item.bank_tujuan
+                                                    }
+                                                </th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
@@ -1794,7 +1877,7 @@ class AjuanBayarOps extends Component {
                                                 <th className='total' colSpan={7}>Total</th>
                                                 <th>
                                                     {detailOps.reduce((accumulator, object) => {
-                                                        return accumulator + parseInt(object.nilai_ajuan);
+                                                        return accumulator + parseInt(object.nilai_bayar);
                                                     }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                                 </th>
                                                 <th></th>
@@ -1967,10 +2050,16 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.area}</th>
                                                 <th>{item.cost_center}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>
+                                                    {
+                                                        glInternet.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Indihome' :
+                                                        glListrik.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Listrik Meteran' :
+                                                        item.bank_tujuan
+                                                    }
+                                                </th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
@@ -2000,6 +2089,24 @@ class AjuanBayarOps extends Component {
                         <div className={style.tableDashboard}>
                             <Table bordered responsive hover className={style.tab} id="mcm-table">
                                 <tbody>
+                                {detailOps.length !== 0 && glListrik.find((e) => e === parseInt(detailOps[0].no_coa)) !== undefined && detailOps[0].tujuan_tf === 'ID Pelanggan' ? (
+                                    <tr>
+                                        <th>P</th>
+                                        <th className='tabRep'>1300015005005</th>
+                                        <th className='tabRep'>{detailOps.length}</th>
+                                        <th >1</th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                        <th ></th>
+                                    </tr>
+                                ) : (
                                     <tr>
                                         <th>P</th>
                                         <th className='tabRep'>{moment().format('YYYYMMDD')}</th>
@@ -2007,7 +2114,7 @@ class AjuanBayarOps extends Component {
                                         <th >{detailOps.length}</th>
                                         <th >
                                             {detailOps.reduce((accumulator, object) => {
-                                                return accumulator + parseInt(object.nilai_ajuan);
+                                                return accumulator + parseInt(object.nilai_bayar);
                                             }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                         </th>
                                         <th ></th>
@@ -2049,53 +2156,73 @@ class AjuanBayarOps extends Component {
                                         <th ></th>
                                         <th ></th>
                                     </tr>
+                                )}
                                     {detailOps.length !== 0 && detailOps.map(item => {
                                         return (
-                                            <tr>
-                                                <th className='tabRep'>{item.norek_ajuan}</th>
-                                                <th className='tabRep'>{item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' ')}</th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th className='tabRep'>IDR</th>
-                                                <th className='tabRep'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                <th >{item.no_transaksi.slice(0, 19)}</th>
-                                                <th ></th>
-                                                <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU'}</th>
-                                                <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.sandi_kliring}</th>
-                                                <th >{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring.nama_singkat}</th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th >N</th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th >OUR</th>
-                                                <th >1</th>
-                                                <th className='tabRep'>E</th>
-                                                <th ></th>
-                                                <th ></th>
-                                                <th ></th>
-                                            </tr>
+                                                glListrik.find((e) => e === parseInt(detailOps[0].no_coa)) !== undefined && detailOps[0].tujuan_tf === 'ID Pelanggan' ? (
+                                                    <tr>
+                                                        <th className='tabRep'>30305</th>
+                                                        <th className='tabRep'>PLN</th>
+                                                        <th className='tabRep'>{item.id_pelanggan}</th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th className='tabRep'>IDR</th>
+                                                        <th ></th>
+                                                        <th className='tabRep'>UBP</th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th className='tabRep'>E</th>
+                                                    </tr>
+                                                ) : (
+                                                    <tr>
+                                                        <th className='tabRep'>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
+                                                        <th className='tabRep'>{item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' ')}</th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th className='tabRep'>IDR</th>
+                                                        <th className='tabRep'>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                        <th >{item.no_transaksi.slice(0, 19)}</th>
+                                                        <th ></th>
+                                                        <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU'}</th>
+                                                        <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.sandi_kliring}</th>
+                                                        <th >{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.nama_singkat}</th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th >N</th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th >OUR</th>
+                                                        <th >1</th>
+                                                        <th className='tabRep'>E</th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                        <th ></th>
+                                                    </tr>
+                                                )
                                             )
                                         })}
                                 </tbody>
@@ -2882,7 +3009,8 @@ const mapStateToProps = state => ({
     menu: state.menu,
     reason: state.reason,
     dokumen: state.dokumen,
-    email: state.email
+    email: state.email,
+    coa: state.coa,
 })
 
 const mapDispatchToProps = {

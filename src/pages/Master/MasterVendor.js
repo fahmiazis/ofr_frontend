@@ -17,20 +17,17 @@ import Sidebar from "../../components/Header";
 import MaterialTitlePanel from "../../components/material_title_panel";
 import SidebarContent from "../../components/sidebar_content";
 import NavBar from '../../components/NavBar'
+import moment from 'moment'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 
 const vendorSchema = Yup.object().shape({
     nama: Yup.string().required(),
     no_npwp: Yup.string().required(),
     no_ktp: Yup.string().required(),
-    alamat: Yup.string().required()
-});
-
-const vendorEditSchema = Yup.object().shape({
-    nama: Yup.string().required(),
-    no_npwp: Yup.string().required(),
-    no_ktp: Yup.string().required(),
-    alamat: Yup.string().required()
+    alamat: Yup.string().required(),
+    jenis_vendor: Yup.string().required()
 });
 
 const changeSchema = Yup.object().shape({
@@ -74,10 +71,118 @@ class MasterVendor extends Component {
             filter: null,
             filterName: 'All',
             modalDel: false,
-            page: 1
+            page: 1,
+            listData: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    chekApp = (val) => {
+        const { listData } = this.state
+        const {dataAll} = this.props.vendor
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataAll.length; i++) {
+                data.push(dataAll[i].id)
+            }
+            this.setState({listData: data})
+        } else {
+            listData.push(val)
+            this.setState({listData: listData})
+        }
+    }
+
+    chekRej = (val) => {
+        const {listData} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listData: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listData.length; i++) {
+                if (listData[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listData[i])
+                }
+            }
+            this.setState({listData: data})
+        }
+    }
+
+    downloadData = () => {
+        const {listData} = this.state
+        const {dataAll} = this.props.vendor
+        const dataDownload = []
+        for (let i = 0; i < listData.length; i++) {
+            for (let j = 0; j < dataAll.length; j++) {
+                if (dataAll[j].id === listData[i]) {
+                    dataDownload.push(dataAll[j])
+                }
+            }
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+        
+
+        ws.columns = [
+            {header: 'NAMA', key: 'c1'},
+            {header: 'NO NPWP', key: 'c2'},
+            {header: 'NO KTP', key: 'c3'},
+            {header: 'ALAMAT', key: 'c4'},
+            {header: 'JENIS VENDOR', key: 'c5'},
+            {header: 'Memiliki SKB/SKT', key: 'c6'},
+            {header: 'NO SKB', key: 'c7'},
+            {header: 'NO SKT', key: 'c8'},
+            {header: 'Start Periode', key: 'c9'},
+            {header: 'End Periode', key: 'c10'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: item.nama,
+                c2: item.no_npwp,
+                c3: item.no_ktp,
+                c4: item.alamat,
+                c5: item.jenis_vendor !== null && item.jenis_vendor !== '' ? item.jenis_vendor : item.no_ktp === null || item.no_ktp === '' || item.no_ktp === 'TIDAK ADA' ? "Badan" : "Orang Pribadi",
+                c6: item.type_skb === null ? 'tidak' : item.type_skb,
+                c7: item.no_skb,
+                c8: item.no_skt,
+                c9: item.datef_skb === null ? '' : moment(item.datef_skb).format('DD-MM-YYYY'),
+                c10: item.datel_skb === null ? '' : moment(item.datel_skb).format('DD-MM-YYYY')
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Master Vendor ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+        });
     }
 
     showAlert = () => {
@@ -155,18 +260,61 @@ class MasterVendor extends Component {
     }
 
     DownloadTemplate = () => {
-        axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/coa.xlsx`,
-            method: 'GET',
-            responseType: 'blob',
-        }).then((response) => {
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', "master vendor.xlsx");
-            document.body.appendChild(link);
-            link.click();
-        });
+        const {listData} = this.state
+        const {dataAll} = this.props.vendor
+        const dataDownload = []
+        for (let i = 0; i < listData.length; i++) {
+            for (let j = 0; j < dataAll.length; j++) {
+                if (dataAll[j].id === listData[i]) {
+                    dataDownload.push(dataAll[j])
+                }
+            }
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+        
+
+        ws.columns = [
+            {header: 'NAMA', key: 'c1'},
+            {header: 'NO NPWP', key: 'c2'},
+            {header: 'NO KTP', key: 'c3'},
+            {header: 'ALAMAT', key: 'c4'},
+            {header: 'JENIS VENDOR', key: 'c5'},
+            {header: 'Memiliki SKB/SKT', key: 'c6'},
+            {header: 'NO SKB', key: 'c7'},
+            {header: 'NO SKT', key: 'c8'},
+            {header: 'Start Periode', key: 'c9'},
+            {header: 'End Periode', key: 'c10'}
+        ]
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Template Master Vendor ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
     }
 
     addVendor = async (values) => {
@@ -207,7 +355,7 @@ class MasterVendor extends Component {
     onSearch = (e) => {
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            this.getDataCount({limit: 10, search: this.state.search})
+            this.getDataCount({limit: 10, search: this.state.search, page: 1})
         }
     }
 
@@ -312,7 +460,7 @@ class MasterVendor extends Component {
     }
 
     render() {
-        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
+        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg, listData} = this.state
         const {dataVendor, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.vendor
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
@@ -376,6 +524,7 @@ class MasterVendor extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -418,7 +567,7 @@ class MasterVendor extends Component {
                                     <div className={style.headEmail}>
                                         <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
                                         <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button>
+                                        <Button className='mr-1' onClick={this.downloadData} color="success" size="lg">Download</Button>
                                     </div>
                                     <div className={style.searchEmail}>
                                         <text>Search: </text>
@@ -442,6 +591,12 @@ class MasterVendor extends Component {
                                                 <th>No NPWP</th>
                                                 <th>No KTP</th>
                                                 <th>Alamat</th>
+                                                <th>Jenis Vendor</th>
+                                                <th>Memiliki SKB/SKT</th>
+                                                <th>No SKB</th>
+                                                <th>No SKT</th>
+                                                <th>Start Periode</th>
+                                                <th>End Periode</th>
                                             </tr>
                                         </thead>
                                     </Table>
@@ -454,22 +609,50 @@ class MasterVendor extends Component {
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listData.length === 0 ? false : listData.length === dataAll.length ? true : false}
+                                                    onChange={() => listData.length === dataAll.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    />
+                                                    {/* Select */}
+                                                </th>
                                                 <th>No</th>
                                                 <th>Nama</th>
                                                 <th>No NPWP</th>
                                                 <th>No KTP</th>
                                                 <th>Alamat</th>
+                                                <th>Jenis Vendor</th>
+                                                <th>Memiliki SKB/SKT</th>
+                                                <th>No SKB</th>
+                                                <th>No SKT</th>
+                                                <th>Start Periode</th>
+                                                <th>End Periode</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {dataAll.length !== 0 && dataAll.map(item => {
                                                 return (
                                                 <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
+                                                    <th>
+                                                        <input 
+                                                        type='checkbox'
+                                                        checked={listData.find(element => element === item.id) !== undefined ? true : false}
+                                                        onChange={listData.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                        />
+                                                    </th>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
                                                     <td>{item.nama}</td>
                                                     <td>{item.no_npwp}</td>
                                                     <td>{item.no_ktp}</td>
                                                     <td>{item.alamat}</td>
+                                                    <td>{item.jenis_vendor !== null && item.jenis_vendor !== '' ? item.jenis_vendor : item.no_ktp === null || item.no_ktp === '' || item.no_ktp === 'TIDAK ADA' ? "Badan" : "Orang Pribadi"}</td>
+                                                    <td>{item.type_skb === null ? 'tidak' : item.type_skb}</td>
+                                                    <td>{item.no_skb}</td>
+                                                    <td>{item.no_skt}</td>
+                                                    <td>{item.datef_skb === null ? '' : moment(item.datef_skb).format('DD MMMM YYYY')}</td>
+                                                    <td>{item.datel_skb === null ? '' : moment(item.datel_skb).format('DD MMMM YYYY')}</td>
                                                 </tr>
                                             )})}
                                         </tbody>
@@ -496,7 +679,8 @@ class MasterVendor extends Component {
                         nama: '',
                         no_npwp: '',
                         no_ktp: '',
-                        alamat: ''
+                        alamat: '',
+                        jenis_vendor: ''
                     }}
                     validationSchema={vendorSchema}
                     onSubmit={(values) => {this.addVendor(values)}}
@@ -522,6 +706,26 @@ class MasterVendor extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
+                                Jenis Vendor <text className='txtError'>{'*'}</text>
+                            </text>
+                            <div className="col-md-9">
+                                <Input
+                                    type= "select" 
+                                    value={values.jenis_vendor}
+                                    onBlur={handleBlur("jenis_vendor")}
+                                    onChange={handleChange("jenis_vendor")}
+                                    >
+                                        <option value=''>Pilih</option>
+                                        <option value="Orang Pribadi">Orang Pribadi</option>
+                                        <option value="Badan">Badan</option>
+                                </Input>
+                                {/* {errors.jenis_vendor|| values.jenis_venodr === '' ? (
+                                    <text className={style.txtError}>{errors.jenis}</text>
+                                ) : null} */}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
                                 No NPWP
                             </text>
                             <div className="col-md-9">
@@ -529,6 +733,8 @@ class MasterVendor extends Component {
                                 type="name" 
                                 name="no_npwp"
                                 value={values.no_npwp}
+                                minLength={16}
+                                maxLength={16}
                                 onBlur={handleBlur("no_npwp")}
                                 onChange={handleChange("no_npwp")}
                                 />
@@ -545,7 +751,10 @@ class MasterVendor extends Component {
                                 <Input 
                                 type="name" 
                                 name="no_ktp"
+                                disabled={values.jenis_venodr === 'Badan' || values.jenis_venodr === '' ? true : false}
                                 value={values.no_ktp}
+                                minLength={16}
+                                maxLength={16}
                                 onBlur={handleBlur("no_ktp")}
                                 onChange={handleChange("no_ktp")}
                                 />
@@ -590,9 +799,10 @@ class MasterVendor extends Component {
                     nama: detail.nama === null ? '' : detail.nama,
                     no_npwp: detail.no_npwp === null ? '' : detail.no_npwp,
                     no_ktp: detail.no_ktp === null ? '' : detail.no_ktp,
-                    alamat: detail.alamat === null ? '' : detail.alamat
+                    alamat: detail.alamat === null ? '' : detail.alamat,
+                    jenis_vendor: detail.jenis_vendor !== null ? detail.jenis_vendor : detail.no_ktp === null || detail.no_ktp === '' || detail.no_ktp === 'TIDAK ADA' ? "Badan" : "Orang Pribadi"
                     }}
-                    validationSchema={vendorEditSchema}
+                    validationSchema={vendorSchema}
                     onSubmit={(values) => {this.editVendor(values, detail.id)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
@@ -616,6 +826,26 @@ class MasterVendor extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
+                                Jenis Vendor <text className='txtError'>{'*'}</text>
+                            </text>
+                            <div className="col-md-9">
+                                <Input
+                                    type= "select" 
+                                    value={values.jenis_vendor}
+                                    onBlur={handleBlur("jenis_vendor")}
+                                    onChange={handleChange("jenis_vendor")}
+                                    >
+                                        <option value=''>Pilih</option>
+                                        <option value="Orang Pribadi">Orang Pribadi</option>
+                                        <option value="Badan">Badan</option>
+                                </Input>
+                                {/* {errors.jenis_vendor|| values.jenis_venodr === '' ? (
+                                    <text className={style.txtError}>{errors.jenis}</text>
+                                ) : null} */}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
                                 No NPWP
                             </text>
                             <div className="col-md-9">
@@ -623,6 +853,8 @@ class MasterVendor extends Component {
                                 type="name" 
                                 name="no_npwp"
                                 value={values.no_npwp}
+                                minLength={16}
+                                maxLength={16}
                                 onBlur={handleBlur("no_npwp")}
                                 onChange={handleChange("no_npwp")}
                                 />
@@ -639,6 +871,9 @@ class MasterVendor extends Component {
                                 <Input 
                                 type="name" 
                                 name="no_ktp"
+                                minLength={16}
+                                maxLength={16}
+                                disabled={values.jenis_venodr === 'Badan' || values.jenis_venodr === '' ? true : false}
                                 value={values.no_ktp}
                                 onBlur={handleBlur("no_ktp")}
                                 onChange={handleChange("no_ktp")}

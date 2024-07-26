@@ -61,10 +61,10 @@ class FPD extends Component {
         const workbook = new ExcelJS.Workbook();
         const ws = workbook.addWorksheet('fpd')
         const borderStyles = {
-            top: {style: 'thick'},
-            left: {style: 'thick'},
-            bottom: {style: 'thick'},
-            right: {style: 'thick'}
+            top: {style: 'medium'},
+            left: {style: 'medium'},
+            bottom: {style: 'medium'},
+            right: {style: 'medium'}
         }
 
         const alignStyle = {
@@ -121,7 +121,7 @@ class FPD extends Component {
             ws.getCell(`E${gapRow}`).value = `${item.keterangan}`
 
             ws.mergeCells(`E${gapRow + 3}`, `J${gapRow + 3}`)
-            ws.getCell(`E${gapRow + 3}`).value = `NO REK ${item.bank_tujuan} ${item.norek_ajuan}`
+            ws.getCell(`E${gapRow + 3}`).value = `NO REK ${item.bank_tujuan} ${item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}`
 
             ws.mergeCells(`L${gapRow}`, `M${gapRow + 1}`)
             ws.getCell(`L${gapRow}`).value = `${item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`
@@ -293,6 +293,36 @@ class FPD extends Component {
             }
         })
 
+        // const borderStyle = {
+        //     style: 'medium'
+        // }
+
+        // for (let i = 1; i <= botRow + 1; i++) {
+        //     const leftBorderCell = ws.getCell(i, 1);
+        //     const rightBorderCell = ws.getCell(i, 14);
+        //     leftBorderCell.border = {
+        //         ...leftBorderCell.border,
+        //         left: borderStyle
+        //     };
+        //     rightBorderCell.border = {
+        //         ...rightBorderCell.border,
+        //         right: borderStyle
+        //     };
+        // }
+    
+        // for (let i = 1; i <= 14; i++) {
+        //     const topBorderCell = ws.getCell(1, i);
+        //     const bottomBorderCell = ws.getCell(botRow + 1, i);
+        //     topBorderCell.border = {
+        //         ...topBorderCell.border,
+        //         top: borderStyle
+        //     };
+        //     bottomBorderCell.border = {
+        //         ...bottomBorderCell.border,
+        //         bottom: borderStyle
+        //     };
+        // }
+
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
               new Blob([buffer], { type: "application/octet-stream" }),
@@ -301,6 +331,38 @@ class FPD extends Component {
         });
         localStorage.removeItem('printData')
     }
+
+    createOuterBorder = (worksheet, start = {row: 1, col: 1}, end = {row: 1, col: 1}, borderWidth = 'medium') => {
+
+        const borderStyles = {
+            style: 'medium'
+        };
+        for (let i = start.row; i <= end.row; i++) {
+            const leftBorderCell = worksheet.getCell(i, start.col);
+            const rightBorderCell = worksheet.getCell(i, end.col);
+            leftBorderCell.border = {
+                ...leftBorderCell.border,
+                left: borderStyles
+            };
+            rightBorderCell.border = {
+                ...rightBorderCell.border,
+                right: borderStyles
+            };
+        }
+    
+        for (let i = start.col; i <= end.col; i++) {
+            const topBorderCell = worksheet.getCell(start.row, i);
+            const bottomBorderCell = worksheet.getCell(end.row, i);
+            topBorderCell.border = {
+                ...topBorderCell.border,
+                top: borderStyles
+            };
+            bottomBorderCell.border = {
+                ...bottomBorderCell.border,
+                bottom: borderStyles
+            };
+        }
+    };
 
   render() {
     const {arrTes} = this.state
@@ -334,7 +396,7 @@ class FPD extends Component {
                             </Col>
                             <Col md={8} className='upper'>
                                 <div className='line2'>{item.keterangan}</div>
-                                <div className='line mt-1'>NO REK {item.bank_tujuan} {item.norek_ajuan}</div>
+                                <div className='line mt-1'>NO REK {item.bank_tujuan} {item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</div>
                             </Col>
                             <Col md={2} className='upper'>
                                 <div className='line'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>

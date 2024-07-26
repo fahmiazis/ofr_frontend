@@ -17,6 +17,9 @@ import Sidebar from "../../components/Header";
 import MaterialTitlePanel from "../../components/material_title_panel";
 import SidebarContent from "../../components/sidebar_content";
 import NavBar from '../../components/NavBar'
+import moment from 'moment'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 
 const spvklaimSchema = Yup.object().shape({
@@ -67,10 +70,104 @@ class MasterSpvklaim extends Component {
             filter: null,
             filterName: 'All',
             modalDel: false,
-            page: 1
+            page: 1,
+            listData: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    chekApp = (val) => {
+        const { listData } = this.state
+        const {dataAll} = this.props.spvklaim
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataAll.length; i++) {
+                data.push(dataAll[i].id)
+            }
+            this.setState({listData: data})
+        } else {
+            listData.push(val)
+            this.setState({listData: listData})
+        }
+    }
+
+    chekRej = (val) => {
+        const {listData} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listData: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listData.length; i++) {
+                if (listData[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listData[i])
+                }
+            }
+            this.setState({listData: data})
+        }
+    }
+
+    downloadData = () => {
+        const {listData} = this.state
+        const {dataAll} = this.props.spvklaim
+        const dataDownload = []
+        for (let i = 0; i < listData.length; i++) {
+            for (let j = 0; j < dataAll.length; j++) {
+                if (dataAll[j].id === listData[i]) {
+                    dataDownload.push(dataAll[j])
+                }
+            }
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data user')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+        
+
+        ws.columns = [
+            {header: 'PIC Klaim', key: 'c1'},
+            {header: 'SPV Klaim', key: 'c2'},
+            {header: 'MANAGER Klaim', key: 'c3'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: item.pic_klaim,
+                c2: item.spv_klaim,
+                c3: item.manager_klaim
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Master SPV Klaim ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
     }
 
     showAlert = () => {
@@ -200,7 +297,7 @@ class MasterSpvklaim extends Component {
     onSearch = (e) => {
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            this.getDataCount({limit: 10, search: this.state.search})
+            this.getDataCount({limit: 10, search: this.state.search, page: 1})
         }
     }
 
@@ -305,7 +402,7 @@ class MasterSpvklaim extends Component {
     }
 
     render() {
-        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
+        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg, listData} = this.state
         const {dataSpvklaim, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.spvklaim
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
@@ -380,7 +477,7 @@ class MasterSpvklaim extends Component {
                                     <div className={style.headEmail}>
                                         <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
                                         <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button>
+                                        <Button className='mr-1' onClick={this.downloadData} color="success" size="lg">Download</Button>
                                     </div>
                                     <div className={style.searchEmail}>
                                         <text>Search: </text>
@@ -415,6 +512,15 @@ class MasterSpvklaim extends Component {
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listData.length === 0 ? false : listData.length === dataAll.length ? true : false}
+                                                    onChange={() => listData.length === dataAll.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    />
+                                                    {/* Select */}
+                                                </th>
                                                 <th>No</th>
                                                 <th>PIC Klaim</th>
                                                 <th>SPV Klaim</th>
@@ -425,6 +531,13 @@ class MasterSpvklaim extends Component {
                                             {dataAll.length !== 0 && dataAll.map(item => {
                                                 return (
                                                 <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
+                                                    <th>
+                                                        <input 
+                                                        type='checkbox'
+                                                        checked={listData.find(element => element === item.id) !== undefined ? true : false}
+                                                        onChange={listData.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                        />
+                                                    </th>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
                                                     <td>{item.pic_klaim}</td>
                                                     <td>{item.spv_klaim}</td>

@@ -22,15 +22,18 @@ export default function AllPages(props) {
       <img src={`${REACT_APP_BACKEND_URL}/${dataFile.path}`} />
     </div>
     : cekDoc[cekDoc.length - 1] === 'pdf' ? 
-      <Document
-        file={pdf}
-        options={{ workerSrc: "../../public/pdf.worker.js" }}
-        onLoadSuccess={onDocumentLoadSuccess}
-      >
-        {Array.from(new Array(numPages), (el, index) => (
-          <Page key={`page_${index + 1}`} pageNumber={index + 1} />
-        ))}
-      </Document>
-    : 'Failed to load file'
+      // <Document
+      //   file={pdf}
+      //   options={{ workerSrc: "../../public/pdf.worker.js" }}
+      //   onLoadSuccess={onDocumentLoadSuccess}
+      // >
+      //   {Array.from(new Array(numPages), (el, index) => (
+      //     <Page key={`page_${index + 1}`} pageNumber={index + 1} />
+      //   ))}
+      // </Document>
+      <div id="wrap">
+        <iframe id="scaled-frame" src={pdf} className='pdfDiv' />
+      </div>
+    : 'File cannot show, please download this file'
   )
 }

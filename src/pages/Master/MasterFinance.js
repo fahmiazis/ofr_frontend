@@ -4,7 +4,7 @@ import {  NavbarBrand, DropdownToggle, DropdownMenu,
     Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
 import style from '../../assets/css/input.module.css'
 import {FaSearch, FaFinanceCircle, FaBars} from 'react-icons/fa'
-import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
+import {AiFillCheckCircle, AiOutlineFileExcel, AiOutlineClose} from 'react-icons/ai'
 import depo from '../../redux/actions/depo'
 import user from '../../redux/actions/user'
 import finance from '../../redux/actions/finance'
@@ -17,6 +17,9 @@ import Sidebar from "../../components/Header";
 import MaterialTitlePanel from "../../components/material_title_panel";
 import SidebarContent from "../../components/sidebar_content";
 import NavBar from '../../components/NavBar'
+import moment from 'moment'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 
 const financeSchema = Yup.object().shape({
@@ -83,13 +86,17 @@ class MasterFinance extends Component {
             upload: false,
             errMsg: '',
             fileUpload: '',
+            fileStruktur: '',
             limit: 10,
             search: '',
             modalReset: false,
             filter: null,
             filterName: 'All',
             modalDel: false,
-            page: 1
+            page: 1,
+            listData: [],
+            pickUpload: false,
+            modalStruktur: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -169,9 +176,17 @@ class MasterFinance extends Component {
         this.setState({modalUpload: !this.state.modalUpload})
     }
 
+    openPickUpload = () => {
+        this.setState({pickUpload: !this.state.pickUpload})
+    }
+
+    openModalStruktur = () => {
+        this.setState({modalStruktur: !this.state.modalStruktur})
+    }
+
     DownloadTemplate = () => {
         axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/coa.xlsx`,
+            url: `${REACT_APP_BACKEND_URL}/masters/finance.xlsx`,
             method: 'GET',
             responseType: 'blob',
         }).then((response) => {
@@ -182,6 +197,47 @@ class MasterFinance extends Component {
             document.body.appendChild(link);
             link.click();
         });
+    }
+
+    downloadStrukur = () => {
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+        
+
+        ws.columns = [, , , 
+            {header: 'KODE PLANT', key: 'c1'},
+            {header: 'AOS', key: 'c2'},
+            {header: 'ROM', key: 'c3'},
+            {header: 'BM', key: 'c4'}
+        ]
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Template Struktur Area ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
     }
 
     addFinance = async (values) => {
@@ -222,7 +278,7 @@ class MasterFinance extends Component {
     onSearch = (e) => {
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            this.getDataCount({limit: 10, search: this.state.search})
+            this.getDataCount({limit: 10, search: this.state.search, page: 1})
         }
     }
 
@@ -244,6 +300,38 @@ class MasterFinance extends Component {
         const data = new FormData()
         data.append('master', this.state.fileUpload)
         await this.props.uploadMaster(token, data)
+        this.setState({confirm: 'upload'})
+        this.openConfirm()
+        this.setState({modalUpload: false, pickUpload: false})
+        setTimeout(() => {
+            this.getDataCount()
+        }, 100)
+    }
+
+    onChangeStruktur = e => {
+        const {size, type} = e.target.files[0]
+        if (size >= 5120000) {
+            this.setState({errMsg: "Maximum upload size 5 MB"})
+            this.uploadAlert()
+        } else if (type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && type !== 'application/vnd.ms-excel' ){
+            this.setState({errMsg: 'Invalid file type. Only excel files are allowed.'})
+            this.uploadAlert()
+        } else {
+            this.setState({fileStruktur: e.target.files[0]})
+        }
+    }
+
+    uploadStruktur = async () => {
+        const token = localStorage.getItem('token')
+        const data = new FormData()
+        data.append('master', this.state.fileStruktur)
+        await this.props.uploadStruktur(token, data)
+        this.setState({confirm: 'upload'})
+        this.openConfirm()
+        this.setState({modalStruktur: false, pickUpload: false})
+        setTimeout(() => {
+            this.getDataCount()
+        }, 100)
     }
 
     editFinance = async (values, id) => {
@@ -264,25 +352,24 @@ class MasterFinance extends Component {
     }
 
     componentDidUpdate() {
-        const {isError, isUpload, isExport, isReset} = this.props.finance
+        const {isError, isUpload, isExport, isReset, isStruktur} = this.props.finance
         if (isError) {
             this.props.resetError()
-            this.showAlert()
         } else if (isReset) {
             this.setState({confirm: 'reset'})
             this.props.resetError()
             this.openModalReset()
             this.openConfirm()
-        } else if (isUpload) {
-            setTimeout(() => {
-                this.props.resetError()
-                this.setState({modalUpload: false})
-             }, 2000)
-             setTimeout(() => {
-                this.getDataCount()
-             }, 2100)
+        } else if (isUpload === false) {
+            this.setState({confirm: 'failUpload'})
+            this.openConfirm()
+            this.props.resetError()
         } else if (isExport) {
             this.DownloadMaster()
+            this.props.resetError()
+        } else if (isStruktur === false) {
+            this.setState({confirm: 'failUpload'})
+            this.openConfirm()
             this.props.resetError()
         }
     }
@@ -326,8 +413,145 @@ class MasterFinance extends Component {
         this.setState({modalDel: !this.state.modalDel})
     }
 
+    chekApp = (val) => {
+        const { listData } = this.state
+        const {dataAll} = this.props.finance
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataAll.length; i++) {
+                data.push(dataAll[i].id)
+            }
+            this.setState({listData: data})
+        } else {
+            listData.push(val)
+            this.setState({listData: listData})
+        }
+    }
+
+    chekRej = (val) => {
+        const {listData} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listData: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listData.length; i++) {
+                if (listData[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listData[i])
+                }
+            }
+            this.setState({listData: data})
+        }
+    }
+
+    downloadData = () => {
+        const {listData} = this.state
+        const {dataAll} = this.props.finance
+        const dataDownload = []
+        for (let i = 0; i < listData.length; i++) {
+            for (let j = 0; j < dataAll.length; j++) {
+                if (dataAll[j].id === listData[i]) {
+                    dataDownload.push(dataAll[j])
+                }
+            }
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data user')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+        
+
+        ws.columns = [
+            {header: 'KODE PLANT', key: 'c2'}, 
+            {header: 'PROFIT/COST CENTER', key: 'c3'}, 
+            {header: 'NAMA AREA', key: 'c4'}, 
+            {header: 'REGION', key: 'c5'}, 
+            {header: 'INISIAL', key: 'c6'}, 
+            {header: 'NO REK SPENDING CARD', key: 'c7'}, 
+            {header: 'NO REK ZBA', key: 'c8'}, 
+            {header: 'NO REK BANK COLL', key: 'c9'}, 
+            {header: 'PAGU IKK', key: 'c10'}, 
+            {header: 'SISTEM AREA', key: 'c11'}, 
+            {header: 'PIC CONSOLE', key: 'c12'}, 
+            {header: 'SPV FINANCE 1', key: 'c13'}, 
+            {header: 'SPV FINANCE 2', key: 'c14'}, 
+            {header: 'ASST MGR FIN', key: 'c15'}, 
+            {header: 'MGR FIN', key: 'c16'}, 
+            {header: 'PIC TAX', key: 'c17'}, 
+            {header: 'SPV TAX', key: 'c18'}, 
+            {header: 'ASMEN TAX', key: 'c19'}, 
+            {header: 'MGR TAX', key: 'c20'}, 
+            {header: 'AOS', key: 'c21'}, 
+            {header: 'ROM', key: 'c22'}, 
+            {header: 'BM', key: 'c23'}, 
+            {header: 'NOM', key: 'c24'}, 
+            {header: 'RBM', key: 'c25'}, 
+            {header: 'CHANNEL', key: 'c26'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c2: item.kode_plant,
+                c3: item.profit_center,
+                c4: item.area,
+                c5: item.region,
+                c6: item.inisial,
+                c7: item.rek_spending,
+                c8: item.rek_zba,
+                c9: item.rek_bankcoll,
+                c10: item.pagu,
+                c11: item.type_live,
+                c12: item.pic_finance,
+                c13: item.spv_finance,
+                c14: item.spv2_finance,
+                c15: item.asman_finance,
+                c16: item.manager_finance,
+                c17: item.pic_tax,
+                c18: item.spv_tax,
+                c19: item.asman_tax,
+                c20: item.manager_tax,
+                c21: item.aos,
+                c22: item.rom,
+                c23: item.bm,
+                c24: item.nom,
+                c25: item.rbm,
+                c26: item.channel
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Master Finance ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
+    }
+
     render() {
-        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
+        const {isOpen, dropOpen, listData, detail, level, upload, errMsg} = this.state
         const {dataFinance, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.finance
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
@@ -391,6 +615,7 @@ class MasterFinance extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -401,8 +626,8 @@ class MasterFinance extends Component {
                                 <div className='secEmail'>
                                     <div className={style.headEmail}>
                                         <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
-                                        <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button>
+                                        <Button className='mr-1' onClick={this.openPickUpload} color="warning" size="lg">Upload</Button>
+                                        <Button className='mr-1' onClick={this.downloadData} color="success" size="lg">Download</Button>
                                     </div>
                                     <div className={style.searchEmail}>
                                         <text>Search: </text>
@@ -456,9 +681,18 @@ class MasterFinance extends Component {
                                     </div>
                                 ) : (
                                     <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab}>
+                                    <Table bordered responsive hover className={[style.tab, 'tableJurnal']}>
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listData.length === 0 ? false : listData.length === dataAll.length ? true : false}
+                                                    onChange={() => listData.length === dataAll.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    />
+                                                    {/* Select */}
+                                                </th>
                                                 <th>No</th>
                                                 <th>Kode Plant</th>
                                                 <th>Profit Center</th>
@@ -486,12 +720,20 @@ class MasterFinance extends Component {
                                                 <th>BM</th>
                                                 <th>NOM</th>
                                                 <th>RBM</th>
+                                                <th>Opsi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {dataAll.length !== 0 && dataAll.map(item => {
                                                 return (
-                                                <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
+                                                <tr>
+                                                    <th>
+                                                        <input 
+                                                        type='checkbox'
+                                                        checked={listData.find(element => element === item.id) !== undefined ? true : false}
+                                                        onChange={listData.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                        />
+                                                    </th>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
                                                     <td>{item.kode_plant}</td>
                                                     <td>{item.profit_center}</td>
@@ -519,6 +761,9 @@ class MasterFinance extends Component {
                                                     <td>{item.bm}</td>
                                                     <td>{item.nom}</td>
                                                     <td>{item.rbm}</td>
+                                                    <td>
+                                                        <Button onClick={()=>this.openModalEdit(this.setState({detail: item}))} color='primary'>Edit</Button>
+                                                    </td>
                                                 </tr>
                                             )})}
                                         </tbody>
@@ -538,14 +783,35 @@ class MasterFinance extends Component {
                         </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
+                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd} size="xl">
                     <ModalHeader toggle={this.openModalAdd}>Add Master Finance</ModalHeader>
                     <Formik
                     initialValues={{
                         kode_plant: '',
                         profit_center: '',
                         region: '',
-                        inisial: ''
+                        inisial: '',
+                        rek_spending: '',
+                        rek_zba: '',
+                        rek_bankcoll: '',
+                        type_live: '',
+                        gl_kk: '',
+                        area: '',
+                        pagu: '',
+                        pic_finance: '',
+                        spv_finance: '',
+                        spv2_finance: '',
+                        asman_finance: '',
+                        manager_finance: '',
+                        pic_tax: '',
+                        spv_tax: '',
+                        asman_tax: '',
+                        manager_tax: '',
+                        aos: '',
+                        rom: '',
+                        bm: '',
+                        nom: '',
+                        rbm: ''
                     }}
                     validationSchema={financeSchema}
                     onSubmit={(values) => {this.addFinance(values)}}
@@ -605,6 +871,23 @@ class MasterFinance extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
+                                Nama Area
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="area"
+                                value={values.area}
+                                onBlur={handleBlur("area")}
+                                onChange={handleChange("area")}
+                                />
+                                {errors.area ? (
+                                    <text className={style.txtError}>{errors.area}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
                                 Inisial
                             </text>
                             <div className="col-md-9">
@@ -620,6 +903,346 @@ class MasterFinance extends Component {
                                 ) : null}
                             </div>
                         </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Rekening Spending Card
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rek_spending"
+                                value={values.rek_spending}
+                                onBlur={handleBlur("rek_spending")}
+                                onChange={handleChange("rek_spending")}
+                                />
+                                {errors.rek_spending ? (
+                                    <text className={style.txtError}>{errors.rek_spending}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Rekening ZBA
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rek_zba"
+                                value={values.rek_zba}
+                                onBlur={handleBlur("rek_zba")}
+                                onChange={handleChange("rek_zba")}
+                                />
+                                {errors.rek_zba ? (
+                                    <text className={style.txtError}>{errors.rek_zba}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Rekening Bank Coll
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rek_bankcoll"
+                                value={values.rek_bankcoll}
+                                onBlur={handleBlur("rek_bankcoll")}
+                                onChange={handleChange("rek_bankcoll")}
+                                />
+                                {errors.rek_bankcoll ? (
+                                    <text className={style.txtError}>{errors.rek_bankcoll}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Sistem Area
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="type_live"
+                                value={values.type_live}
+                                onBlur={handleBlur("type_live")}
+                                onChange={handleChange("type_live")}
+                                />
+                                {errors.type_live ? (
+                                    <text className={style.txtError}>{errors.type_live}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                PAGU IKK
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="pagu"
+                                value={values.pagu}
+                                onBlur={handleBlur("pagu")}
+                                onChange={handleChange("pagu")}
+                                />
+                                {errors.pagu ? (
+                                    <text className={style.txtError}>{errors.pagu}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                GL KK
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="gl_kk"
+                                value={values.gl_kk}
+                                onBlur={handleBlur("gl_kk")}
+                                onChange={handleChange("gl_kk")}
+                                />
+                                {errors.gl_kk ? (
+                                    <text className={style.txtError}>{errors.gl_kk}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                PIC FINANCE
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="pic_finance"
+                                value={values.pic_finance}
+                                onBlur={handleBlur("pic_finance")}
+                                onChange={handleChange("pic_finance")}
+                                />
+                                {errors.pic_finance ? (
+                                    <text className={style.txtError}>{errors.pic_finance}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                SPV FINANCE 1
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="spv_finance"
+                                value={values.spv_finance}
+                                onBlur={handleBlur("spv_finance")}
+                                onChange={handleChange("spv_finance")}
+                                />
+                                {errors.spv_finance ? (
+                                    <text className={style.txtError}>{errors.spv_finance}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                SPV FINANCE 2
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="spv2_finance"
+                                value={values.spv2_finance}
+                                onBlur={handleBlur("spv2_finance")}
+                                onChange={handleChange("spv2_finance")}
+                                />
+                                {errors.spv2_finance ? (
+                                    <text className={style.txtError}>{errors.spv2_finance}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                ASST MGR FIN
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="asman_finance"
+                                value={values.asman_finance}
+                                onBlur={handleBlur("asman_finance")}
+                                onChange={handleChange("asman_finance")}
+                                />
+                                {errors.asman_finance ? (
+                                    <text className={style.txtError}>{errors.asman_finance}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MGR FIN
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="manager_finance"
+                                value={values.manager_finance}
+                                onBlur={handleBlur("manager_finance")}
+                                onChange={handleChange("manager_finance")}
+                                />
+                                {errors.manager_finance ? (
+                                    <text className={style.txtError}>{errors.manager_finance}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                PIC TAX
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="pic_tax"
+                                value={values.pic_tax}
+                                onBlur={handleBlur("pic_tax")}
+                                onChange={handleChange("pic_tax")}
+                                />
+                                {errors.pic_tax ? (
+                                    <text className={style.txtError}>{errors.pic_tax}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                SPV TAX
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="spv_tax"
+                                value={values.spv_tax}
+                                onBlur={handleBlur("spv_tax")}
+                                onChange={handleChange("spv_tax")}
+                                />
+                                {errors.spv_tax ? (
+                                    <text className={style.txtError}>{errors.spv_tax}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                ASMEN TAX
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="asman_tax"
+                                value={values.asman_tax}
+                                onBlur={handleBlur("asman_tax")}
+                                onChange={handleChange("asman_tax")}
+                                />
+                                {errors.asman_tax ? (
+                                    <text className={style.txtError}>{errors.asman_tax}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MGR TAX
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="manager_tax"
+                                value={values.manager_tax}
+                                onBlur={handleBlur("manager_tax")}
+                                onChange={handleChange("manager_tax")}
+                                />
+                                {errors.manager_tax ? (
+                                    <text className={style.txtError}>{errors.manager_tax}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                AOS
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="aos"
+                                value={values.aos}
+                                onBlur={handleBlur("aos")}
+                                onChange={handleChange("aos")}
+                                />
+                                {errors.aos ? (
+                                    <text className={style.txtError}>{errors.aos}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                ROM
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rom"
+                                value={values.rom}
+                                onBlur={handleBlur("rom")}
+                                onChange={handleChange("rom")}
+                                />
+                                {errors.rom ? (
+                                    <text className={style.txtError}>{errors.rom}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                BM
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="bm"
+                                value={values.bm}
+                                onBlur={handleBlur("bm")}
+                                onChange={handleChange("bm")}
+                                />
+                                {errors.bm ? (
+                                    <text className={style.txtError}>{errors.bm}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                NOM
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="nom"
+                                value={values.nom}
+                                onBlur={handleBlur("nom")}
+                                onChange={handleChange("nom")}
+                                />
+                                {errors.nom ? (
+                                    <text className={style.txtError}>{errors.nom}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                RBM
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rbm"
+                                value={values.rbm}
+                                onBlur={handleBlur("rbm")}
+                                onChange={handleChange("rbm")}
+                                />
+                                {errors.rbm ? (
+                                    <text className={style.txtError}>{errors.rbm}</text>
+                                ) : null}
+                            </div>
+                        </div>
                         <hr/>
                         <div className={style.foot}>
                             <div></div>
@@ -632,14 +1255,35 @@ class MasterFinance extends Component {
                         )}
                     </Formik>
                 </Modal>
-                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
+                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit} size="xl">
                     <ModalHeader toggle={this.openModalEdit}>Edit Master Finance</ModalHeader>
                     <Formik
                     initialValues={{
                     kode_plant: detail.kode_plant === null ? '' : detail.kode_plant,
                     profit_center: detail.profit_center === null ? '' : detail.profit_center,
                     region: detail.region === null ? '' : detail.region,
-                    inisial: detail.inisial === null ? '' : detail.inisial
+                    area: detail.area === null ? '' : detail.area,
+                    inisial: detail.inisial === null ? '' : detail.inisial,
+                    rek_spending: detail.rek_spending === null ? '' : detail.rek_spending,
+                    rek_zba: detail.rek_zba === null ? '' : detail.rek_zba,
+                    rek_bankcoll: detail.rek_bankcoll === null ? '' : detail.rek_bankcoll,
+                    type_live: detail.type_live === null ? '' : detail.type_live,
+                    gl_kk: detail.gl_kk === null ? '' : detail.gl_kk,
+                    pagu: detail.pagu === null ? '' : detail.pagu,
+                    pic_finance: detail.pic_finance === null ? '' : detail.pic_finance,
+                    spv_finance: detail.spv_finance === null ? '' : detail.spv_finance,
+                    spv2_finance: detail.spv2_finance === null ? '' : detail.spv2_finance,
+                    asman_finance: detail.asman_finance === null ? '' : detail.asman_finance,
+                    manager_finance: detail.manager_finance === null ? '' : detail.manager_finance,
+                    pic_tax: detail.pic_tax === null ? '' : detail.pic_tax,
+                    spv_tax: detail.spv_tax === null ? '' : detail.spv_tax,
+                    asman_tax: detail.asman_tax === null ? '' : detail.asman_tax,
+                    manager_tax: detail.manager_tax === null ? '' : detail.manager_tax,
+                    aos: detail.aos === null ? '' : detail.aos,
+                    rom: detail.rom === null ? '' : detail.rom,
+                    bm: detail.bm === null ? '' : detail.bm,
+                    nom: detail.nom === null ? '' : detail.nom,
+                    rbm: detail.rbm === null ? '' : detail.rbm
                     }}
                     validationSchema={financeSchema}
                     onSubmit={(values) => {this.editFinance(values, detail.id)}}
@@ -699,6 +1343,23 @@ class MasterFinance extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
+                                Nama Area
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="area"
+                                value={values.area}
+                                onBlur={handleBlur("area")}
+                                onChange={handleChange("area")}
+                                />
+                                {errors.area ? (
+                                    <text className={style.txtError}>{errors.area}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
                                 Inisial
                             </text>
                             <div className="col-md-9">
@@ -711,6 +1372,346 @@ class MasterFinance extends Component {
                                 />
                                 {errors.inisial ? (
                                     <text className={style.txtError}>{errors.inisial}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Rekening Spending Card
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rek_spending"
+                                value={values.rek_spending}
+                                onBlur={handleBlur("rek_spending")}
+                                onChange={handleChange("rek_spending")}
+                                />
+                                {errors.rek_spending ? (
+                                    <text className={style.txtError}>{errors.rek_spending}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Rekening ZBA
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rek_zba"
+                                value={values.rek_zba}
+                                onBlur={handleBlur("rek_zba")}
+                                onChange={handleChange("rek_zba")}
+                                />
+                                {errors.rek_zba ? (
+                                    <text className={style.txtError}>{errors.rek_zba}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Rekening Bank Coll
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rek_bankcoll"
+                                value={values.rek_bankcoll}
+                                onBlur={handleBlur("rek_bankcoll")}
+                                onChange={handleChange("rek_bankcoll")}
+                                />
+                                {errors.rek_bankcoll ? (
+                                    <text className={style.txtError}>{errors.rek_bankcoll}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Sistem Area
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="type_live"
+                                value={values.type_live}
+                                onBlur={handleBlur("type_live")}
+                                onChange={handleChange("type_live")}
+                                />
+                                {errors.type_live ? (
+                                    <text className={style.txtError}>{errors.type_live}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                PAGU IKK
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="pagu"
+                                value={values.pagu}
+                                onBlur={handleBlur("pagu")}
+                                onChange={handleChange("pagu")}
+                                />
+                                {errors.pagu ? (
+                                    <text className={style.txtError}>{errors.pagu}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                GL KK
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="gl_kk"
+                                value={values.gl_kk}
+                                onBlur={handleBlur("gl_kk")}
+                                onChange={handleChange("gl_kk")}
+                                />
+                                {errors.gl_kk ? (
+                                    <text className={style.txtError}>{errors.gl_kk}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                PIC FINANCE
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="pic_finance"
+                                value={values.pic_finance}
+                                onBlur={handleBlur("pic_finance")}
+                                onChange={handleChange("pic_finance")}
+                                />
+                                {errors.pic_finance ? (
+                                    <text className={style.txtError}>{errors.pic_finance}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                SPV FINANCE 1
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="spv_finance"
+                                value={values.spv_finance}
+                                onBlur={handleBlur("spv_finance")}
+                                onChange={handleChange("spv_finance")}
+                                />
+                                {errors.spv_finance ? (
+                                    <text className={style.txtError}>{errors.spv_finance}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                SPV FINANCE 2
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="spv2_finance"
+                                value={values.spv2_finance}
+                                onBlur={handleBlur("spv2_finance")}
+                                onChange={handleChange("spv2_finance")}
+                                />
+                                {errors.spv2_finance ? (
+                                    <text className={style.txtError}>{errors.spv2_finance}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                ASST MGR FIN
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="asman_finance"
+                                value={values.asman_finance}
+                                onBlur={handleBlur("asman_finance")}
+                                onChange={handleChange("asman_finance")}
+                                />
+                                {errors.asman_finance ? (
+                                    <text className={style.txtError}>{errors.asman_finance}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MGR FIN
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="manager_finance"
+                                value={values.manager_finance}
+                                onBlur={handleBlur("manager_finance")}
+                                onChange={handleChange("manager_finance")}
+                                />
+                                {errors.manager_finance ? (
+                                    <text className={style.txtError}>{errors.manager_finance}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                PIC TAX
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="pic_tax"
+                                value={values.pic_tax}
+                                onBlur={handleBlur("pic_tax")}
+                                onChange={handleChange("pic_tax")}
+                                />
+                                {errors.pic_tax ? (
+                                    <text className={style.txtError}>{errors.pic_tax}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                SPV TAX
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="spv_tax"
+                                value={values.spv_tax}
+                                onBlur={handleBlur("spv_tax")}
+                                onChange={handleChange("spv_tax")}
+                                />
+                                {errors.spv_tax ? (
+                                    <text className={style.txtError}>{errors.spv_tax}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                ASMEN TAX
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="asman_tax"
+                                value={values.asman_tax}
+                                onBlur={handleBlur("asman_tax")}
+                                onChange={handleChange("asman_tax")}
+                                />
+                                {errors.asman_tax ? (
+                                    <text className={style.txtError}>{errors.asman_tax}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MGR TAX
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="manager_tax"
+                                value={values.manager_tax}
+                                onBlur={handleBlur("manager_tax")}
+                                onChange={handleChange("manager_tax")}
+                                />
+                                {errors.manager_tax ? (
+                                    <text className={style.txtError}>{errors.manager_tax}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                AOS
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="aos"
+                                value={values.aos}
+                                onBlur={handleBlur("aos")}
+                                onChange={handleChange("aos")}
+                                />
+                                {errors.aos ? (
+                                    <text className={style.txtError}>{errors.aos}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                ROM
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rom"
+                                value={values.rom}
+                                onBlur={handleBlur("rom")}
+                                onChange={handleChange("rom")}
+                                />
+                                {errors.rom ? (
+                                    <text className={style.txtError}>{errors.rom}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                BM
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="bm"
+                                value={values.bm}
+                                onBlur={handleBlur("bm")}
+                                onChange={handleChange("bm")}
+                                />
+                                {errors.bm ? (
+                                    <text className={style.txtError}>{errors.bm}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                NOM
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="nom"
+                                value={values.nom}
+                                onBlur={handleBlur("nom")}
+                                onChange={handleChange("nom")}
+                                />
+                                {errors.nom ? (
+                                    <text className={style.txtError}>{errors.nom}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                RBM
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rbm"
+                                value={values.rbm}
+                                onBlur={handleBlur("rbm")}
+                                onChange={handleChange("rbm")}
+                                />
+                                {errors.rbm ? (
+                                    <text className={style.txtError}>{errors.rbm}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -751,6 +1752,39 @@ class MasterFinance extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
+                <Modal toggle={this.openPickUpload} isOpen={this.state.pickUpload} centered>
+                    <ModalHeader className='colCenter'>Pilih Tipe Upload</ModalHeader>
+                    <ModalBody className='colCenter'>
+                        <div className='rowCenter'>
+                            <Button color="info" onClick={this.openModalStruktur}>Upload Struktur Area</Button>
+                            <Button color="primary" className='ml-2' onClick={this.openModalUpload}>Upload Master Finance</Button>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal toggle={this.openModalStruktur} isOpen={this.state.modalStruktur} >
+                    <ModalHeader>Upload Struktur Area</ModalHeader>
+                    <ModalBody className={style.modalUpload}>
+                        <div className={style.titleModalUpload}>
+                            <text>Upload File: </text>
+                            <div className={style.uploadFileInput}>
+                                <AiOutlineFileExcel size={35} />
+                                <div className="ml-3">
+                                    <Input
+                                    type="file"
+                                    name="file"
+                                    accept=".xls,.xlsx"
+                                    onChange={this.onChangeStruktur}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className={style.btnUpload}>
+                            <Button color="info" onClick={this.downloadStrukur}>Download Template</Button>
+                            <Button color="primary" disabled={this.state.fileStruktur === "" ? true : false } onClick={this.uploadStruktur}>Upload</Button>
+                            <Button onClick={this.openModalStruktur}>Cancel</Button>
+                        </div>
+                    </ModalBody>
+                </Modal>
                 <Modal isOpen={this.state.modalConfirm} toggle={this.openConfirm} size="sm">
                     <ModalBody>
                         {this.state.confirm === 'edit' ? (
@@ -781,6 +1815,14 @@ class MasterFinance extends Component {
                                     <AiFillCheckCircle size={80} className={style.green} />
                                 <div className={style.sucUpdate}>Berhasil Mereset Password</div>
                             </div>
+                            </div>
+                        ) : this.state.confirm === 'failUpload' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green, style.mb4]}>Gagal Upload</div>
+                                    <div className={[style.sucUpdate, style.green, style.mb3]}>{this.props.finance.alertMsg}</div>
+                                </div>
                             </div>
                         ) : (
                             <div></div>
@@ -874,7 +1916,7 @@ class MasterFinance extends Component {
                     <div className={style.modalApprove}>
                         <div>
                             <text>
-                                Anda yakin untuk delete coa {detail.region} ?
+                                Anda yakin untuk delete {detail.region} ?
                             </text>
                         </div>
                         <div className={style.btnApprove}>
@@ -900,6 +1942,7 @@ const mapDispatchToProps = {
     updateFinance: finance.updateFinance,
     getFinance: finance.getAllFinance,
     uploadMaster: finance.uploadMaster,
+    uploadStruktur: finance.uploadStruktur,
     nextPage: finance.nextPage,
     exportMaster: finance.exportMaster,
     resetError: finance.resetError,

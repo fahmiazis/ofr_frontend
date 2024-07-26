@@ -130,7 +130,7 @@ class AjuanBayarKlaim extends Component {
             tipeReject: '',
             emailReject: false,
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             dataZip: [],
             docHist: false,
@@ -348,7 +348,7 @@ class AjuanBayarKlaim extends Component {
 
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: val === 'reject' ? tempto.toString() : draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
@@ -429,6 +429,7 @@ class AjuanBayarKlaim extends Component {
     prepRejectHo = async (val) => {
         const token = localStorage.getItem("token")
         const { detailKlaim } = this.props.klaim
+        const {listMenu, listMut} = this.state
         const dataTrans = detailKlaim
         const noPemb = dataTrans.length === 0 ? null : dataTrans[0].no_pembayaran === undefined ? null : dataTrans[0].no_pembayaran
         const noTrans = noPemb
@@ -446,7 +447,9 @@ class AjuanBayarKlaim extends Component {
             kode: dataTrans[0].kode_plant,
             jenis: 'klaim',
             tipe: tipe,
-            menu: cekMenu
+            menu: cekMenu,
+            datareject: listMenu[0],
+            listreject: listMut
         }
         const draftno = {
             no: noTrans,
@@ -1514,8 +1517,7 @@ class AjuanBayarKlaim extends Component {
                                         <th>NOMOR KTP</th>
                                         <th>PPU</th>
                                         <th>PA</th>
-                                        <th>NOMINAL</th>
-                                        <th>NILAI YANG DIBAYARKAN</th>
+                                        <th>NOMINAL VERIFIKASI</th>
                                         <th>TANGGAL TRANSFER</th>
                                     </tr>
                                 </thead>
@@ -1547,8 +1549,7 @@ class AjuanBayarKlaim extends Component {
                                                 <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
                                                 <th>{item.ppu}</th>
                                                 <th>{item.pa}</th>
-                                                <th>{item.nominal}</th>
-                                                <th>{item.nilai_bayar}</th>
+                                                <th>{item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.tanggal_transfer}</th>
                                             </tr>
                                             )
@@ -1609,8 +1610,7 @@ class AjuanBayarKlaim extends Component {
                                         <th>NOMOR KTP</th>
                                         <th>PPU</th>
                                         <th>PA</th>
-                                        <th>NOMINAL</th>
-                                        <th>NILAI YANG DIBAYARKAN</th>
+                                        <th>NOMINAL VERIFIKASI</th>
                                         <th>TANGGAL TRANSFER</th>
                                     </tr>
                                 </thead>
@@ -1635,8 +1635,7 @@ class AjuanBayarKlaim extends Component {
                                                 <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
                                                 <th>{item.ppu}</th>
                                                 <th>{item.pa}</th>
-                                                <th>{item.nominal}</th>
-                                                <th>{item.nilai_bayar}</th>
+                                                <th>{item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.tanggal_transfer}</th>
                                             </tr>
                                             )
@@ -1721,7 +1720,7 @@ class AjuanBayarKlaim extends Component {
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
@@ -1823,7 +1822,7 @@ class AjuanBayarKlaim extends Component {
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
@@ -2325,7 +2324,7 @@ class AjuanBayarKlaim extends Component {
                                 onBlur={handleBlur('alasan')}
                                 />
                                 <div className='ml-2'>
-                                    {listReason.length === 0 ? (
+                                    {listReason.length === 0 && (values.alasan === '.' || values.alasan === '')? (
                                         <text className={style.txtError}>Must be filled</text>
                                     ) : null}
                                 </div>
@@ -2688,7 +2687,7 @@ class AjuanBayarKlaim extends Component {
             <Modal isOpen={this.state.emailReject} size='xl'>
                 <ModalHeader>Email Pemberitahuan</ModalHeader>
                 <ModalBody>
-                    <Email handleData={this.getMessage}/>
+                    <Email handleData={this.getMessage} cekData={this.state.listMut} tipe={'reject'}/>
                     <div className={style.foot}>
                         <div></div>
                         <div>

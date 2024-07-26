@@ -44,6 +44,7 @@ import NumberInput from '../../components/NumberInput'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import ListBbm from '../../components/Ops/ListBbm'
+import TableRincian from '../../components/Ops/tableRincian'
 const nonObject = 'Non Object PPh'
 const {REACT_APP_BACKEND_URL} = process.env
 
@@ -130,7 +131,7 @@ class VerifOps extends Component {
             message: '',
             subject: '',
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
@@ -386,8 +387,11 @@ class VerifOps extends Component {
         const dataCek = localStorage.getItem('docData')
         const {item, type} = (this.props.location && this.props.location.state) || {}
         if (type === 'approve') {
+            this.setState({
+                time1: moment(item.createdAt).startOf('month').format('YYYY-MM-DD')
+            })
             this.getDataOps()
-            this.prosesDetail(item)
+            // this.prosesDetail(item)
         } else if (dataCek !== undefined && dataCek !== null) {
             const data = {
                 no_transaksi: dataCek
@@ -627,7 +631,7 @@ class VerifOps extends Component {
         }
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
@@ -798,6 +802,10 @@ class VerifOps extends Component {
             no: noTrans,
             list: listOps
         }
+        const sendData = {
+            no: noTrans,
+            list: []
+        }
         if (level === '4' || level === '14' || level === '24' || level === '34') {
             await this.props.submitVerif(token, tempno)
             this.dataSendEmail('approve')
@@ -821,7 +829,7 @@ class VerifOps extends Component {
             await this.props.submitVerif(token, tempno)
             this.dataSendEmail('approve')
         } else {
-            await this.props.submitVerif(token, tempno)
+            await this.props.submitVerif(token, sendData)
             // this.dataSendEmail()
             this.getDataOps()
             this.setState({confirm: 'isApprove'})
@@ -845,13 +853,13 @@ class VerifOps extends Component {
         }
         const cekKasbon = detailOps.find(({type_kasbon}) => type_kasbon === 'kasbon')
         const tipeKasbon = cekKasbon !== undefined ? 'kasbon' : 'ops'
-        const tipeProses = val === 'reject' ? 'reject perbaikan' : tipeKasbon === 'kasbon' ? 'verifikasi kasbon' : 'list ajuan bayar'
-        const tipeRoute = val === 'reject' ? 'revops' : tipeKasbon === 'kasbon' ? 'verifkasbon' : 'listops'
+        const tipeProses = val === 'reject' ? 'reject perbaikan' : tipeKasbon === 'kasbon' && level === '2' ? 'verifikasi kasbon' : 'list ajuan bayar'
+        const tipeRoute = val === 'reject' ? 'revops' : tipeKasbon === 'kasbon' && level === '2' ? 'verifkasbon' : 'listops'
         // const tipeMenu = level === '4' || level === '14' || level === '24' || level === '34' ? 'list ajuan bayar' : 'verifikasi ops'
-        const tipeMenu = tipeKasbon === 'kasbon' ? 'verifikasi kasbon' : 'list ajuan bayar'
+        const tipeMenu = val === 'reject' ? 'verifikasi finance' : tipeKasbon === 'kasbon' && level === '2' ? 'verifikasi kasbon' : 'list ajuan bayar'
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
@@ -1070,16 +1078,16 @@ class VerifOps extends Component {
                 c6: `${moment(item.periode_awal).format('DD/MMMM/YYYY')} - ${moment(item.periode_akhir).format('DD/MMMM/YYYY')}`,
                 c7: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c8: item.bank_tujuan,
-                c9: item.norek_ajuan,
+                c9: item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan,
                 c10: item.nama_tujuan,
                 c11: item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-',
                 c12: item.status_npwp === 1 ? item.nama_npwp : '',
                 c13: item.status_npwp === 1 ? item.no_npwp : '',
                 c14: item.status_npwp === 0 ? item.nama_ktp : '',
                 c15: item.status_npwp === 0 ? item.no_ktp : '',
-                c16: item.dpp,
-                c17: item.ppn,
-                c18: item.nilai_utang,
+                c16: item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c17: item.ppn === null || item.ppn === undefined ? 0 : item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c18: item.nilai_utang === null || item.nilai_utang === undefined ? 0 : item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c19: item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c20: item.tanggal_transfer !== null ? `${moment(item.tanggal_transfer).format('DD/MMMM/YYYY')}` : '-',
                 c21: item.jenis_pph,
@@ -1780,6 +1788,7 @@ class VerifOps extends Component {
                                         <th>NAMA VENDOR/KTP/NPWP</th>
                                         <th>NOMOR NPWP</th>
                                         <th>NIK</th>
+                                        <th>Transaksi Ber PPN</th>
                                         <th>DPP</th>
                                         <th>PPN</th>
                                         <th>PPh</th>
@@ -1816,7 +1825,7 @@ class VerifOps extends Component {
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.status_npwp === 1 ? 'Ya' : nonObject}</th>
                                                 <th>{item.nama_vendor}</th>
@@ -1854,9 +1863,10 @@ class VerifOps extends Component {
                                                     </div> */}
                                                     {item.no_ktp}
                                                 </th>
-                                                <th>{item.dpp}</th>
-                                                <th>{item.pph}</th>
-                                                <th>{item.nilai_utang}</th>
+                                                <th>{item.type_transaksi}</th>
+                                                <th>{item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>(-){item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.stat_skb === 'ya' ? 'Ya' : '-'}</th>
                                                 <th>{item.tanggal_transfer}</th>
@@ -1890,7 +1900,7 @@ class VerifOps extends Component {
                                     <Button className="mr-2" disabled={filter === 'revisi'  && listMut.length > 0 ? false : filter !== 'available' ? true : listMut.length === 0 ? true : false} color="danger" onClick={this.prepareReject}>
                                         Reject
                                     </Button>
-                                    <Button color="success" disabled={listOps.length > 0 ? true : filter === 'revisi'  ? false : filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
+                                    <Button color="success" disabled={filter === 'revisi'  ? false : filter !== 'available' ? true : false} onClick={this.cekDataDoc}>
                                         Submit
                                     </Button>
                                 </>
@@ -1904,7 +1914,7 @@ class VerifOps extends Component {
                     </ModalHeader>
                     <ModalBody>
                         <div className={style.tableDashboard}>
-                            <Table bordered responsive hover className={style.tab} id="table-to-xls">
+                            <Table bordered responsive hover className={style.tab}>
                                 <thead>
                                     <tr>
                                         <th>NO</th>
@@ -1944,16 +1954,16 @@ class VerifOps extends Component {
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
                                                 <th>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-'}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                                <th>{item.status_npwp === 1 ? item.nama_npwp : ''}</th>
+                                                <th>{item.status_npwp === 1 ? item.no_npwp : ''}</th>
                                                 <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
                                                 <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                                <th>{item.dpp}</th>
-                                                <th>{item.ppn}</th>
-                                                <th>{item.nilai_utang}</th>
+                                                <th>{item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>(-){item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.tanggal_transfer !== null ? moment(item.tanggal_transfer).format('DD/MMMM/YYYY') : '-'}</th>
                                                 <th>{item.jenis_pph}</th>
@@ -2426,7 +2436,7 @@ class VerifOps extends Component {
                                 onBlur={handleBlur('alasan')}
                                 />
                                 <div className='ml-2'>
-                                    {listReason.length === 0 ? (
+                                    {listReason.length === 0 && (values.alasan === '.' || values.alasan === '')? (
                                         <text className={style.txtError}>Must be filled</text>
                                     ) : null}
                                 </div>

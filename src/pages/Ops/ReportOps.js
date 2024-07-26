@@ -126,7 +126,7 @@ class ReportOps extends Component {
             formDis: false,
             history: false,
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             dataDownload: [],
             modalDownload: false,
@@ -854,31 +854,34 @@ class ReportOps extends Component {
         ws.columns = [
             {header: 'NO', key: 'c1'},
             {header: 'PIC', key: 'c2'},
-            {header: 'NAMA', key: 'c3'},
-            {header: 'AREA', key: 'c4'},
-            {header: 'NOMOR FPD', key: 'c5'},
-            {header: 'COST CENTRE', key: 'c6'},
-            {header: 'NO COA', key: 'c7'},
-            {header: 'NAMA COA', key: 'c8'},
-            {header: 'KETERANGAN TAMBAHAN', key: 'c9'},
-            {header: 'TGL AJUAN', key: 'c10'},
-            {header: 'PERIODE (DDMMYY)', key: 'c11'},
-            {header: 'NILAI YANG DIAJUKAN', key: 'c12'},
-            {header: 'BANK', key: 'c13'},
-            {header: 'NOMOR REKENING', key: 'c14'},
-            {header: 'ATAS NAMA', key: 'c15'},
-            {header: 'MEMILIKI NPWP', key: 'c16'},
-            {header: 'NAMA SESUAI NPWP', key: 'c17'},
-            {header: 'NOMOR NPWP', key: 'c18'},
-            {header: 'NAMA SESUAI KTP', key: 'c19'},
-            {header: 'NIK', key: 'c20'},
+            {header: 'NAMA AREA', key: 'c3'},
+            {header: 'CHANNEL', key: 'c4'},
+            {header: 'NAMA CABANG', key: 'c5'},
+            {header: 'NOMOR FPD', key: 'c6'},
+            {header: 'NO PLANT', key: 'c7'},
+            {header: 'COST CENTRE', key: 'c8'},
+            {header: 'NO COA', key: 'c9'},
+            {header: 'NAMA COA', key: 'c10'},
+            {header: 'SUB COA', key: 'c11'},
+            {header: 'KETERANGAN TAMBAHAN', key: 'c12'},
+            {header: 'PERIODE (DDMMYY)', key: 'c13'},
+            {header: 'NILAI YANG DIAJUKAN', key: 'c14'},
+            {header: 'NAMA BANK', key: 'c16'},
+            {header: 'NOMOR REKENING', key: 'c16'},
+            {header: 'ATAS NAMA', key: 'c17'},
+            {header: 'MEMILIKI NPWP', key: 'c18'},
+            {header: 'NAMA SESUAI NPWP/KTP', key: 'c19'},
+            {header: 'NOMOR NPWP/KTP', key: 'c20'},
             {header: 'DPP', key: 'c21'},
             {header: 'PPN', key: 'c22'},
             {header: 'PPh', key: 'c23'},
             {header: 'NILAI YANG DIBAYARKAN', key: 'c24'},
             {header: 'TANGGAL TRANSFER', key: 'c25'},
             {header: 'KETERANGAN', key: 'c26'},
-            {header: 'STATUS', key: 'c27'}
+            {header: 'RENCANA BAYAR', key: 'c27'},
+            {header: 'NOMOR PO', key: 'c28'},
+            {header: 'TGL AJUAN', key: 'c29'},
+            {header: 'STATUS', key: 'c30'}
         ]
 
         dataDownload.map((item, index) => { return ( ws.addRow(
@@ -886,42 +889,46 @@ class ReportOps extends Component {
                 c1: index + 1,
                 c2: item.finance.pic_finance,
                 c3: item.area,
-                c4: item.depo.channel,
-                c5: item.no_transaksi,
-                c6: item.cost_center,
-                c7: item.no_coa,
-                c8: item.nama_coa,
-                c9: item.keterangan,
-                c10: `${moment(item.start_ops).format('DD MMMM YYYY')}`,
-                c11: `${moment(item.periode_awal).format('DD MMMM YYYY')} - ${moment(item.periode_akhir).format('DD MMMM YYYY')}`,
-                c12: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
-                c13: item.bank_tujuan,
-                c14: item.norek_ajuan,
-                c15: item.nama_tujuan,
-                c16: item.status_npwp === 0 ? 'Tidak' : 'Ya',
-                c17: item.status_npwp === 0 ? '' : item.nama_npwp,
-                c18: item.status_npwp === 0 ? '' : item.no_npwp,
-                c19: item.status_npwp === 0 ? item.nama_ktp : '',
-                c20: item.status_npwp === 0 ? item.no_ktp : '',
+                c4: item.finance.channel,
+                c5: "-",
+                c6: item.no_transaksi,
+                c7: item.kode_plant,
+                c8: item.cost_center,
+                c9: item.no_coa,
+                c10: item.nama_coa,
+                c11: item.sub_coa,
+                c12: item.keterangan,
+                c13: `${moment(item.periode_awal).format('DD MMMM YYYY')} - ${moment(item.periode_akhir).format('DD MMMM YYYY')}`,
+                c14: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c15: item.bank_tujuan,
+                c16: item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan,
+                c17: item.nama_tujuan,
+                c18: item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-',
+                c19: item.status_npwp === 0 ? item.nama_ktp : item.nama_npwp,
+                c20: item.status_npwp === 0 ? item.no_ktp : item.no_npwp,
                 c21: item.dpp,
                 c22: item.ppn,
                 c23: item.nilai_utang,
-                c24: item.nilai_bayar,
+                c24: item.nilai_bayar !== null ? item.nilai_bayar : 
+                    (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi !== 'Ya' ? item.nilai_ajuan
+                    : item.jenis_pph !== 'Non PPh' && item.type_transaksi !== 'Ya' ? parseFloat(item.nilai_ajuan) - parseFloat(item.nilai_utang)
+                    : item.jenis_pph !== 'Non PPh' && item.type_transaksi === 'Ya' && parseFloat(item.nilai_ajuan) - parseFloat(item.nilai_utang),
                 c25: `${moment(item.tanggal_transfer).format('DD MMMM YYYY')}`,
                 c26: '',
-                c27: item.history.split(',').reverse()[0],
+                c27: '',
+                c28: item.no_po,
+                c29: `${moment(item.start_ops).format('DD MMMM YYYY')}`,
+                c30: item.history.split(',').reverse()[0],
             }
         )
         ) })
 
         ws.addRow(
             {
-                c11: 'TOTAL :',
-                c12: dataDownload.reduce((accumulator, object) => {
+                c13: 'TOTAL :',
+                c14: dataDownload.reduce((accumulator, object) => {
                     return accumulator + parseInt(object.nilai_ajuan);
                 }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
-                c13: '',
-                c14: '',
                 c15: '',
                 c16: '',
                 c17: '',
@@ -936,6 +943,8 @@ class ReportOps extends Component {
                 c26: '',
                 c27: '',
                 c28: '',
+                c29: '',
+                c30: ''
             }
         )
 
@@ -1197,7 +1206,7 @@ class ReportOps extends Component {
                                 c10: iter + 1,
                                 c11: iter === 0 ? item.depo.gl_kk 
                                     : iter === 1 ? dataPph.bankops
-                                    : iter === 2 ? item.veriftax.gl_jurnal
+                                    : iter === 2 && item.veriftax !== null ? item.veriftax.gl_jurnal
                                     : iter === 3 && 
                                     (item.jenis_pph === cek21 ? dataPph.pph21 :
                                     item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -1245,7 +1254,7 @@ class ReportOps extends Component {
                                 c11: iter === 0 ? item.depo.gl_kk 
                                     : iter === 1 ? dataPph.bankops
                                     : iter === 2 ? dataPph.ppn
-                                    : iter === 3 && item.veriftax.gl_jurnal
+                                    : iter === 3 && item.veriftax !== null && item.veriftax.gl_jurnal
                                 ,
                                 c12: iter === 0 || iter === 2 ? 40 : 50,
                                 c13: '',
@@ -1289,8 +1298,8 @@ class ReportOps extends Component {
                                 c11: iter === 0 ? item.depo.gl_kk 
                                     : iter === 1 ? dataPph.bankops
                                     : iter === 2 ? dataPph.ppn
-                                    : iter === 3 ? item.veriftax.gl_jurnal
-                                    : iter === 4 ? item.veriftax.gl_jurnal
+                                    : iter === 3 && item.veriftax !== null ? item.veriftax.gl_jurnal
+                                    : iter === 4 && item.veriftax !== null ? item.veriftax.gl_jurnal
                                     : iter === 5 && 
                                         (item.jenis_pph === cek21 ? dataPph.pph21 :
                                         item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -1340,7 +1349,7 @@ class ReportOps extends Component {
                                 c8: item.depo.pic.username,
                                 c9: 'IDR',
                                 c10:iter + 1,
-                                c11: iter === 0 ? item.veriftax.gl_jurnal : iter === 1 && dataPph.bankops,
+                                c11: iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal : iter === 1 && dataPph.bankops,
                                 c12: iter === 0 ? 40 : 50,
                                 c13: '',
                                 c14: '',
@@ -1380,7 +1389,7 @@ class ReportOps extends Component {
                                 c8: item.depo.pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
-                                c11: iter === 0 ? item.veriftax.gl_jurnal 
+                                c11: iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal 
                                     : iter === 1 ? 
                                     (item.jenis_pph === cek21 ? dataPph.pph21 :
                                     item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -1426,7 +1435,7 @@ class ReportOps extends Component {
                                 c8: item.depo.pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
-                                c11: iter === 0 ? item.veriftax.gl_jurnal
+                                c11: iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal
                                     : iter === 1 ? dataPph.ppn
                                     : iter === 2 && dataPph.bankops
                                 ,
@@ -1469,7 +1478,7 @@ class ReportOps extends Component {
                                     c8: item.depo.pic.username,
                                     c9: 'IDR',
                                     c10: iter + 1,
-                                    c11: iter === 0 ? item.veriftax.gl_jurnal 
+                                    c11: iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal 
                                         : iter === 1 ? dataPph.ppn
                                         : iter === 2 ? 
                                         (item.jenis_pph === cek21 ? dataPph.pph21 :
@@ -1643,9 +1652,9 @@ class ReportOps extends Component {
                                 <div className={style.searchEmail2}>
                                     <text>Status:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="reject">Reject</option>
-                                        <option value="ready">Siap Bayar</option>
                                         <option value="bayar">Telah Bayar</option>
+                                        <option value="ready">Siap Bayar</option>
+                                        <option value="reject">Reject</option>
                                     </Input>
                                 </div>
                             </div>
@@ -1707,38 +1716,35 @@ class ReportOps extends Component {
                                                     onChange={() => listOps.length === dataReport.length ? this.chekRej('all') : this.chekApp('all')}
                                                     />
                                                 </th>
-                                                <th>No</th>
+                                                <th>NO</th>
                                                 <th>PIC</th>
-                                                <th>NAMA</th>
-                                                <th>AREA</th>
+                                                <th>NAMA AREA</th>
+                                                <th>CHANNEL</th>
+                                                <th>NAMA CABANG</th>
                                                 <th>NOMOR FPD</th>
+                                                <th>NO PLANT</th>
                                                 <th>COST CENTRE</th>
                                                 <th>NO COA</th>
                                                 <th>NAMA COA</th>
+                                                <th>SUB COA</th>
                                                 <th>KETERANGAN TAMBAHAN</th>
-                                                <th>TGL AJUAN</th>
                                                 <th>PERIODE (DDMMYY)</th>
                                                 <th>NILAI YANG DIAJUKAN</th>
-                                                <th>BANK</th>
+                                                <th>NAMA BANK</th>
                                                 <th>NOMOR REKENING</th>
                                                 <th>ATAS NAMA</th>
                                                 <th>MEMILIKI NPWP</th>
-                                                <th>NAMA SESUAI NPWP</th>
-                                                <th>NOMOR NPWP</th>
-                                                <th>NAMA SESUAI KTP</th>
-                                                <th>NIK</th>
+                                                <th>NAMA SESUAI NPWP/KTP</th>
+                                                <th>NOMOR NPWP/KTP</th>
                                                 <th>DPP</th>
                                                 <th>PPN</th>
                                                 <th>PPh</th>
-                                                <th>Jenis PPh</th>
-                                                <th>Transaksi Ber PPN</th>
-                                                <th>Tujuan Transfer</th>
-                                                <th>NILAI YANG DIAJUKAN</th>
                                                 <th>NILAI YANG DIBAYARKAN</th>
-                                                <th>NILAI YANG DIBUKUKAN</th>
-                                                <th>PO</th>
                                                 <th>TANGGAL TRANSFER</th>
                                                 <th>KETERANGAN</th>
+                                                <th>RENCANA BAYAR</th>
+                                                <th>NOMOR PO</th>
+                                                <th>TGL AJUAN</th>
                                                 <th>STATUS</th>
                                             </tr>
                                         </thead>
@@ -1757,30 +1763,26 @@ class ReportOps extends Component {
                                                         <td>{dataReport.indexOf(item) + 1}</td>
                                                         <td>{item.finance.pic_finance}</td>
                                                         <td>{item.area}</td>
-                                                        <td>{item.depo.channel}</td>
+                                                        <td>{item.finance.channel}</td>
+                                                        <td>{"-"}</td>
                                                         <td>{item.no_transaksi}</td>
+                                                        <td>{item.kode_plant}</td>
                                                         <td>{item.cost_center}</td>
                                                         <td>{item.no_coa}</td>
                                                         <td>{item.nama_coa}</td>
+                                                        <td>{item.sub_coa}</td>
                                                         <td>{item.keterangan}</td>
-                                                        <td>{moment(item.start_ops).format('DD MMMM YYYY')}</td>
                                                         <td>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</td>
                                                         <td>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</td>
                                                         <td>{item.bank_tujuan}</td>
-                                                        <td>{item.norek_ajuan}</td>
+                                                        <td>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</td>
                                                         <td>{item.nama_tujuan}</td>
-                                                        <td>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</td>
-                                                        <td>{item.status_npwp === 0 ? '' : item.nama_npwp}</td>
-                                                        <td>{item.status_npwp === 0 ? '' : item.no_npwp}</td>
-                                                        <td>{item.status_npwp === 0 ? item.nama_ktp : ''}</td>
-                                                        <td>{item.status_npwp === 0 ? item.no_ktp : ''}</td>
+                                                        <td>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-'}</td>
+                                                        <td>{item.status_npwp === 0 ? item.nama_ktp : item.nama_npwp}</td>
+                                                        <td>{item.status_npwp === 0 ? item.no_ktp : item.no_npwp}</td>
                                                         <td>{item.dpp}</td>
                                                         <td>{item.ppn}</td>
                                                         <td>{item.nilai_utang}</td>
-                                                        <td>{item.jenis_pph}</td>
-                                                        <td>{item.type_transaksi}</td>
-                                                        <td>{item.tujuan_tf}</td>
-                                                        <td>{item.nilai_ajuan}</td>
                                                         <td>
                                                             {item.nilai_bayar !== null ? item.nilai_bayar : 
                                                                 (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi !== 'Ya' ? item.nilai_ajuan
@@ -1788,22 +1790,25 @@ class ReportOps extends Component {
                                                                 : item.jenis_pph !== 'Non PPh' && item.type_transaksi === 'Ya' && parseFloat(item.nilai_ajuan) - parseFloat(item.nilai_utang)
                                                             }
                                                         </td>
-                                                        <td>{item.nilai_buku}</td>
-                                                        <td>{item.no_po}</td>
                                                         <td>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</td>
-                                                        <td>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</td>
+                                                        <td>{"-"}</td>
+                                                        <td>{"-"}</td>
+                                                        <td>{item.no_po}</td>
+                                                        <td>{moment(item.start_ops).format('DD MMMM YYYY')}</td>
                                                         <td>{item.history.split(',').reverse()[0]}</td>
                                                     </tr>
                                                 )
                                             })}
                                             {dataReport.length > 0 && (
                                                 <tr>
-                                                    <th className='total' colSpan={12}>Total</th>
+                                                    <th className='total' colSpan={14}>Total</th>
                                                     <th>
                                                         {dataReport.reduce((accumulator, object) => {
                                                             return accumulator + parseInt(object.nilai_ajuan);
                                                         }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                                     </th>
+                                                    <th></th>
+                                                    <th></th>
                                                     <th></th>
                                                     <th></th>
                                                     <th></th>
@@ -1857,80 +1862,90 @@ class ReportOps extends Component {
                         <Table bordered responsive hover className={style.tab}>
                             <thead>
                                 <tr>
-                                    <th>No</th>
+                                    <th>NO</th>
                                     <th>PIC</th>
-                                    <th>NAMA</th>
-                                    <th>AREA</th>
+                                    <th>NAMA AREA</th>
+                                    <th>CHANNEL</th>
+                                    <th>NAMA CABANG</th>
                                     <th>NOMOR FPD</th>
+                                    <th>NO PLANT</th>
                                     <th>COST CENTRE</th>
                                     <th>NO COA</th>
                                     <th>NAMA COA</th>
+                                    <th>SUB COA</th>
                                     <th>KETERANGAN TAMBAHAN</th>
-                                    <th>TGL AJUAN</th>
                                     <th>PERIODE (DDMMYY)</th>
                                     <th>NILAI YANG DIAJUKAN</th>
-                                    <th>BANK</th>
+                                    <th>NAMA BANK</th>
                                     <th>NOMOR REKENING</th>
                                     <th>ATAS NAMA</th>
                                     <th>MEMILIKI NPWP</th>
-                                    <th>NAMA SESUAI NPWP</th>
-                                    <th>NOMOR NPWP</th>
-                                    <th>NAMA SESUAI KTP</th>
-                                    <th>NIK</th>
+                                    <th>NAMA SESUAI NPWP/KTP</th>
+                                    <th>NOMOR NPWP/KTP</th>
                                     <th>DPP</th>
                                     <th>PPN</th>
                                     <th>PPh</th>
-                                    <th>Jenis PPh</th>
-                                    <th>NILAI YANG DIAJUKAN</th>
                                     <th>NILAI YANG DIBAYARKAN</th>
-                                    <th>NILAI YANG DIBUKUKAN</th>
                                     <th>TANGGAL TRANSFER</th>
                                     <th>KETERANGAN</th>
+                                    <th>RENCANA BAYAR</th>
+                                    <th>NOMOR PO</th>
+                                    <th>TGL AJUAN</th>
                                     <th>STATUS</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {dataDownload.map(item => {
+                                {dataDownload.map((item, index) => {
                                     return (
                                         <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                            <th>{dataDownload.indexOf(item) + 1}</th>
-                                            <th>{item.finance.pic_finance}</th>
-                                            <th>{item.area}</th>
-                                            <th>{item.depo.channel}</th>
-                                            <th>{item.no_transaksi}</th>
-                                            <th>{item.cost_center}</th>
-                                            <th>{item.no_coa}</th>
-                                            <th>{item.nama_coa}</th>
-                                            <th>{item.keterangan}</th>
-                                            <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
-                                            <th>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</th>
-                                            <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                            <th>{item.bank_tujuan}</th>
-                                            <th>{item.norek_ajuan}</th>
-                                            <th>{item.nama_tujuan}</th>
-                                            <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
-                                            <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                            <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
-                                            <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
-                                            <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                            <th>{item.dpp}</th>
-                                            <th>{item.ppn}</th>
-                                            <th>{item.nilai_utang}</th>
-                                            <th>{item.nilai_bayar}</th>
-                                            <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
-                                            <th></th>
-                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                            <td>{index + 1}</td>
+                                            <td>{item.finance.pic_finance}</td>
+                                            <td>{item.area}</td>
+                                            <td>{item.finance.channel}</td>
+                                            <td>{"-"}</td>
+                                            <td>{item.no_transaksi}</td>
+                                            <td>{item.kode_plant}</td>
+                                            <td>{item.cost_center}</td>
+                                            <td>{item.no_coa}</td>
+                                            <td>{item.nama_coa}</td>
+                                            <td>{item.sub_coa}</td>
+                                            <td>{item.keterangan}</td>
+                                            <td>{moment(item.periode_awal).format('MMMM YYYY') === moment(item.periode_akhir).format('MMMM YYYY') ? moment(item.periode_awal).format('MMMM YYYY') : moment(item.periode_awal).format('DD MMMM YYYY') - moment(item.periode_akhir).format('DD MMMM YYYY')}</td>
+                                            <td>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</td>
+                                            <td>{item.bank_tujuan}</td>
+                                            <td>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</td>
+                                            <td>{item.nama_tujuan}</td>
+                                            <td>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : '-'}</td>
+                                            <td>{item.status_npwp === 0 ? item.nama_ktp : item.nama_npwp}</td>
+                                            <td>{item.status_npwp === 0 ? item.no_ktp : item.no_npwp}</td>
+                                            <td>{item.dpp}</td>
+                                            <td>{item.ppn}</td>
+                                            <td>{item.nilai_utang}</td>
+                                            <td>
+                                                {item.nilai_bayar !== null ? item.nilai_bayar : 
+                                                    (item.jenis_pph === 'Non PPh' || item.jenis_pph === null) && item.type_transaksi !== 'Ya' ? item.nilai_ajuan
+                                                    : item.jenis_pph !== 'Non PPh' && item.type_transaksi !== 'Ya' ? parseFloat(item.nilai_ajuan) - parseFloat(item.nilai_utang)
+                                                    : item.jenis_pph !== 'Non PPh' && item.type_transaksi === 'Ya' && parseFloat(item.nilai_ajuan) - parseFloat(item.nilai_utang)
+                                                }
+                                            </td>
+                                            <td>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</td>
+                                            <td>{"-"}</td>
+                                            <td>{"-"}</td>
+                                            <td>{item.no_po}</td>
+                                            <td>{moment(item.start_ops).format('DD MMMM YYYY')}</td>
+                                            <td>{item.history.split(',').reverse()[0]}</td>
                                         </tr>
                                     )
                                 })}
                                 {dataDownload.length > 0 && (
                                     <tr>
-                                        <th className='total' colSpan={11}>Total</th>
+                                        <th className='total' colSpan={13}>Total</th>
                                         <th>
                                             {dataDownload.reduce((accumulator, object) => {
                                                 return accumulator + parseInt(object.nilai_ajuan);
                                             }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                         </th>
+                                        <th></th>
                                         <th></th>
                                         <th></th>
                                         <th></th>
@@ -2060,7 +2075,7 @@ class ReportOps extends Component {
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
                                                 <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
@@ -2175,7 +2190,7 @@ class ReportOps extends Component {
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
                                                 <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
@@ -2354,7 +2369,7 @@ class ReportOps extends Component {
                                         </Col>
                                         <Col md={8} className='upper'>
                                             <div className='line2'>{item.keterangan}</div>
-                                            <div className='line mt-1'>NO REK {item.bank_tujuan} {item.norek_ajuan}</div>
+                                            <div className='line mt-1'>NO REK {item.bank_tujuan} {item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</div>
                                         </Col>
                                         <Col md={3} className='upper'>
                                             <div className='line'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>
@@ -2927,7 +2942,7 @@ class ReportOps extends Component {
                                                             <th>{iter + 1}</th>
                                                             <th>{iter === 0 ? item.depo.gl_kk 
                                                                 : iter === 1 ? dataPph.bankops
-                                                                : iter === 2 ? item.veriftax.gl_jurnal
+                                                                : iter === 2 && item.veriftax !== null ? item.veriftax.gl_jurnal
                                                                 : iter === 3 && 
                                                                 (item.jenis_pph === cek21 ? dataPph.pph21 :
                                                                 item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -2977,7 +2992,7 @@ class ReportOps extends Component {
                                                             <th>{iter === 0 ? item.depo.gl_kk 
                                                                 : iter === 1 ? dataPph.bankops
                                                                 : iter === 2 ? dataPph.ppn
-                                                                : iter === 3 && item.veriftax.gl_jurnal
+                                                                : iter === 3 && item.veriftax !== null && item.veriftax.gl_jurnal
                                                             }</th>
                                                             <th>{iter === 0 || iter === 2 ? 40 : 50}</th>
                                                             <th></th>
@@ -3023,8 +3038,8 @@ class ReportOps extends Component {
                                                             <th>{iter === 0 ? item.depo.gl_kk 
                                                                 : iter === 1 ? dataPph.bankops
                                                                 : iter === 2 ? dataPph.ppn
-                                                                : iter === 3 ? item.veriftax.gl_jurnal
-                                                                : iter === 4 ? item.veriftax.gl_jurnal
+                                                                : iter === 3 && item.veriftax !== null ? item.veriftax.gl_jurnal
+                                                                : iter === 4 && item.veriftax !== null ? item.veriftax.gl_jurnal
                                                                 : iter === 5 && 
                                                                     (item.jenis_pph === cek21 ? dataPph.pph21 :
                                                                     item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -3076,7 +3091,7 @@ class ReportOps extends Component {
                                                             <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 ? item.veriftax.gl_jurnal : iter === 1 && dataPph.bankops}</th>
+                                                            <th>{iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal : iter === 1 && dataPph.bankops}</th>
                                                             <th>{iter === 0 ? 40 : 50}</th>
                                                             <th></th>
                                                             <th></th>
@@ -3118,7 +3133,7 @@ class ReportOps extends Component {
                                                             <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 ? item.veriftax.gl_jurnal 
+                                                            <th>{iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal 
                                                                 : iter === 1 ? 
                                                                 (item.jenis_pph === cek21 ? dataPph.pph21 :
                                                                 item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -3166,7 +3181,7 @@ class ReportOps extends Component {
                                                             <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 ? item.veriftax.gl_jurnal
+                                                            <th>{iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal
                                                                 : iter === 1 ? dataPph.ppn
                                                                 : iter === 2 && dataPph.bankops
                                                             }</th>
@@ -3211,7 +3226,7 @@ class ReportOps extends Component {
                                                             <th>{item.depo.pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 ? item.veriftax.gl_jurnal 
+                                                            <th>{iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal 
                                                                 : iter === 1 ? dataPph.ppn
                                                                 : iter === 2 ? 
                                                                 (item.jenis_pph === cek21 ? dataPph.pph21 :
@@ -3389,7 +3404,7 @@ class ReportOps extends Component {
                                                         <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                         <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                         <th>{item.bank_tujuan}</th>
-                                                        <th>{item.norek_ajuan}</th>
+                                                        <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                         <th>{item.nama_tujuan}</th>
                                                         <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
                                                         <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>

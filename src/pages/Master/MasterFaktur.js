@@ -81,7 +81,10 @@ class MasterFaktur extends Component {
             filter: null,
             filterName: 'All',
             modalDel: false,
-            page: 1
+            page: 1,
+            listData: [],
+            isLoading: false,
+            rawDel: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -129,6 +132,126 @@ class MasterFaktur extends Component {
         })
     }
 
+    chekApp = (val) => {
+        const { listData } = this.state
+        const {dataAll} = this.props.faktur
+        if (val === 'all') {
+            this.setState({isLoading: true})
+            const data = []
+            for (let i = 0; i < dataAll.length; i++) {
+                data.push(dataAll[i].id)
+            }
+            this.setState({listData: data})
+            setTimeout(() => {
+                this.setState({ isLoading: false })
+            }, 1000)
+        } else {
+            listData.push(val)
+            this.setState({listData: listData})
+        }
+    }
+
+    chekRej = (val) => {
+        const {listData} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listData: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listData.length; i++) {
+                if (listData[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listData[i])
+                }
+            }
+            this.setState({listData: data})
+        }
+    }
+
+    deleteData = async () => {
+        const token = localStorage.getItem("token")
+        const {listData} = this.state
+        const data = {
+            list: listData
+        }
+        await this.props.deleteRaw(token, data)
+        this.openRawdelete()
+        this.setState({confirm: 'del'})
+        this.openConfirm()
+        this.getDataCount()
+    }
+
+    openRawdelete = () => {
+        this.setState({rawDel: !this.state.rawDel})
+    }
+
+    downloadData = () => {
+        const {listData} = this.state
+        const {dataAll} = this.props.faktur
+        const dataDownload = []
+        for (let i = 0; i < listData.length; i++) {
+            for (let j = 0; j < dataAll.length; j++) {
+                if (dataAll[j].id === listData[i]) {
+                    dataDownload.push(dataAll[j])
+                }
+            }
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data user')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+        
+
+        ws.columns = [
+            {header: 'NOMOR_FAKTUR', key: 'c1'},
+            {header: 'TANGGAL_FAKTUR', key: 'c2'},
+            {header: 'NPWP', key: 'c3'},
+            {header: 'NAMA', key: 'c4'},
+            {header: 'JUMLAH_DPP', key: 'c5'},
+            {header: 'JUMLAH_PPN', key: 'c6'},
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: item.no_faktur,
+                c2: moment(item.tgl_faktur).format('DD/MM/YYYY'),
+                c3: item.npwp,
+                c4: item.nama,
+                c5: item.jumlah_dpp,
+                c6: item.jumlah_ppn,
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Master Faktur ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
+    }
+
     showAlert = () => {
         this.setState({alert: true, modalEdit: false, modalAdd: false, modalUpload: false })
        
@@ -167,7 +290,7 @@ class MasterFaktur extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master faktur.xlsx"); //or any other extension
+            link.setAttribute('download', `Master Faktur ${moment().format('DD MMMM YYYY')}.xlsx`); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -201,7 +324,7 @@ class MasterFaktur extends Component {
         this.setState({modalUpload: !this.state.modalUpload})
     }
     openModalDownload = () => {
-        this.setState({modalUpload: !this.state.modalUpload})
+        this.setState({modalDownload: !this.state.modalDownload})
     }
 
     DownloadTemplate = () => {
@@ -257,7 +380,7 @@ class MasterFaktur extends Component {
     onSearch = (e) => {
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            this.getDataCount({limit: 10, search: this.state.search})
+            this.getDataCount({limit: 10, search: this.state.search, page: 1})
         }
     }
 
@@ -336,7 +459,7 @@ class MasterFaktur extends Component {
         const filter = value === undefined || value.filter === undefined ? this.state.filter : value.filter
         console.log(this.state.filter)
         await this.props.getFaktur(token, limit, search, pages, filter)
-        this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages})
+        this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages, listData: []})
     }
 
     changeFilter = async (val) => {
@@ -362,7 +485,7 @@ class MasterFaktur extends Component {
     }
 
     render() {
-        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
+        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg, listData} = this.state
         const {dataFaktur, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.faktur
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
@@ -426,6 +549,7 @@ class MasterFaktur extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            {/* <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem> */}
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -468,7 +592,8 @@ class MasterFaktur extends Component {
                                     <div className={style.headEmail}>
                                         <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
                                         <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button>
+                                        <Button className='mr-1' onClick={this.openModalDownload} color="success" size="lg">Download</Button>
+                                        <Button disabled={listData.length === 0 ? true : false} className='mr-1' onClick={this.openRawdelete} color="danger" size="lg">Delete</Button>
                                     </div>
                                     <div className={style.searchEmail}>
                                         <text>Search: </text>
@@ -506,6 +631,15 @@ class MasterFaktur extends Component {
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listData.length === 0 ? false : listData.length === dataAll.length ? true : false}
+                                                    onChange={() => listData.length === dataAll.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    />
+                                                    {/* Select */}
+                                                </th>
                                                 <th>NO</th>
                                                 <th>NO FAKTUR</th>
                                                 <th>TGL FAKTUR</th>
@@ -513,12 +647,22 @@ class MasterFaktur extends Component {
                                                 <th>NAMA</th>
                                                 <th>JUMLAH DPP</th>
                                                 <th>JUMLAH PPN</th>
+                                                <th>STATUS</th>
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {dataAll.length !== 0 && dataAll.map(item => {
                                                 return (
-                                                <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
+                                                <tr >
+                                                    <th>
+                                                        <input 
+                                                        type='checkbox'
+                                                        checked={listData.find(element => element === item.id) !== undefined ? true : false}
+                                                        onChange={listData.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                        />
+                                                        {/* Select */}
+                                                    </th>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
                                                     <td>{item.no_faktur}</td>
                                                     <td>{moment(item.tgl_faktur).format('DD/MM/YYYY')}</td>
@@ -526,6 +670,27 @@ class MasterFaktur extends Component {
                                                     <td>{item.nama}</td>
                                                     <td>{item.jumlah_dpp}</td>
                                                     <td>{item.jumlah_ppn}</td>
+                                                    <td>
+                                                        {item.status !== null ? 'used' 
+                                                        : item.force === 1 ? 'available'
+                                                        : Math.floor(Math.abs(moment().format('M') - moment(item.tgl_faktur).format('M'))) > 3 ? 'expired'
+                                                        : 'available'
+                                                        }
+                                                    </td>
+                                                    <td className='rowCenter'>
+                                                        <Button 
+                                                        onClick={()=>this.openModalEdit(this.setState({detail: item}))} 
+                                                        className='mb-1 mr-1' 
+                                                        color='success'>
+                                                            Update
+                                                        </Button>
+                                                        <Button 
+                                                        className="mr-2" 
+                                                        onClick={() => this.openModalDel(this.setState({detail: item}))} 
+                                                        color='danger'>
+                                                            Delete
+                                                        </Button>
+                                                    </td>
                                                 </tr>
                                             )})}
                                         </tbody>
@@ -828,6 +993,16 @@ class MasterFaktur extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
+                <Modal toggle={this.openModalDownload} isOpen={this.state.modalDownload} centered>
+                    <ModalHeader className='colCenter'>Pilih Tipe Download</ModalHeader>
+                    <ModalBody className='colCenter'>
+                        <div className='rowCenter'>
+                            <Button color="info" onClick={this.ExportMaster}>Download All Data</Button>
+                            <Button color="primary" className='ml-2' disabled={this.state.listData.length === 0 ? true : false } onClick={this.downloadData}>Download Selected Data</Button>
+                            {/* <Button onClick={this.openModalUpload}>Cancel</Button> */}
+                        </div>
+                    </ModalBody>
+                </Modal>
                 <Modal isOpen={this.state.modalConfirm} toggle={this.openConfirm} size="sm">
                     <ModalBody>
                         {this.state.confirm === 'edit' ? (
@@ -864,7 +1039,7 @@ class MasterFaktur extends Component {
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.faktur.isLoading ? true: false} size="sm">
+                <Modal isOpen={this.props.faktur.isLoading || this.state.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -961,6 +1136,30 @@ class MasterFaktur extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal isOpen={this.state.rawDel} toggle={this.openRawdelete} centered={true}>
+                <ModalBody>
+                    <div className={style.modalApprove}>
+                        <div className='colCenter'>
+                            <text className='mb-2'>
+                                Anda yakin untuk delete list faktur berikut ?
+                            </text>
+                            {dataAll.map(item => {
+                                return (
+                                    listData.find((x) => x === item.id) !== undefined ? (
+                                        <div>{item.no_faktur}</div>
+                                    ) : (
+                                        null
+                                    )
+                                )
+                            })}
+                        </div>
+                        <div className={style.btnApprove}>
+                            <Button color="primary" onClick={() => this.deleteData()}>Ya</Button>
+                            <Button color="secondary" onClick={this.openRawdelete}>Tidak</Button>
+                        </div>
+                    </div>
+                </ModalBody>
+            </Modal>
             </>
         )
     } 
@@ -981,7 +1180,8 @@ const mapDispatchToProps = {
     exportMaster: faktur.exportMaster,
     resetError: faktur.resetError,
     resetPassword: user.resetPassword,
-    deleteFaktur: faktur.deleteFaktur
+    deleteFaktur: faktur.deleteFaktur,
+    deleteRaw: faktur.deleteRaw
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(MasterFaktur)

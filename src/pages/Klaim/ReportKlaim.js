@@ -127,7 +127,7 @@ class ReportKlaim extends Component {
             modalDownload: false,
             titleDownload: '',
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             isLoading: false,
             tipeJurnal: 1,
@@ -1312,9 +1312,9 @@ class ReportKlaim extends Component {
                                 <div className={style.searchEmail2}>
                                     <text>Status:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="reject">Reject</option>
-                                        <option value="ready">Siap Bayar</option>
                                         <option value="bayar">Telah Bayar</option>
+                                        <option value="ready">Siap Bayar</option>
+                                        <option value="reject">Reject</option>
                                         {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                     </Input>
                                 </div>

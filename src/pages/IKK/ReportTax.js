@@ -122,7 +122,7 @@ class ReportIkk extends Component {
             formDis: false,
             history: false,
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             listIkk: [],
             dataDownload: [],

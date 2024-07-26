@@ -16,6 +16,7 @@ import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
 import placeholder from  "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
+import coa from '../../redux/actions/coa'
 import {connect} from 'react-redux'
 import moment from 'moment'
 import {Formik} from 'formik'
@@ -40,6 +41,7 @@ import email from '../../redux/actions/email'
 import Email from '../../components/Ops/Email'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import { VscTriangleDown } from "react-icons/vsc";
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
@@ -129,11 +131,13 @@ class AjuanBayarOps extends Component {
             tipeReject: '',
             emailReject: false,
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             dataZip: [],
             docHist: false,
             detailDoc: {},
+            jentrans: 'all',
+            tujuan_tf: 'all'
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -315,7 +319,7 @@ class AjuanBayarOps extends Component {
 
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: val === 'reject' ? tempto.toString() : draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
@@ -325,7 +329,8 @@ class AjuanBayarOps extends Component {
             jenis: 'ajuan',
             menu: tipeMenu + ' ops',
             proses: tipeProses,
-            route: tipeRoute
+            route: tipeRoute,
+            listData: this.state.listMut
         }
         await this.props.sendEmail(token, tempno)
         await this.props.addNotif(token, tempno)
@@ -396,6 +401,7 @@ class AjuanBayarOps extends Component {
     prepRejectHo = async (val) => {
         const token = localStorage.getItem("token")
         const { detailOps } = this.props.ops
+        const {listMenu, listMut} = this.state
         const dataTrans = detailOps
         const noPemb = dataTrans.length === 0 ? null : dataTrans[0].no_pembayaran === undefined ? null : dataTrans[0].no_pembayaran
         const noTrans = noPemb
@@ -413,7 +419,9 @@ class AjuanBayarOps extends Component {
             kode: dataTrans[0].kode_plant,
             jenis: 'ops',
             tipe: tipe,
-            menu: cekMenu
+            menu: cekMenu,
+            datareject: listMenu[0],
+            listreject: listMut
         }
         const draftno = {
             no: noTrans,
@@ -483,7 +491,7 @@ class AjuanBayarOps extends Component {
         const {detailOps} = this.props.ops
         let total = 0
         for (let i = 0; i < detailOps.length; i++) {
-            total += parseInt(detailOps[i].nilai_ajuan)
+            total += parseInt(detailOps[i].nilai_bayar)
         }
         this.setState({totalfpd: total})
         this.openModalFpd()
@@ -563,8 +571,10 @@ class AjuanBayarOps extends Component {
         await this.props.submitAsset(token, detailStock[0].no_stock)
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         // const level = localStorage.getItem('level')
+        const token = localStorage.getItem('token')
+        await this.props.getCoa(token, 'opskasbon')
         this.getDataOps()
     }
 
@@ -785,28 +795,55 @@ class AjuanBayarOps extends Component {
         const status = level === '2'  && val === 'verif' ? 5 : 6
         const statusAll = 'all'
         const category = level === '2' && val === 'verif' ? 'verif' : 'ajuan bayar'
+        const type = 'undefined' 
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'verif') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, category, status, cekTime1, cekTime2)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, category, status, cekTime1, cekTime2, type)
             this.setState({filter: val, newOps: newOps})
         }
+    }
+
+    changeJenTrans = async (val) => {
+        this.setState({jentrans: val})
+        const level = localStorage.getItem('level')
+        const {time1, time2, filter, search, tujuan_tf} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = level === '2'  && filter === 'verif' ? 5 : 6
+        const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
+
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, 'undefined', 'undefined', search, val, tujuan_tf)
+    }
+
+    changeTransfer = async (val) => {
+        this.setState({tujuan_tf: val})
+        const level = localStorage.getItem('level')
+        const {time1, time2, filter, search, jentrans} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = level === '2'  && filter === 'verif' ? 5 : 6
+        const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
+
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, 'undefined', 'undefined', search, jentrans, val)
     }
 
     changeTime = async (val) => {
@@ -833,26 +870,44 @@ class AjuanBayarOps extends Component {
         const token = localStorage.getItem("token")
         const status = level === '2'  && filter === 'verif' ? 5 : 6
         const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
-        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2)
+        const type = 'undefined'
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, type)
     }
 
     prosesSubmit = async () => {
         const token = localStorage.getItem("token")
         const {listOps} = this.state
-        const {dataOps} = this.props.ops
+        const {dataOps, glListrik, glInternet} = this.props.ops
         const data = []
+        const dataListrik = []
+        const dataInternet = []
         if (listOps.length > 0) {
             for (let i = 0; i < listOps.length; i++) {
                 for (let j = 0; j < dataOps.length; j++) {
-                    if (dataOps[j].no_transaksi === listOps[i]) {
+                    // if (dataOps[j].no_transaksi === listOps[i]) {
+                    //     data.push(dataOps[j])
+                    // }
+                    if (dataOps[j].id === listOps[i]) {
                         data.push(dataOps[j])
+                        const cekListrik = glListrik.find(e => e === parseInt(dataOps[j].no_coa))
+                        const cekInternet = glInternet.find(e => e === parseInt(dataOps[j].no_coa))
+                        if (cekListrik !== undefined && dataOps[j].tujuan_tf === 'ID Pelanggan') {
+                            dataListrik.push(dataOps[j])
+                        } else if (cekInternet !== undefined && dataOps[j].tujuan_tf === 'ID Pelanggan') {
+                            dataInternet.push(dataOps[j])
+                        }
                     }
                 }
             }
-            await this.props.genNomorTransfer(token)
-            const {noTransfer} = this.props.ops
-            this.setState({dataDownload: data, no_transfer: noTransfer})
-            this.modalSubmitPre()
+            if (dataListrik.length === data.length || dataInternet.length === data.length || (dataListrik.length === 0 && dataInternet.length === 0)) {
+                await this.props.genNomorTransfer(token)
+                const {noTransfer} = this.props.ops
+                this.setState({dataDownload: data, no_transfer: noTransfer})
+                this.modalSubmitPre()
+            } else {
+                this.setState({confirm: 'failTf'})
+                this.openConfirm()
+            }
         } else {
             this.setState({confirm: 'failSubChek'})
             this.openConfirm()
@@ -1180,6 +1235,41 @@ class AjuanBayarOps extends Component {
         }
     }
 
+    chekAppDataOps = (val) => {
+        const { listOps } = this.state
+        const {dataOps} = this.props.ops
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataOps.length; i++) {
+                if (dataOps[i].status_reject !== 1) {
+                    data.push(dataOps[i].id)
+                }
+            }
+            this.setState({listOps: data})
+        } else {
+            listOps.push(val)
+            this.setState({listOps: listOps})
+        }
+    }
+
+    chekRejDataOps = (val) => {
+        const {listOps} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listOps: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listOps.length; i++) {
+                if (listOps[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listOps[i])
+                }
+            }
+            this.setState({listOps: data})
+        }
+    }
+
     prepareReject = async (val) => {
         const token = localStorage.getItem("token")
         await this.props.getAllMenu(token, 'reject', 'Operasional')
@@ -1214,8 +1304,10 @@ class AjuanBayarOps extends Component {
         const {detailDoc, tipeTrans, dataRinci, listMut, listReason, dataMenu, listMenu, listOps, dataDownload, tipeReject, dataZip} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps } = this.props.ops
+        const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps, dataOps } = this.props.ops
+        const {glInternet, glListrik} = this.props.ops
         // const pages = this.props.depo.page
+        const { allCoa } = this.props.coa
 
         const contentHeader =  (
             <div className={style.navbar}>
@@ -1326,15 +1418,15 @@ class AjuanBayarOps extends Component {
                             </div>
                             <div className={style.tableDashboard}>
                                 {this.state.filter === 'verif' && level === '2' ? (
-                                    <Table bordered responsive hover className={style.tab} id="table-ops">
+                                    <Table bordered responsive hover className={[style.tab]} id="table-ops">
                                         <thead>
                                             <tr>
                                                 <th>
                                                     <input  
                                                     className='mr-2'
                                                     type='checkbox'
-                                                    checked={listOps.length === 0 ? false : listOps.length === newOps.length ? true : false}
-                                                    onChange={() => listOps.length === newOps.length ? this.chekRejList('all') : this.chekAppList('all')}
+                                                    checked={listOps.length === 0 ? false : listOps.length === dataOps.length ? true : false}
+                                                    onChange={() => listOps.length === dataOps.length ? this.chekRejDataOps('all') : this.chekAppDataOps('all')}
                                                     />
                                                     Select
                                                 </th>
@@ -1342,34 +1434,63 @@ class AjuanBayarOps extends Component {
                                                 <th>NO.AJUAN</th>
                                                 <th>COST CENTRE</th>
                                                 <th>AREA</th>
-                                                <th>NO.COA</th>
-                                                <th>NAMA COA</th>
+                                                <th>NO.GL</th>
+                                                <th>NAMA GL</th>
+                                                <th>
+                                                    <div className='rowCenter'>
+                                                        <text>JENIS TRANSAKSI:  </text>
+                                                        <Input className='ml-2' type="select" value={this.state.jentrans} onChange={e => this.changeJenTrans(e.target.value)}>
+                                                            <option value='all'>All</option>
+                                                            {allCoa.length > 0 && allCoa.map(item => {
+                                                                return (
+                                                                    <option value={item.jenis_transaksi}>{item.jenis_transaksi}</option>
+                                                                )
+                                                            })}
+                                                        </Input>
+                                                    </div>
+                                                </th>
+                                                <th>
+                                                    <div className='rowCenter'>
+                                                        <text>TUJUAN TRANSFER:  </text>
+                                                        <Input className='ml-2' type="select" value={this.state.tujuan_tf} onChange={e => this.changeTransfer(e.target.value)}>
+                                                            <option value='all'>All</option>
+                                                            <option value="PMA">PMA</option>
+                                                            <option value="Vendor">Vendor</option>
+                                                            <option value="ID Pelanggan">ID Pelanggan</option>
+                                                        </Input>
+                                                    </div>
+                                                </th>
                                                 <th>KETERANGAN TAMBAHAN</th>
                                                 <th>TGL AJUAN</th>
+                                                <th>TIPE KASBON</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newOps.map(item => {
+                                            {dataOps.map(item => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>
                                                             <input 
                                                             type='checkbox'
                                                             disabled={item.status_reject === 1 ? true : false}
-                                                            checked={listOps.find(element => element === item.no_transaksi) !== undefined ? true : false}
-                                                            onChange={listOps.find(element => element === item.no_transaksi) === undefined ? () => this.chekAppList(item.no_transaksi) : () => this.chekRejList(item.no_transaksi)}
+                                                            checked={listOps.find(element => element === item.id) !== undefined ? true : false}
+                                                            onChange={listOps.find(element => element === item.id) === undefined ? () => this.chekAppDataOps(item.id) : () => this.chekRejDataOps(item.id)}
                                                             />
                                                         </th>
-                                                        <th>{newOps.indexOf(item) + 1}</th>
+                                                        <th>{dataOps.indexOf(item) + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.depo.profit_center}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
+                                                        <th>{item.sub_coa}</th>
+                                                        <th>{item.tujuan_tf}
+                                                        </th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
+                                                        <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item, 'detail')} className='mb-1 mr-1' color='success'>Detail</Button>
@@ -1511,8 +1632,14 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.keterangan}</th>
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>
+                                                    {
+                                                        glInternet.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Indihome' :
+                                                        glListrik.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Listrik Meteran' :
+                                                        item.bank_tujuan
+                                                    }
+                                                </th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
                                                 <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
@@ -1599,8 +1726,14 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.keterangan}</th>
                                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>
+                                                    {
+                                                        glInternet.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Indihome' :
+                                                        glListrik.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Listrik Meteran' :
+                                                        item.bank_tujuan
+                                                    }
+                                                </th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
                                                 <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
                                                 <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
@@ -1692,10 +1825,16 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.area}</th>
                                                 <th>{item.depo.profit_center}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>
+                                                    {
+                                                        glInternet.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Indihome' :
+                                                        glListrik.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Listrik Meteran' :
+                                                        item.bank_tujuan
+                                                    }
+                                                </th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
@@ -1794,10 +1933,16 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.area}</th>
                                                 <th>{item.depo.profit_center}</th>
-                                                <th>{item.bank_tujuan}</th>
-                                                <th>{item.norek_ajuan}</th>
+                                                <th>
+                                                    {
+                                                        glInternet.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Indihome' :
+                                                        glListrik.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Listrik Meteran' :
+                                                        item.bank_tujuan
+                                                    }
+                                                </th>
+                                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
@@ -2299,7 +2444,7 @@ class AjuanBayarOps extends Component {
                                 onBlur={handleBlur('alasan')}
                                 />
                                 <div className='ml-2'>
-                                    {listReason.length === 0 ? (
+                                    {listReason.length === 0 && (values.alasan === '.' || values.alasan === '')? (
                                         <text className={style.txtError}>Must be filled</text>
                                     ) : null}
                                 </div>
@@ -2461,6 +2606,15 @@ class AjuanBayarOps extends Component {
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
                                 <div className={[style.sucUpdate, style.green]}>Pilih data Operasional yg ingin diajukan terlebih dahulu</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'failTf' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                                <div className='mt-3'></div>
+                                <div className={[style.sucUpdate, style.green]}>Pastikan ajuan Internet Indihome, Listrik Meteran dengan tujuan transfer ID Pelanggan, terpisah dengan data ajuan yang lain</div>
                             </div>
                         </div>
                     ) : (
@@ -2661,7 +2815,7 @@ class AjuanBayarOps extends Component {
             <Modal isOpen={this.state.emailReject} size='xl'>
                 <ModalHeader>Email Pemberitahuan</ModalHeader>
                 <ModalBody>
-                    <Email handleData={this.getMessage}/>
+                    <Email handleData={this.getMessage} cekData={this.state.listMut} tipe={'reject'} />
                     <div className={style.foot}>
                         <div></div>
                         <div>
@@ -2689,6 +2843,7 @@ const mapStateToProps = state => ({
     user: state.user,
     notif: state.notif,
     ops: state.ops,
+    coa: state.coa,
     menu: state.menu,
     reason: state.reason,
     dokumen: state.dokumen,
@@ -2721,7 +2876,8 @@ const mapDispatchToProps = {
     sendEmail: email.sendEmail,
     getDraftAjuan: email.getDraftAjuan,
     genNomorTransfer: ops.genNomorTransfer,
-    addNotif: notif.addNotif
+    addNotif: notif.addNotif,
+    getCoa: coa.getCoa,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarOps)

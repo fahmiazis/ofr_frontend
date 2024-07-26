@@ -5,7 +5,7 @@ import {VscAccount} from 'react-icons/vsc'
 import { Container, Collapse, Nav, Navbar,
     NavbarToggler, NavbarBrand, NavItem, NavLink,
     Card, CardBody, Table, ButtonDropdown, Input, Button, Col,
-    Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
+    Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter, UncontrolledTooltip} from 'reactstrap'
 import approve from '../../redux/actions/approve'
 import {BsCircle} from 'react-icons/bs'
 import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList, FaFileSignature} from 'react-icons/fa'
@@ -43,7 +43,10 @@ import Countdown from 'react-countdown'
 import ListOutlet from '../../components/Klaim/ListOutlet'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import { BiExpand, BiCollapse } from "react-icons/bi";
+import { MdKeyboardArrowRight, MdKeyboardArrowDown } from 'react-icons/md'
 const {REACT_APP_BACKEND_URL} = process.env
+const userAppArea = ['10', '11', '12', '15']
 
 const stockSchema = Yup.object().shape({
     merk: Yup.string().required("must be filled"),
@@ -134,7 +137,7 @@ class Klaim extends Component {
             openAppDoc: false,
             openRejDoc: false,
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             subject: '',
             docHist: false,
@@ -152,7 +155,10 @@ class Klaim extends Component {
             dataZip: [],
             listReject: [],
             statEmail: '',
-            modResmail: false
+            modResmail: false,
+            idDoc: 0,
+            dataColl: [],
+            fileName: {}
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -566,7 +572,8 @@ class Klaim extends Component {
     getDataKlaim = async (value) => {
         const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter(level === '5' ? 'all' : 'available')
+        const cekLevArea = userAppArea.find(item => item === level) !== undefined
+        this.changeFilter(cekLevArea ? 'available' : 'all')
     }
 
     getDataList = async () => {
@@ -685,7 +692,7 @@ class Klaim extends Component {
         }
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
@@ -921,7 +928,7 @@ class Klaim extends Component {
         const tipeMenu = tempApp.length === app.length-1 ? 'verifikasi klaim' : 'pengajuan klaim'
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
@@ -1111,7 +1118,7 @@ class Klaim extends Component {
         }
     }
 
-    approveDoc = async () => {
+    approveDoc = async (val) => {
         const token = localStorage.getItem('token')
         const {idDoc} = this.state
         const { detailKlaim } = this.props.klaim
@@ -1119,11 +1126,17 @@ class Klaim extends Component {
             no: detailKlaim[0].no_transaksi,
             name: 'Draft Pengajuan Klaim'
         }
-        await this.props.approveDokumen(token, idDoc)
+        await this.props.approveDokumen(token, val.id)
         await this.props.getDocKlaim(token, tempno)
-        this.setState({confirm: 'isAppDoc'})
-        this.openConfirm()
-        this.openModalAppDoc()
+        if (val.type === 'show') {
+            this.openModalPdf()
+            this.collDoc(val.id)
+        } else {
+            this.collDoc(val.id)
+        }
+        // this.setState({confirm: 'isAppDoc'})
+        // this.openConfirm()
+        // this.openModalAppDoc()
         
     }
 
@@ -1214,6 +1227,28 @@ class Klaim extends Component {
         }
     }
 
+    collDoc = (val) => {
+        const {dataColl} = this.state
+        const dataApp = [...dataColl]
+        const dataRej = []
+        const cek = dataColl.find(x => x === val)
+        if (cek !== undefined) {
+            console.log('masuk not undefined')
+            for (let i = 0; i < dataColl.length; i++) {
+                if (dataColl[i] === val) {
+                    dataRej.push()
+                } else {
+                    dataRej.push(dataColl[i])
+                }
+            }
+            this.setState({dataColl: dataRej})
+        } else {
+            console.log('masuk undefined')
+            dataApp.push(val)
+            this.setState({dataColl: dataApp})
+        }
+    }
+
     reasonApp = (val) => {
         const { listReason } = this.state
         const {dataReason} = this.props.reason
@@ -1288,6 +1323,16 @@ class Klaim extends Component {
         this.setState({modalNilai: !this.state.modalNilai})
     }
 
+    cekFailDoc = (val) => {
+        if (val === 'reject') {
+            this.setState({confirm: 'failrejdoc'})
+            this.openConfirm()
+        } else {
+            this.setState({confirm: 'failappdoc'})
+            this.openConfirm()
+        }
+    }
+
     updateNilai = async (val) => {
         const token = localStorage.getItem('token')
         const {tipeNilai, nilai_verif} = this.state
@@ -1350,7 +1395,7 @@ class Klaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {listReject, dataRinci, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc, filter, dataZip} = this.state
+        const {listReject, dataRinci, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc, filter, dataZip, dataColl, fileName} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim, docBukti } = this.props.klaim
@@ -1430,42 +1475,42 @@ class Klaim extends Component {
                                 )}
                             </div>
                             <div className={[style.secEmail4]}>
+                                <div className='rowCenter'>
                                     <div className='rowCenter'>
-                                        <div className='rowCenter'>
-                                            {/* <text className='mr-4'>Time:</text> */}
-                                            <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                                <option value="all">Time (All)</option>
-                                                <option value="pilih">Periode</option>
-                                            </Input>
-                                        </div>
-                                        {this.state.time === 'pilih' ?  (
-                                            <>
-                                                <div className='rowCenter'>
-                                                    <text className='bold'>:</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        value={this.state.time1}
-                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
-                                                    />
-                                                    <text className='mr-1 ml-1'>To</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        value={this.state.time2}
-                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                    />
-                                                    <Button
-                                                    disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
-                                                    color='primary' 
-                                                    onClick={this.getDataTime} 
-                                                    className='ml-1'>
-                                                        Go
-                                                    </Button>
-                                                </div>
-                                            </>
-                                        ) : null}
+                                        {/* <text className='mr-4'>Time:</text> */}
+                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                            <option value="all">Time (All)</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
                                     </div>
+                                    {this.state.time === 'pilih' ?  (
+                                        <>
+                                            <div className='rowCenter'>
+                                                <text className='bold'>:</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time1}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                />
+                                                <text className='mr-1 ml-1'>To</text>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time2}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
+                                                color='primary' 
+                                                onClick={this.getDataTime} 
+                                                className='ml-1'>
+                                                    Go
+                                                </Button>
+                                            </div>
+                                        </>
+                                    ) : null}
+                                </div>
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 
@@ -1498,7 +1543,7 @@ class Klaim extends Component {
                                         <tbody>
                                             {newKlaim.length > 0 && newKlaim.filter(({ end_klaim }) => (filter !== 'bayar' && filter !== 'completed') || (filter === 'completed' && end_klaim !== null) || (filter === 'bayar' && end_klaim === null)).map((item, index) => {
                                                 return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_transaksi === 0 ? 'fail' : item.status_reject === 1 && 'bad'}>
                                                         <th>{index + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.dn_area}</th>
@@ -1510,7 +1555,13 @@ class Klaim extends Component {
                                                         <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
-                                                            <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>{filter === 'bayar' ? 'Proses' : 'Detail'}</Button>
+                                                            <Button 
+                                                            size='sm' 
+                                                            onClick={() => (item.status_reject === 1 && item.status_transaksi !== 0) ? this.goRoute('revklm') : this.prosesDetail(item)} 
+                                                            className='mb-1 mr-1' 
+                                                            color='success'>
+                                                                {filter === 'bayar' ? 'Proses' : (item.status_reject === 1 && item.status_transaksi !== 0) ? 'Revisi' : 'Detail'}
+                                                            </Button>
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                         </th>
                                                     </tr>
@@ -1545,7 +1596,7 @@ class Klaim extends Component {
                                         <tbody>
                                             {newKlaim.length > 0 && newKlaim.filter(({ end_klaim }) => (filter !== 'bayar' && filter !== 'completed') || (filter === 'completed' && end_klaim !== null) || (filter === 'bayar' && end_klaim === null)).map((item, index) => {
                                                 return (
-                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                    <tr className={item.status_reject === 0 ? 'note' : item.status_transaksi === 0 ? 'fail' : item.status_reject === 1 && 'bad'}>
                                                         <th>{index + 1}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.dn_area}</th>
@@ -2074,7 +2125,7 @@ class Klaim extends Component {
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
-                                <Button color="primary" onClick={() => this.approveDoc()}>Ya</Button>
+                                <Button color="primary" onClick={() => this.approveDoc({type:'show', id: this.state.idDoc})}>Ya</Button>
                                 <Button color="secondary" onClick={this.openModalAppDoc}>Tidak</Button>
                             </div>
                         </div>
@@ -2192,6 +2243,22 @@ class Klaim extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Berhasil Kirim Email</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'failappdoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Approve</div>
+                                <div className={[style.sucUpdate, style.green]}>Dokumen yang telah tereject tidak bisa diapprove</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'failrejdoc' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Reject</div>
+                                <div className={[style.sucUpdate, style.green]}>Dokumen yang telah terapprove tidak bisa direject</div>
+                            </div>
+                        </div>
                     ) : (
                         <div></div>
                     )}
@@ -2215,17 +2282,20 @@ class Klaim extends Component {
                    Kelengkapan Dokumen {detailKlaim !== undefined && detailKlaim.length > 0 && detailKlaim[0].no_transaksi}
                 </ModalHeader>
                 <ModalBody>
-                <Container>
+                    <Container>
                         {dataDoc.length > 0 && (
                             <Row className="mt-3 mb-4">
                                 <Col md={12} lg={12} className='mb-2' >
-                                    <div className="btnDocIo mb-2 ml-4" >
+                                    <div className="btnDocIo mb-2 ml-4 rowCenter" >
                                         <Input 
                                             type='checkbox'
+                                            className='checkSize'
                                             checked={dataZip.length === 0 ? false : dataZip.length === dataDoc.length ? true : false}
                                             onChange={() => dataZip.length > 0 ? this.unCheckDoc('all') : this.checkDoc('all')}
                                         />
-                                        Ceklis All
+                                        <text className='ml-2 fzDoc'>
+                                            Ceklis All
+                                        </text>
                                     </div>
                                 </Col>
                             </Row>
@@ -2235,37 +2305,64 @@ class Klaim extends Component {
                             return (
                                 x.path !== null &&
                                 <Row className="mt-3 mb-4">
-                                    {x.path !== null ? (
+                                    {x.path !== null && (
                                         <Col md={12} lg={12} className='mb-2' >
-                                            <div className="btnDocIo mb-2 ml-4" >
+                                            <div className="btnDocIo mb-2 ml-4 rowCenter" >
                                                 <Input 
                                                     type='checkbox'
+                                                    className='checkSize'
                                                     checked={dataZip.find(element => element === x.id) !== undefined ? true : false}
                                                     onChange={dataZip.find(element => element === x.id) === undefined ? () => this.checkDoc(x.id) : () => this.unCheckDoc(x.id)}
                                                 />
-                                                {x.desc === null ? 'Lampiran' : x.desc}
+                                                <text className='ml-2 fzDoc'>
+                                                    {x.desc === null ? 'Lampiran' : x.desc}
+                                                </text>
                                             </div>
-                                            {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
-                                            x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
-                                            : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
-                                            x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
-                                            : (
-                                                <BsCircle size={20} />
-                                            )}
-                                            <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
+
+                                            <div className='rowCenter'>
+                                                {x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={25} color="success" /> 
+                                                : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={25} color="danger" /> 
+                                                : (
+                                                    <BsCircle size={25} />
+                                                )}
+                                                <button 
+                                                className={`btnDocIo fzDoc ${x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? 'blue'
+                                                : x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  'red'
+                                                : 'black'}`}
+                                                onClick={() => this.showDokumen(x)} >
+                                                    {x.history + `${x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                    x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? ' (APPROVED)' : 
+                                                    x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                    x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  ' (REJECTED)' : ''}`
+                                                    }
+                                                </button>
+                                            </div>
+                                            
                                             <div className='mt-3 mb-3'>
                                                 {this.state.filter === 'available' ? (
                                                     <div>
                                                         <Button 
-                                                        color="success" 
-                                                        onClick={() => {this.setState({idDoc: x.id}); this.openModalAppDoc()}}
+                                                        color="success"
+                                                        // disabled={x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                        // x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ? true : false}
+                                                        onClick={x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                                x.status.split(',').reverse()[0].split(';')[1] === ` status reject` 
+                                                                ? () => this.cekFailDoc('approve') 
+                                                                : () => {this.setState({idDoc: x.id}); this.approveDoc({type: 'direct', id: x.id})}}
                                                         >
                                                             Approve
                                                         </Button>
                                                         <Button 
                                                         className='ml-1' 
                                                         color="danger" 
-                                                        onClick={() => {this.setState({idDoc: x.id}); this.openModalRejDoc()}}
+                                                        onClick={x.status !== null && x.status !== '1' && x.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                                                x.status.split(',').reverse()[0].split(';')[1] === ` status approve` 
+                                                                ? () => this.cekFailDoc('reject') 
+                                                                : () => {this.setState({idDoc: x.id}); this.openModalRejDoc()}}
                                                         >
                                                             Reject
                                                         </Button>
@@ -2277,8 +2374,33 @@ class Klaim extends Component {
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className={style.readPdf}>
-                                                <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${x.id}`} dataFile={x} />
+                                            <div className='rowCenter borderGen'>
+                                                <div id={`tool${x.id}`}>
+                                                    {dataColl.find(e => e === x.id) !== undefined ? (
+                                                        <div className='rowCenter'>
+                                                            <MdKeyboardArrowRight size={45} className='selfStart' onClick={() => this.collDoc(x.id)} />
+                                                            <text>{x.history === null ? 'Lampiran' : x.history}</text>
+                                                        </div>
+                                                    ) : (
+                                                        <div className='rowCenter'>
+                                                            <MdKeyboardArrowDown size={45} className='selfStart' onClick={() => this.collDoc(x.id)} />
+                                                            <text>{x.history === null ? 'Lampiran' : x.history}</text>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <UncontrolledTooltip
+                                                    placement="top"
+                                                    target={`tool${x.id}`}
+                                                >
+                                                        {dataColl.find(e => e === x.id) !== undefined ? `Expand` : `Collapse`}
+                                                </UncontrolledTooltip>
+                                            </div>
+                                            <div className='colCenter borderGen'>
+                                                {dataColl.find(e => e === x.id) === undefined ? (
+                                                    <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${x.id}`} dataFile={x} />
+                                                ) : (
+                                                    <div></div>
+                                                )}
                                             </div>
                                             {/* <div className="colDoc">
                                                 <input
@@ -2290,7 +2412,8 @@ class Klaim extends Component {
                                                 <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                             </div> */}
                                         </Col>
-                                    ) : (
+                                    ) 
+                                    // : (
                                         // <Col md={6} lg={6} className="colDoc">
                                         //     <text className="btnDocIo" >{x.desc === null ? 'Lampiran' : x.desc}</text>
                                         //     <div className="colDoc">
@@ -2302,8 +2425,9 @@ class Klaim extends Component {
                                         //     </div>
                                         //     <text className="txtError ml-4">Maximum file upload is 20 Mb</text>
                                         // </Col>
-                                        null
-                                    )}
+                                    //     null
+                                    // )
+                                    }
                                 </Row>
                             )
                         })}
@@ -2342,8 +2466,27 @@ class Klaim extends Component {
                     <div className={style.foot}>
                         {filter === 'available' ? (
                             <div>
-                                <Button color="success" onClick={() => this.openModalAppDoc()}>Approve</Button>
-                                <Button className='ml-1' color="danger" onClick={() => this.openModalRejDoc()}>Reject</Button>
+                                <Button 
+                                color="success" 
+                                // onClick={() => this.approveDoc({type: 'show', id: this.state.idDoc})}
+                                onClick={fileName.status !== undefined && fileName.status !== null && fileName.status !== '1' && fileName.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                    fileName.status.split(',').reverse()[0].split(';')[1] === ` status reject` 
+                                    ? () => this.cekFailDoc('approve') 
+                                    : () => {this.setState({idDoc: fileName.id}); this.approveDoc({type: 'show', id: this.state.idDoc})}}
+                                >
+                                    Approve
+                                </Button>
+                                <Button 
+                                className='ml-1' 
+                                color="danger" 
+                                // onClick={() => this.openModalRejDoc()}
+                                onClick={fileName.status !== undefined && fileName.status !== null && fileName.status !== '1' && fileName.status.split(',').reverse()[0].split(';')[0] === ` level ${level}` &&
+                                    fileName.status.split(',').reverse()[0].split(';')[1] === ` status approve` 
+                                    ? () => this.cekFailDoc('reject') 
+                                    : () => this.openModalRejDoc()}
+                                >
+                                    Reject
+                                </Button>
                             </div>
                         ) : (
                             <div></div>

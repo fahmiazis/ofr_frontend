@@ -40,12 +40,16 @@ import Tracking from '../../components/Klaim/tracking'
 import dokumen from '../../redux/actions/dokumen'
 import email from '../../redux/actions/email'
 import Email from '../../components/Klaim/Email'
+import finance from '../../redux/actions/finance'
 import ListOutlet from '../../components/Klaim/ListOutlet'
 import ExcelJS from "exceljs"
 import fs from "file-saver"
 import NumberInput from '../../components/NumberInput'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import Select from 'react-select'
+import { CiCirclePlus, CiEdit } from "react-icons/ci";
+import { MdUpload, MdDownload, MdEditSquare, MdAddCircle, MdDelete } from "react-icons/md";
 const {REACT_APP_BACKEND_URL} = process.env
 const accKlaim = ['3', '13', '23']
 
@@ -126,13 +130,24 @@ class VerifKlaim extends Component {
             message: '',
             subject: '',
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             tipeEmail: '',
             dataRej: {},
             listKlaim: [],
             dataZip: [],
-            dataDownload: []
+            dataDownload: [],
+            dataFakturKl: [],
+            dataOutlet: [],
+            tujuan_tf: '',
+            bank: '',
+            digit: 0,
+            rekList: [],
+            isLoading: false,
+            no_coa: '',
+            nama_coa: '',
+            options: [],
+            bankList: [],
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -701,7 +716,7 @@ class VerifKlaim extends Component {
         const tipeMenu = level === '3' || level === '13' ? 'list ajuan bayar' : 'verifikasi klaim'
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
@@ -983,9 +998,67 @@ class VerifKlaim extends Component {
         this.setState({modalAdd: !this.state.modalAdd})
     }
 
-    getRincian = async (val) => {
-        this.setState({dataRinci: val, bank: val.bank_tujuan})
-        this.openModalEdit()
+    prosesOpenEdit = async (val) => {
+        const token = localStorage.getItem('token')
+        await this.props.getDetailId(token, val)
+        await this.props.getFinRek(token)
+        await this.props.getOutlet(token, val)
+        await this.props.getFakturKl(token, val)
+        const { dataRek } = this.props.finance
+        const spending = dataRek[0].rek_spending
+        const zba = dataRek[0].rek_zba
+        const bankcoll = dataRek[0].rek_bankcoll
+        const temp = [
+            { label: '-Pilih-', value: '' },
+            spending !== '0' ? { label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card' } : { value: '', label: '' },
+            zba !== '0' ? { label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA' } : { value: '', label: '' },
+            bankcoll !== '0' ? { label: `${bankcoll}~Rekening Bank Coll`, value: 'Rekening Bank Coll' } : { value: '', label: '' }
+        ]
+
+        const { idKlaim } = this.props.klaim
+        this.setState({
+            rekList: temp,
+            isLoading: true,
+            norek: idKlaim.norek_ajuan,
+            tiperek: idKlaim.tiperek,
+            nilai_ajuan: idKlaim.nilai_ajuan
+        })
+
+        this.selectCoa({ value: idKlaim.no_coa, label: idKlaim.nama_coa })
+        this.selectTujuan(idKlaim.tujuan_tf)
+        this.prepBank(idKlaim.bank_tujuan)
+
+        const { klaimOutlet } = this.props.klaim
+        const { klaimFaktur } = this.props.klaim
+        this.setState({ dataOutlet: klaimOutlet,  dataFakturKl: klaimFaktur, dataRinci: idKlaim})
+
+        setTimeout(() => {
+            this.setState({ isLoading: false })
+            this.openModalEdit()
+        }, 1000)
+    }
+
+    selectCoa = (e) => {
+        this.setState({ no_coa: e.value, nama_coa: e.label })
+    }
+
+    selectTujuan = (val) => {
+        if (val === 'PMA') {
+            this.setState({ tujuan_tf: val, bank: 'Bank Mandiri', digit: 13 })
+        } else {
+            this.setState({ tujuan_tf: val, bank: '', digit: 0 })
+        }
+    }
+
+    prepBank = (val) => {
+        const cekVal = val === 'Bank Mandiri' ? 'BANK MANDIRI' : val
+        const { dataBank } = this.props.bank
+        const data = dataBank.find(({name}) => name ===  cekVal)
+        if (data === undefined) {
+            this.setState()
+        } else {
+            this.setState({ bank: data.name, digit: data.digit })
+        }
     }
 
     modalStatus = () => {
@@ -1503,11 +1576,11 @@ class VerifKlaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('fullname')
-        const {dataRinci, listKlaim, tipeEmail, listMut, dataZip, listReason, dataMenu, listMenu, detailDoc} = this.state
+        const {dataRinci, listKlaim, tipeEmail, listMut, dataZip, listReason, dataMenu, listMenu, detailDoc, dataFakturKl, dataOutlet } = this.state
         const {dataSpvklaim} = this.props.spvklaim
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim, messUpload } = this.props.klaim
+        const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim, messUpload, idKlaim} = this.props.klaim
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1672,9 +1745,11 @@ class VerifKlaim extends Component {
                                                         level ===  '3' ? (
                                                             item.picklaim !== null && 
                                                             // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
-                                                            item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
-                                                            item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
-                                                            (
+                                                            // item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                                            item.nama_coa !== undefined &&
+                                                            // item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
+                                                            item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase() &&
+                                                            ( 
                                                                 <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                                     <th>
                                                                         <input 
@@ -1705,8 +1780,8 @@ class VerifKlaim extends Component {
                                                             item.picklaim !== null && 
                                                             // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
                                                             item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
-                                                            dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()) !== undefined
-                                                            && dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
+                                                            dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()) !== undefined
+                                                            && dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
                                                             && 
                                                             (
                                                                 <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
@@ -1912,7 +1987,7 @@ class VerifKlaim extends Component {
                                                 </th>
                                                 {level === '2' ? (<></>) : (
                                                 <th>
-                                                    <Button className='mt-2' color="info" size='sm' onClick={() => this.getRincian(item)}>Proses</Button>
+                                                    <Button className='mt-2' color="info" size='sm' onClick={() => this.prosesOpenEdit(item.id)}>Proses</Button>
                                                 </th>
                                                 )}
                                                 <th scope="row">{detailKlaim.indexOf(item) + 1}</th>
@@ -2004,7 +2079,7 @@ class VerifKlaim extends Component {
                         </div>
                     </div>
                 </Modal>
-                <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="lg">
+                <Modal isOpen={this.state.modalEdit} toggle={this.openModalEdit} size="xl">
                     <ModalHeader>
                         Update Data Klaim
                     </ModalHeader>
@@ -2012,21 +2087,25 @@ class VerifKlaim extends Component {
                         <div className="mainRinci2">
                             <Formik
                             initialValues = {{
-                                keterangan: dataRinci.keterangan,
-                                periode_awal: dataRinci.periode_awal,
-                                periode_akhir: dataRinci.periode_akhir,
-                                nilai_ajuan: dataRinci.nilai_ajuan,
-                                norek_ajuan: dataRinci.norek_ajuan,
-                                nama_tujuan: dataRinci.nama_tujuan,
-                                status_npwp: dataRinci.status_npwp === 0 ? 'Tidak' : 'Ya',
-                                nama_npwp: dataRinci.nama_npwp === null ? '' : dataRinci.nama_npwp,
-                                no_npwp: dataRinci.no_npwp === null ? '' : dataRinci.no_npwp,
-                                no_ktp: dataRinci.no_ktp === null ? '' : dataRinci.no_ktp,
-                                nama_ktp: dataRinci.nama_ktp === null ? '' : dataRinci.nama_ktp,
-                                ppu: dataRinci.ppu === null ? '' : dataRinci.ppu,
-                                pa: dataRinci.pa === null ? '' : dataRinci.pa,
-                                nominal: dataRinci.nominal === null ? '' : dataRinci.nominal,
-                                kode_vendor: dataRinci.kode_vendor === null ? '' : dataRinci.kode_vendor
+                                keterangan: idKlaim.keterangan,
+                                periode_awal: idKlaim.periode_awal,
+                                periode_akhir: idKlaim.periode_akhir,
+                                nilai_ajuan: idKlaim.nilai_ajuan,
+                                norek_ajuan: idKlaim.norek_ajuan,
+                                nama_tujuan: idKlaim.nama_tujuan,
+                                status_npwp: idKlaim.status_npwp === 0 ? 'Tidak' : 'Ya',
+                                nama_npwp: idKlaim.nama_npwp === null ? '' : idKlaim.nama_npwp,
+                                no_npwp: idKlaim.no_npwp === null ? '' : idKlaim.no_npwp,
+                                no_ktp: idKlaim.no_ktp === null ? '' : idKlaim.no_ktp,
+                                nama_ktp: idKlaim.nama_ktp === null ? '' : idKlaim.nama_ktp,
+                                no_surkom: idKlaim.no_surkom || '',
+                                nama_program: idKlaim.nama_program || '',
+                                dn_area: idKlaim.dn_area || '',
+                                no_faktur: idKlaim.no_faktur || '',
+                                ppu: idKlaim.ppu === null ? '' : idKlaim.ppu,
+                                pa: idKlaim.pa === null ? '' : idKlaim.pa,
+                                nominal: idKlaim.nominal === null ? '' : idKlaim.nominal,
+                                kode_vendor: idKlaim.kode_vendor === null ? '' : idKlaim.kode_vendor
                             }}
                             validationSchema = {klaimSchema}
                             onSubmit={(values) => {this.prosesEditKlaim(values)}}
@@ -2034,150 +2113,312 @@ class VerifKlaim extends Component {
                             {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                                 <div className="rightRinci2">
                                     <div>
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>No COA</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={dataRinci.no_coa}
-                                                onBlur={handleBlur("no_coa")}
-                                                onChange={handleChange("no_coa")}
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>COA</Col>
+                                                <Col md={9} className="colRinci">:
+                                                    <Select
+                                                        isDisabled
+                                                        className="inputRinci2"
+                                                        options={this.state.options}
+                                                        onChange={this.selectCoa}
+                                                        value={{ value: this.state.no_coa, label: this.state.nama_coa }}
+                                                    />
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>No COA</Col>
+                                                <Col md={9} className="colRinci">:  <Input
+                                                    disabled
+                                                    type="text"
+                                                    className="inputRinci"
+                                                    value={this.state.no_coa}
+                                                    onBlur={handleBlur("no_coa")}
+                                                    onChange={handleChange("no_coa")}
                                                 />
-                                            </Col>
-                                        </Row>
-                                        {this.state.no_coa === '' ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nama COA</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={dataRinci.nama_coa}
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>Nama COA</Col>
+                                                <Col md={9} className="colRinci">:  <Input
+                                                    disabled
+                                                    type="text"
+                                                    className="inputRinci"
+                                                    value={this.state.nama_coa}
                                                 />
-                                            </Col>
-                                        </Row>
-                                        {this.state.no_coa === '' ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Keterangan</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                type= "text"
-                                                disabled
-                                                className="inputRinci"
-                                                value={values.keterangan}
-                                                onBlur={handleBlur("keterangan")}
-                                                onChange={handleChange("keterangan")}
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>No Surkom</Col>
+                                                <Col md={9} className="colRinci">:  <Input
+                                                    disabled
+                                                    type="text"
+                                                    className="inputRinci"
+                                                    value={values.no_surkom}
+                                                    onBlur={handleBlur("no_surkom")}
+                                                    onChange={handleChange("no_surkom")}
                                                 />
-                                            </Col>
-                                        </Row>
-                                        {errors.keterangan ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Periode</Col>
-                                            <Col md={9} className="colRinci">: 
-                                                <Input
-                                                type= "date"
-                                                disabled
-                                                className="inputRinci"
-                                                value={moment(values.periode_awal).format('YYYY-MM-DD')}
-                                                onBlur={handleBlur("periode_awal")}
-                                                onChange={handleChange("periode_awal")}
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>Nama Program</Col>
+                                                <Col md={9} className="colRinci">:  <Input
+                                                    disabled
+                                                    type="text"
+                                                    className="inputRinci"
+                                                    value={values.nama_program}
+                                                    onBlur={handleBlur("nama_program")}
+                                                    onChange={handleChange("nama_program")}
                                                 />
-                                                <text className='mr-1 ml-1'>To</text>
-                                                <Input
-                                                type= "date" 
-                                                disabled
-                                                className="inputRinci"
-                                                value={moment(values.periode_akhir).format('YYYY-MM-DD')}
-                                                onBlur={handleBlur("periode_akhir")}
-                                                onChange={handleChange("periode_akhir")}
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>DN Area</Col>
+                                                <Col md={9} className="colRinci">:  <Input
+                                                    disabled
+                                                    type="text"
+                                                    className="inputRinci"
+                                                    value={values.dn_area}
+                                                    onBlur={handleBlur("dn_area")}
+                                                    onChange={handleChange("dn_area")}
                                                 />
-                                            </Col>
-                                        </Row>
-                                        {errors.periode_awal || errors.periode_akhir ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : values.periode_awal > values.periode_akhir ? (
-                                            <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
-                                        ) : null }
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nilai DN Area</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.nilai_ajuan}
-                                                onBlur={handleBlur("nilai_ajuan")}
-                                                onChange={handleChange("nilai_ajuan")}
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci2">
+                                                <Col md={3}>Faktur</Col>
+                                                <Col md={9} className="colTable" style={{ paddingLeft: '3%' }}>
+                                                    {/* <Input
+                                                    type= "text" 
+                                                    className="inputRinci"
+                                                    value={values.no_faktur}
+                                                    onBlur={handleBlur("no_faktur")}
+                                                    onChange={handleChange("no_faktur")}
+                                                    /> */}
+                                                    <div className='rowBetween'>
+                                                        <div>Daftar Faktur</div>
+                                                        <div className='rowCenter mt-2 mb-2'>
+                                                            {/* <Button size='sm' onClick={this.openUpFakturKl} className='ml-1' color='primary'><MdUpload size={20}/></Button>
+                                                            <Button size='sm' onClick={this.downloadFakturKl} className='ml-1' color='warning'><MdDownload size={20}/></Button> */}
+                                                        </div>
+                                                    </div>
+                                                    <Table striped bordered hover responsive className={[style.tab]}>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>No Faktur</th>
+                                                                <th>Tgl Faktur</th>
+                                                                <th>Value</th>
+                                                                <th>Ket</th>
+                                                                {/* <th>Action</th> */}
+                                                            </tr>
+                                                        </thead>
+                                                        {dataFakturKl.length > 0 && dataFakturKl.map((item, index) => {
+                                                            return (
+                                                                <>
+                                                                    <tbody>
+                                                                        <td>{index + 1}</td>
+                                                                        <td>{item.no_faktur}</td>
+                                                                        <td>{moment(item.date_faktur).format('DD MMMM YYYY')}</td>
+                                                                        <td>{item.val}</td>
+                                                                        <td>{item.keterangan}</td>
+                                                                        {/* <td className='rowCenter'>
+                                                                            <Button size='sm' onClick={() => this.openDetFakturKl(this.setState({ detFakturKl: item }))} color='info'><MdEditSquare size={20}/></Button>
+                                                                            <Button size='sm' onClick={() => this.confirmDelFakturKl(this.setState({ dataDel: item }))} className='ml-1' color='danger'><MdDelete size={20}/></Button>
+                                                                        </td> */}
+                                                                    </tbody>
+                                                                </>
+                                                            )
+                                                        })}
+                                                        <tbody>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            {/* <td>
+                                                                <Button size='sm' onClick={this.openAddFakturKl} color='success'><MdAddCircle size={20}/></Button>
+                                                            </td> */}
+                                                        </tbody>
+                                                    </Table>
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>Keterangan</Col>
+                                                <Col md={9} className="colRinci">:  <Input
+                                                    disabled
+                                                    type="text"
+                                                    className="inputRinci"
+                                                    value={values.keterangan}
+                                                    onBlur={handleBlur("keterangan")}
+                                                    onChange={handleChange("keterangan")}
                                                 />
-                                            </Col>
-                                        </Row>
-                                        {errors.nilai_ajuan ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Bank</Col>
-                                            <Col md={9} className="colRinci">: <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.bank_tujuan}
-                                                onBlur={handleBlur("bank_tujuan")}
-                                                onChange={handleChange("bank_tujuan")}
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>Periode</Col>
+                                                <Col md={9} className="colRinci">:
+                                                    <Input
+                                                        disabled
+                                                        type="date"
+                                                        className="inputRinci"
+                                                        value={moment(values.periode_awal).format('YYYY-MM-DD')}
+                                                        onBlur={handleBlur("periode_awal")}
+                                                        onChange={handleChange("periode_awal")}
+                                                    />
+                                                    <text className='mr-1 ml-1'>To</text>
+                                                    <Input
+                                                        disabled
+                                                        type="date"
+                                                        className="inputRinci"
+                                                        value={moment(values.periode_akhir).format('YYYY-MM-DD')}
+                                                        onBlur={handleBlur("periode_akhir")}
+                                                        onChange={handleChange("periode_akhir")}
+                                                    />
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>Nilai Yang Diajukan</Col>
+                                                <Col md={9} className="colRinci">:  <NumberInput
+                                                    value={this.state.tujuan_tf === 'Outlet' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
+                                                        return accumulator + parseFloat(object.nilai_ajuan);
+                                                    }, 0) : 0) : this.state.nilai_ajuan}
+                                                    // disabled={this.state.tujuan_tf === 'Outlet' ? true : false}
+                                                    disabled
+                                                    className="inputRinci1"
+                                                    onValueChange={val => this.onEnterVal(val.floatValue)}
                                                 />
-                                            </Col>
-                                        </Row>
-                                        {values.bank_tujuan === '' ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Nomor Rekening</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                type= "text" 
-                                                className="inputRinci"
-                                                disabled
-                                                minLength={this.state.digit}
-                                                maxLength={this.state.digit}
-                                                value={values.norek_ajuan}
-                                                onBlur={handleBlur("norek_ajuan")}
-                                                onChange={handleChange("norek_ajuan")}
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>Tujuan Transfer</Col>
+                                                <Col md={9} className="colRinci">:  <Input
+                                                    disabled={level === '5' || level === '6' ? false : true}
+                                                    type="select"
+                                                    className="inputRinci"
+                                                    value={this.state.tujuan_tf}
+                                                    onChange={e => this.selectTujuan(e.target.value)}
+                                                >
+                                                    <option value=''>Pilih</option>
+                                                    <option value="PMA">PMA</option>
+                                                    <option value="Outlet">Outlet</option>
+                                                </Input>
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>Bank</Col>
+                                                <Col md={9} className="colRinci">:
+                                                    {this.state.tujuan_tf === 'PMA' ? (
+                                                        <Input
+                                                            type="text"
+                                                            className="inputRinci"
+                                                            value={this.state.bank}
+                                                            disabled
+                                                        />
+                                                    ) : (
+                                                        <Select
+                                                            isDisabled={this.state.tujuan_tf === '' && true}
+                                                            className="inputRinci2"
+                                                            options={this.state.bankList}
+                                                            onChange={this.selectBank}
+                                                            value={{label: this.state.bank, value: this.state.digit}}
+                                                        />
+                                                    )}
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>Nomor Rekening</Col>
+                                                <Col md={9} className="colRinci">:
+                                                    {this.state.tujuan_tf === 'PMA' ? (
+                                                        <Select
+                                                            isDisabled
+                                                            className="inputRinci2"
+                                                            options={this.state.rekList}
+                                                            onChange={this.selectRek}
+                                                            value={{ label: this.state.norek, value: this.state.tiperek }}
+                                                        />
+                                                    ) : (
+                                                        <Input
+                                                            type="text"
+                                                            className="inputRinci"
+                                                            disabled
+                                                            minLength={this.state.digit === null ? 10 : this.state.digit}
+                                                            maxLength={this.state.digit === null ? 16 : this.state.digit}
+                                                            value={values.norek_ajuan}
+                                                            onBlur={handleBlur("norek_ajuan")}
+                                                            onChange={handleChange("norek_ajuan")}
+                                                        />
+                                                    )}
+                                                </Col>
+                                            </Row>
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}>Atas Nama</Col>
+                                                <Col md={9} className="colRinci">:  <Input
+                                                    disabled={this.state.tujuan_tf === '' || this.state.tujuan_tf === 'PMA' ? true : false}
+                                                    type="text"
+                                                    className="inputRinci"
+                                                    value={this.state.tujuan_tf === 'PMA' ? `PMA-${idKlaim.area}` : values.nama_tujuan}
+                                                    onBlur={handleBlur("nama_tujuan")}
+                                                    onChange={handleChange("nama_tujuan")}
                                                 />
-                                            </Col>
-                                        </Row>
-                                        {/* {errors.norek_ajuan || values.norek_ajuan.length !== this.state.digit ? (
-                                            <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
-                                        ) : null} */}
-                                        <Row className="mb-2 rowRinci">
-                                            <Col md={3}>Atas Nama</Col>
-                                            <Col md={9} className="colRinci">:  <Input
-                                                disabled
-                                                type= "text" 
-                                                className="inputRinci"
-                                                value={values.nama_tujuan}
-                                                onBlur={handleBlur("nama_tujuan")}
-                                                onChange={handleChange("nama_tujuan")}
-                                                />
-                                            </Col>
-                                        </Row>
-                                        {errors.nama_tujuan ? (
-                                            <text className={style.txtError}>must be filled</text>
-                                        ) : null}
-                                        <Row className="mb-2 rowRinci">
+                                                </Col>
+                                            </Row>
+                                            {((dataOutlet.length > 0 && this.state.tujuan_tf === 'Outlet') 
+                                            // || (dataOutlet.length > 0 && this.state.tujuan_tf === 'Outlet')
+                                            ) &&
+                                                <>
+                                                    <div className='mt-3 mb-3'>
+                                                        List Outlet
+                                                    </div>
+                                                    <Table striped bordered hover responsive className={style.tab}>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>Nilai Ajuan</th>
+                                                                <th>Memiliki NPWP</th>
+                                                                <th>Nama NPWP</th>
+                                                                <th>No NPWP</th>
+                                                                <th>Nama KTP</th>
+                                                                <th>No KTP</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {dataOutlet.length !== 0 && dataOutlet.map(item => {
+                                                                return (
+                                                                    <tr>
+                                                                        <th>{dataOutlet.indexOf(item) + 1}</th>
+                                                                        <td>{item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</td>
+                                                                        <td>{item.status_npwp === 1 ? 'Ya' : 'Tidak'}</td>
+                                                                        <td>{item.nama_npwp}</td>
+                                                                        <td>{item.no_npwp}</td>
+                                                                        <td>{item.nama_ktp}</td>
+                                                                        <td>{item.no_ktp}</td>
+                                                                    </tr>
+                                                                )
+                                                            })}
+                                                        </tbody>
+                                                    </Table>
+                                                </>
+                                            }
+                                            {(this.state.tujuan_tf === 'Outlet'
+                                            // || (this.state.tujuan_tf === 'Outlet')
+                                            ) ? (
+                                                <div className='row justify-content-md-center mb-4'>
+                                                    <div className='mainRinci2' onClick={this.openKlaimOutlet}>
+                                                        <CiCirclePlus size={70} className='mb-2 secondary' color='secondary' />
+                                                        <div className='secondary'>Tambah Outlet</div>
+                                                    </div>
+                                                </div>
+                                            ) : null}
+                                            {/* <Row className="mb-2 rowRinci">
                                             <Col md={3}>Memiliki NPWP</Col>
                                             <Col md={9} className="colRinci">:  <Input
-                                                disabled
+                                                disabled={level === '5' || level === '6' ? false : true}
                                                 type= "select" 
                                                 className="inputRinci"
                                                 value={values.status_npwp}
                                                 onBlur={handleBlur("status_npwp")}
                                                 onChange={handleChange("status_npwp")}
                                                 >
-                                                    <option>{values.status_npwp}</option>
-                                                    <option>-Pilih-</option>
+                                                    <option value=''>Pilih</option>
                                                     <option value="Ya">Ya</option>
                                                     <option value="Tidak">Tidak</option>
                                                 </Input>
@@ -2189,7 +2430,7 @@ class VerifKlaim extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nama Sesuai NPWP</Col>
                                             <Col md={9} className="colRinci">:  <Input
-                                                disabled
+                                                disabled={values.status_npwp === 'Ya' ? false : true}
                                                 type= "text" 
                                                 className="inputRinci"
                                                 value={values.status_npwp === 'Ya' ? values.nama_npwp : ''}
@@ -2204,7 +2445,7 @@ class VerifKlaim extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nomor NPWP</Col>
                                             <Col md={9} className="colRinci">:  <Input
-                                                disabled
+                                                disabled={values.status_npwp === 'Ya' ? false : true}
                                                 type= "text" 
                                                 minLength={15}
                                                 maxLength={15}
@@ -2217,11 +2458,13 @@ class VerifKlaim extends Component {
                                         </Row>
                                         {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
                                             <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                        ) : values.status_npwp === 'Ya' && errors.no_npwp ? (
+                                            <text className={style.txtError}>{errors.no_npwp}</text>
                                         ) : null}
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nama Sesuai KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
-                                                disabled
+                                                disabled={values.status_npwp === 'Tidak' ? false : true}
                                                 type= "text" 
                                                 className="inputRinci"
                                                 value={values.status_npwp === 'Tidak' ? values.nama_ktp : ''}
@@ -2236,7 +2479,7 @@ class VerifKlaim extends Component {
                                         <Row className="mb-2 rowRinci">
                                             <Col md={3}>Nomor KTP</Col>
                                             <Col md={9} className="colRinci">:  <Input
-                                                disabled
+                                                disabled={values.status_npwp === 'Tidak' ? false : true}
                                                 type= "text" 
                                                 className="inputRinci"
                                                 minLength={16}
@@ -2249,7 +2492,9 @@ class VerifKlaim extends Component {
                                         </Row>
                                         {values.status_npwp === 'Tidak' && values.no_ktp.length < 16 ? (
                                             <text className={style.txtError}>must be filled with 16 digits characters</text>
-                                        ) : null}
+                                        ) : values.status_npwp === 'Tidak' && errors.no_ktp ? (
+                                            <text className={style.txtError}>{errors.no_ktp}</text>
+                                        ) : null} */}
                                     </div>
                                     {/* <Row className="mb-2 rowRinci">
                                         <Col md={3}>PPU</Col>
@@ -2263,7 +2508,7 @@ class VerifKlaim extends Component {
                                         </Col>
                                     </Row> */}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>PPU</Col>
+                                        <Col md={3}>PPU <text className='txtError'>{'*'}</text></Col>
                                         <Col md={9} className="colRinci">:  <Input
                                             type= "text" 
                                             className="inputRinci"
@@ -2277,11 +2522,11 @@ class VerifKlaim extends Component {
                                     </Row>
                                     {errors.ppu ? (
                                         <text className={style.txtError}>{errors.ppu}</text>
-                                    ) : values.ppu.toString().length !== 10 ?
+                                    ) : values.ppu !== undefined && values.ppu.toString().length !== 10 ?
                                         <text className={style.txtError}>Mohon diisi hingga 10 digit angka</text>
                                     : null}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>PA</Col>
+                                        <Col md={3}>PA <text className='txtError'>{'*'}</text></Col>
                                         <Col md={9} className="colRinci">:  <Input
                                             type= "text" 
                                             className="inputRinci"
@@ -2295,11 +2540,11 @@ class VerifKlaim extends Component {
                                     </Row>
                                     {errors.pa ? (
                                         <text className={style.txtError}>{errors.pa}</text>
-                                    ) : values.pa.toString().length !== 16 ?
+                                    ) : values.pa !== undefined && values.pa.toString().length !== 16 ?
                                         <text className={style.txtError}>Mohon diisi hingga 16 digit angka</text>
                                     : null}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>Kode Vendor</Col>
+                                        <Col md={3}>Kode Vendor <text className='txtError'>{'*'}</text></Col>
                                         <Col md={9} className="colRinci">:  <Input
                                             type= "text" 
                                             className="inputRinci"
@@ -2313,11 +2558,11 @@ class VerifKlaim extends Component {
                                     </Row>
                                     {errors.kode_vendor ? (
                                         <text className={style.txtError}>{errors.kode_vendor}</text>
-                                    ) : values.kode_vendor.toString().length !== 10 ?
+                                    ) : values.kode_vendor !== undefined && values.kode_vendor.toString().length !== 10 ?
                                         <text className={style.txtError}>Mohon diisi hingga 10 digit</text>
                                     : null}
                                     <Row className="mb-2 rowRinci">
-                                        <Col md={3}>Nominal verifikasi</Col>
+                                        <Col md={3}>Nominal verifikasi <text className='txtError'>{'*'}</text></Col>
                                         <Col md={9} className="colRinci">:  
                                             <NumberInput
                                                 className="inputRinci"
@@ -2343,9 +2588,9 @@ class VerifKlaim extends Component {
                                                 className="mr-3" 
                                                 size="md" 
                                                 disabled={ 
-                                                    values.ppu.toString().length !== 10 ? true 
-                                                    : values.pa.toString().length !== 16 ? true 
-                                                    : values.kode_vendor.toString().length !== 10 ? true
+                                                    values.ppu !== undefined && values.ppu.toString().length !== 10 ? true 
+                                                    : values.pa !== undefined && values.pa.toString().length !== 16 ? true 
+                                                    : values.kode_vendor !== undefined && values.kode_vendor.toString().length !== 10 ? true
                                                     : values.nominal === '' ? true 
                                                     : false 
                                                 } 
@@ -2401,7 +2646,7 @@ class VerifKlaim extends Component {
                                 onBlur={handleBlur('alasan')}
                                 />
                                 <div className='ml-2'>
-                                    {listReason.length === 0 ? (
+                                    {listReason.length === 0 && (values.alasan === '.' || values.alasan === '')? (
                                         <text className={style.txtError}>Must be filled</text>
                                     ) : null}
                                 </div>
@@ -2427,7 +2672,7 @@ class VerifKlaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading || this.props.notif.isLoading} size="sm">
+                <Modal isOpen={this.props.klaim.isLoading || this.state.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading || this.props.notif.isLoading} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2899,7 +3144,9 @@ const mapStateToProps = state => ({
     reason: state.reason,
     dokumen: state.dokumen,
     email: state.email,
-    spvklaim: state.spvklaim
+    spvklaim: state.spvklaim,
+    finance: state.finance,
+    bank: state.bank
 })
 
 const mapDispatchToProps = {
@@ -2929,7 +3176,11 @@ const mapDispatchToProps = {
     uploadDataKlaim: klaim.uploadDataKlaim,
     getSpvklaim: spvklaim.getSpvklaim,
     getOutlet: klaim.getOutlet,
-    downloadFormVerif: klaim.downloadFormVerif
+    downloadFormVerif: klaim.downloadFormVerif,
+    getDetailId: klaim.getDetailId,
+    getFinRek: finance.getFinRek,
+    getOutlet: klaim.getOutlet,
+    getFakturKl: klaim.getFakturKl,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifKlaim)

@@ -59,7 +59,7 @@ class FormList extends Component {
                     item.depo.profit_center, 
                     item.bank_tujuan, item.norek_ajuan, 
                     item.nama_tujuan, 
-                    item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."), 
+                    item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."), 
                     item.keterangan,
                     '-',
                     item.depo.channel
@@ -113,7 +113,7 @@ class FormList extends Component {
             '', 
             '', 
             detailKlaim.reduce((accumulator, object) => {
-                return accumulator + parseInt(object.nilai_ajuan);
+                return accumulator + parseInt(object.nominal);
             }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."), 
             '', 
             '', 
@@ -309,7 +309,7 @@ class FormList extends Component {
                                     <th>{item.bank_tujuan}</th>
                                     <th>{item.norek_ajuan}</th>
                                     <th>{item.nama_tujuan}</th>
-                                    <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                    <th>{item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                     <th>{item.keterangan}</th>
                                     <th>-</th>
                                     <th>{item.depo.channel}</th>
@@ -321,7 +321,7 @@ class FormList extends Component {
                                 <th className='total' colSpan={7}>Total</th>
                                 <th>
                                     {detailKlaim.reduce((accumulator, object) => {
-                                        return accumulator + parseInt(object.nilai_ajuan);
+                                        return accumulator + parseInt(object.nominal);
                                     }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                 </th>
                                 <th></th>

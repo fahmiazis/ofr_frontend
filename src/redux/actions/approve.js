@@ -31,6 +31,10 @@ export default {
         type: 'GET_NAME',
         payload: http(token).get(`/approve/name`)
     }),
+    getAppPlant: (token, kode) => ({
+        type: 'GET_PLANTAPP',
+        payload: http(token).get(`/approve/plant?kode=${kode}`)
+    }),
     updateApprove: (token, id, data) => ({
         type: 'UPDATE_APPROVE',
         payload: http(token).patch(`/approve/update/${id}`, qs.stringify(data))

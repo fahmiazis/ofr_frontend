@@ -122,7 +122,7 @@ class ReportOps extends Component {
             formDis: false,
             history: false,
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             listOps: [],
             dataDownload: [],
@@ -183,7 +183,10 @@ class ReportOps extends Component {
             }
         }
         this.setState({dataDownload: data, titleDownload: val})
-        this.openDownload()
+        // this.openDownload()
+        setTimeout(() => {
+            this.downloadOps()
+        }, 100)
     }
 
     openDownload = () => {
@@ -233,7 +236,10 @@ class ReportOps extends Component {
             {header:  'Tax Object Description', key: 'c24'},
             {header:  'Gross Expense', key: 'c25'},
             {header:  'Tax Base', key: 'c26'},
-            {header:  'PPh Amount', key: 'c27'}
+            {header:  'PPh Amount', key: 'c27'},
+            {header:  'DPP', key: 'c28'},
+            {header:  'PPN', key: 'c29'},
+            {header:  'Keterangan Tambahan', key: 'c30'}
         ]
 
         dataDownload.map((item, index) => { return ( ws.addRow(
@@ -243,7 +249,7 @@ class ReportOps extends Component {
                 c3: '',
                 c4: moment(item.start_ops).format('DD MMMM YYYY'),
                 c5: item.depo.profit_center,
-                c6: item.depo.kpp.npwp,
+                c6: item.depo === null ? '' : item.depo.kpp === null ? '' : item.depo.kpp.npwp,
                 c7: '',
                 c8: moment(item.tgl_tagihanbayar).format('DD MMMM YYYY'),
                 c9: item.no_faktur,
@@ -264,7 +270,10 @@ class ReportOps extends Component {
                 c24: item.taxcode !== null && item.taxcode.tax_objdesc,
                 c25: item.nilai_ajuan !== null && item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c26: item.nilai_buku !== null && item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
-                c27: item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+                c27: item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c28: item.dpp !== null && item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c29: item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c30: item.keterangan
             }
         )
         ) })
@@ -729,13 +738,14 @@ class ReportOps extends Component {
     }
 
     onSearch = async (e) => {
+        this.setState({search: e.target.value})
         const {time1, time2, filter} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'reject' ? 6 : 8
         if(e.key === 'Enter'){
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, e.target.value)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, undefined, e.target.value)
         }
     }
 
@@ -1093,6 +1103,9 @@ class ReportOps extends Component {
                                                 <th>Gross Expense</th>
                                                 <th>Tax Base</th>
                                                 <th>PPh Amount</th>
+                                                <th>DPP</th>
+                                                <th>PPN</th>
+                                                <th>Keterangan Tambahan</th>
                                                 <th>Status</th>
                                                 {/* <th>STATUS</th> */}
                                             </tr>
@@ -1113,7 +1126,7 @@ class ReportOps extends Component {
                                                         <th></th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
                                                         <th>{item.depo.profit_center}</th>
-                                                        <th>{item.depo.kpp.npwp}</th>
+                                                        <th>{item.depo === null ? '' : item.depo.kpp === null ? '' : item.depo.kpp.npwp}</th>
                                                         <th></th>
                                                         <th>{moment(item.tgl_tagihanbayar).format('DD MMMM YYYY')}</th>
                                                         <th>{item.no_faktur}</th>
@@ -1135,6 +1148,9 @@ class ReportOps extends Component {
                                                         <th>{item.nilai_ajuan !== null && item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                         <th>{item.nilai_buku !== null && item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                         <th>{item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                        <th>{item.dpp !== null && item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                        <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                        <th>{item.keterangan}</th>
                                                         <th>{item.status_transaksi === 8 ? 'Transaksi selesai' : item.status_transaksi === 4 ? 'Verifikasi Finance' : item.status_transaksi === 5 ? 'Verifikasi Tax' : item.status_transaksi === 2 ? 'Approval Area' : filter === 'reject' && 'Reject'}</th>
                                                         {/* <th>{item.history.split(',').reverse()[0]}</th> */}
                                                     </tr>
@@ -1710,6 +1726,9 @@ class ReportOps extends Component {
                                     <th>Gross Expense</th>
                                     <th>Tax Base</th>
                                     <th>PPh Amount</th>
+                                    <th>DPP</th>
+                                    <th>PPN</th>
+                                    <th>Keterangan Tambahan</th>
                                     {/* <th>STATUS</th> */}
                                 </tr>
                             </thead>
@@ -1722,7 +1741,7 @@ class ReportOps extends Component {
                                             <th></th>
                                             <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
                                             <th>{item.depo.profit_center}</th>
-                                            <th>{item.depo.kpp.npwp}</th>
+                                            <th>{item.depo === null ? '' : item.depo.kpp === null ? '' : item.depo.kpp.npwp}</th>
                                             <th></th>
                                             <th>{moment(item.tgl_tagihanbayar).format('DD MMMM YYYY')}</th>
                                             <th>{item.no_faktur}</th>
@@ -1744,6 +1763,9 @@ class ReportOps extends Component {
                                             <th>{item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                             <th>{item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                             <th>{item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                            <th>{item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                            <th>{item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                            <th>{item.keterangan}</th>
                                             {/* <th>{item.history.split(',').reverse()[0]}</th> */}
                                         </tr>
                                     )

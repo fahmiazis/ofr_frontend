@@ -45,9 +45,10 @@ import { CiCirclePlus, CiEdit } from "react-icons/ci";
 import readXlsxFile from 'read-excel-file'
 import ExcelJS from "exceljs"
 import fs from "file-saver"
+import { MdUpload, MdDownload, MdEditSquare, MdAddCircle, MdDelete } from "react-icons/md";
 const { REACT_APP_BACKEND_URL } = process.env
 
-const addSchema = Yup.object().shape({
+const klaimSchema = Yup.object().shape({
     keterangan: Yup.string().required("must be filled"),
     periode_awal: Yup.date().required("must be filled"),
     periode_akhir: Yup.date().required('must be filled'),
@@ -65,7 +66,15 @@ const outletSchema = Yup.object().shape({
     nilai_ajuan: Yup.string().required("must be filled"),
     status_npwp: Yup.string().required('must be filled'),
     no_ktp: Yup.number(),
-    no_npwp: Yup.number()
+    no_npwp: Yup.number(),
+    keterangan: Yup.string()
+})
+
+const fakturklSchema = Yup.object().shape({
+    no_faktur: Yup.number().required(),
+    date_faktur: Yup.date().required('must be filled'),
+    value: Yup.number().required(),
+    keterangan: Yup.string()
 })
 
 const alasanSchema = Yup.object().shape({
@@ -149,12 +158,20 @@ class CartKlaim extends Component {
             modalDelOutlet: false,
             detModOutlet: false,
             modUpOutlet: false,
+            dataFakturKl: [],
+            detFakturKl: {},
+            modalFakturKl: false,
+            modalAddFakturKl: false,
+            modalDelFakturKl: false,
+            detModFakturKl: false,
+            modUpFakturKl: false,
             fileUpload: {},
             messUpload: [],
             duplikat: [],
             dataDel: {},
             typeOut: '',
-            nilai_ajuan: 0
+            nilai_ajuan: 0,
+            infoError: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -222,7 +239,8 @@ class CartKlaim extends Component {
             { header: 'Nama NPWP', key: 'c3' },
             { header: 'No NPWP', key: 'c4' },
             { header: 'Nama KTP', key: 'c5' },
-            { header: 'No KTP', key: 'c6' }
+            { header: 'No KTP', key: 'c6' },
+            { header: 'Keterangan', key: 'c7' }
         ]
 
         dataOutlet.map((item, index) => {
@@ -233,7 +251,8 @@ class CartKlaim extends Component {
                     c3: item.nama_npwp,
                     c4: item.no_npwp,
                     c5: item.nama_ktp,
-                    c6: item.no_ktp
+                    c6: item.no_ktp,
+                    c7: item.keterangan
                 }
             )
             )
@@ -271,6 +290,7 @@ class CartKlaim extends Component {
             no_npwp: val.status_npwp === 'Ya' ? val.no_npwp : '',
             nama_ktp: val.status_npwp === 'Tidak' ? val.nama_ktp : '',
             no_ktp: val.status_npwp === 'Tidak' ? val.no_ktp : '',
+            keterangan: val.keterangan
         }
         if (dataOutlet.length > 0) {
             const cek = dataOutlet.find(({ no_ktp, no_npwp }) => (data.no_ktp !== '' && no_ktp === data.no_ktp) || (data.no_npwp !== '' && no_npwp === data.no_npwp))
@@ -290,6 +310,7 @@ class CartKlaim extends Component {
                     await this.editCartKlaim(idKlaim)
                     this.setState({ confirm: 'sucAddOutlet' })
                     this.openConfirm()
+                    this.openOutlet()
                     this.openAddOutlet()
                 } else {
                     dataOutlet.push(data)
@@ -312,6 +333,7 @@ class CartKlaim extends Component {
                 await this.editCartKlaim(idKlaim)
                 this.setState({ confirm: 'sucAddOutlet' })
                 this.openConfirm()
+                this.openOutlet()
                 this.openAddOutlet()
             } else {
                 dataOutlet.push(data)
@@ -334,6 +356,7 @@ class CartKlaim extends Component {
             no_npwp: val.status_npwp === 'Ya' ? val.no_npwp : '',
             nama_ktp: val.status_npwp === 'Tidak' ? val.nama_ktp : '',
             no_ktp: val.status_npwp === 'Tidak' ? val.no_ktp : '',
+            keterangan: val.keterangan
         }
         const dataUp = []
         if (dataOutlet.length > 0) {
@@ -422,7 +445,8 @@ class CartKlaim extends Component {
             nama_npwp: val.nama_npwp,
             no_npwp: val.no_npwp,
             nama_ktp: val.nama_ktp,
-            no_ktp: val.no_ktp
+            no_ktp: val.no_ktp,
+            keterangan: val.keterangan
         }
         dataOutlet.push(data)
         this.setState({ dataOutlet: dataOutlet })
@@ -442,7 +466,8 @@ class CartKlaim extends Component {
             'Nama NPWP',
             'No NPWP',
             'Nama KTP',
-            'No KTP'
+            'No KTP',
+            'Keterangan'
         ]
         const valid = rows[0]
         for (let i = 0; i < parcek.length; i++) {
@@ -486,14 +511,15 @@ class CartKlaim extends Component {
                         nama_npwp: dataKlaim[1] === 'Ya' ? dataKlaim[2] : '',
                         no_npwp: dataKlaim[1] === 'Ya' ? dataKlaim[3] : '',
                         nama_ktp: dataKlaim[1] === 'Tidak' ? dataKlaim[4] : '',
-                        no_ktp: dataKlaim[1] === 'Tidak' ? dataKlaim[5] : ''
+                        no_ktp: dataKlaim[1] === 'Tidak' ? dataKlaim[5] : '',
+                        keterangan: dataKlaim[6]
                     }
 
                     const nominal = dataKlaim[0]
                     const statId = dataKlaim[1]
                     const noid = dataKlaim[1] === 'Tidak' ? dataKlaim[5] : dataKlaim[1] === 'Ya' ? dataKlaim[3] : ''
                     const nameid = dataKlaim[1] === 'Tidak' ? dataKlaim[4] : dataKlaim[1] === 'Ya' ? dataKlaim[2] : ''
-                    const cekno = dataKlaim[1] === 'Tidak' ? 16 : dataKlaim[1] === 'Ya' ? 15 : 100
+                    const cekno = dataKlaim[1] === 'Tidak' ? 16 : dataKlaim[1] === 'Ya' ? 16 : 100
                     const parno = dataKlaim[1] === 'Tidak' ? 'No KTP' : dataKlaim[1] === 'Ya' ? 'No NPWP' : ''
                     const parname = dataKlaim[1] === 'Tidak' ? 'Nama KTP' : dataKlaim[1] === 'Ya' ? 'Nama NPWP' : ''
 
@@ -578,6 +604,13 @@ class CartKlaim extends Component {
         this.getDataCart()
     }
 
+    setError = (val) => {
+        this.setState({infoError: val, confirm: 'errfill'})
+        setTimeout(() => {
+            this.openConfirm()
+        }, 100)
+    }
+
     onChangeUpload = e => {
         const {size, type, name} = e.target.files[0]
         this.setState({ fileUpload: e.target.files[0] })
@@ -615,6 +648,376 @@ class CartKlaim extends Component {
             // this.props.uploadDocKlaim(token, tempno, data)
         }
     }
+
+    openAddFakturKl = (val) => {
+        this.setState({ modalAddFakturKl: !this.state.modalAddFakturKl })
+    }
+
+    openDetFakturKl = () => {
+        this.setState({ detModFakturKl: !this.state.detModFakturKl })
+    }
+
+    openUpFakturKl = (val) => {
+        this.setState({ modUpFakturKl: !this.state.modUpFakturKl, fileUpload: '' })
+    }
+
+    openKlaimFakturKl = async () => {
+        const token = localStorage.getItem("token")
+        const { idKlaim } = this.props.klaim
+        await this.props.getFakturKl(token, idKlaim.id)
+        const { klaimFaktur } = this.props.klaim
+        this.setState({ dataFakturKl: klaimFaktur })
+        this.openFakturKl()
+    }
+
+    downloadFakturKl = () => {
+        const { dataFakturKl } = this.state
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data klaim')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        }
+
+
+        ws.columns = [
+            { header: 'No Faktur', key: 'c1' },
+            { header: 'Tgl Faktur', key: 'c2' },
+            { header: 'Value', key: 'c3' },
+            { header: 'Keterangan', key: 'c4' }
+        ]
+
+        dataFakturKl.map((item, index) => {
+            return (ws.addRow(
+                {
+                    c1: item.no_faktur,
+                    c2: item.date_faktur,
+                    c3: item.val,
+                    c4: item.keterangan,
+                }
+            )
+            )
+        })
+
+        ws.eachRow({ includeEmpty: true }, function (row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function (cell, colNumber) {
+                cell.border = borderStyles;
+            })
+        })
+
+        ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function (buffer) {
+            fs.saveAs(
+                new Blob([buffer], { type: "application/octet-stream" }),
+                `Data Faktur Klaim ${moment().format('DD MMMM YYYY')}.xlsx`
+            )
+        })
+    }
+
+
+    addDataFakturKl = async (val) => {
+        const { dataFakturKl, modalEdit } = this.state
+        const { idKlaim } = this.props.klaim
+        const token = localStorage.getItem('token')
+        const data = {
+            no_faktur: val.no_faktur,
+            date_faktur: val.date_faktur,
+            val: val.value,
+            keterangan: val.keterangan
+        }
+        if (dataFakturKl.length > 0) {
+            const cek = dataFakturKl.find((item) => (data.no_faktur !== '' && item.no_faktur.toString() === data.no_faktur.toString()))
+            if (cek !== undefined) {
+                this.setState({ confirm: 'rejAddFakturKl' })
+                this.openConfirm()
+            } else {
+                if (modalEdit === true) {
+                    const send = {
+                        id: idKlaim.id,
+                        ...data
+                    }
+                    await this.props.addFakturKl(token, send)
+                    await this.props.getFakturKl(token, idKlaim.id)
+                    const { klaimFaktur } = this.props.klaim
+                    this.setState({ dataFakturKl: klaimFaktur })
+                    await this.editCartKlaim(idKlaim)
+                    this.setState({ confirm: 'sucAddFakturKl' })
+                    this.openConfirm()
+                    this.openAddFakturKl()
+                } else {
+                    dataFakturKl.push(data)
+                    this.setState({ dataFakturKl: dataFakturKl })
+                    this.setState({ confirm: 'sucAddFakturKl' })
+                    this.openConfirm()
+                    this.openAddFakturKl()
+                }
+            }
+        } else {
+            if (modalEdit === true) {
+                const send = {
+                    id: idKlaim.id,
+                    ...data
+                }
+                await this.props.addFakturKl(token, send)
+                await this.props.getFakturKl(token, idKlaim.id)
+                const { klaimFaktur } = this.props.klaim
+                this.setState({ dataFakturKl: klaimFaktur })
+                await this.editCartKlaim(idKlaim)
+                this.setState({ confirm: 'sucAddFakturKl' })
+                this.openConfirm()
+                this.openAddFakturKl()
+            } else {
+                dataFakturKl.push(data)
+                this.setState({ dataFakturKl: dataFakturKl })
+                this.setState({ confirm: 'sucAddFakturKl' })
+                this.openConfirm()
+                this.openAddFakturKl()
+            }
+        }
+    }
+
+    editDataFakturKl = async (val) => {
+        const { dataFakturKl, detFakturKl, modalEdit } = this.state
+        const { idKlaim } = this.props.klaim
+        const token = localStorage.getItem('token')
+        const data = {
+            no_faktur: val.no_faktur,
+            date_faktur: val.date_faktur,
+            val: val.value,
+            keterangan: val.keterangan
+        }
+        const dataUp = []
+        if (dataFakturKl.length > 0) {
+            for (let i = 0; i < dataFakturKl.length; i++) {
+                const dataCek = JSON.stringify(dataFakturKl[i])
+                if (JSON.stringify(detFakturKl) === dataCek) {
+                    const cek = dataFakturKl.find((item) => (data.no_faktur !== '' && item.no_faktur.toString() === data.no_faktur.toString() && item.no_faktur.toString() !== detFakturKl.no_faktur.toString()))
+                    if (cek !== undefined) {
+                        console.log()
+                    } else {
+                        dataUp.push(data)
+                    }
+                } else {
+                    dataUp.push(dataFakturKl[i])
+                }
+            }
+            if (dataUp.length === dataFakturKl.length) {
+                if (modalEdit === true) {
+                    const send = {
+                        id: idKlaim.id,
+                        idFaktur: detFakturKl.id,
+                        ...data
+                    }
+                    await this.props.updateFakturKl(token, send)
+                    await this.props.getFakturKl(token, idKlaim.id)
+                    const { klaimFaktur } = this.props.klaim
+                    this.setState({ dataFakturKl: klaimFaktur })
+                    await this.editCartKlaim(idKlaim)
+                    this.setState({ confirm: 'editFakturKl' })
+                    this.openConfirm()
+                    this.openDetFakturKl()
+                } else {
+                    this.setState({ dataFakturKl: dataUp })
+                    this.setState({ confirm: 'editFakturKl' })
+                    this.openConfirm()
+                    this.openDetFakturKl()
+                }
+            } else {
+                this.setState({ confirm: 'rejEditFakturKl' })
+                this.openConfirm()
+            }
+        }
+    }
+
+    delDataFakturKl = async () => {
+        const { dataFakturKl, dataDel, modalEdit } = this.state
+        const { idKlaim } = this.props.klaim
+        const token = localStorage.getItem('token')
+        const data = []
+        for (let i = 0; i < dataFakturKl.length; i++) {
+            const dataCek = JSON.stringify(dataFakturKl[i])
+            if (JSON.stringify(dataDel) === dataCek) {
+                if (modalEdit === true && dataDel.id !== undefined) {
+                    await this.props.deleteFakturKl(token, dataDel.id)
+                } else {
+                    console.log('delete')
+                }
+            } else {
+                data.push(dataFakturKl[i])
+            }
+        }
+        if (modalEdit === true && dataDel.id !== undefined) {
+            this.confirmDelFakturKl()
+            this.setState({ dataFakturKl: data })
+            this.setState({ typeOut: 'delout' })
+            await this.editCartKlaim(idKlaim)
+            this.setState({ confirm: 'delFakturKl' })
+            this.openConfirm()
+        } else {
+            this.confirmDelFakturKl()
+            this.setState({ dataFakturKl: data })
+            this.setState({ confirm: 'delFakturKl' })
+            this.openConfirm()
+        }
+    }
+
+    confirmDelFakturKl = () => {
+        this.setState({ modalDelFakturKl: !this.state.modalDelFakturKl })
+    }
+
+    setDetFakturKl = (val) => {
+        const { dataFakturKl } = this.state
+        const data = {
+            no_faktur: val.no_faktur,
+            date_faktur: val.date_faktur,
+            val: val.value,
+            keterangan: val.keterangan,
+        }
+        dataFakturKl.push(data)
+        this.setState({ dataFakturKl: dataFakturKl })
+    }
+
+    uploadDataFakturKl = async (val) => {
+        const { dataFakturKl, fileUpload, modalEdit } = this.state
+        const { idKlaim } = this.props.klaim
+        const token = localStorage.getItem('token')
+        const dataTemp = []
+        const rows = await readXlsxFile(fileUpload)
+        const dataCek = []
+        const count = []
+        const parcek = [
+            'No Faktur',
+            'Tgl Faktur',
+            'Value',
+            'Keterangan'
+        ]
+        const valid = rows[0]
+        for (let i = 0; i < parcek.length; i++) {
+            if (valid[i] === parcek[i]) {
+                count.push(1)
+            }
+        }
+        if (count.length === parcek.length) {
+            rows.shift()
+            const noIdent = []
+            const result = []
+            for (let i = 0; i < rows.length; i++) {
+                console.log('masuk cek duplikat')
+                const dataKlaim = rows[i]
+                const noid = dataKlaim[0]
+                noIdent.push(noid)
+            }
+
+            const obj = {}
+
+            noIdent.forEach(item => {
+                if (!obj[item]) { obj[item] = 0 }
+                obj[item] += 1
+            })
+
+            for (const prop in obj) {
+                if (obj[prop] >= 2) {
+                    result.push(prop)
+                }
+            }
+            if (result.length > 0) {
+                this.openUpFakturKl()
+                this.setState({ confirm: 'dupUploadFakturKl', duplikat: result })
+                this.openConfirm()
+            } else {
+                for (let i = 0; i < rows.length; i++) {
+                    const dataKlaim = rows[i]
+                    console.log(moment(dataKlaim[1]).format('DD-MM-YYYY'))
+                    const data = {
+                        no_faktur: dataKlaim[0],
+                        date_faktur: moment(dataKlaim[1]),
+                        val: dataKlaim[2],
+                        keterangan: dataKlaim[3]
+                    }
+
+                    const noFaktur = dataKlaim[0]
+                    const dateFaktur = dataKlaim[1]
+                    const value = dataKlaim[2]
+
+                    const cekValue = value === null || (value.toString().split('').filter((item) => isNaN(parseFloat(item))).length > 0)
+                        ? { no_transaksi: `Row ke ${i + 2}`, mess: 'Pastikan Value Diisi dengan Sesuai' }
+                        : null
+                    const cekFaktur = noFaktur === null || (noFaktur.toString().split('').filter((item) => isNaN(parseFloat(item))).length > 0)
+                        ? { no_transaksi: `Row ke ${i + 2}`, mess: 'Pastikan No Faktur Diisi dengan Sesuai' }
+                        : null
+                    const cekDate = dateFaktur === null || dateFaktur === '' || dateFaktur.length === 0
+                        ? { no_transaksi: `Row ke ${i + 2}`, mess: `Pastikan Tgl Faktur Diisi dengan Sesuai` }
+                        : null
+
+                    if (cekDate !== null || cekValue !== null || cekFaktur !== null) {
+                        const mesTemp = [cekDate, cekValue, cekFaktur]
+                        dataCek.push(mesTemp)
+                    } else {
+                        const cek = dataFakturKl.find((item) => (data.no_faktur !== '' && item.no_faktur.toString() === data.no_faktur.toString()))
+                        if (cek !== undefined) {
+                            cek.no_faktur = data.no_faktur
+                            cek.date_faktur = data.date_faktur
+                            cek.val = data.val
+                        } else {
+                            dataTemp.push(data)
+                        }
+                    }
+
+                }
+                console.log(dataCek)
+                console.log(dataTemp)
+                if (dataCek.length > 0 || rows.length === 0) {
+                    console.log('masuk failed king')
+
+                    this.setState({ messUpload: dataCek })
+                    this.openUpFakturKl()
+                    this.setState({ confirm: 'failUpload' })
+                    this.openConfirm()
+                } else {
+                    console.log('masuk success king')
+                    console.log(dataFakturKl)
+                    console.log(dataTemp)
+                    if (modalEdit === true) {
+                        const comb = [...dataFakturKl, ...dataTemp]
+                        const send = {
+                            id: idKlaim.id,
+                            list: comb
+                        }
+                        await this.props.uploadFakturKl(token, send)
+                        await this.props.getFakturKl(token, idKlaim.id)
+                        const { klaimFaktur } = this.props.klaim
+                        this.setState({ dataFakturKl: klaimFaktur })
+                        this.openUpFakturKl()
+                        await this.editCartKlaim(idKlaim)
+                        this.setState({ confirm: 'uploadFakturKl' })
+                        this.openConfirm()
+                    } else {
+                        const comb = [...dataFakturKl, ...dataTemp]
+                        this.setState({ dataFakturKl: comb })
+                        this.openUpFakturKl()
+                        this.setState({ confirm: 'uploadFakturKl' })
+                        this.openConfirm()
+                    }
+                }
+            }
+        } else {
+            this.openUpFakturKl()
+            this.setState({ confirm: 'falseUpload' })
+            this.openConfirm()
+        }
+    }
+
 
     openModalFaa = () => {
         this.setState({ modalFaa: !this.state.modalFaa })
@@ -858,7 +1261,7 @@ class CartKlaim extends Component {
         }
         const data = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
@@ -901,6 +1304,7 @@ class CartKlaim extends Component {
             this.props.getCart(token)
             this.openConfirm(this.setState({ confirm: 'editcart' }))
             this.props.resetKlaim()
+            this.setState({modalEdit: false, dataFakturKl: []})
         } else if (isUploadOut === false) {
             this.setState({ confirm: 'falseUpload' })
             this.openConfirm()
@@ -974,7 +1378,12 @@ class CartKlaim extends Component {
     }
 
     openModalEdit = () => {
-        this.setState({ modalEdit: !this.state.modalEdit })
+        if (this.state.modalEdit === true) {
+            this.setState({dataFakturKl: []})
+            this.setState({ modalEdit: !this.state.modalEdit })
+        } else {
+            this.setState({ modalEdit: !this.state.modalEdit })
+        }
     }
 
     getDataCart = async (value) => {
@@ -1161,7 +1570,7 @@ class CartKlaim extends Component {
     addCartKlaim = async (val) => {
         const token = localStorage.getItem("token")
         const { detFinance } = this.props.finance
-        const { dataOutlet } = this.state
+        const { dataOutlet, dataFakturKl } = this.state
 
         if (dataOutlet.length === 0 && this.state.tujuan_tf === 'Outlet') {
             this.setState({ confirm: 'nullOutlet' })
@@ -1199,9 +1608,33 @@ class CartKlaim extends Component {
                     id: dataAdd.id,
                     list: dataOutlet
                 }
+
+                const sendFaktur = {
+                    id: dataAdd.id,
+                    list: dataFakturKl
+                }
     
                 await this.props.uploadOutlet(token, send)
+                if (dataFakturKl.length > 0) {
+                    await this.props.uploadFakturKl(token, sendFaktur)
     
+                    this.openModalAdd()
+                    this.props.getCart(token)
+                    this.openConfirm(this.setState({ confirm: 'addcart' }))
+                } else {
+                    this.openModalAdd()
+                    this.props.getCart(token)
+                    this.openConfirm(this.setState({ confirm: 'addcart' }))
+                }
+            } else if (dataFakturKl.length > 0) {
+                const { dataAdd } = this.props.klaim
+                const send = {
+                    id: dataAdd.id,
+                    list: dataFakturKl
+                }
+
+                await this.props.uploadFakturKl(token, send)
+
                 this.openModalAdd()
                 this.props.getCart(token)
                 this.openConfirm(this.setState({ confirm: 'addcart' }))
@@ -1363,6 +1796,7 @@ class CartKlaim extends Component {
         await this.props.getFinRek(token)
         await this.props.getDetailFinance(token)
         await this.props.getOutlet(token, val)
+        await this.props.getFakturKl(token, val)
         const { dataRek } = this.props.finance
         const spending = dataRek[0].rek_spending
         const zba = dataRek[0].rek_zba
@@ -1388,7 +1822,8 @@ class CartKlaim extends Component {
         this.prepBank(idKlaim.bank_tujuan)
 
         const { klaimOutlet } = this.props.klaim
-        this.setState({ dataOutlet: klaimOutlet })
+        const { klaimFaktur } = this.props.klaim
+        this.setState({ dataOutlet: klaimOutlet,  dataFakturKl: klaimFaktur})
 
         setTimeout(() => {
             this.setState({ isLoading: false })
@@ -1503,7 +1938,7 @@ class CartKlaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const { dataRinci, duplikat, dataOutlet, detOutlet, messUpload, dataItem, listMut, drop } = this.state
+        const { dataRinci, duplikat, dataOutlet, detOutlet, messUpload, dataItem, listMut, drop, dataFakturKl, detFakturKl } = this.state
         const { dataCart, dataDoc, idKlaim } = this.props.klaim
         const { detFinance } = this.props.finance
         // const pages = this.props.finance.page
@@ -1582,9 +2017,11 @@ class CartKlaim extends Component {
                                                         <th>{item.bank_tujuan}</th>
                                                         <th>{item.norek_ajuan}</th>
                                                         <th>{item.nama_tujuan}</th>
-                                                        <th>
-                                                            <Button onClick={() => this.prosesOpenEdit(item.id)} className='mb-1 mr-1' color='success'>EDIT</Button>
-                                                            <Button onClick={() => this.prosesDelete(item.id)} color='danger'>DELETE</Button>
+                                                        <th >
+                                                            <div className='rowCenter'>
+                                                                <Button onClick={() => this.prosesOpenEdit(item.id)} className='mb-1 mr-1' color='success'><MdEditSquare size={25}/></Button>
+                                                                <Button onClick={() => this.prosesDelete(item.id)} color='danger'><MdDelete size={25}/></Button>
+                                                            </div>
                                                         </th>
                                                     </tr>
                                                 )
@@ -1693,14 +2130,14 @@ class CartKlaim extends Component {
                                     dn_area: '',
                                     no_faktur: ''
                                 }}
-                                validationSchema={addSchema}
+                                validationSchema={klaimSchema}
                                 onSubmit={(values) => { this.addCartKlaim(values) }}
                             >
                                 {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched, }) => (
                                     <div className="rightRinci2">
                                         <div>
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>COA</Col>
+                                                <Col md={3}>COA <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:
                                                     <Select
                                                         className="inputRinci2"
@@ -1709,11 +2146,11 @@ class CartKlaim extends Component {
                                                     />
                                                 </Col>
                                             </Row>
-                                            {this.state.no_coa === '' ? (
+                                            {/* {this.state.no_coa === '' ? (
                                                 <text className={style.txtError}>must be filled</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>No COA</Col>
+                                                <Col md={3}>No COA <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     disabled
                                                     type="text"
@@ -1724,11 +2161,11 @@ class CartKlaim extends Component {
                                                 />
                                                 </Col>
                                             </Row>
-                                            {this.state.no_coa === '' ? (
+                                            {/* {this.state.no_coa === '' ? (
                                                 <text className={style.txtError}>must be filled</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nama COA</Col>
+                                                <Col md={3}>Nama COA <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     disabled
                                                     type="text"
@@ -1737,11 +2174,11 @@ class CartKlaim extends Component {
                                                 />
                                                 </Col>
                                             </Row>
-                                            {this.state.no_coa === '' ? (
+                                            {/* {this.state.no_coa === '' ? (
                                                 <text className={style.txtError}>must be filled</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>No Surkom</Col>
+                                                <Col md={3}>No Surkom <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     type="text"
                                                     className="inputRinci"
@@ -1751,11 +2188,11 @@ class CartKlaim extends Component {
                                                 />
                                                 </Col>
                                             </Row>
-                                            {errors.no_surkom ? (
+                                            {/* {errors.no_surkom ? (
                                                 <text className={style.txtError}>must be filled</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nama Program</Col>
+                                                <Col md={3}>Nama Program <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     type="text"
                                                     className="inputRinci"
@@ -1765,11 +2202,11 @@ class CartKlaim extends Component {
                                                 />
                                                 </Col>
                                             </Row>
-                                            {errors.nama_program ? (
+                                            {/* {errors.nama_program ? (
                                                 <text className={style.txtError}>must be filled</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>DN Area</Col>
+                                                <Col md={3}>DN Area <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     type="text"
                                                     className="inputRinci"
@@ -1779,25 +2216,72 @@ class CartKlaim extends Component {
                                                 />
                                                 </Col>
                                             </Row>
-                                            {errors.dn_area ? (
+                                            {/* {errors.dn_area ? (
                                                 <text className={style.txtError}>must be filled</text>
-                                            ) : null}
-                                            <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nomor Faktur</Col>
-                                                <Col md={9} className="colRinci">:  <Input
+                                            ) : null} */}
+                                            <Row className="mb-2 rowRinci2">
+                                                <Col md={3}>Faktur</Col>
+                                                <Col md={9} className="colTable" style={{ paddingLeft: '3%' }}>
+                                                    {/* <Input
                                                     type= "text" 
                                                     className="inputRinci"
                                                     value={values.no_faktur}
                                                     onBlur={handleBlur("no_faktur")}
                                                     onChange={handleChange("no_faktur")}
-                                                    />
+                                                    /> */}
+                                                    <div className='rowBetween'>
+                                                        <div>Daftar Faktur</div>
+                                                        <div className='rowCenter mt-2 mb-2'>
+                                                            <Button size='sm' onClick={this.openUpFakturKl} className='ml-1' color='primary'><MdUpload size={20}/></Button>
+                                                            <Button size='sm' onClick={this.downloadFakturKl} className='ml-1' color='warning'><MdDownload size={20}/></Button>
+                                                        </div>
+                                                    </div>
+                                                    <Table striped bordered hover responsive className={[style.tab]}>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>No Faktur</th>
+                                                                <th>Tgl Faktur</th>
+                                                                <th>Value</th>
+                                                                <th>Ket</th>
+                                                                <th>Action</th>
+                                                            </tr>
+                                                        </thead>
+                                                        {dataFakturKl.length > 0 && dataFakturKl.map((item, index) => {
+                                                            return (
+                                                                <>
+                                                                    <tbody>
+                                                                        <td>{index + 1}</td>
+                                                                        <td>{item.no_faktur}</td>
+                                                                        <td>{moment(item.date_faktur).format('DD MMMM YYYY')}</td>
+                                                                        <td>{item.val}</td>
+                                                                        <td>{item.keterangan}</td>
+                                                                        <td className='rowCenter'>
+                                                                            <Button size='sm' onClick={() => this.openDetFakturKl(this.setState({ detFakturKl: item }))} color='info'><MdEditSquare size={20}/></Button>
+                                                                            <Button size='sm' onClick={() => this.confirmDelFakturKl(this.setState({ dataDel: item }))} className='ml-1' color='danger'><MdDelete size={20}/></Button>
+                                                                        </td>
+                                                                    </tbody>
+                                                                </>
+                                                            )
+                                                        })}
+                                                        <tbody>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td>
+                                                                <Button size='sm' onClick={this.openAddFakturKl} color='success'><MdAddCircle size={20}/></Button>
+                                                            </td>
+                                                        </tbody>
+                                                    </Table>
                                                 </Col>
                                             </Row>
-                                            {errors.no_faktur ? (
+                                            {/* {errors.no_faktur ? (
                                                 <text className={style.txtError}>{errors.no_faktur}</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Keterangan</Col>
+                                                <Col md={3}>Keterangan <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     type="text"
                                                     className="inputRinci"
@@ -1807,11 +2291,11 @@ class CartKlaim extends Component {
                                                 />
                                                 </Col>
                                             </Row>
-                                            {errors.keterangan ? (
+                                            {/* {errors.keterangan ? (
                                                 <text className={style.txtError}>must be filled</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Periode</Col>
+                                                <Col md={3}>Periode <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:
                                                     <Input
                                                         type="date"
@@ -1830,13 +2314,13 @@ class CartKlaim extends Component {
                                                     />
                                                 </Col>
                                             </Row>
-                                            {errors.periode_awal || errors.periode_akhir ? (
+                                            {/* {errors.periode_awal || errors.periode_akhir ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : values.periode_awal > values.periode_akhir ? (
                                                 <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nilai Yang Diajukan</Col>
+                                                <Col md={3}>Nilai Yang Diajukan <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <NumberInput
                                                     value={this.state.tujuan_tf === 'Outlet' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
                                                         return accumulator + parseFloat(object.nilai_ajuan);
@@ -1852,7 +2336,7 @@ class CartKlaim extends Component {
                                             <text className={style.txtError}>{errors.nilai_ajuan}</text>
                                         ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Tujuan Transfer</Col>
+                                                <Col md={3}>Tujuan Transfer <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     disabled={level === '5' || level === '6' ? false : true}
                                                     type="select"
@@ -1866,11 +2350,11 @@ class CartKlaim extends Component {
                                                 </Input>
                                                 </Col>
                                             </Row>
-                                            {this.state.tujuan_tf === '' ? (
+                                            {/* {this.state.tujuan_tf === '' ? (
                                                 <text className={style.txtError}>must be filled</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Bank</Col>
+                                                <Col md={3}>Bank <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:
                                                     {this.state.tujuan_tf === 'PMA' ? (
                                                         <Input
@@ -1889,11 +2373,11 @@ class CartKlaim extends Component {
                                                     )}
                                                 </Col>
                                             </Row>
-                                            {this.state.bank === '' ? (
+                                            {/* {this.state.bank === '' ? (
                                                 <text className={style.txtError}>must be filled</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nomor Rekening</Col>
+                                                <Col md={3}>Nomor Rekening <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:
                                                     {this.state.tujuan_tf === 'PMA' ? (
                                                         <Select
@@ -1923,7 +2407,7 @@ class CartKlaim extends Component {
                                                 <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Atas Nama</Col>
+                                                <Col md={3}>Atas Nama <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     disabled={this.state.tujuan_tf === '' || this.state.tujuan_tf === 'PMA' ? true : false}
                                                     type="text"
@@ -1934,9 +2418,9 @@ class CartKlaim extends Component {
                                                 />
                                                 </Col>
                                             </Row>
-                                            {values.nama_tujuan === '' && this.state.tujuan_tf !== 'PMA' ? (
+                                            {/* {values.nama_tujuan === '' && this.state.tujuan_tf !== 'PMA' ? (
                                                 <text className={style.txtError}>must be filled</text>
-                                            ) : null}
+                                            ) : null} */}
                                             {((dataOutlet.length > 0 && this.state.tujuan_tf === 'Outlet') 
                                             // || (dataOutlet.length > 0 && this.state.tujuan_tf === 'Outlet')
                                             ) &&
@@ -2024,8 +2508,8 @@ class CartKlaim extends Component {
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled={values.status_npwp === 'Ya' ? false : true}
                                                 type= "text" 
-                                                minLength={15}
-                                                maxLength={15}
+                                                minLength={16}
+                                                maxLength={16}
                                                 className="inputRinci"
                                                 value={values.status_npwp === 'Ya' ? values.no_npwp : ''}
                                                 onBlur={handleBlur("no_npwp")}
@@ -2033,8 +2517,8 @@ class CartKlaim extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
-                                            <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 16  ? (
+                                            <text className={style.txtError}>must be filled with 16 digits characters</text>
                                         ) : values.status_npwp === 'Ya' && errors.no_npwp ? (
                                             <text className={style.txtError}>{errors.no_npwp}</text>
                                         ) : null}
@@ -2072,6 +2556,11 @@ class CartKlaim extends Component {
                                         ) : values.status_npwp === 'Tidak' && errors.no_ktp ? (
                                             <text className={style.txtError}>{errors.no_ktp}</text>
                                         ) : null} */}
+                                        <Row className="mt-5 mb-2">
+                                            <Col md={12} lg={12} className="colDoc">
+                                                <text className="txtError" >* Kolom Wajib Diisi</text>
+                                            </Col>
+                                        </Row>
                                         </div>
                                         <div className="modalFoot mt-3">
                                             <div></div>
@@ -2079,14 +2568,25 @@ class CartKlaim extends Component {
                                                 <Button
                                                     className="mr-3"
                                                     size="md"
-                                                    disabled={this.state.no_coa === '' ? true
-                                                        : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp.length !== 15 || errors.no_npwp) ? true
-                                                            : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true
-                                                                // : values.norek_ajuan.length < this.state.digit ? true 
-                                                                : this.state.tujuan_tf === '' ? true
-                                                                    : false}
+                                                    disabled={
+                                                        this.state.no_coa === '' ? true
+                                                        : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp.length !== 16 || errors.no_npwp) ? true
+                                                        : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true
+                                                        // : values.norek_ajuan.length < this.state.digit ? true 
+                                                        : this.state.tujuan_tf === '' ? true
+                                                        : false
+                                                    }
                                                     color="primary"
-                                                    onClick={handleSubmit}>
+                                                    onClick={
+                                                        this.state.no_coa === '' || errors.no_surkom || errors.nama_program ||
+                                                        errors.dn_area || errors.keterangan || errors.periode_awal || errors.periode_akhir ||
+                                                        errors.nilai_ajuan || this.state.tujuan_tf === '' || this.state.bank === '' ||
+                                                        (values.nama_tujuan === '' && this.state.tujuan_tf !== 'PMA') ?
+                                                        () => this.setError('Masih Terdapat Data Yang Belum Terisi..!!') : 
+                                                        values.periode_awal > values.periode_akhir ?  () => this.setError('Pastikan Periode diisi dengan benar..!!')
+                                                        : handleSubmit
+                                                    }
+                                                >
                                                     Save
                                                 </Button>
                                                 <Button className="" size="md" color="secondary" onClick={() => this.openModalAdd()}>Close</Button>
@@ -2104,9 +2604,8 @@ class CartKlaim extends Component {
                     </ModalHeader>
                     <ModalBody>
                         <div className='rowCenter mb-3'>
-                            <Button color="success" size="lg" className="mr-2" onClick={this.openAddOutlet} >Add</Button>
-                            <Button color="primary" size="lg" className="mr-2" onClick={this.openUpOutlet} >Upload</Button>
-                            <Button color="warning" size="lg" className="mr-2" onClick={this.downloadOutlet} >Download</Button>
+                            <Button color="primary" size="lg" className="mr-2" onClick={this.openUpOutlet} ><MdUpload size={20}/></Button>
+                            <Button color="warning" size="lg" className="mr-2" onClick={this.downloadOutlet} ><MdDownload size={20}/></Button>
                         </div>
                         <Table striped bordered hover responsive className={style.tab}>
                             <thead>
@@ -2118,11 +2617,12 @@ class CartKlaim extends Component {
                                     <th>No NPWP</th>
                                     <th>Nama KTP</th>
                                     <th>No KTP</th>
+                                    <th>Keterangan</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {dataOutlet.length !== 0 && dataOutlet.map(item => {
+                                {dataOutlet.length > 0 && dataOutlet.map(item => {
                                     return (
                                         <tr>
                                             <th>{dataOutlet.indexOf(item) + 1}</th>
@@ -2132,19 +2632,33 @@ class CartKlaim extends Component {
                                             <td>{item.no_npwp}</td>
                                             <td>{item.nama_ktp}</td>
                                             <td>{item.no_ktp}</td>
-                                            <td>
+                                            <td>{item.keterangan}</td>
+                                            <td className='rowCenter'>
                                                 {/* {this.state.modalEdit === true ? (
                                                 <Button color="danger" className="mr-4" onClick={() => this.confirmDel(this.setState({dataDel: item}))}>Delete</Button>
                                             ) : (
                                             <> */}
-                                                <Button color="danger" className="mr-2" onClick={() => this.confirmDel(this.setState({ dataDel: item }))}>Delete</Button>
-                                                <Button color="info" onClick={() => this.openDetOutlet(this.setState({ detOutlet: item }))}>Update</Button>
+                                                <Button color="info" className="mr-2" onClick={() => this.openDetOutlet(this.setState({ detOutlet: item }))}><MdEditSquare size={20}/></Button>
+                                                <Button color="danger" onClick={() => this.confirmDel(this.setState({ dataDel: item }))}><MdDelete size={20}/></Button>
                                                 {/* </>
                                             )} */}
                                             </td>
                                         </tr>
                                     )
                                 })}
+                                <tr>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>
+                                        <Button color="success" size="lg" className="mr-2" onClick={this.openAddOutlet} ><MdAddCircle size={20}/></Button>
+                                    </td>
+                                </tr>
                             </tbody>
                         </Table>
                     </ModalBody>
@@ -2158,7 +2672,8 @@ class CartKlaim extends Component {
                             nama_npwp: "",
                             nama_ktp: "",
                             no_ktp: "",
-                            no_npwp: ""
+                            no_npwp: "",
+                            keterangan: ""
                         }}
                         validationSchema={outletSchema}
                         onSubmit={(values) => { this.addDataOutlet(values) }}
@@ -2216,8 +2731,8 @@ class CartKlaim extends Component {
                                     <Col md={9} className="colRinci">:  <Input
                                         disabled={values.status_npwp === 'Ya' ? false : true}
                                         type="text"
-                                        minLength={15}
-                                        maxLength={15}
+                                        minLength={16}
+                                        maxLength={16}
                                         className="inputRinci"
                                         value={values.status_npwp === 'Ya' ? values.no_npwp : ''}
                                         onBlur={handleBlur("no_npwp")}
@@ -2225,8 +2740,8 @@ class CartKlaim extends Component {
                                     />
                                     </Col>
                                 </Row>
-                                {values.status_npwp === 'Ya' && values.no_npwp.length !== 15 ? (
-                                    <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                {values.status_npwp === 'Ya' && values.no_npwp.length !== 16 ? (
+                                    <text className={style.txtError}>must be filled with 16 digits characters</text>
                                 ) : values.status_npwp === 'Ya' && errors.no_npwp ? (
                                     <text className={style.txtError}>{errors.no_npwp}</text>
                                 ) : null}
@@ -2264,17 +2779,32 @@ class CartKlaim extends Component {
                                 ) : values.status_npwp === 'Tidak' && errors.no_ktp ? (
                                     <text className={style.txtError}>{errors.no_ktp}</text>
                                 ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>Keterangan</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.keterangan}
+                                        className="inputRinci1"
+                                        onChange={handleChange('keterangan')}
+                                        onBlur={handleBlur('keterangan')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.keterangan ? (
+                                    <text className={style.txtError}>{errors.keterangan}</text>
+                                ) : null}
                                 <hr />
                                 <div className={style.foot}>
                                     <div></div>
                                     <div>
                                         <Button
                                             className="mr-2"
-                                            onClick={handleSubmit} color="primary"
+                                            onClick={handleSubmit} 
+                                            color="primary"
                                             disabled={
-                                                values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp.length !== 15 || errors.no_npwp) ? true
-                                                    : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true
-                                                        : false}
+                                                values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp.length !== 16 || errors.no_npwp) ? true
+                                                : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true
+                                                : false
+                                            }
                                         >Save</Button>
                                         <Button className="" onClick={this.openAddOutlet}>Cancel</Button>
                                     </div>
@@ -2292,7 +2822,8 @@ class CartKlaim extends Component {
                             nama_npwp: detOutlet.nama_npwp,
                             nama_ktp: detOutlet.nama_ktp,
                             no_ktp: detOutlet.no_ktp,
-                            no_npwp: detOutlet.no_npwp
+                            no_npwp: detOutlet.no_npwp,
+                            keterangan: detOutlet.keterangan
                         }}
                         validationSchema={outletSchema}
                         onSubmit={(values) => { this.editDataOutlet(values) }}
@@ -2350,8 +2881,8 @@ class CartKlaim extends Component {
                                     <Col md={9} className="colRinci">:  <Input
                                         disabled={values.status_npwp === 'Ya' ? false : true}
                                         type="text"
-                                        minLength={15}
-                                        maxLength={15}
+                                        minLength={16}
+                                        maxLength={16}
                                         className="inputRinci"
                                         value={values.status_npwp === 'Ya' ? values.no_npwp : ''}
                                         onBlur={handleBlur("no_npwp")}
@@ -2359,8 +2890,8 @@ class CartKlaim extends Component {
                                     />
                                     </Col>
                                 </Row>
-                                {values.status_npwp === 'Ya' && values.no_npwp.length !== 15 ? (
-                                    <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                {values.status_npwp === 'Ya' && values.no_npwp.length !== 16 ? (
+                                    <text className={style.txtError}>must be filled with 16 digits characters</text>
                                 ) : values.status_npwp === 'Ya' && errors.no_npwp ? (
                                     <text className={style.txtError}>{errors.no_npwp}</text>
                                 ) : null}
@@ -2398,6 +2929,19 @@ class CartKlaim extends Component {
                                 ) : values.status_npwp === 'Tidak' && errors.no_ktp ? (
                                     <text className={style.txtError}>{errors.no_ktp}</text>
                                 ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>Keterangan</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.keterangan}
+                                        className="inputRinci1"
+                                        onChange={handleChange('keterangan')}
+                                        onBlur={handleBlur('keterangan')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.keterangan ? (
+                                    <text className={style.txtError}>{errors.keterangan}</text>
+                                ) : null}
                                 <hr />
                                 <div className={style.foot}>
                                     <div></div>
@@ -2406,7 +2950,7 @@ class CartKlaim extends Component {
                                             className="mr-2"
                                             onClick={handleSubmit} color="primary"
                                             disabled={
-                                                values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp.length !== 15 || errors.no_npwp) ? true
+                                                values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp.length !== 16 || errors.no_npwp) ? true
                                                     : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true
                                                         : false}
                                         >Save</Button>
@@ -2439,6 +2983,195 @@ class CartKlaim extends Component {
                             <div></div>
                             <Button className='mr-2' color="primary" disabled={this.state.fileUpload === "" ? true : false} onClick={this.uploadDataOutlet}>Upload</Button>
                             <Button onClick={this.openUpOutlet}>Cancel</Button>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.modalAddFakturKl} size="lg">
+                    <ModalHeader>Add Data Faktur Klaim</ModalHeader>
+                    <Formik
+                        initialValues={{
+                            no_faktur: "",
+                            tgl_faktur: "",
+                            value: "",
+                            keterangan: ""
+                        }}
+                        validationSchema={fakturklSchema}
+                        onSubmit={(values) => { this.addDataFakturKl(values) }}
+                    >
+                        {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched, }) => (
+                            <ModalBody>
+                               <Row className="mb-2 rowRinci">
+                                    <Col md={3}>No Faktur</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.no_faktur}
+                                        className="inputRinci1"
+                                        onChange={handleChange('no_faktur')}
+                                        onBlur={handleBlur('no_faktur')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.no_faktur ? (
+                                    <text className={style.txtError}>{errors.no_faktur}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>Tgl Faktur</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        type='date'
+                                        value={values.date_faktur}
+                                        className="inputRinci1"
+                                        onChange={handleChange('date_faktur')}
+                                        onBlur={handleBlur('date_faktur')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.date_faktur ? (
+                                    <text className={style.txtError}>{errors.date_faktur}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>Value</Col>
+                                    <Col md={9} className="colRinci">:  <NumberInput
+                                        value={values.value}
+                                        className="inputRinci1"
+                                        onValueChange={val => setFieldValue("value", val.floatValue)}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.value ? (
+                                    <text className={style.txtError}>{errors.value}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>Keterangan</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.keterangan}
+                                        className="inputRinci1"
+                                        onChange={handleChange('keterangan')}
+                                        onBlur={handleBlur('keterangan')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.keterangan ? (
+                                    <text className={style.txtError}>{errors.keterangan}</text>
+                                ) : null}
+                                <hr />
+                                <div className={style.foot}>
+                                    <div></div>
+                                    <div>
+                                        <Button
+                                            className="mr-2"
+                                            onClick={handleSubmit} color="primary"
+                                            disabled={values.value <= 0 || values.value === '' ? true : false}
+                                        >Save</Button>
+                                        <Button className="" onClick={this.openAddFakturKl}>Cancel</Button>
+                                    </div>
+                                </div>
+                            </ModalBody>
+                        )}
+                    </Formik>
+                </Modal>
+                <Modal isOpen={this.state.detModFakturKl} size="lg">
+                    <ModalHeader>Update Data Faktur Klaim</ModalHeader>
+                    <Formik
+                        initialValues={{
+                            no_faktur: detFakturKl.no_faktur,
+                            date_faktur: detFakturKl.date_faktur,
+                            value: detFakturKl.val,
+                            keterangan: detFakturKl.keterangan,
+                        }}
+                        validationSchema={fakturklSchema}
+                        onSubmit={(values) => { this.editDataFakturKl(values) }}
+                    >
+                        {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched, }) => (
+                            <ModalBody>
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>No Faktur</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.no_faktur}
+                                        className="inputRinci1"
+                                        onChange={handleChange('no_faktur')}
+                                        onBlur={handleBlur('no_faktur')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.no_faktur ? (
+                                    <text className={style.txtError}>{errors.no_faktur}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>Tgl Faktur</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        type='date'
+                                        value={moment(values.date_faktur).format('YYYY-MM-DD')}
+                                        className="inputRinci1"
+                                        onChange={handleChange('date_faktur')}
+                                        onBlur={handleBlur('date_faktur')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.date_faktur ? (
+                                    <text className={style.txtError}>{errors.date_faktur}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>Value</Col>
+                                    <Col md={9} className="colRinci">:  <NumberInput
+                                        value={values.value}
+                                        className="inputRinci1"
+                                        onValueChange={val => setFieldValue("value", val.floatValue)}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.value ? (
+                                    <text className={style.txtError}>{errors.value}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>Keterangan</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.keterangan}
+                                        className="inputRinci1"
+                                        onChange={handleChange('keterangan')}
+                                        onBlur={handleBlur('keterangan')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.keterangan ? (
+                                    <text className={style.txtError}>{errors.keterangan}</text>
+                                ) : null}
+                                <hr />
+                                <div className={style.foot}>
+                                    <div></div>
+                                    <div>
+                                        <Button
+                                            className="mr-2"
+                                            onClick={handleSubmit} color="primary"
+                                            disabled={values.value <= 0 || values.value === '' ? true : false}
+                                        >Save</Button>
+                                        <Button className="" onClick={this.openDetFakturKl}>Cancel</Button>
+                                    </div>
+                                </div>
+                            </ModalBody>
+                        )}
+                    </Formik>
+                </Modal>
+                <Modal isOpen={this.state.modUpFakturKl} >
+                    <ModalHeader>Upload Data Faktur Klaim</ModalHeader>
+                    <ModalBody className={style.modalUpload}>
+                        <div className={style.titleModalUpload}>
+                            <text>Upload File: </text>
+                            <div className={style.uploadFileInput}>
+                                <AiOutlineFileExcel size={35} />
+                                <div className="ml-3">
+                                    <Input
+                                        type="file"
+                                        name="file"
+                                        accept=".xls,.xlsx"
+                                        onChange={this.onChangeHandler}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className='btnUpload'>
+                            {/* <Button color="info" onClick={this.DownloadTemplate}>Download Template</Button> */}
+                            <div></div>
+                            <Button className='mr-2' color="primary" disabled={this.state.fileUpload === "" ? true : false} onClick={this.uploadDataFakturKl}>Upload</Button>
+                            <Button onClick={this.openUpFakturKl}>Cancel</Button>
                         </div>
                     </ModalBody>
                 </Modal>
@@ -2483,14 +3216,14 @@ class CartKlaim extends Component {
                                     dn_area: idKlaim.dn_area || '',
                                     no_faktur: idKlaim.no_faktur || ''
                                 }}
-                                validationSchema={addSchema}
+                                validationSchema={klaimSchema}
                                 onSubmit={(values) => { this.editCartKlaim(values) }}
                             >
                                 {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched, }) => (
                                     <div className="rightRinci2">
                                         <div>
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>COA</Col>
+                                                <Col md={3}>COA <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:
                                                     <Select
                                                         className="inputRinci2"
@@ -2504,7 +3237,7 @@ class CartKlaim extends Component {
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>No COA</Col>
+                                                <Col md={3}>No COA <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     disabled
                                                     type="text"
@@ -2519,7 +3252,7 @@ class CartKlaim extends Component {
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nama COA</Col>
+                                                <Col md={3}>Nama COA <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     disabled
                                                     type="text"
@@ -2532,7 +3265,7 @@ class CartKlaim extends Component {
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>No Surkom</Col>
+                                                <Col md={3}>No Surkom <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     type="text"
                                                     className="inputRinci"
@@ -2546,7 +3279,7 @@ class CartKlaim extends Component {
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nama Program</Col>
+                                                <Col md={3}>Nama Program <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     type="text"
                                                     className="inputRinci"
@@ -2560,7 +3293,7 @@ class CartKlaim extends Component {
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>DN Area</Col>
+                                                <Col md={3}>DN Area <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     type="text"
                                                     className="inputRinci"
@@ -2573,22 +3306,71 @@ class CartKlaim extends Component {
                                             {errors.dn_area ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
-                                            <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nomor Faktur</Col>
-                                                <Col md={9} className="colRinci">:  <Input
+                                            <Row className="mb-2 rowRinci2">
+                                                <Col md={3}>Faktur</Col>
+                                                <Col md={9} className="colTable" style={{ paddingLeft: '3%' }}>
+                                                    {/* <Input
                                                     type= "text" 
                                                     className="inputRinci"
                                                     value={values.no_faktur}
                                                     onBlur={handleBlur("no_faktur")}
                                                     onChange={handleChange("no_faktur")}
-                                                    />
+                                                    /> */}
+                                                    <div className='rowBetween'>
+                                                        <div>Daftar Faktur</div>
+                                                        <div className='rowCenter mt-2 mb-2'>
+                                                            <Button size='sm' onClick={this.openUpFakturKl} className='ml-1' color='primary'><MdUpload size={20}/></Button>
+                                                            <Button size='sm' onClick={this.downloadFakturKl} className='ml-1' color='warning'><MdDownload size={20}/></Button>
+                                                        </div>
+                                                    </div>
+                                                    <Table striped bordered hover responsive className={[style.tab]}>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>No Faktur</th>
+                                                                <th>Tgl Faktur</th>
+                                                                <th>Value</th>
+                                                                <th>Ket</th>
+                                                                <th>Action</th>
+                                                            </tr>
+                                                        </thead>
+                                                        {dataFakturKl.length > 0 && dataFakturKl.map((item, index) => {
+                                                            return (
+                                                                <>
+                                                                    <tbody>
+                                                                        <td>{index + 1}</td>
+                                                                        <td>{item.no_faktur}</td>
+                                                                        <td>{moment(item.date_faktur).format('DD MMMM YYYY')}</td>
+                                                                        <td>{item.val}</td>
+                                                                        <td>{item.keterangan}</td>
+                                                                        <td>
+                                                                            <div className='rowCenter'>
+                                                                                <Button size='sm' onClick={() => this.openDetFakturKl(this.setState({ detFakturKl: item }))} color='info'><MdEditSquare size={20}/></Button>
+                                                                                <Button size='sm' onClick={() => this.confirmDelFakturKl(this.setState({ dataDel: item }))} className='ml-1' color='danger'><MdDelete size={20}/></Button>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tbody>
+                                                                </>
+                                                            )
+                                                        })}
+                                                        <tbody>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td>
+                                                                <Button size='sm' onClick={this.openAddFakturKl} color='success'><MdAddCircle size={20}/></Button>
+                                                            </td>
+                                                        </tbody>
+                                                    </Table>
                                                 </Col>
                                             </Row>
-                                            {errors.no_faktur ? (
+                                            {/* {errors.no_faktur ? (
                                                 <text className={style.txtError}>{errors.no_faktur}</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Keterangan</Col>
+                                                <Col md={3}>Keterangan <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     type="text"
                                                     className="inputRinci"
@@ -2602,7 +3384,7 @@ class CartKlaim extends Component {
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Periode</Col>
+                                                <Col md={3}>Periode <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:
                                                     <Input
                                                         type="date"
@@ -2621,13 +3403,13 @@ class CartKlaim extends Component {
                                                     />
                                                 </Col>
                                             </Row>
-                                            {errors.periode_awal || errors.periode_akhir ? (
+                                            {/* {errors.periode_awal || errors.periode_akhir ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : values.periode_awal > values.periode_akhir ? (
                                                 <text className={style.txtError}>Pastikan periode diisi dengan benar</text>
-                                            ) : null}
+                                            ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nilai Yang Diajukan</Col>
+                                                <Col md={3}>Nilai Yang Diajukan <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <NumberInput
                                                     value={this.state.tujuan_tf === 'Outlet' ? (dataOutlet.length > 0 ? dataOutlet.reduce((accumulator, object) => {
                                                         return accumulator + parseFloat(object.nilai_ajuan);
@@ -2642,7 +3424,7 @@ class CartKlaim extends Component {
                                             <text className={style.txtError}>{errors.nilai_ajuan}</text>
                                         ) : null} */}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Tujuan Transfer</Col>
+                                                <Col md={3}>Tujuan Transfer <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     disabled={level === '5' || level === '6' ? false : true}
                                                     type="select"
@@ -2660,7 +3442,7 @@ class CartKlaim extends Component {
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Bank</Col>
+                                                <Col md={3}>Bank <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:
                                                     {this.state.tujuan_tf === 'PMA' ? (
                                                         <Input
@@ -2684,7 +3466,7 @@ class CartKlaim extends Component {
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nomor Rekening</Col>
+                                                <Col md={3}>Nomor Rekening <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:
                                                     {this.state.tujuan_tf === 'PMA' ? (
                                                         <Select
@@ -2715,7 +3497,7 @@ class CartKlaim extends Component {
                                                 <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
                                             ) : null}
                                             <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Atas Nama</Col>
+                                                <Col md={3}>Atas Nama <text className='txtError'>{'*'}</text></Col>
                                                 <Col md={9} className="colRinci">:  <Input
                                                     disabled={this.state.tujuan_tf === '' || this.state.tujuan_tf === 'PMA' ? true : false}
                                                     type="text"
@@ -2815,8 +3597,8 @@ class CartKlaim extends Component {
                                             <Col md={9} className="colRinci">:  <Input
                                                 disabled={values.status_npwp === 'Ya' ? false : true}
                                                 type= "text" 
-                                                minLength={15}
-                                                maxLength={15}
+                                                minLength={16}
+                                                maxLength={16}
                                                 className="inputRinci"
                                                 value={values.status_npwp === 'Ya' ? values.no_npwp : ''}
                                                 onBlur={handleBlur("no_npwp")}
@@ -2824,8 +3606,8 @@ class CartKlaim extends Component {
                                                 />
                                             </Col>
                                         </Row>
-                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 15  ? (
-                                            <text className={style.txtError}>must be filled with 15 digits characters</text>
+                                        {values.status_npwp === 'Ya' && values.no_npwp.length < 16  ? (
+                                            <text className={style.txtError}>must be filled with 16 digits characters</text>
                                         ) : values.status_npwp === 'Ya' && errors.no_npwp ? (
                                             <text className={style.txtError}>{errors.no_npwp}</text>
                                         ) : null}
@@ -2863,6 +3645,11 @@ class CartKlaim extends Component {
                                         ) : values.status_npwp === 'Tidak' && errors.no_ktp ? (
                                             <text className={style.txtError}>{errors.no_ktp}</text>
                                         ) : null} */}
+                                        <Row className="mt-5 mb-2">
+                                            <Col md={12} lg={12} className="colDoc">
+                                                <text className="txtError" >* Kolom Wajib Diisi</text>
+                                            </Col>
+                                        </Row>
                                         </div>
                                         <div className="modalFoot mt-3">
                                             <div></div>
@@ -2871,11 +3658,11 @@ class CartKlaim extends Component {
                                                     className="mr-3"
                                                     size="md"
                                                     disabled={this.state.no_coa === '' ? true
-                                                        // : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp.length !== 15 || errors.no_npwp) ? true 
+                                                        // : values.status_npwp === 'Ya' && (values.nama_npwp === '' || values.no_npwp.length !== 16 || errors.no_npwp) ? true 
                                                         // : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true 
                                                         // : values.norek_ajuan.length < this.state.digit ? true 
                                                         : this.state.tujuan_tf === '' ? true
-                                                            : false}
+                                                        : false}
                                                     color="primary"
                                                     onClick={handleSubmit}>
                                                     Save
@@ -2899,7 +3686,7 @@ class CartKlaim extends Component {
                         <div className={style.modalApprove}>
                             <div>
                                 <text>
-                                    Anda yakin untuk delete data ajuan ?
+                                    Anda yakin untuk menghapus data ajuan ?
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
@@ -3214,12 +4001,27 @@ class CartKlaim extends Component {
                         <div className={style.modalApprove}>
                             <div>
                                 <text>
-                                    Anda yakin untuk delete outlet ?
+                                    Anda yakin untuk menghapus outlet ?
                                 </text>
                             </div>
                             <div className={style.btnApprove}>
                                 <Button color="primary" onClick={() => this.delDataOutlet()}>Ya</Button>
                                 <Button color="secondary" onClick={this.confirmDel}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.modalDelFakturKl} toggle={this.confirmDelFakturKl} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk menghapus faktur klaim ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.delDataFakturKl()}>Ya</Button>
+                                <Button color="secondary" onClick={this.confirmDelFakturKl}>Tidak</Button>
                             </div>
                         </div>
                     </ModalBody>
@@ -3543,7 +4345,7 @@ class CartKlaim extends Component {
                 </Modal>
                 <Modal isOpen={this.state.modalConfirm} toggle={() => this.openConfirm(false)}>
                     <ModalBody>
-                        <Countdown renderer={this.rendererTime} date={Date.now() + 3000} />
+                        {/* <Countdown renderer={this.rendererTime} date={Date.now() + 3000} /> */}
                         {this.state.confirm === 'addcart' ? (
                             <div>
                                 <div className={style.cekUpdate}>
@@ -3651,7 +4453,7 @@ class CartKlaim extends Component {
                             <div>
                                 <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                    <div className={[style.sucUpdate, style.green]}>Berhasil Mendelete Outlet</div>
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Menghapus Outlet</div>
                                 </div>
                             </div>
                         ) : this.state.confirm === 'rejAddOutlet' ? (
@@ -3674,7 +4476,7 @@ class CartKlaim extends Component {
                             <div>
                                 <div className={style.cekUpdate}>
                                     <AiOutlineClose size={80} className={style.red} />
-                                    <div className={[style.sucUpdate, style.green]}>Gagal Mendelete Outlet</div>
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Menghapus Outlet</div>
                                     <div className={[style.sucUpdate, style.green, 'mt-2']}>Server sedang ada masalah</div>
                                 </div>
                             </div>
@@ -3683,6 +4485,58 @@ class CartKlaim extends Component {
                                 <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
                                     <div className={style.sucUpdate}>Berhasil Upload Data Outlet</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'sucAddFakturKl' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Menambahkan Faktur Klaim</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'editFakturKl' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Mengupdate Faktur Klaim</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'delFakturKl' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Menghapus Faktur Klaim</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'rejAddFakturKl' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Menambahkan Faktur Klaim</div>
+                                    <div className={[style.sucUpdate, style.green, 'mt-2']}>No Faktur telah terdaftar </div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'rejEditFakturKl' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Mengupdate Faktur Klaim</div>
+                                    <div className={[style.sucUpdate, style.green, 'mt-2']}>No Faktur telah terdaftar </div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'rejDelFakturKl' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Menghapus Faktur Klaim</div>
+                                    <div className={[style.sucUpdate, style.green, 'mt-2']}>Server sedang ada masalah</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'uploadFakturKl' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={style.sucUpdate}>Berhasil Upload Data Faktur</div>
                                 </div>
                             </div>
                         ) : this.state.confirm === 'nullOutlet' ? (
@@ -3728,6 +4582,21 @@ class CartKlaim extends Component {
                                     )}
                                 </div>
                             </div>
+                        ) : this.state.confirm === 'dupUploadFakturKl' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green, style.mb4]}>Gagal Upload</div>
+                                    <div className={[style.sucUpdate, style.green, style.mb4]}>Terdapat Duplikasi pada no faktur berikut</div>
+                                    {duplikat.length > 0 ? duplikat.map(item => {
+                                        return (
+                                            <div className={[style.sucUpdate, style.green, style.mb3]}>{item}</div>
+                                        )
+                                    }) : (
+                                        <div></div>
+                                    )}
+                                </div>
+                            </div>
                         ) : this.state.confirm === 'failSubChek' ? (
                             <div>
                                 <div className={style.cekUpdate}>
@@ -3742,6 +4611,14 @@ class CartKlaim extends Component {
                                     <AiOutlineClose size={80} className={style.red} />
                                     <div className={[style.sucUpdate, style.green]}>Gagal Upload</div>
                                     <div className={[style.sucUpdate, style.green, 'mt-2']}>Pastikan Upload File Menggunakan Template Yang Telah Disediakan</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'errfill' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Save</div>
+                                    <div className={[style.sucUpdate, style.green, 'mt-2']}>{this.state.infoError}</div>
                                 </div>
                             </div>
                         ) : (
@@ -3778,7 +4655,7 @@ class CartKlaim extends Component {
                                     <Row className="mt-3 mb-4">
                                         {x.path !== null ? (
                                             <Col md={12} lg={12} >
-                                                <div className="btnDocIo mb-2" >{x.desc}</div>
+                                                <div className="btnDocIo mb-2" >{x.desc} <text className='txtError'>{x.stat_upload === 0 ? '' : '*'}</text></div>
                                                 {x.status === 0 ? (
                                                     <AiOutlineClose size={20} />
                                                 ) : x.status === 3 ? (
@@ -3794,14 +4671,14 @@ class CartKlaim extends Component {
                                                         onClick={() => this.setState({ detail: x })}
                                                         onChange={this.onChangeUpload}
                                                     />
-                                                    <text className="txtError ml-4">Maximum file upload is 25 Mb</text>
-                                                    <text className="txtError ml-4">Only excel, pdf, zip, png, jpg and rar files are allowed</text>
+                                                    {/* <text className="txtError ml-4">Maximum file upload is 25 Mb</text>
+                                                    <text className="txtError ml-4">Only excel, pdf, zip, png, jpg and rar files are allowed</text> */}
                                                 </div>
                                             </Col>
                                         ) : (
                                             <Col md={12} lg={12} className="colDoc">
-                                                <text className="btnDocIo" >{x.desc}</text>
-                                                <text className="italRed" >{x.stat_upload === 0 ? '*tidak harus upload' : '*harus upload'}</text>
+                                                <text className="btnDocIo" >{x.desc} <text className='txtError'>{x.stat_upload === 0 ? '' : '*'}</text></text>
+                                                {/* <text className="italRed" >{x.stat_upload === 0 ? '*tidak harus upload' : '*harus upload'}</text> */}
                                                 <div className="colDoc">
                                                     <input
                                                         type="file"
@@ -3809,13 +4686,20 @@ class CartKlaim extends Component {
                                                         onChange={this.onChangeUpload}
                                                     />
                                                 </div>
-                                                <text className="txtError">Maximum file upload is 25 Mb</text>
-                                                <text className="txtError">Only excel, pdf, zip, png, jpg and rar files are allowed</text>
+                                                {/* <text className="txtError">Maximum file upload is 25 Mb</text>
+                                                <text className="txtError">Only excel, pdf, zip, png, jpg and rar files are allowed</text> */}
                                             </Col>
                                         )}
                                     </Row>
                                 )
                             })}
+                            <Row className="mt-3 mb-4">
+                                <Col md={12} lg={12} className="colDoc">
+                                    <text className="txtError" >* Wajib Upload Document</text>
+                                    <text className="txtError">Maximum file upload is 25 Mb</text>
+                                    <text className="txtError">Only excel, pdf, zip, png, jpg and rar files are allowed</text>
+                                </Col>
+                            </Row>
                         </Container>
                     </ModalBody>
                     <ModalFooter>
@@ -3827,11 +4711,11 @@ class CartKlaim extends Component {
                         </Button>
                     </ModalFooter>
                 </Modal>
-                <Modal isOpen={this.state.openPdf} size="xl" toggle={this.openModalPdf} centered={true}>
+                <Modal isOpen={this.state.openPdf} size="xl" toggle={this.openModalPdf} centered={true} >
                     <ModalHeader>Dokumen</ModalHeader>
                     <ModalBody>
                         <div className={style.readPdf}>
-                            <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} />
+                            <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} dataFile={this.state.fileName} />
                         </div>
                         <hr />
                         <div className={style.foot}>
@@ -3891,7 +4775,12 @@ const mapDispatchToProps = {
     updateOutlet: klaim.updateOutlet,
     addOutlet: klaim.addOutlet,
     getOutlet: klaim.getOutlet,
-    deleteOutlet: klaim.deleteOutlet
+    deleteOutlet: klaim.deleteOutlet,
+    uploadFakturKl: klaim.uploadFakturKl,
+    updateFakturKl: klaim.updateFakturKl,
+    addFakturKl: klaim.addFakturKl,
+    getFakturKl: klaim.getFakturKl,
+    deleteFakturKl: klaim.deleteFakturKl
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(CartKlaim)

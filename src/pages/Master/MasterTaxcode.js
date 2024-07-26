@@ -17,6 +17,9 @@ import Sidebar from "../../components/Header";
 import MaterialTitlePanel from "../../components/material_title_panel";
 import SidebarContent from "../../components/sidebar_content";
 import NavBar from '../../components/NavBar'
+import moment from 'moment'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 
 const taxcodeSchema = Yup.object().shape({
@@ -88,7 +91,8 @@ class MasterTaxcode extends Component {
             filter: null,
             filterName: 'All',
             modalDel: false,
-            page: 1
+            page: 1,
+            listData: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -183,6 +187,115 @@ class MasterTaxcode extends Component {
         });
     }
 
+    chekApp = (val) => {
+        const { listData } = this.state
+        const {dataAll} = this.props.taxcode
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataAll.length; i++) {
+                data.push(dataAll[i].id)
+            }
+            this.setState({listData: data})
+        } else {
+            listData.push(val)
+            this.setState({listData: listData})
+        }
+    }
+
+    chekRej = (val) => {
+        const {listData} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listData: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listData.length; i++) {
+                if (listData[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listData[i])
+                }
+            }
+            this.setState({listData: data})
+        }
+    }
+
+    downloadData = () => {
+        const {listData} = this.state
+        const {dataAll} = this.props.taxcode
+        const dataDownload = []
+        for (let i = 0; i < listData.length; i++) {
+            for (let j = 0; j < dataAll.length; j++) {
+                if (dataAll[j].id === listData[i]) {
+                    dataDownload.push(dataAll[j])
+                }
+            }
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data user')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+        
+
+        ws.columns = [
+            {header: 'Tax Type', key: 'c1'},
+            {header: 'Tax Code', key: 'c2'},
+            {header: 'KETERANGAN TAX TYPE', key: 'c3'},
+            {header: 'NPWP/NON NPWP', key: 'c4'},
+            {header: 'Kode Objek Pajak', key: 'c5'},
+            {header: 'Tax Object Description', key: 'c6'},
+            {header: 'PPH Pasal', key: 'c7'},
+            {header: 'Bruto Biaya/Income', key: 'c8'},
+            {header: 'Tax Base', key: 'c9'},
+            {header: 'TARIF AS IS', key: 'c10'},
+            {header: 'TRANSAKSI', key: 'c11'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: item.tax_type,
+                c2: item.tax_code,
+                c3: item.keterangan,
+                c4: item.stat_npwp,
+                c5: item.kode_obpajak,
+                c6: item.tax_objdesc,
+                c7: item.pph,
+                c8: item.income,
+                c9: item.tax_base,
+                c10: item.tarif_asis,
+                c11: item.transaksi,
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Master Taxcode ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
+    }
+
     addTaxcode = async (values) => {
         const token = localStorage.getItem("token")
         await this.props.addTaxcode(token, values)
@@ -221,7 +334,7 @@ class MasterTaxcode extends Component {
     onSearch = (e) => {
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            this.getDataCount({limit: 10, search: this.state.search})
+            this.getDataCount({limit: 10, search: this.state.search, page: 1})
         }
     }
 
@@ -326,7 +439,7 @@ class MasterTaxcode extends Component {
     }
 
     render() {
-        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
+        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg, listData} = this.state
         const {dataTaxcode, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.taxcode
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
@@ -390,6 +503,7 @@ class MasterTaxcode extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -401,7 +515,7 @@ class MasterTaxcode extends Component {
                                     <div className={style.headEmail}>
                                         <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
                                         <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button>
+                                        <Button className='mr-1' onClick={this.downloadData} color="success" size="lg">Download</Button>
                                     </div>
                                     <div className={style.searchEmail}>
                                         <text>Search: </text>
@@ -420,6 +534,15 @@ class MasterTaxcode extends Component {
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listData.length === 0 ? false : listData.length === dataAll.length ? true : false}
+                                                    onChange={() => listData.length === dataAll.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    />
+                                                    {/* Select */}
+                                                </th>
                                                 <th>No</th>
                                                 <th>Tax Type</th>
                                                 <th>Tax Code</th>
@@ -438,6 +561,13 @@ class MasterTaxcode extends Component {
                                             {dataAll.length !== 0 && dataAll.map(item => {
                                                 return (
                                                 <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
+                                                    <th>
+                                                        <input 
+                                                        type='checkbox'
+                                                        checked={listData.find(element => element === item.id) !== undefined ? true : false}
+                                                        onChange={listData.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                        />
+                                                    </th>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
                                                     <td>{item.tax_type}</td>
                                                     <td>{item.tax_code}</td>

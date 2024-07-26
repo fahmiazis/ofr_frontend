@@ -53,6 +53,7 @@ import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 const nonObject = 'Non Object PPh'
 const nonPph = 'Non PPh'
+const telkom = '010000131093000'
 
 const opsSchema = Yup.object().shape({
     keterangan: Yup.string().required("must be filled"),
@@ -62,6 +63,7 @@ const opsSchema = Yup.object().shape({
     norek_ajuan: Yup.number().required("must be filled"),
     nama_tujuan: Yup.string().required("must be filled"),
     status_npwp: Yup.string().required('must be filled'),
+    id_pelanggan: Yup.number(),
 })
 
 const addSchema = Yup.object().shape({
@@ -70,6 +72,7 @@ const addSchema = Yup.object().shape({
     periode_akhir: Yup.date().required('must be filled'),
     dpp: Yup.number(),
     ppn: Yup.number(),
+    id_pelanggan: Yup.number(),
     // nilai_ajuan: Yup.string().required("must be filled"),
 })
 
@@ -77,7 +80,8 @@ const bbmSchema = Yup.object().shape({
     no_pol: Yup.string().required("must be filled"),
     nominal: Yup.number().required('must be filled'),
     liter: Yup.number().required('must be filled'),
-    km: Yup.number().required('must be filled')
+    km: Yup.number().required('must be filled'),
+    date_bbm: Yup.date().required('must be filled'),
 })
 
 const alasanSchema = Yup.object().shape({
@@ -245,7 +249,8 @@ class RevisiOps extends Component {
             { header: 'No Pol', key: 'c1' },
             { header: 'Besar Pengisisan BBM (Liter)', key: 'c2' },
             { header: 'KM Pengisian', key: 'c3' },
-            { header: 'Nominal', key: 'c4' }
+            { header: 'Nominal', key: 'c4' },
+            { header: 'Tgl Pengisian BBM', key: 'c5' }
         ]
 
         dataBbm.map((item, index) => {
@@ -254,7 +259,8 @@ class RevisiOps extends Component {
                     c1: item.no_pol,
                     c2: item.liter,
                     c3: item.km,
-                    c4: item.nominal
+                    c4: item.nominal,
+                    c5: item.date_bbm
                 }
             )
             )
@@ -289,55 +295,17 @@ class RevisiOps extends Component {
             liter: val.liter,
             km: val.km,
             nominal: val.nominal,
-            no_pol: val.no_pol
+            no_pol: val.no_pol,
+            date_bbm: val.date_bbm
         }
         if (dataBbm.length > 0) {
-            const cek = dataBbm.find(({ no_pol }) => (data.no_pol !== '' && no_pol === data.no_pol))
+            // const cek = dataBbm.find(({ no_pol }) => (data.no_pol !== '' && no_pol === data.no_pol))
+            const cek = dataBbm.find((item) => (data.no_pol !== '' && item.no_pol === data.no_pol && parseFloat(item.km) === parseFloat(data.km)))
             if (cek !== undefined) {
                 this.setState({ confirm: 'rejAddBbm' })
                 this.openConfirm()
             } else {
-                if (modalEdit === true) {
-                    const send = {
-                        id: idOps.id,
-                        ...data
-                    }
-                    await this.props.addBbm(token, send)
-                    await this.props.getBbm(token, idOps.id)
-                    const { opsBbm } = this.props.ops
-                    this.setState({ dataBbm: opsBbm })
-
-                    const valBbm = opsBbm.reduce((accumulator, object) => {
-                        return accumulator + parseFloat(object.nominal);
-                    }, 0)
-                    this.setState({nilai_ajuan: valBbm})
-                    setTimeout(() => {
-                        this.formulaTax()
-                    }, 100)
-
-                    await this.editCartOps(idOps)
-                    this.setState({ confirm: 'sucAddBbm' })
-                    this.openConfirm()
-                    this.openAddBbm()
-                } else {
-                    dataBbm.push(data)
-                    this.setState({ dataBbm: dataBbm })
-                    
-                    const valBbm = dataBbm.reduce((accumulator, object) => {
-                        return accumulator + parseFloat(object.nominal);
-                    }, 0)
-                    this.setState({nilai_ajuan: valBbm})
-                    setTimeout(() => {
-                        this.formulaTax()
-                    }, 100)
-
-                    this.setState({ confirm: 'sucAddBbm' })
-                    this.openConfirm()
-                    this.openAddBbm()
-                }
-            }
-        } else {
-            if (modalEdit === true) {
+                // if (modalEdit === true) {
                 const send = {
                     id: idOps.id,
                     ...data
@@ -359,22 +327,63 @@ class RevisiOps extends Component {
                 this.setState({ confirm: 'sucAddBbm' })
                 this.openConfirm()
                 this.openAddBbm()
-            } else {
-                dataBbm.push(data)
-                this.setState({ dataBbm: dataBbm })
+                // } else {
+                //     dataBbm.push(data)
+                //     this.setState({ dataBbm: dataBbm })
+                    
+                //     const valBbm = dataBbm.reduce((accumulator, object) => {
+                //         return accumulator + parseFloat(object.nominal);
+                //     }, 0)
+                //     this.setState({nilai_ajuan: valBbm})
+                //     setTimeout(() => {
+                //         this.formulaTax()
+                //     }, 100)
 
-                const valBbm = dataBbm.reduce((accumulator, object) => {
-                    return accumulator + parseFloat(object.nominal);
-                }, 0)
-                this.setState({nilai_ajuan: valBbm})
-                setTimeout(() => {
-                    this.formulaTax()
-                }, 100)
-
-                this.setState({ confirm: 'sucAddBbm' })
-                this.openConfirm()
-                this.openAddBbm()
+                //     await this.editCartOps(idOps)
+                //     this.setState({ confirm: 'sucAddBbm' })
+                //     this.openConfirm()
+                //     this.openAddBbm()
+                // }
             }
+        } else {
+            // if (modalEdit === true) {
+            const send = {
+                id: idOps.id,
+                ...data
+            }
+            await this.props.addBbm(token, send)
+            await this.props.getBbm(token, idOps.id)
+            const { opsBbm } = this.props.ops
+            this.setState({ dataBbm: opsBbm })
+
+            const valBbm = opsBbm.reduce((accumulator, object) => {
+                return accumulator + parseFloat(object.nominal);
+            }, 0)
+            this.setState({nilai_ajuan: valBbm})
+            setTimeout(() => {
+                this.formulaTax()
+            }, 100)
+
+            await this.editCartOps(idOps)
+            this.setState({ confirm: 'sucAddBbm' })
+            this.openConfirm()
+            this.openAddBbm()
+            // } else {
+            //     dataBbm.push(data)
+            //     this.setState({ dataBbm: dataBbm })
+
+            //     const valBbm = dataBbm.reduce((accumulator, object) => {
+            //         return accumulator + parseFloat(object.nominal);
+            //     }, 0)
+            //     this.setState({nilai_ajuan: valBbm})
+            //     setTimeout(() => {
+            //         this.formulaTax()
+            //     }, 100)
+
+            //     this.setState({ confirm: 'sucAddBbm' })
+            //     this.openConfirm()
+            //     this.openAddBbm()
+            // }
         }
     }
 
@@ -386,14 +395,16 @@ class RevisiOps extends Component {
             liter: val.liter,
             km: val.km,
             nominal: val.nominal,
-            no_pol: val.no_pol
+            no_pol: val.no_pol,
+            date_bbm: val.date_bbm
         }
         const dataUp = []
         if (dataBbm.length > 0) {
             for (let i = 0; i < dataBbm.length; i++) {
                 const dataCek = JSON.stringify(dataBbm[i])
                 if (JSON.stringify(detBbm) === dataCek) {
-                    const cek = dataBbm.find(({ no_pol }) => (data.no_pol !== '' && no_pol === data.no_pol && no_pol !== detBbm.no_pol))
+                    // const cek = dataBbm.find(({ no_pol }) => (data.no_pol !== '' && no_pol === data.no_pol && no_pol !== detBbm.no_pol))
+                    const cek = dataBbm.find((item) => (data.no_pol !== '' && item.no_pol === data.no_pol && parseFloat(item.km) === parseFloat(data.km)))
                     if (cek !== undefined) {
                         console.log()
                     } else {
@@ -404,44 +415,44 @@ class RevisiOps extends Component {
                 }
             }
             if (dataUp.length === dataBbm.length) {
-                if (modalEdit === true) {
-                    const send = {
-                        id: idOps.id,
-                        idBbm: detBbm.id,
-                        ...data
-                    }
-                    await this.props.updateBbm(token, send)
-                    await this.props.getBbm(token, idOps.id)
-                    const { opsBbm } = this.props.ops
-                    this.setState({ dataBbm: opsBbm })
-
-                    const valBbm = opsBbm.reduce((accumulator, object) => {
-                        return accumulator + parseFloat(object.nominal);
-                    }, 0)
-                    this.setState({nilai_ajuan: valBbm})
-                    setTimeout(() => {
-                        this.formulaTax()
-                    }, 100)
-
-                    await this.editCartOps(idOps)
-                    this.setState({ confirm: 'editBbm' })
-                    this.openConfirm()
-                    this.openDetBbm()
-                } else {
-                    this.setState({ dataBbm: dataUp })
-
-                    const valBbm = dataUp.reduce((accumulator, object) => {
-                        return accumulator + parseFloat(object.nominal);
-                    }, 0)
-                    this.setState({nilai_ajuan: valBbm})
-                    setTimeout(() => {
-                        this.formulaTax()
-                    }, 100)
-
-                    this.setState({ confirm: 'editBbm' })
-                    this.openConfirm()
-                    this.openDetBbm()
+                // if (modalEdit === true) {
+                const send = {
+                    id: idOps.id,
+                    idBbm: detBbm.id,
+                    ...data
                 }
+                await this.props.updateBbm(token, send)
+                await this.props.getBbm(token, idOps.id)
+                const { opsBbm } = this.props.ops
+                this.setState({ dataBbm: opsBbm })
+
+                const valBbm = opsBbm.reduce((accumulator, object) => {
+                    return accumulator + parseFloat(object.nominal);
+                }, 0)
+                this.setState({nilai_ajuan: valBbm})
+                setTimeout(() => {
+                    this.formulaTax()
+                }, 100)
+
+                await this.editCartOps(idOps)
+                this.setState({ confirm: 'editBbm' })
+                this.openConfirm()
+                this.openDetBbm()
+                // } else {
+                //     this.setState({ dataBbm: dataUp })
+
+                //     const valBbm = dataUp.reduce((accumulator, object) => {
+                //         return accumulator + parseFloat(object.nominal);
+                //     }, 0)
+                //     this.setState({nilai_ajuan: valBbm})
+                //     setTimeout(() => {
+                //         this.formulaTax()
+                //     }, 100)
+
+                //     this.setState({ confirm: 'editBbm' })
+                //     this.openConfirm()
+                //     this.openDetBbm()
+                // }
             } else {
                 this.setState({ confirm: 'rejEditBbm' })
                 this.openConfirm()
@@ -466,36 +477,36 @@ class RevisiOps extends Component {
                 data.push(dataBbm[i])
             }
         }
-        if (modalEdit === true && dataDel.id !== undefined) {
-            this.confirmDel()
-            this.setState({ dataBbm: data, typeOut: 'delout' })
+        // if (modalEdit === true && dataDel.id !== undefined) {
+        this.confirmDel()
+        this.setState({ dataBbm: data, typeOut: 'delout' })
 
-            const valBbm = data.reduce((accumulator, object) => {
-                return accumulator + parseFloat(object.nominal);
-            }, 0)
-            this.setState({nilai_ajuan: valBbm})
-            setTimeout(() => {
-                this.formulaTax()
-            }, 100)
+        const valBbm = data.reduce((accumulator, object) => {
+            return accumulator + parseFloat(object.nominal);
+        }, 0)
+        this.setState({nilai_ajuan: valBbm})
+        setTimeout(() => {
+            this.formulaTax()
+        }, 100)
 
-            await this.editCartOps(idOps)
-            this.setState({ confirm: 'delBbm' })
-            this.openConfirm()
-        } else {
-            this.confirmDel()
-            this.setState({ dataBbm: data })
+        await this.editCartOps(idOps)
+        this.setState({ confirm: 'delBbm' })
+        this.openConfirm()
+        // } else {
+        //     this.confirmDel()
+        //     this.setState({ dataBbm: data })
 
-            const valBbm = data.reduce((accumulator, object) => {
-                return accumulator + parseFloat(object.nominal);
-            }, 0)
-            this.setState({nilai_ajuan: valBbm})
-            setTimeout(() => {
-                this.formulaTax()
-            }, 100)
+        //     const valBbm = data.reduce((accumulator, object) => {
+        //         return accumulator + parseFloat(object.nominal);
+        //     }, 0)
+        //     this.setState({nilai_ajuan: valBbm})
+        //     setTimeout(() => {
+        //         this.formulaTax()
+        //     }, 100)
 
-            this.setState({ confirm: 'delBbm' })
-            this.openConfirm()
-        }
+        //     this.setState({ confirm: 'delBbm' })
+        //     this.openConfirm()
+        // }
     }
 
     confirmDel = () => {
@@ -508,7 +519,8 @@ class RevisiOps extends Component {
             liter: val.liter,
             km: val.km,
             nominal: val.nominal,
-            no_pol: val.no_pol
+            no_pol: val.no_pol,
+            date_bbm: val.date_bbm
         }
         dataBbm.push(data)
         this.setState({ dataBbm: dataBbm })
@@ -526,7 +538,8 @@ class RevisiOps extends Component {
             'No Pol',
             'Besar Pengisisan BBM (Liter)',
             'KM Pengisian',
-            'Nominal'
+            'Nominal',
+            'Tgl Pengisian BBM',
         ]
         const valid = rows[0]
         for (let i = 0; i < parcek.length; i++) {
@@ -569,36 +582,47 @@ class RevisiOps extends Component {
                         liter: dataOps[1] ,
                         km: dataOps[2],
                         nominal: dataOps[3],
+                        date_bbm: dataOps[4],
                     }
 
-                    const nominal = dataOps[3]
+                    const noPol = dataOps[0]
                     const liter = dataOps[1]
                     const km = dataOps[2]
+                    const nominal = dataOps[3]
+                    const dateBbm = dataOps[4]
 
-                    const dataNominal = nominal === null || (nominal.toString().split('').filter((item) => isNaN(parseFloat(item))).length > 0)
+                    const dataNominal = nominal === null || (nominal.toString().split('').filter((item) => item !== '.' && item !== ',' && isNaN(parseFloat(item))).length > 0)
                         ? { no_transaksi: `Row ke ${i + 2}`, mess: 'Pastikan Nominal Diisi dengan Sesuai' }
                         : null
-                    const dataLiter = liter === null || (liter.toString().split('').filter((item) => isNaN(parseFloat(item))).length > 0)
+                    const dataLiter = liter === null || (liter.toString().split('').filter((item) => item !== '.' && item !== ',' && isNaN(parseFloat(item))).length > 0)
                         ? { no_transaksi: `Row ke ${i + 2}`, mess: 'Pastikan Data Liter Diisi dengan Sesuai' }
                         : null
-                    const dataKm = km === null || (km.toString().split('').filter((item) => isNaN(parseFloat(item))).length > 0)
+                    const dataKm = km === null || (km.toString().split('').filter((item) => item !== '.' && item !== ',' && isNaN(parseFloat(item))).length > 0)
                         ? { no_transaksi: `Row ke ${i + 2}`, mess: 'Pastikan Data KM Diisi dengan Sesuai' }
                         : null
+                    const cekDate = dateBbm === null || dateBbm === '' || dateBbm.length === 0
+                        ? { no_transaksi: `Row ke ${i + 2}`, mess: `Pastikan Tgl Pengisian Bbm Diisi dengan Sesuai` }
+                        : null
+                    const cekNopol = noPol === null || noPol === '' || noPol.length === 0
+                        ? { no_transaksi: `Row ke ${i + 2}`, mess: `Pastikan No Pol Diisi dengan Sesuai` }
+                        : null
 
-                    if (dataLiter !== null || dataKm !== null || dataNominal !== null) {
-                        const mesTemp = [dataLiter, dataKm, dataNominal]
+                    if (dataLiter !== null || dataKm !== null || dataNominal !== null || cekDate !== null || cekNopol !== null) {
+                        const mesTemp = [dataLiter, dataKm, dataNominal, cekDate, cekNopol]
                         dataCek.push(mesTemp)
                     } else {
-                        const cek = dataBbm.find(({ no_pol }) => (data.no_pol !== '' && no_pol === data.no_pol))
+                        // const cek = dataBbm.find(({ no_pol }) => (data.no_pol !== '' && no_pol === data.no_pol))
+                        const cek = dataBbm.find((item) => (data.no_pol !== '' && item.no_pol === data.no_pol && parseFloat(item.km) === parseFloat(data.km)))
+                        console.log(cek)
                         if (cek !== undefined) {
+                            console.log('masuk not undefined BBM')
                             cek.liter = data.liter
-                            cek.km = data.km
                             cek.nominal = data.nominal
                         } else {
+                            console.log('masuk undefined BBM')
                             dataTemp.push(data)
                         }
                     }
-
                 }
                 console.log(dataCek)
                 console.log(dataTemp)
@@ -611,45 +635,46 @@ class RevisiOps extends Component {
                     this.openConfirm()
                 } else {
                     console.log('masuk success king')
-                    if (modalEdit === true) {
-                        const comb = [...dataBbm, ...dataTemp]
-                        const send = {
-                            id: idOps.id,
-                            list: comb
-                        }
-                        await this.props.uploadBbm(token, send)
-                        await this.props.getBbm(token, idOps.id)
-                        const { opsBbm } = this.props.ops
-                        this.setState({ dataBbm: opsBbm })
-                       
-                        const valBbm = opsBbm.reduce((accumulator, object) => {
-                            return accumulator + parseFloat(object.nominal);
-                        }, 0)
-                        this.setState({nilai_ajuan: valBbm})
-                        setTimeout(() => {
-                            this.formulaTax()
-                        }, 100)
-                        
-                        this.openUpBbm()
-                        await this.editCartOps(idOps)
-                        this.setState({ confirm: 'upload' })
-                        this.openConfirm()
-                    } else {
-                        const comb = [...dataBbm, ...dataTemp]
-                        this.setState({ dataBbm: comb })
-                        
-                        const valBbm = comb.reduce((accumulator, object) => {
-                            return accumulator + parseFloat(object.nominal);
-                        }, 0)
-                        this.setState({nilai_ajuan: valBbm})
-                        setTimeout(() => {
-                            this.formulaTax()
-                        }, 100)
-
-                        this.openUpBbm()
-                        this.setState({ confirm: 'upload' })
-                        this.openConfirm()
+                    // if (modalEdit === true) {
+                    const comb = [...dataBbm, ...dataTemp]
+                    const send = {
+                        id: idOps.id,
+                        list: comb
                     }
+                    await this.props.uploadBbm(token, send)
+                    await this.props.getBbm(token, idOps.id)
+                    const { opsBbm } = this.props.ops
+                    this.setState({ dataBbm: opsBbm })
+                    
+                    const valBbm = opsBbm.reduce((accumulator, object) => {
+                        return accumulator + parseFloat(object.nominal);
+                    }, 0)
+                    this.setState({nilai_ajuan: valBbm})
+                    setTimeout(() => {
+                        this.formulaTax()
+                    }, 100)
+                    
+                    this.openUpBbm()
+                    await this.editCartOps(idOps)
+                    this.setState({ confirm: 'upload' })
+                    this.openConfirm()
+                    // } else {
+                    //     const comb = [...dataBbm, ...dataTemp]
+                    //     this.setState({ dataBbm: comb })
+                        
+                    //     const valBbm = comb.reduce((accumulator, object) => {
+                    //         return accumulator + parseFloat(object.nominal);
+                    //     }, 0)
+                    //     this.setState({nilai_ajuan: valBbm})
+                    //     setTimeout(() => {
+                    //         this.formulaTax()
+                    //     }, 100)
+
+                    //     this.openUpBbm()
+                    //     await this.editCartOps(idOps)
+                    //     this.setState({ confirm: 'upload' })
+                    //     this.openConfirm()
+                    // }
                 }
             }
         } else {
@@ -823,15 +848,29 @@ class RevisiOps extends Component {
     }
 
     checkSubmitRev = () => {
-        const { detailOps } = this.props.ops
+        const { detailOps, dataDoc } = this.props.ops
         const temp = []
+        const tempdoc = []
         detailOps.map(item => {
             return (
                 item.isreject === 1 && temp.push(item)
             )
         })
+        for (let i = 0; i < dataDoc.length; i++) {
+            if (dataDoc[i].path !== null) {
+                const arr = dataDoc[i]
+                const stat = arr.status
+                const cekStat = stat !== null && stat !== '1' ? stat.split(',').reverse()[0].split(';')[1] : ''
+                if (cekStat === ` status reject`) {
+                    tempdoc.push(arr)
+                }
+            }
+        }
         if (temp.length > 0) {
             this.setState({confirm: 'rejSubmit'})
+            this.openConfirm()
+        } else if (tempdoc.length > 0) {
+            this.setState({confirm: 'appNotifDoc'})
             this.openConfirm()
         } else {
             this.openModalApprove()
@@ -1075,9 +1114,14 @@ class RevisiOps extends Component {
         const tempno = {
             no: val.no_transaksi
         }
+        const sendno = {
+            no: val.no_transaksi,
+            name: 'Draft Pengajuan Ops'
+        }
         this.setState({listMut: []})
         await this.props.getDetail(token, tempno)
         await this.props.getApproval(token, tempno)
+        await this.props.getDocOps(token, sendno)
         this.openModalRinci()
     }
 
@@ -1151,7 +1195,7 @@ class RevisiOps extends Component {
         const { draftEmail } = this.props.email
         const { message, subject } = this.state
         const typeKasbon = detailOps.find(({type_kasbon}) => type_kasbon === 'kasbon') !== undefined ? 'kasbon' : 'ops'
-        const statusTrans = detailOps[0].status_transaksi === 2 ? 'pengajuan' : 'verifikasi'
+        const statusTrans = detailOps[0].status_transaksi === 2 ? 'pengajuan' : detailOps[0].status_transaksi === 3 || detailOps[0].status_transaksi === 4 ? 'verifikasi' : 'list ajuan bayar'
         const cc = draftEmail.cc
         const tempcc = []
         for (let i = 0; i < cc.length; i++) {
@@ -1159,16 +1203,17 @@ class RevisiOps extends Component {
         }
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
             subject: subject,
-            no: detailOps[0].no_transaksi,
+            no: detailOps[0].no_pembayaran !== null ? detailOps[0].no_pembayaran : detailOps[0].no_transaksi,
             tipe: `${typeKasbon}`,
             menu: `${statusTrans} ${typeKasbon}`,
             proses: 'revisi',
-            route: `${typeKasbon}`
+            route: detailOps[0].no_pembayaran !== null ? 'listops' : detailOps[0].status_transaksi === 3 ? 'veriffintax' : detailOps[0].status_transaksi === 4 ? 'verifkasbon' : `${typeKasbon}`,
+            jenis: detailOps[0].no_pembayaran !== null ? 'ajuan' : 'area'
         }
         await this.props.sendEmail(token, tempno)
         await this.props.addNotif(token, tempno)
@@ -1199,17 +1244,44 @@ class RevisiOps extends Component {
                 item.status === '1' && tempApp.push(item)
             )
         })
-        const tipe = 'revisi'
-        const tempno = {
+        
+        const data = {
             no: detailOps[0].no_transaksi,
-            kode: detailOps[0].kode_plant,
-            jenis: 'ops',
-            tipe: tipe,
-            menu: 'Revisi Area (Operasional)'
         }
-        await this.props.getDraftEmail(token, tempno)
-        this.setState({tipeEmail: 'app'})
-        this.openDraftEmail()
+
+        await this.props.changeNoTrans(token, data)
+        const {noRev, changeNo} = this.props.ops
+        if (changeNo) {
+            console.log('masuk change no')
+            const newData = {
+                no: noRev
+            }
+            await this.props.getDetail(token, newData)
+
+            const tipe = 'revisi'
+            const tempno = {
+                no: noRev,
+                kode: detailOps[0].kode_plant,
+                jenis: 'ops',
+                tipe: tipe,
+                menu: 'Revisi Area (Operasional)'
+            }
+            await this.props.getDraftEmail(token, tempno)
+            this.setState({tipeEmail: 'app'})
+            this.openDraftEmail()
+        } else {
+            const tipe = 'revisi'
+            const tempno = {
+                no: detailOps[0].no_transaksi,
+                kode: detailOps[0].kode_plant,
+                jenis: 'ops',
+                tipe: tipe,
+                menu: 'Revisi Area (Operasional)'
+            }
+            await this.props.getDraftEmail(token, tempno)
+            this.setState({tipeEmail: 'app'})
+            this.openDraftEmail()
+        }
     }
 
     openDraftEmail = () => {
@@ -1226,35 +1298,6 @@ class RevisiOps extends Component {
         if(e.key === 'Enter'){
             await this.props.getAssetAll(token, 10, e.target.value, 1)
         }
-    }
-
-    prosesEditOps = async (val) => {
-        const token = localStorage.getItem("token")
-        const {dataRinci} = this.state
-        const data = {
-            no_coa: dataRinci.no_coa,
-            keterangan: val.keterangan,
-            periode_awal: val.periode_awal,
-            periode_akhir: val.periode_akhir,
-            nilai_ajuan: val.nilai_ajuan,
-            bank_tujuan: this.state.bank,
-            norek_ajuan: val.norek_ajuan,
-            nama_tujuan: val.nama_tujuan,
-            status_npwp: val.status_npwp === 'Tidak' ? 0 : 1,
-            nama_npwp: val.status_npwp === 'Tidak' ? '' : val.nama_npwp,
-            no_npwp: val.status_npwp === 'Tidak' ? '' : val.no_npwp,
-            nama_ktp: val.status_npwp === 'Tidak' ? val.nama_ktp : '',
-            no_ktp: val.status_npwp === 'Tidak' ? val.no_ktp : '',
-            periode: ''
-        }
-        const tempno = {
-            no: dataRinci.no_transaksi,
-            id: dataRinci.id
-        }
-        await this.props.editOps(token, dataRinci.id, data)
-        await this.props.appRevisi(token, tempno)
-        await this.props.getDetail(token, tempno)
-        this.openModalEdit()
     }
 
     changeView = (val) => {
@@ -1530,7 +1573,7 @@ class RevisiOps extends Component {
         const cekNpwp = idOps.no_npwp === '' || idOps.no_npwp === null ? null : idOps.no_npwp
 
         this.selectCoa({value: idOps.no_coa, label: `${idOps.no_coa} ~ ${idOps.nama_coa}`})
-        this.prepNikNpwp(cekNpwp)
+        // this.prepNikNpwp(cekNpwp)
         this.selectTujuan(idOps.tujuan_tf)
         this.prepBank(idOps.bank_tujuan)
         
@@ -1583,12 +1626,12 @@ class RevisiOps extends Component {
                 {value: '', label: '-Pilih-'}
             ]
             dataFaktur.map(item => {
-                const date1 = new Date(item.tgl_faktur)
-                const date2 = new Date()
+                const date1 = moment(item.tgl_faktur).format('M')
+                const date2 = moment().format('M')
                 const diffTime = Math.abs(date2 - date1)
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+                const diffMonth = Math.floor(diffTime)
                 return (
-                    diffDays < 90 && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
+                    (diffMonth <= 3 || item.force === 1) && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
                 )
             })
             this.setState({fakturList: temp})
@@ -1605,7 +1648,8 @@ class RevisiOps extends Component {
 
     prepBank = (val) => {
         const { dataBank } = this.props.bank
-        const data = dataBank.find(({bank}) => bank === val)
+        const cekVal = val === 'Bank Mandiri' ? 'BANK MANDIRI' : val
+        const data = dataBank.find(({name}) => name === cekVal)
         console.log({dataBank, val})
         if (data === undefined) {
             this.setState()
@@ -1630,8 +1674,9 @@ class RevisiOps extends Component {
     }
 
     cekTrans = () => {
-        const { allCoa } = this.props.coa
+        const { nomCoa } = this.props.coa
         const {idOps} = this.props.ops
+        console.log(idOps)
         const pph = idOps.jenis_pph
         const statNpwp = idOps.status_npwp
         const npwp = idOps.no_npwp === '' || idOps.no_npwp === null ? null : idOps.no_npwp
@@ -1643,12 +1688,12 @@ class RevisiOps extends Component {
         const nilaiUtang = idOps.nilai_utang
         // console.log({idOps, stat_npwp: idOps.status_npwp, npwp: idOps.no_npwp, nik: idOps.no_ktp})
         if (vendor === null) {
-            const selectOp = allCoa.find(({type_transaksi, jenis_transaksi, status_npwp}) => 
-                                type_transaksi === 'Orang Pribadi'  
+            const selectOp = nomCoa.find(({type_transaksi, jenis_transaksi, status_npwp}) => 
+                                type_transaksi === 'Orang Pribadi'
                                 && jenis_transaksi === trans
                                 && status_npwp === cekStat)
 
-            const selectBadan = allCoa.find(({type_transaksi, jenis_transaksi, status_npwp}) => 
+            const selectBadan = nomCoa.find(({type_transaksi, jenis_transaksi, status_npwp}) => 
                                 type_transaksi === "Badan"
                                 && jenis_transaksi === trans
                                 && status_npwp === cekStat)
@@ -1667,17 +1712,28 @@ class RevisiOps extends Component {
                 }, 300)
             }
         } else {
-            const selectCoa = allCoa.find(({type_transaksi, jenis_transaksi, status_npwp}) => 
+            const select = nomCoa.find(({type_transaksi, gl_account}) => 
+                            type_transaksi === vendor  
+                            && gl_account === idOps.no_coa)
+            const selectCoa = nomCoa.find(({type_transaksi, jenis_transaksi}) => 
+                            type_transaksi === vendor  
+                            && jenis_transaksi === trans)
+            const selectCoaFin = nomCoa.find(({type_transaksi, jenis_transaksi, status_npwp}) => 
                             type_transaksi === vendor  
                             && jenis_transaksi === trans
                             && status_npwp === cekStat)
-            console.log(allCoa)
-            console.log(selectCoa, vendor, trans, cekStat)
-            this.selectTrans({value: selectCoa.id, label: `${selectCoa.gl_account} ~ ${selectCoa.jenis_transaksi}`})
+
+            const temp = selectCoaFin !== undefined ? selectCoaFin : selectCoa !== undefined ? selectCoa : select
+            console.log(selectCoaFin)
+            console.log(selectCoa)
+            console.log(temp)
+            this.selectTrans({value: temp.id, label: `${temp.gl_account} ~ ${temp.jenis_transaksi}`})
             setTimeout(() => {
-                this.selectJenis(selectCoa.type_transaksi)
+                this.selectJenis(temp.type_transaksi)
             }, 300)    
         }
+        
+        
     }
 
     selectJenis = async (val) => {
@@ -1689,7 +1745,7 @@ class RevisiOps extends Component {
     }
 
     selectTrans = (e) => {
-        const { allCoa } = this.props.coa
+        const { nomCoa } = this.props.coa
         const { jenisVendor, dataTrans } = this.state
         const statNpwp = this.state.status_npwp
         const cekStat = statNpwp === 'Ya' ? 'NPWP' : statNpwp === 'Tidak' ? 'NIK' : 'No Need NPWP/NIK'
@@ -1698,22 +1754,38 @@ class RevisiOps extends Component {
         } else {
             let temp = {}
             let jenis = ''
-            const cek = allCoa.find(({id}) => id === e.value)
+            const cek = nomCoa.find(({id}) => id === e.value)
             if (cek.type_transaksi === nonObject) {
                 temp = cek
                 jenis = nonObject
-                this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis})
-                this.formulaTax()
+                const cekBbm = temp.jenis_transaksi.split(' ').filter(item => item.toLowerCase() === 'bbm').length > 0 ? 'ya' : 'tidak'
+                const cekIndi = temp.jenis_transaksi === 'Pembayaran Tagihan Internet (Indihome)' ? 'ya' : 'tidak'
+                this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis, statBbm: cekBbm, type_po: temp.po.toLowerCase()})
+                if (cekIndi === 'ya') {
+                    this.selectAuto()
+                } else {
+                    setTimeout(() => {
+                        this.formulaTax()
+                     }, 100)
+                }
             } else if (jenisVendor === '' || jenisVendor === nonObject) {
                 temp = cek
                 jenis = ''
-                this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis})
-                this.formulaTax()
+                const cekBbm = temp.jenis_transaksi.split(' ').filter(item => item.toLowerCase() === 'bbm').length > 0 ? 'ya' : 'tidak'
+                const cekIndi = temp.jenis_transaksi === 'Pembayaran Tagihan Internet (Indihome)' ? 'ya' : 'tidak'
+                this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis, statBbm: cekBbm, type_po: temp.po.toLowerCase()})
+                if (cekIndi === 'ya') {
+                    this.selectAuto()
+                } else {
+                    setTimeout(() => {
+                        this.formulaTax()
+                     }, 100)
+                }
             } else {
-                const selectCoa = allCoa.find(({type_transaksi, jenis_transaksi}) => 
+                const selectCoa = nomCoa.find(({type_transaksi, jenis_transaksi}) => 
                                     type_transaksi === jenisVendor && 
                                     jenis_transaksi === dataTrans.jenis_transaksi)
-                const selectCoaFin = allCoa.find(({type_transaksi, jenis_transaksi, status_npwp}) => 
+                const selectCoaFin = nomCoa.find(({type_transaksi, jenis_transaksi, status_npwp}) => 
                                     type_transaksi === jenisVendor && 
                                     jenis_transaksi === dataTrans.jenis_transaksi
                                     && status_npwp === cekStat)
@@ -1724,48 +1796,100 @@ class RevisiOps extends Component {
                     console.log('masuk not undefined')
                     temp = selectCoaFin === undefined ? selectCoa : selectCoaFin
                     jenis = jenisVendor === nonObject ? '' : jenisVendor
-                    this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis})
-                    this.formulaTax()
+                    const cekBbm = temp.jenis_transaksi.split(' ').filter(item => item.toLowerCase() === 'bbm').length > 0 ? 'ya' : 'tidak'
+                    const cekIndi = temp.jenis_transaksi === 'Pembayaran Tagihan Internet (Indihome)' ? 'ya' : 'tidak'
+                    this.setState({idTrans: e.value, jenisTrans: e.label, dataTrans: temp, jenisVendor: jenis, statBbm: cekBbm, type_po: temp.po.toLowerCase()})
+                    if (cekIndi === 'ya') {
+                        this.selectAuto()
+                    } else {
+                        setTimeout(() => {
+                            this.formulaTax()
+                         }, 100)
+                    }
                 }
             }
         }
         
     }
 
+    selectAuto = async () => {
+        const token = localStorage.getItem("token")
+        const sendData = {
+            noIdent: `${telkom}`
+        }
+        this.setState({status_npwp: "Ya", jenisVendor: 'Badan', tipeVendor: 'PMA'})
+        this.setState({dataSelFaktur: { no_faktur: '' }, tgl_faktur: ''})
+        this.setState({tipePpn: "Tidak", nilai_dpp: 0, nilai_ppn: 0})
+
+        await this.props.getVendor(token, sendData)
+
+        const { dataVendor } = this.props.vendor
+        this.selectNikNpwp({val: {value: dataVendor[0].id}, type: 'npwp'})
+    }
+
     formulaTax = (val, type) => {
+        const { nomCoa } = this.props.coa
         const {dataTrans, nilai_ajuan, tipeVendor, tipePpn, nilai_dpp, nilai_ppn, type_kasbon, tipeSkb} = this.state
         const nilai = nilai_ajuan
         const tipe = tipeVendor
         console.log(dataTrans)
-        if (dataTrans.jenis_pph === 'Non PPh' || dataTrans.jenis_pph === undefined) {
-            this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: nilai, tipeVendor: tipe})
+        if (dataTrans.jenis_pph === undefined) {
+
         } else {
-            const tarifPph = tipeSkb === 'SKB' ? '0%' : tipeSkb === 'SKT' ? '0.05%' : dataTrans.tarif_pph
-            const grossup = tipeSkb === 'SKB' ? '1%' : tipeSkb === 'SKT' ? '1%' : dataTrans.dpp_grossup
-            if (tipePpn === 'Ya' && type_kasbon !== 'kasbon') {
-                if (tipe === 'PMA') {
-                    const nilai_buku = nilai_dpp
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(tarifPph))
-                    const nilai_vendor = Math.ceil((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
-                    this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
-                } else if (tipe === 'Vendor') {
-                    const nilai_buku = nilai_dpp
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(tarifPph))
-                    const nilai_vendor = Math.ceil((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
-                    this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
-                }
+            const selectCoa = nomCoa.find(({type_transaksi, jenis_transaksi}) => 
+                                    type_transaksi === dataTrans.type_transaksi && 
+                                    jenis_transaksi === dataTrans.jenis_transaksi)
+            const selectCoaFin = nomCoa.find((item) => 
+                                item.type_transaksi === dataTrans.type_transaksi 
+                                && item.jenis_transaksi === dataTrans.jenis_transaksi
+                                && item.status_npwp === dataTrans.status_npwp 
+                                && (nilai > parseFloat(item.min_nominal === null || item.min_nominal === '' || item.min_nominal === undefined ? 0 : item.min_nominal) 
+                                    && nilai <= parseFloat(item.max_nominal === null || item.max_nominal === '' || item.max_nominal === undefined ? nilai : item.max_nominal)
+                                    )
+                                )
+            if (selectCoa === undefined && selectCoaFin === undefined) {
+                // this.openConfirm(this.setState({confirm: 'failJenisTrans'}))
+                // this.setState({idTrans: '', jenisTrans: '', dataTrans: {}, jenisVendor: ''})
+                console.log('masuk undefined formula tax')
             } else {
-                if (tipe === 'PMA') {
-                    const nilai_buku = Math.ceil(parseFloat(nilai) / parseFloat(grossup))
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(tarifPph))
-                    const nilai_vendor = nilai
-                    this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
-                } else if (tipe === 'Vendor') {
-                    const nilai_buku = nilai
-                    const nilai_utang = Math.ceil(parseFloat(nilai_buku) * parseFloat(tarifPph))
-                    const nilai_vendor = Math.ceil(parseFloat(nilai) - parseFloat(nilai_utang))
-                    this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
+                console.log('masuk not undefined formula tax')
+                const temp = selectCoaFin === undefined ? selectCoa : selectCoa === undefined ? dataTrans: selectCoaFin
+                console.log(temp)
+                if (temp.jenis_pph === 'Non PPh' || temp.jenis_pph === undefined) {
+                    this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: nilai, tipeVendor: tipe})
+                } else {
+                    const tarifPph = tipeSkb === 'SKB' ? '0%' : tipeSkb === 'SKT' ? '0.05%' : temp.tarif_pph
+                    const grossup = tipeSkb === 'SKB' ? '1%' : tipeSkb === 'SKT' ? '1%' : temp.dpp_grossup
+                    if (tipePpn === 'Ya' && type_kasbon !== 'kasbon') {
+                    // if (tipePpn === 'Ya') {
+                        if (tipe === 'PMA') {
+                            const nilai_buku = nilai_dpp
+                            const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                            // const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
+                            const nilai_vendor = nilai
+                            this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
+                        } else if (tipe === 'Vendor') {
+                            const nilai_buku = nilai_dpp
+                            const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                            // const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
+                            const nilai_vendor = Math.round(parseFloat(nilai) - parseFloat(nilai_utang))
+                            this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
+                        }
+                    } else {
+                        if (tipe === 'PMA') {
+                            const nilai_buku = Math.round(parseFloat(nilai) / parseFloat(grossup))
+                            const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                            const nilai_vendor = nilai
+                            this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
+                        } else if (tipe === 'Vendor') {
+                            const nilai_buku = nilai
+                            const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                            const nilai_vendor = Math.round(parseFloat(nilai) - parseFloat(nilai_utang))
+                            this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
+                        }
+                    }
                 }
+                this.setState({dataTrans: temp})
             }
         }
     }
@@ -1842,14 +1966,14 @@ class RevisiOps extends Component {
             nama_tujuan: this.state.tujuan_tf === 'PMA' ? `PMA-${detFinance.area}` : val.nama_tujuan,
             tujuan_tf: this.state.tujuan_tf,
             tiperek: this.state.tiperek,
-            status_npwp: status_npwp === 'Tidak' ? 0 : status_npwp === 'Ya' ? 1 : 2,
-            nama_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' ? nama : '',
-            no_npwp: status_npwp === 'Tidak' ? '' : status_npwp === 'Ya' ? noNpwp : '',
-            nama_ktp: status_npwp === 'Tidak' ? nama : status_npwp === 'Ya' ? '' : '',
-            no_ktp: status_npwp === 'Tidak' ? noNik : status_npwp === 'Ya' ? '' : '',
+            status_npwp: (this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? 2 : status_npwp === 'Tidak' ? 0 : status_npwp === 'Ya' ? 1 : 2,
+            nama_npwp: (this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? '' : status_npwp === 'Ya' ? nama : '',
+            no_npwp: (this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? '' : status_npwp === 'Ya' ? noNpwp : '',
+            nama_ktp: (this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? '' : status_npwp === 'Tidak' ? nama : '',
+            no_ktp: (this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? '' : status_npwp === 'Tidak' ? noNik : '',
             periode: '',
-            nama_vendor: nama,
-            alamat_vendor: alamat,
+            nama_vendor: (this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? '' : nama,
+            alamat_vendor: (this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? '' : alamat,
             penanggung_pajak: tipeVendor,
             type_transaksi: tipePpn,
             no_faktur: dataSelFaktur.no_faktur,
@@ -1873,7 +1997,8 @@ class RevisiOps extends Component {
             stat_bbm: this.state.statBbm,
             km:  '',
             liter: '',
-            no_pol: ''
+            no_pol: '',
+            id_pelanggan: val.id_pelanggan
         }
         const tempno = {
             no: idOps.no_transaksi,
@@ -1885,11 +2010,15 @@ class RevisiOps extends Component {
         } else {
             await this.props.editOps(token, idOps.id, dataTrans.id, data )
             await this.props.appRevisi(token, tempno)
-            this.setState({confirm: 'editcart'})
+            this.setState({confirm: 'editcart', modalEdit: false})
             this.openConfirm()
             await this.props.getDetail(token, tempno)
             // this.openEdit()
         }
+    }
+
+    selectRek = (e) => {
+        this.setState({norek: e.label.split('~')[0], tiperek: e.value})
     }
 
     onEnterVal = (val) => {
@@ -1940,7 +2069,7 @@ class RevisiOps extends Component {
         // } else {
         //     this.setState({noNpwp: val, typeniknpwp: 'manual'})
         // }
-        if( val.length === 15 ) {
+        if( val.length === 16 ) {
             this.getDataVendor(val)
         } else {
             this.setState(
@@ -1967,10 +2096,10 @@ class RevisiOps extends Component {
         dataVendor.map(item => {
             return (
                 item.no_npwp === 'TIDAK ADA' && item.no_ktp !== 'TIDAK ADA' ?
-                    listNik.push({value: item.id, label: item.no_ktp}) 
+                    listNik.push({value: item.id, label: `${item.no_ktp}~${item.nama}`}) 
                 : item.no_ktp === 'TIDAK ADA' && item.no_npwp !== 'TIDAK ADA' ?
-                    listNpwp.push({value: item.id, label: item.no_npwp}) 
-                : listNpwp.push({value: item.id, label: item.no_npwp}) && listNik.push({value: item.id, label: item.no_ktp}) 
+                    listNpwp.push({value: item.id, label: `${item.no_npwp}~${item.nama}`}) 
+                : listNpwp.push({value: item.id, label: `${item.no_npwp}~${item.nama}`}) && listNik.push({value: item.id, label: `${item.no_ktp}~${item.nama}`}) 
             )
         })
         this.setState({listNik: listNik, listNpwp: listNpwp, showOptions : true})
@@ -2012,13 +2141,13 @@ class RevisiOps extends Component {
                 {value: '', label: '-Pilih-'}
             ]
             dataFaktur.map(item => {
-                const date1 = new Date(item.tgl_faktur)
-                const date2 = new Date()
+                const date1 = moment(item.tgl_faktur).format('M')
+                const date2 = moment().format('M')
                 const diffTime = Math.abs(date2 - date1)
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-                console.log(diffDays)
+                const diffMonth = Math.floor(diffTime)
+                console.log(diffMonth)
                 return (
-                    diffDays < 90 && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
+                    (diffMonth <= 3 || item.force === 1) && item.status === null && temp.push({value: item.id, label: `${item.no_faktur}~${item.nama}`})
                 )
             })
             this.setState({fakturList: temp, showOptions : true})
@@ -2097,7 +2226,7 @@ class RevisiOps extends Component {
         const { detFinance } = this.props.finance
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, newOps, dataDoc, idOps } = this.props.ops
-        const {listGl} = this.props.coa
+        const {listGl, glLisIn, glListrik} = this.props.coa
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -2291,8 +2420,9 @@ class RevisiOps extends Component {
                     || this.props.pagu.isLoading 
 
                     || this.state.isLoading 
-                    || this.props.faktur.isLoading 
-                    || this.props.vendor.isLoading} size="sm">
+                    // || this.props.faktur.isLoading 
+                    // || this.props.vendor.isLoading
+                    } size="sm">
                     <ModalBody>
                     <div>
                         <div className={style.cekUpdate}>
@@ -2918,6 +3048,13 @@ class RevisiOps extends Component {
                                 <div className={[style.sucUpdate, style.green]}>Gagal submit revisi, pastikan semua data reject telah diperbaiki</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'appNotifDoc' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                            <AiOutlineClose size={80} className={style.red} />
+                            <div className={[style.sucUpdate, style.green]}>Gagal Submit, Pastikan Dokumen Lampiran Telah Diperbaiki</div>
+                        </div>
+                        </div>
                     ) : this.state.confirm === 'isApprove' ? (
                         <div>
                             <div className={style.cekUpdate}>
@@ -3088,12 +3225,12 @@ class RevisiOps extends Component {
                                 <Row className="mt-3 mb-4">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} >
-                                            <div className="btnDocIo mb-2" >{x.desc}</div>
-                                            {x.status === 0 ? (
-                                                <AiOutlineClose size={20} />
-                                            ) : x.status === 3 ? (
-                                                <AiOutlineCheck size={20} />
-                                            ) : (
+                                            <div className="btnDocIo mb-2" >{x.desc} <text className='txtError'>{x.stat_upload === 0 ? '' : '*'}</text></div>
+                                            {x.status !== null && x.status !== '1' &&
+                                            x.status.split(',').reverse()[0].split(';')[1] === ` status approve` ? <AiOutlineCheck size={20} color="success" /> 
+                                            : x.status !== null && x.status !== '1' &&
+                                            x.status.split(',').reverse()[0].split(';')[1] === ` status reject` ?  <AiOutlineClose size={20} color="danger" /> 
+                                            : (
                                                 <BsCircle size={20} />
                                             )}
                                             <button className="btnDocIo blue" onClick={() => this.showDokumen(x)} >{x.history}</button>
@@ -3105,14 +3242,14 @@ class RevisiOps extends Component {
                                                     onClick={() => this.setState({detail: x})}
                                                     onChange={this.onChangeUpload}
                                                     />
-                                                    <text className="txtError ml-4">Maximum file upload is 25 Mb</text>
+                                                    {/* <text className="txtError ml-4">Maximum file upload is 25 Mb</text> */}
                                                 </div>
                                             )}
                                             
                                         </Col>
                                     ) : (
                                         <Col md={12} lg={12} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc}</text>
+                                            <div className="btnDocIo mb-2" >{x.desc} <text className='txtError'>{x.stat_upload === 0 ? '' : '*'}</text></div>
                                             {level === '5' && (
                                                 <>
                                                     <div className="colDoc">
@@ -3122,7 +3259,7 @@ class RevisiOps extends Component {
                                                         onChange={this.onChangeUpload}
                                                         />
                                                     </div>
-                                                    <text className="txtError">Maximum file upload is 25 Mb</text>
+                                                    {/* <text className="txtError">Maximum file upload is 25 Mb</text> */}
                                                 </>
                                             )}
                                         </Col>
@@ -3130,6 +3267,13 @@ class RevisiOps extends Component {
                                 </Row>
                             )
                         })}
+                        <Row className="mt-3 mb-4">
+                            <Col md={12} lg={12} className="colDoc">
+                                <text className="txtError" >* Wajib Upload Document</text>
+                                <text className="txtError">Maximum file upload is 25 Mb</text>
+                                <text className="txtError">Only excel, pdf, zip, png, jpg and rar files are allowed</text>
+                            </Col>
+                        </Row>
                     </Container>
                 </ModalBody>
                 <ModalFooter>
@@ -3156,7 +3300,7 @@ class RevisiOps extends Component {
                 <ModalHeader>Dokumen</ModalHeader>
                 <ModalBody>
                     <div className={style.readPdf}>
-                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} />
+                        <Pdf pdf={`${REACT_APP_BACKEND_URL}/show/doc/${this.state.idDoc}`} dataFile={this.state.fileName}/>
                     </div>
                     <hr/>
                     <div className={style.foot}>
@@ -3196,7 +3340,9 @@ class RevisiOps extends Component {
                                 type_po: idOps.type_po || '',
                                 no_po: idOps.no_po || '',
                                 nilai_po: idOps.nilai_po || 0,
-                                nilai_pr: idOps.nilai_pr || 0
+                                nilai_pr: idOps.nilai_pr || 0,
+                                id_pelanggan: idOps.id_pelanggan || '',
+                                biaya_adm: 2500
                             }}
                             validationSchema = {addSchema}
                             onSubmit={(values) => {this.cekEdit(values)}}
@@ -3303,7 +3449,7 @@ class RevisiOps extends Component {
                                                     ) : null}
                                                 </>
                                             )} */}
-                                            {idOps.type_kasbon === 'kasbon' && (
+                                            {type_kasbon === 'kasbon' && (
                                                 <>
                                                     <Row className="mb-2 rowRinci">
                                                         <Col md={3}>Tipe PO</Col>
@@ -3312,9 +3458,9 @@ class RevisiOps extends Component {
                                                                 type= "select" 
                                                                 className="inputRinci"
                                                                 disabled={this.state.idTrans === '' ? true : false}
-                                                                value={values.type_po}
-                                                                onBlur={handleBlur('type_po')}
-                                                                onChange={handleChange('type_po')}
+                                                                value={this.state.type_po}
+                                                                // onBlur={handleBlur('type_po')}
+                                                                // onChange={handleChange('type_po')}
                                                                 >
                                                                     <option value=''>Pilih</option>
                                                                     <option value="po">PO</option>
@@ -3322,14 +3468,14 @@ class RevisiOps extends Component {
                                                             </Input>
                                                         </Col>
                                                     </Row>
-                                                    {values.type_po === '' ? (
+                                                    {/* {this.state.type_po === '' ? (
                                                         <text className={style.txtError}>must be filled</text>
-                                                    ) : null}
+                                                    ) : null} */}
                                                     <Row className="mb-2 rowRinci">
                                                         <Col md={3}>No PO</Col>
                                                         <Col md={9} className="colRinci">:  <Input
                                                             type= "text" 
-                                                            disabled={values.type_po === 'po' ? false : true}
+                                                            disabled={this.state.type_po === 'po' ? false : true}
                                                             className="inputRinci"
                                                             value={values.no_po}
                                                             onBlur={handleBlur("no_po")}
@@ -3337,35 +3483,35 @@ class RevisiOps extends Component {
                                                             />
                                                         </Col>
                                                     </Row>
-                                                    {values.type_po === 'po' && values.no_po === '' ? (
+                                                    {this.state.type_po === 'po' && values.no_po === '' ? (
                                                         <text className={style.txtError}>must be filled</text>
                                                     ) : null}
                                                     <Row className="mb-2 rowRinci">
                                                         <Col md={3}>Nilai PO</Col>
                                                         <Col md={9} className="colRinci">:
                                                             <NumberInput
-                                                                disabled={values.type_po === 'po' ? false : true}
+                                                                disabled={this.state.type_po === 'po' ? false : true}
                                                                 className="inputRinci1"
                                                                 value={values.nilai_po}
                                                                 onValueChange={val => setFieldValue("nilai_po", val.floatValue)}
                                                             />
                                                         </Col>
                                                     </Row>
-                                                    {values.type_po === 'po' && values.nilai_po === 0 ? (
+                                                    {this.state.type_po === 'po' && values.nilai_po === 0 ? (
                                                         <div className='txtError'>must be filled</div>
                                                     ) : null}
                                                     <Row className="mb-2 rowRinci">
                                                         <Col md={3}>Nilai PR</Col>
                                                         <Col md={9} className="colRinci">:
                                                             <NumberInput
-                                                                disabled={values.type_po === 'po' ? false : true}
+                                                                disabled={this.state.type_po === 'po' ? false : true}
                                                                 className="inputRinci1"
                                                                 value={values.nilai_pr}
                                                                 onValueChange={val => setFieldValue("nilai_pr", val.floatValue)}
                                                             />
                                                         </Col>
                                                     </Row>
-                                                    {values.type_po === 'po' && values.nilai_pr === 0 ? (
+                                                    {this.state.type_po === 'po' && values.nilai_pr === 0 ? (
                                                         <text className={style.txtError}>must be filled</text>
                                                     ) : null}
                                                 </>
@@ -3423,14 +3569,14 @@ class RevisiOps extends Component {
                                             {/* {this.state.status_npwp === '' ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null} */}
-                                            <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nomor NPWP</Col>
+                                            <Row className="rowRinci">
+                                                <Col md={3}>NPWP</Col>
                                                 <Col md={9} className="colRinci">:  
                                                     {/* <Input
                                                     disabled={this.state.status_npwp === 'Ya' ? false : true}
                                                     type= "text" 
-                                                    minLength={15}
-                                                    maxLength={15}
+                                                    minLength={16}
+                                                    maxLength={16}
                                                     className="inputRinci"
                                                     value={this.state.status_npwp === 'Ya' ? values.no_npwp : ''}
                                                     onBlur={handleBlur("no_npwp")}
@@ -3452,9 +3598,14 @@ class RevisiOps extends Component {
                                                     />
                                                 </Col>
                                             </Row>
-                                            {this.state.status_npwp === 'Ya' && this.state.typeniknpwp === 'manual' && this.state.noNpwp.length < 15 && this.state.noNpwp.length > 15  ? (
-                                                <text className={style.txtError}>must be filled with 15 digits characters</text>
-                                            ) : null}
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}></Col>
+                                                <Col md={9}>
+                                                    <div className='ml-3'>
+                                                        {(this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? '' : this.state.status_npwp === 'Ya' ? 'Please enter 16 digits character' : ''}
+                                                    </div>
+                                                </Col>
+                                            </Row>
                                             {/* <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Nama Sesuai NPWP</Col>
                                                 <Col md={9} className="colRinci">:  <Input
@@ -3470,7 +3621,7 @@ class RevisiOps extends Component {
                                             {this.state.status_npwp === 'Ya' && values.nama_npwp === '' ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null} */}
-                                            <Row className="mb-2 rowRinci">
+                                            <Row className="rowRinci">
                                                 <Col md={3}>NIK</Col>
                                                 <Col md={9} className="colRinci">:  
                                                     {/* <Input
@@ -3499,9 +3650,14 @@ class RevisiOps extends Component {
                                                     />
                                                 </Col>
                                             </Row>
-                                            {this.state.status_npwp === 'Tidak' && this.state.typeniknpwp === 'manual' && this.state.noNik.length < 16 && this.state.noNik.length > 16 ? (
-                                                <text className={style.txtError}>must be filled with 16 digits characters</text>
-                                            ) : null}
+                                            <Row className="mb-2 rowRinci">
+                                                <Col md={3}></Col>
+                                                <Col md={9}>
+                                                    <div className="ml-3">
+                                                        {(this.state.idTrans === ''  || this.state.jenisVendor === nonObject) ? '' : this.state.status_npwp === 'Tidak' ? "Please enter 16 digits characters" : ''}
+                                                    </div>
+                                                </Col>
+                                            </Row>
                                             {/* <Row className="mb-2 rowRinci">
                                                 <Col md={3}>Nama Sesuai KTP</Col>
                                                 <Col md={9} className="colRinci">:  <Input
@@ -3582,7 +3738,7 @@ class RevisiOps extends Component {
                                                 <Col md={9} className="colRinci">:  
                                                     <Select
                                                         className="inputRinci2"
-                                                        isDisabled={idOps.type_kasbon === 'kasbon' ? true : this.state.tipePpn === "Ya" ? false : true}
+                                                        isDisabled={type_kasbon === 'kasbon' ? true : this.state.tipePpn === "Ya" ? false : true}
                                                         options={showOptions ? this.state.fakturList : [{value: '', label: '-Pilih-'}]}
                                                         onChange={e => this.selectFaktur(e)}
                                                         onInputChange={e => this.inputFaktur(e)}
@@ -3711,6 +3867,17 @@ class RevisiOps extends Component {
                                             {(this.state.nilai_ajuan === 0 || this.state.nilai_ajuan === undefined) && this.state.tipePpn === "Tidak" ? (
                                                 <text className={style.txtError}>must be filled with number</text>
                                             ) : null}
+                                            {this.state.jenisTrans.split('~').find((item) => item === ' Pembayaran Tagihan Internet (Indihome)') !== undefined  && (
+                                                <Row className="mb-2 rowRinci">
+                                                    <Col md={3}>Biaya Admin</Col>
+                                                    <Col md={9} className="colRinci">:  <NumberInput
+                                                        disabled
+                                                        className="inputRinci1"
+                                                        value={values.biaya_adm}
+                                                        />
+                                                    </Col>
+                                                </Row>
+                                            )}
                                             <Row className="mb-2 rowRinci">
                                             <Col md={3}>Vendor Memiliki SKB / SKT</Col>
                                             <Col md={9} className="colRinci">:  
@@ -3850,8 +4017,17 @@ class RevisiOps extends Component {
                                                     onChange={e => this.selectTujuan(e.target.value)}
                                                     >
                                                         <option value=''>Pilih</option>
-                                                        <option value="PMA">PMA</option>
-                                                        <option value="Outlest">Outlest</option>
+                                                        {this.state.jenisTrans.split('~').find((item) => item === ' Pembayaran Tagihan Internet (Indihome)') !== undefined ? (
+                                                            null
+                                                        ) : (
+                                                            <>
+                                                                <option value="PMA">PMA</option>
+                                                                <option value="Vendor">Vendor</option>      
+                                                            </>
+                                                        )}
+                                                        {glLisIn.find((e) => e === parseInt(this.state.no_coa)) !== undefined && 
+                                                            <option value="ID Pelanggan">ID Pelanggan</option>
+                                                        }
                                                     </Input>
                                                 </Col>
                                             </Row>
@@ -3873,60 +4049,88 @@ class RevisiOps extends Component {
                                             {values.nama_tujuan === '' && this.state.tujuan_tf !== 'PMA' ? (
                                                 <text className={style.txtError}>must be filled</text>
                                             ) : null}
-                                            <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Bank</Col>
-                                                <Col md={9} className="colRinci">: 
-                                                {this.state.tujuan_tf === 'PMA' ? (
-                                                    <Input
-                                                    type= "text" 
-                                                    className="inputRinci"
-                                                    value={this.state.bank}
-                                                    disabled
-                                                    />
-                                                ) : (
-                                                    <Select
-                                                    isDisabled={this.state.tujuan_tf === '' && true}
-                                                    className="inputRinci2"
-                                                    options={this.state.bankList}
-                                                    onChange={this.selectBank}
-                                                    />
-                                                )}
-                                                </Col>
-                                            </Row>
-                                            {this.state.bank === '' ? (
-                                                <text className={style.txtError}>must be filled</text>
-                                            ) : null}
-                                            <Row className="mb-2 rowRinci">
-                                                <Col md={3}>Nomor Rekening</Col>
-                                                <Col md={9} className="colRinci">:  
-                                                {this.state.tujuan_tf === 'PMA' ? (
-                                                    <Select
+                                            {this.state.tujuan_tf === 'ID Pelanggan' ? (
+                                                <>
+                                                    <Row className="mb-2 rowRinci">
+                                                        <Col md={3}>ID Pelanggan</Col>
+                                                        <Col md={9} className="colRinci">:  <Input
+                                                            type= "text" 
+                                                            className="inputRinci"
+                                                            value={values.id_pelanggan}
+                                                            onBlur={handleBlur("id_pelanggan")}
+                                                            onChange={handleChange("id_pelanggan")}
+                                                            minLength={glListrik.find((e) => e === parseInt(this.state.no_coa)) !== undefined && 12}
+                                                            maxLength={glListrik.find((e) => e === parseInt(this.state.no_coa)) !== undefined && 12}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                    {values.id_pelanggan === '' ? (
+                                                        <text className={style.txtError}>must be filled</text>
+                                                    ) : errors.id_pelanggan ? (
+                                                        <text className={style.txtError}>{errors.id_pelanggan}</text>
+                                                    ) : glListrik.find((e) => e === parseInt(this.state.no_coa)) !== undefined && values.id_pelanggan.toString().length !== 12 ? (
+                                                        <text className={style.txtError}>must be filled with 12 digits characters</text>
+                                                    ) : null}
+                                                </>
+                                            ) : (
+                                                <>
+                                                <Row className="mb-2 rowRinci">
+                                                    <Col md={3}>Bank</Col>
+                                                    <Col md={9} className="colRinci">: 
+                                                    {this.state.tujuan_tf === 'PMA' ? (
+                                                        <Input
+                                                        type= "text" 
+                                                        className="inputRinci"
+                                                        value={this.state.bank}
+                                                        disabled
+                                                        />
+                                                    ) : (
+                                                        <Select
+                                                        isDisabled={this.state.tujuan_tf === '' && true}
                                                         className="inputRinci2"
-                                                        options={this.state.rekList}
-                                                        onChange={this.selectRek}
-                                                        value={{label: this.state.norek, value: this.state.tiperek}}
-                                                    />
-                                                ) : (
-                                                    <Input
-                                                    type= "text" 
-                                                    className="inputRinci"
-                                                    disabled={this.state.digit === 0 ? true : false}
-                                                    minLength={this.state.digit === null ? 10 : this.state.digit}
-                                                    maxLength={this.state.digit === null ? 16 : this.state.digit}
-                                                    value={values.norek_ajuan}
-                                                    onBlur={handleBlur("norek_ajuan")}
-                                                    onChange={handleChange("norek_ajuan")}
-                                                    />
-                                                )}
-                                                </Col>
-                                            </Row>
-                                            {this.state.digit !== null && values.norek_ajuan.length !== this.state.digit && this.state.tujuan_tf !== 'PMA'? (
-                                                <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
-                                            ) : this.state.digit === null && (values.norek_ajuan.length < 10 || values.norek_ajuan.length > 16) && this.state.tujuan_tf !== 'PMA'? (
-                                                <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
-                                            ) : this.state.tujuan_tf === 'PMA' && this.state.norek.length !== this.state.digit ? (
-                                                <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
-                                            ) : null}
+                                                        options={this.state.bankList}
+                                                        onChange={this.selectBank}
+                                                        value={{label: this.state.bank, value: this.state.digit}}
+                                                        />
+                                                    )}
+                                                    </Col>
+                                                </Row>
+                                                {this.state.bank === '' ? (
+                                                    <text className={style.txtError}>must be filled</text>
+                                                ) : null}
+                                                <Row className="mb-2 rowRinci">
+                                                    <Col md={3}>Nomor Rekening</Col>
+                                                    <Col md={9} className="colRinci">:  
+                                                    {this.state.tujuan_tf === 'PMA' ? (
+                                                        <Select
+                                                            className="inputRinci2"
+                                                            options={this.state.rekList}
+                                                            onChange={this.selectRek}
+                                                            value={{label: this.state.norek, value: this.state.tiperek}}
+                                                        />
+                                                    ) : (
+                                                        <Input
+                                                        type= "text" 
+                                                        className="inputRinci"
+                                                        disabled={this.state.digit === 0 ? true : false}
+                                                        minLength={this.state.digit === null ? 10 : this.state.digit}
+                                                        maxLength={this.state.digit === null ? 16 : this.state.digit}
+                                                        value={values.norek_ajuan}
+                                                        onBlur={handleBlur("norek_ajuan")}
+                                                        onChange={handleChange("norek_ajuan")}
+                                                        />
+                                                    )}
+                                                    </Col>
+                                                </Row>
+                                                {this.state.digit !== null && values.norek_ajuan.length !== this.state.digit && this.state.tujuan_tf !== 'PMA'? (
+                                                    <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                                ) : this.state.digit === null && (values.norek_ajuan.length < 10 || values.norek_ajuan.length > 16) && this.state.tujuan_tf !== 'PMA'? (
+                                                    <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                                ) : this.state.tujuan_tf === 'PMA' && this.state.norek.length !== this.state.digit ? (
+                                                    <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                                ) : null}
+                                            </>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -3983,6 +4187,7 @@ class RevisiOps extends Component {
                                             : values.status_npwp === 'Tidak' && (values.nama_ktp === '' || values.no_ktp === '' ) ? true 
                                             // : values.norek_ajuan.length < this.state.digit ? true 
                                             : this.state.tujuan_tf === '' ? true
+                                            : this.state.tujuan_tf === 'ID Pelanggan' && (values.id_pelanggan === '' || values.nama_tujuan === '') ? true
                                             : this.state.jenisVendor !== nonObject && this.state.tipeSkb === '' ? true
                                             : this.state.tipePpn === "Tidak" && (this.state.nilai_ajuan === 0 || this.state.nilai_ajuan === undefined) ? true
                                             : false } 
@@ -4052,7 +4257,8 @@ class RevisiOps extends Component {
                         liter: 0,
                         km: 0,
                         nominal: 0,
-                        no_pol: ''
+                        no_pol: '',
+                        date_bbm: ''
                     }}
                     validationSchema={bbmSchema}
                     onSubmit={(values) => {this.addDataBbm(values)}}
@@ -4116,6 +4322,20 @@ class RevisiOps extends Component {
                         {values.nominal === 0 || values.nominal === undefined ? (
                             <text className={style.txtError}>must be filled</text>
                         ) : null}
+                        <Row className="mb-2 rowRinci">
+                            <Col md={3}>Tgl Pengisian BBM</Col>
+                            <Col md={9} className="colRinci">:  <Input
+                                type='date'
+                                value={values.date_bbm}
+                                className="inputRinci1"
+                                onChange={handleChange('date_bbm')}
+                                onBlur={handleBlur('date_bbm')}
+                            />
+                            </Col>
+                        </Row>
+                        {errors.date_bbm ? (
+                            <text className={style.txtError}>{errors.date_bbm}</text>
+                        ) : null}
                         <hr/>
                         <div className={style.foot}>
                             <div></div>
@@ -4142,7 +4362,8 @@ class RevisiOps extends Component {
                         liter: detBbm.liter,
                         km: detBbm.km,
                         nominal: detBbm.nominal,
-                        no_pol: detBbm.no_pol
+                        no_pol: detBbm.no_pol,
+                        date_bbm: detBbm.date_bmm
                     }}
                     validationSchema={bbmSchema}
                     onSubmit={(values) => {this.editDataBbm(values)}}
@@ -4205,6 +4426,20 @@ class RevisiOps extends Component {
                         </Row>
                         {values.nominal === 0 || values.nominal === undefined ? (
                             <text className={style.txtError}>must be filled</text>
+                        ) : null}
+                        <Row className="mb-2 rowRinci">
+                            <Col md={3}>Tgl Pengisian BBM</Col>
+                            <Col md={9} className="colRinci">:  <Input
+                                type='date'
+                                value={values.date_bbm}
+                                className="inputRinci1"
+                                onChange={handleChange('date_bbm')}
+                                onBlur={handleBlur('date_bbm')}
+                            />
+                            </Col>
+                        </Row>
+                        {errors.date_bbm ? (
+                            <text className={style.txtError}>{errors.date_bbm}</text>
                         ) : null}
                         <hr/>
                         <div className={style.foot}>
@@ -4344,7 +4579,8 @@ const mapDispatchToProps = {
     updateBbm: ops.updateBbm,
     addBbm: ops.addBbm,
     getBbm: ops.getBbm,
-    deleteBbm: ops.deleteBbm
+    deleteBbm: ops.deleteBbm,
+    changeNoTrans: ops.changeNoTrans
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(RevisiOps)

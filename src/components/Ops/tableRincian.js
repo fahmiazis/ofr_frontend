@@ -17,6 +17,7 @@ class TableRincian extends Component {
                         <th>COST CENTRE</th>
                         <th>NO COA</th>
                         <th>NAMA COA</th>
+                        <th>SUB COA</th>
                         <th>KETERANGAN TAMBAHAN</th>
                         <th>PERIODE</th>
                         <th>NILAI YANG DIAJUKAN</th>
@@ -28,12 +29,13 @@ class TableRincian extends Component {
                         <th>NOMOR NPWP</th>
                         <th>NAMA SESUAI KTP</th>
                         <th>NOMOR KTP</th>
+                        <th>Transaksi Ber PPN</th>
                         <th>DPP</th>
                         <th>PPN</th>
                         <th>PPh</th>
+                        <th>JENIS PPh</th>
                         <th>NILAI YANG DIBAYARKAN</th>
                         <th>TANGGAL TRANSFER</th>
-                        <th>JENIS PPh</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -44,23 +46,25 @@ class TableRincian extends Component {
                                 <th>{item.cost_center}</th>
                                 <th>{item.no_coa}</th>
                                 <th>{item.nama_coa}</th>
+                                <th>{item.sub_coa}</th>
                                 <th>{item.keterangan}</th>
                                 <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                 <th>{item.bank_tujuan}</th>
-                                <th>{item.norek_ajuan}</th>
+                                <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                 <th>{item.nama_tujuan}</th>
-                                <th>{item.status_npwp === 0 ? 'Tidak' : 'Ya'}</th>
-                                <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
-                                <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
+                                <th>{item.status_npwp === 1 ? 'Ya' : "Tidak"}</th>
+                                <th>{item.status_npwp === 1 ? item.nama_npwp : ''}</th>
+                                <th>{item.status_npwp === 1 ? item.no_npwp : ''}</th>
                                 <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
                                 <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                <th>{item.dpp}</th>
-                                <th>{item.ppn}</th>
-                                <th>{item.nilai_utang}</th>
-                                <th>{item.nilai_bayar}</th>
-                                <th>{item.tanggal_transfer}</th>
+                                <th>{item.type_transaksi}</th>
+                                <th>{item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                <th>(-){item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                 <th>{item.jenis_pph}</th>
+                                <th>{item.nilai_bayar === null ? item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                <th>{item.tanggal_transfer}</th>
                             </tr>
                             )
                         })}

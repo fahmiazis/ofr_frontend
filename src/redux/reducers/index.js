@@ -18,6 +18,7 @@ import email from './email'
 import vendor from './vendor'
 import kliring from './kliring'
 import faktur from './faktur'
+import shelfaktur from './shelfaktur'
 import kpp from './kpp'
 import finance from './finance'
 import picklaim from './picklaim'
@@ -54,6 +55,7 @@ export default combineReducers({
   email,
   vendor,
   faktur,
+  shelfaktur,
   kpp,
   kliring,
   finance,

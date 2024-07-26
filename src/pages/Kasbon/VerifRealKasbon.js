@@ -175,8 +175,8 @@ class VerifKasbon extends Component {
             typeniknpwp: '',
             type_kasbon: 'kasbon',
             time: 'pilih',
-            time1: moment().startOf('week').format('YYYY-MM-DD'),
-            time2: moment().format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            time2: moment().endOf('month').format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
             docCon: false,
@@ -687,7 +687,7 @@ class VerifKasbon extends Component {
             no: noTrans,
             list: listOps
         }
-        if (level === '4' || level === '14') {
+        if (level === '24' || level === '14') {
             await this.props.submitRealisasi(token, tempno)
             this.dataSendEmail('approve')
             // const cek = []
@@ -725,11 +725,11 @@ class VerifKasbon extends Component {
         }
         const tipeProses = val === 'reject' ? 'reject perbaikan'  : level === '2' ? 'verifikasi' : 'selesai'
         const tipeRoute = val === 'reject' ? 'realkasbon' : level === '2' ? 'verifrealkasbon' : 'realkasbon'
-        // const tipeMenu = level === '4' || level === '14' || level === '24' || level === '34' || level === '24' || level === '34' ? 'list ajuan bayar' : 'verifikasi ops'
+        // const tipeMenu = level === '4' || le2vel === '14' || level === '24' || level === '34' || level === '24' || level === '34' ? 'list ajuan bayar' : 'verifikasi ops'
         const tipeMenu = 'verifikasi realisasi kasbon'
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,
@@ -1133,7 +1133,7 @@ class VerifKasbon extends Component {
     cekDataDoc = () => {
         const { dataDoc, detailOps } = this.props.ops
         const level = localStorage.getItem("level")
-        if (level === '4' || level === '14') {
+        if (level === '24' || level === '14') {
             const tempdoc = []
             for (let i = 0; i < detailOps.length; i++) {
                 if (detailOps[i].typeniknpwp === 'manual' && (detailOps[i].new_ident === null || detailOps[i].new_ident === '')) {

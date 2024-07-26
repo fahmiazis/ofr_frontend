@@ -128,7 +128,7 @@ class AjuanBayarKlaim extends Component {
             subject: '',
             message: '',
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
         }
         this.onSetOpen = this.onSetOpen.bind(this);
@@ -917,7 +917,7 @@ class AjuanBayarKlaim extends Component {
         to.map(item => { return (tempto.push(item.email)) })
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: tempto.toString(),
             cc: tempcc.toString(),
             message: message,
@@ -1092,7 +1092,7 @@ class AjuanBayarKlaim extends Component {
     mcmExcel = async () => {
         const { detailKlaim } = this.props.klaim
         const nilai =  detailKlaim.reduce((accumulator, object) => {
-            return accumulator + parseInt(object.nilai_ajuan);
+            return accumulator + parseInt(object.nominal);
         }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
 
         const workbook = new ExcelJS.Workbook();
@@ -1160,7 +1160,7 @@ class AjuanBayarKlaim extends Component {
                 c4: '',
                 c5: '',
                 c6: 'IDR',
-                c7: item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                c7: item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c8: item.no_transaksi.slice(0, 19),
                 c9: '',
                 c10: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
@@ -1226,7 +1226,7 @@ class AjuanBayarKlaim extends Component {
     prosesModalMcm = () => {
         const { detailKlaim } = this.props.klaim
         const nilai =  detailKlaim.reduce((accumulator, object) => {
-            return accumulator + parseInt(object.nilai_ajuan);
+            return accumulator + parseInt(object.nominal);
         }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
         const tempData = [
             ["P", moment().format('YYYYMMDD'), "1300015005005", detailKlaim.length, nilai, "", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", ""]
@@ -1240,7 +1240,7 @@ class AjuanBayarKlaim extends Component {
                 "",
                 "",
                 "IDR",
-                item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 item.no_transaksi.slice(0, 19),
                 "",
                 item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
@@ -1674,7 +1674,7 @@ class AjuanBayarKlaim extends Component {
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
@@ -1772,7 +1772,7 @@ class AjuanBayarKlaim extends Component {
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
@@ -1784,7 +1784,7 @@ class AjuanBayarKlaim extends Component {
                                                 <th className='total' colSpan={7}>Total</th>
                                                 <th>
                                                     {detailKlaim.reduce((accumulator, object) => {
-                                                        return accumulator + parseInt(object.nilai_ajuan);
+                                                        return accumulator + parseInt(object.nominal);
                                                     }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                                 </th>
                                                 <th></th>
@@ -1960,7 +1960,7 @@ class AjuanBayarKlaim extends Component {
                                                 <th>{item.bank_tujuan}</th>
                                                 <th>{item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
-                                                <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
@@ -1997,7 +1997,7 @@ class AjuanBayarKlaim extends Component {
                                         <th >{detailKlaim.length}</th>
                                         <th >
                                             {detailKlaim.reduce((accumulator, object) => {
-                                                return accumulator + parseInt(object.nilai_ajuan);
+                                                return accumulator + parseInt(object.nominal);
                                             }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                         </th>
                                         <th ></th>
@@ -2048,7 +2048,7 @@ class AjuanBayarKlaim extends Component {
                                                 <th ></th>
                                                 <th ></th>
                                                 <th className='tabRep'>IDR</th>
-                                                <th className='tabRep'>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th className='tabRep'>{item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th >{item.no_transaksi.slice(0, 19)}</th>
                                                 <th ></th>
                                                 <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU'}</th>

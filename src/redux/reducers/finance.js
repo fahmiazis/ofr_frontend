@@ -18,7 +18,8 @@ const financeState = {
     link: '',
     dataAll: [],
     isAll: false,
-    isUpload: false,
+    isUpload: null,
+    isStruktur: null,
     allFinance: [],
     dataRek: [],
     isFinRek: false
@@ -218,7 +219,31 @@ export default (state=financeState, action) => {
                 return {
                     ...state,
                     isLoading: false,
-                    isError: true,
+                    isUpload: false,
+                    alertMsg: action.payload.response.data.message,
+                    alertUpload: action.payload.response.data.result
+                };
+            }
+            case 'UPLOAD_STRUKTUR_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting....'
+                };
+            }
+            case 'UPLOAD_STRUKTUR_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isStruktur: true,
+                    alertMsg: 'upload master Succesfully'
+                };
+            }
+            case 'UPLOAD_STRUKTUR_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isStruktur: false,
                     alertMsg: action.payload.response.data.message,
                     alertUpload: action.payload.response.data.result
                 };
@@ -257,7 +282,8 @@ export default (state=financeState, action) => {
                     isGet: false,
                     isExport: false,
                     isLoading: false,
-                    isUpload: false
+                    isUpload: null,
+                    isStruktur: null
                 }
             }
             default: {

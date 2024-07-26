@@ -107,7 +107,7 @@ const SidebarContent = props => {
             <FaTasks size={20} className="mr-2" />
             <text className={stile.txtSide}>Ikhtisar Kas Kecil</text>
         </button>
-        {(level === '4' || level === '14' || level === '5') && (
+        {(level === '4' || level === '14' || level === '5' || level === '1') && (
             <button 
             // className={level === '4' || level === '14' ? stile.btnSide : stile.marginSide} 
             className={stile.btnSide}
@@ -136,6 +136,10 @@ const SidebarContent = props => {
               <BsClipboardData size={20} className="mr-2"/>
               Master Faktur
             </button>
+            <button onClick={() => goHome('shelfaktur')} className={stile.btnSide}>
+              <BsClipboardData size={20} className="mr-2"/>
+              Data Faktur E-Invoice
+            </button>
             <button onClick={() => goHome('kpp')} className={stile.btnSide}>
               <BsClipboardData size={20} className="mr-2"/>
               Master Kpp
@@ -144,13 +148,13 @@ const SidebarContent = props => {
               <BsClipboardData size={20} className="mr-2"/>
               Master Taxcode
             </button>
+            <button onClick={() => goHome('tarif')} className={stile.btnSide}>
+              <FaTicketAlt size={20} className="mr-2"/>
+              Master Tarif
+            </button>
             <button onClick={() => goHome('vendor')} className={stile.btnSide}>
               <BsClipboardData size={20} className="mr-2"/>
               Master Vendor
-            </button>
-            <button onClick={() => goHome('tarif')} className={stile.btnSide}>
-              <FaTicketAlt size={20} className="mr-2"/>
-              Master VerifTax
             </button>
           </Collapse>
         ) : level === '101' ? (
@@ -221,6 +225,10 @@ const SidebarContent = props => {
               <BsClipboardData size={20} className="mr-2"/>
               Master Faktur
             </button>
+            <button onClick={() => goHome('shelfaktur')} className={stile.btnSide}>
+              <BsClipboardData size={20} className="mr-2"/>
+              Data Faktur E-Invoice
+            </button>
             <button onClick={() => goHome('finance')} className={stile.btnSide}>
               <BsClipboardData size={20} className="mr-2"/>
               Master Finance
@@ -270,6 +278,10 @@ const SidebarContent = props => {
               <BsClipboardData size={20} className="mr-2"/>
               Master Taxcode
             </button>
+            <button onClick={() => goHome('tarif')} className={stile.btnSide}>
+              <FaTicketAlt size={20} className="mr-2"/>
+              Master Tarif
+            </button>
             <button onClick={() => goHome('user')} className={stile.btnSide}>
               <FiUser size={20} className="mr-2"/>
               Master User
@@ -277,10 +289,6 @@ const SidebarContent = props => {
             <button onClick={() => goHome('vendor')} className={stile.btnSide}>
               <BsClipboardData size={20} className="mr-2"/>
               Master Vendor
-            </button>
-            <button onClick={() => goHome('tarif')} className={stile.btnSide}>
-              <FaTicketAlt size={20} className="mr-2"/>
-              Master VerifTax
             </button>
             
             <button onClick={() => goHome('reservoir')} className={stile.btnSide}>

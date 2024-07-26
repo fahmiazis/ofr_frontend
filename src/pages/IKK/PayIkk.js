@@ -130,7 +130,7 @@ class AjuanBayarIkk extends Component {
             subject: '',
             message: '',
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             dataZip: [],
         }

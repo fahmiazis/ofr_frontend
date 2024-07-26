@@ -40,6 +40,10 @@ class TableRincian extends Component {
     const { draftEmail } = this.props.email
     const statMail = this.props.statMail || ''
     const {dataResmail} = this.props.email
+
+    const listMut = this.props.cekData !== undefined ? this.props.cekData : []
+    const tipe = this.props.tipe !== undefined ? this.props.tipe : 'approve'
+
     return (
         <>
         <Formik
@@ -188,7 +192,31 @@ class TableRincian extends Component {
                         </tr>
                     </thead>
                     <tbody>
-                        {detailOps.length !== 0 && detailOps.map(item => {
+                        {tipe === 'reject' && detailOps.length !== 0 ? detailOps.filter((item) => listMut.find((x) => x === item.id) !== undefined).map((item, index) => {
+                            return (
+                                <tr>
+                                    <th scope="row">{index + 1}</th>
+                                    <th>{item.cost_center}</th>
+                                    <th>{item.no_coa}</th>
+                                    <th>{item.nama_coa}</th>
+                                    <th>{item.keterangan}</th>
+                                    <th>{item.start_ops !== null ? moment(item.start_ops).format('DD/MMMM/YYYY') : moment().format('DD/MMMM/YYYY')}</th>
+                                    <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                    <th>{item.bank_tujuan}</th>
+                                    <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
+                                    <th>{item.nama_tujuan}</th>
+                                    <th>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : ''}</th>
+                                    <th>{item.status_npwp === 1 ? item.nama_npwp : ''}</th>
+                                    <th>{item.status_npwp === 1 ? item.no_npwp : ''}</th>
+                                    <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
+                                    <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
+                                    <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                    <th>{item.tanggal_transfer}</th>
+                                    <th>{item.isreject === 1 ? 'reject' : '-'}</th>
+                                </tr>
+                            )
+                        })
+                        : detailOps.length !== 0 && detailOps.map(item => {
                             return (
                                 <tr>
                                     <th scope="row">{detailOps.indexOf(item) + 1}</th>
@@ -199,7 +227,7 @@ class TableRincian extends Component {
                                     <th>{item.start_ops !== null ? moment(item.start_ops).format('DD/MMMM/YYYY') : moment().format('DD/MMMM/YYYY')}</th>
                                     <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                     <th>{item.bank_tujuan}</th>
-                                    <th>{item.norek_ajuan}</th>
+                                    <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                     <th>{item.nama_tujuan}</th>
                                     <th>{item.status_npwp === 0 ? 'Tidak' : item.status_npwp === 1 ? 'Ya' : ''}</th>
                                     <th>{item.status_npwp === 1 ? item.nama_npwp : ''}</th>

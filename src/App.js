@@ -84,6 +84,7 @@ import MasterEmail from './pages/Master/MasterEmail'
 import MasterVendor from './pages/Master/MasterVendor'
 import MasterKliring from './pages/Master/MasterKliring'
 import MasterFaktur from './pages/Master/MasterFaktur'
+import MasterShelFaktur from './pages/Master/MasterShelFaktur'
 import MasterKpp from './pages/Master/MasterKpp'
 import MasterFinance from './pages/Master/MasterFinance'
 import MasterPicklaim from './pages/Master/MasterPicklaim'
@@ -315,6 +316,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/faktur'>
                     <MasterFaktur />
+                </PrivateRoute>
+                <PrivateRoute path='/shelfaktur'>
+                    <MasterShelFaktur />
                 </PrivateRoute>
                 <PrivateRoute path='/kpp'>
                     <MasterKpp />

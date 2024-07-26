@@ -35,6 +35,10 @@ export default {
         type: 'UPLOAD_FINANCE',
         payload: http(token).post(`/finance/master`, data)
     }),
+    uploadStruktur: (token, data) => ({
+        type: 'UPLOAD_STRUKTUR',
+        payload: http(token).post(`/finance/area`, data)
+    }),
     exportMaster: (token) => ({
         type: 'EXPORT_MASTER_FINANCE',
         payload: http(token).get(`/finance/export`)

@@ -67,7 +67,14 @@ const klaimState = {
     klaimOutlet: [],
     genPemb: null,
     noTransfer: '',
-    isFormKlaim: null
+    isFormKlaim: null,
+    isUploadFakturKl: null,
+    isUpdateFakturKl: null,
+    isAddFakturKl: null,
+    isGetFakturKl: null,
+    isDelFakturKl: null,
+    klaimFaktur: [],
+    depoKlaim: []
 };
 
 export default (state=klaimState, action) => {
@@ -112,6 +119,7 @@ export default (state=klaimState, action) => {
                     dataKlaim: action.payload.data.result,
                     noDis: action.payload.data.noDis,
                     newKlaim: action.payload.data.newKlaim,
+                    depoKlaim: action.payload.data.findDepo,
                     alertMsg: 'get coa Succesfully'
                 };
             }
@@ -937,6 +945,122 @@ export default (state=klaimState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
+            case 'DELETE_FAKTURKL_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DELETE_FAKTURKL_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDelFakturKl: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'DELETE_FAKTURKL_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDelFakturKl: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'GET_FAKTURKL_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GET_FAKTURKL_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetFakturKl: true,
+                    klaimFaktur: action.payload.data.result,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'GET_FAKTURKL_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetFakturKl: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'UPLOAD_FAKTURKL_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPLOAD_FAKTURKL_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUploadFakturKl: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'UPLOAD_FAKTURKL_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUploadFakturKl: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'UPDATE_FAKTURKL_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPDATE_FAKTURKL_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpdateFakturKl: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'UPDATE_FAKTURKL_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpdateFakturKl: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'ADD_FAKTURKL_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'ADD_FAKTURKL_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isAddFakturKl: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'ADD_FAKTURKL_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isAddFakturKl: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'RESET_KLAIM': {
                 return {
                     ...state,
@@ -968,6 +1092,11 @@ export default (state=klaimState, action) => {
                     isAddOut: null,
                     isGetOut: null,
                     isDelOut: null,
+                    isUploadFakturKl: null,
+                    isUpdateFakturKl: null,
+                    isAddFakturKl: null,
+                    isGetFakturKl: null,
+                    isDelFakturKl: null,
                     messUpload: [],
                     genPemb: null,
                     isFormKlaim: null

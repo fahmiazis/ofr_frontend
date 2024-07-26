@@ -87,7 +87,7 @@ class NavStock extends Component {
             this.setState({relog: true})
             this.props.reset()
         } else if (isError) {
-            this.showAlert()
+            // this.showAlert()
             this.props.reset()
         } else if (isChange) {
             this.openModalChange()

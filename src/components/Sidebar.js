@@ -67,7 +67,7 @@ function Sidebar(props) {
                     <FaTasks size={20} className="iconSide" />
                     <text className="txtMenu">Ikhtisar Kas Kecil</text>
                 </button>
-                {(level === '4' || level === '14' || level === '5') && (
+                {(level === '4' || level === '14' || level === '5' || level === '1') && (
                     <button className="menuSides" onClick={() => goHome('verifven')}>
                         <MdOutlineDomainVerification size={20} className="iconSide" />
                         <text className="txtMenu">Pengajuan Data Vendor</text>
@@ -75,8 +75,8 @@ function Sidebar(props) {
                 )}
                 {level === '1' || level === '101' || level === '102' || level === '103' ? (
                     <button className={stile.btnSide2} onClick={toggle}>
-                        <FaDatabase size={20} className="mr-3"/>
-                        Master
+                        <FaDatabase size={20} className="mr-4"/>
+                        <text>Master</text>
                         {/* {isOpen === true ? (
                         <MdKeyboardArrowDown size={20} className='arbtn' />
                         ) : (
@@ -92,6 +92,10 @@ function Sidebar(props) {
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Faktur
                         </button>
+                        <button onClick={() => goHome('shelfaktur')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Data Faktur E-Invoice
+                        </button>
                         <button onClick={() => goHome('kpp')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
                             Master KPP
@@ -100,13 +104,13 @@ function Sidebar(props) {
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Taxcode
                         </button>
+                        <button onClick={() => goHome('tarif')} className={stile.btnSide}>
+                            <FaTicketAlt size={20} className="mr-2"/>
+                            Master Tarif
+                        </button>
                         <button onClick={() => goHome('vendor')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Vendor
-                        </button>
-                        <button onClick={() => goHome('tarif')} className={stile.btnSide}>
-                            <FaTicketAlt size={20} className="mr-2"/>
-                            Master VerifTax
                         </button>
                     </Collapse>
                 ) : level === '101' ? (
@@ -177,6 +181,10 @@ function Sidebar(props) {
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Faktur
                         </button>
+                        <button onClick={() => goHome('shelfaktur')} className={stile.btnSide}>
+                            <BsClipboardData size={20} className="mr-2"/>
+                            Data Faktur E-Invoice
+                        </button>
                         <button onClick={() => goHome('finance')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Finance
@@ -225,6 +233,10 @@ function Sidebar(props) {
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Taxcode
                         </button>
+                        <button onClick={() => goHome('tarif')} className={stile.btnSide}>
+                            <FaTicketAlt size={20} className="mr-2"/>
+                            Master Tarif
+                        </button>
                         <button onClick={() => goHome('user')} className={stile.btnSide}>
                             <FiUser size={20} className="mr-2"/>
                             Master User
@@ -233,11 +245,6 @@ function Sidebar(props) {
                             <BsClipboardData size={20} className="mr-2"/>
                             Master Vendor
                         </button>
-                        <button onClick={() => goHome('tarif')} className={stile.btnSide}>
-                            <FaTicketAlt size={20} className="mr-2"/>
-                            Master VerifTax
-                        </button>
-                        
                         <button onClick={() => goHome('reservoir')} className={stile.btnSide}>
                             <BsClipboardData size={20} className="mr-2"/>
                             Reservoir

@@ -130,8 +130,8 @@ class VerifKasbon extends Component {
             message: '',
             subject: '',
             time: 'pilih',
-            time1: moment().startOf('week').format('YYYY-MM-DD'),
-            time2: moment().format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            time2: moment().endOf('month').format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
             dataZip: [],
@@ -717,10 +717,10 @@ class VerifKasbon extends Component {
         const tipeProses = val === 'reject' ? 'reject perbaikan'  : 'list ajuan bayar'
         const tipeRoute = val === 'reject' ? 'revops' : 'listops'
         // const tipeMenu = level === '4' || level === '14' || level === '24' || level === '34' || level === '24' || level === '34' ? 'list ajuan bayar' : 'verifikasi ops'
-        const tipeMenu = 'list ajuan bayar'
+        const tipeMenu = val === 'reject' ? 'verifikasi tax' : 'list ajuan bayar'
         const tempno = {
             draft: draftEmail,
-            nameTo: draftEmail.to.username,
+            nameTo: draftEmail.to.fullname,
             to: draftEmail.to.email,
             cc: tempcc.toString(),
             message: message,

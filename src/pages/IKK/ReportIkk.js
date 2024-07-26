@@ -126,7 +126,7 @@ class ReportIkk extends Component {
             modalDownload: false,
             titleDownload: '',
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             jurnalMap: [1, 2],
             isLoading: false

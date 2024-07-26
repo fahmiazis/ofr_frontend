@@ -46,7 +46,7 @@ export default function Bell({dataPass, color}) {
                 <BsBell size={30} className={color === undefined ? 'white' : color} />
                 {dataAllNotif.length > 0 && dataAllNotif.find(({status}) => status === null) !== undefined ? (
                     // <BsFillCircleFill className="red ball" size={10} />
-                    <div className="white divNotif">{dataAllNotif.filter(e => e.status === null).length}</div>
+                    <div className={`white divNotif ${dataAllNotif.filter(e => e.status === null).length >= 100 ? 'sizeNotif2' : 'sizeNotif'}`}>{dataAllNotif.filter(e => e.status === null).length}</div>
                 ) : (
                     <div></div>
                 ) }

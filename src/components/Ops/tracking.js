@@ -98,15 +98,19 @@ class Tracking extends Component {
                     </div>
                     <h4 class="step-title">Verifikasi Finance</h4>
                 </div>
-                <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
-                    <div class="step-icon-wrap">
-                        <button class="step-icon" onClick={() => this.showCollap('Verifikasi Tax')}><FiSettings size={40} className="center" /></button>
+                {detailOps[0].type_kasbon === 'kasbon' && detailOps.find((item) => item.jenis_pph !== 'Non PPh') !== undefined ? (
+                    <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 4 ? "step completed" : 'step'}>
+                        <div class="step-icon-wrap">
+                            <button class="step-icon" onClick={() => this.showCollap('Verifikasi Tax')}><FiSettings size={40} className="center" /></button>
+                        </div>
+                        <h4 class="step-title">Verifikasi Tax</h4>
                     </div>
-                    <h4 class="step-title">Verifikasi Tax</h4>
-                </div>
+                ) : (
+                    null
+                )}
                 <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 5 ? "step completed" : 'step'}>
                     <div class="step-icon-wrap">
-                        <button class="step-icon" onClick={() => this.showCollap('Verifikasi Tax')}><FiSettings size={40} className="center" /></button>
+                        <button class="step-icon" onClick={() => this.showCollap('Draft List Ajuan Bayar')}><FiSettings size={40} className="center" /></button>
                     </div>
                     <h4 class="step-title">Draft List Ajuan Bayar</h4>
                 </div>
@@ -116,7 +120,13 @@ class Tracking extends Component {
                     </div>
                     <h4 class="step-title">Approval List Ajuan Bayar</h4>
                 </div>
-                <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi >= 7 ? "step completed" : 'step'}>
+                <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 7 ? "step completed" : 'step'}>
+                    <div class="step-icon-wrap">
+                        <button class="step-icon" onClick={() => this.showCollap('Pembayaran List Ajuan')}><MdAssignment size={40} className="center" /></button>
+                    </div>
+                    <h4 class="step-title">Pembayaran List Ajuan</h4>
+                </div>
+                <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi >= 8 ? "step completed" : 'step'}>
                     <div class="step-icon-wrap">
                         <button class="step-icon"><AiOutlineCheck size={40} className="center" /></button>
                     </div>
@@ -168,7 +178,7 @@ class Tracking extends Component {
                                             <th>{moment(item.periode_awal).format('DD/MMMM/YYYY')} - {moment(item.periode_akhir).format('DD/MMMM/YYYY')}</th>
                                             <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                             <th>{item.bank_tujuan}</th>
-                                            <th>{item.norek_ajuan}</th>
+                                            <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                             <th>{item.nama_tujuan}</th>
                                             <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
                                             <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
@@ -247,7 +257,7 @@ class Tracking extends Component {
                                             <h4 class="step-title">Selesai</h4>
                                         </div>
                                     </div>
-                                ) : this.state.tipeCol === 'Approval List Ajuan Bayar' && (
+                                ) : this.state.tipeCol === 'Approval List Ajuan Bayar' ? (
                                     <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
                                         {detailOps[0].appList !== undefined && detailOps[0].appList.length && detailOps[0].appList.slice(0).reverse().map(item => {
                                             return (
@@ -260,6 +270,21 @@ class Tracking extends Component {
                                                 </div>
                                             )
                                         })}
+                                    </div>
+                                ) : this.state.tipeCol === 'Pembayaran List Ajuan' && (
+                                    <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
+                                        <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 7 ? "step completed" : 'step'}>
+                                            <div class="step-icon-wrap">
+                                            <button class="step-icon" ><FaFileSignature size={30} className="center2" /></button>
+                                            </div>
+                                            <h4 class="step-title">Submit Bukti Bayar</h4>
+                                        </div>
+                                        <div class={detailOps[0] === undefined ? 'step' : detailOps[0].status_transaksi > 5 ? "step completed" : 'step'}>
+                                            <div class="step-icon-wrap">
+                                            <button class="step-icon" ><AiOutlineCheck size={30} className="center2" /></button>
+                                            </div>
+                                            <h4 class="step-title">Selesai</h4>
+                                        </div>
                                     </div>
                                 )}
                             </div>

@@ -40,6 +40,9 @@ class TableRincian extends Component {
     const { draftEmail } = this.props.email
     const statMail = this.props.statMail || ''
     const {dataResmail} = this.props.email
+
+    const listMut = this.props.cekData !== undefined ? this.props.cekData : []
+    const tipe = this.props.tipe !== undefined ? this.props.tipe : 'approve'
     return (
         <>
         <Formik
@@ -186,7 +189,29 @@ class TableRincian extends Component {
                         </tr>
                     </thead>
                     <tbody>
-                        {detailKlaim.length !== 0 && detailKlaim.map(item => {
+                        {tipe === 'reject' && detailKlaim.length !== 0 ? detailKlaim.filter((item) => listMut.find((x) => x === item.id) !== undefined).map((item, index) => {
+                            return (
+                                <tr>
+                                    <th scope="row">{index + 1}</th>
+                                    <th>{item.cost_center}</th>
+                                    <th>{item.no_coa}</th>
+                                    <th>{item.nama_coa}</th>
+                                    <th>{item.keterangan}</th>
+                                    <th>{item.start_klaim !== null ? moment(item.start_klaim).format('DD/MMMM/YYYY') : moment().format('DD/MMMM/YYYY')}</th>
+                                    <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                    <th>{item.bank_tujuan}</th>
+                                    <th>{item.norek_ajuan}</th>
+                                    <th>{item.nama_tujuan}</th>
+                                    {/* <th>{item.status_npwp === 0 ? '' : 'Ya'}</th>
+                                    <th>{item.status_npwp === 0 ? '' : item.nama_npwp}</th>
+                                    <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th> */}
+                                    <th>{item.nilai_bayar}</th>
+                                    <th>{item.tanggal_transfer}</th>
+                                    <th>{item.isreject === 1 ? 'reject' : '-'}</th>
+                                </tr>
+                            )
+                        }) 
+                        : detailKlaim.length !== 0 && detailKlaim.map(item => {
                             return (
                                 <tr>
                                     <th scope="row">{detailKlaim.indexOf(item) + 1}</th>

@@ -35,13 +35,13 @@ export default {
         type: 'SUBMIT_OPSFINAL',
         payload: http(token).patch(`/ops/subfinops`, qs.stringify(no))
     }),
-    getOps: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search) => ({
+    getOps: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search, jentrans, desttf, depo) => ({
         type: 'GET_OPS',
-        payload: http(token).get(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${kasbon}&realisasi=${realisasi}&search=${search === undefined ? '' : search}`),
+        payload: http(token).patch(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${kasbon}&realisasi=${realisasi}&search=${search === undefined ? '' : search}&jentrans=${jentrans}&desttf=${desttf}`, data={depo: depo}),
     }),
-    getKasbon: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search) => ({
+    getKasbon: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search, depo) => ({
         type: 'GET_KASBON',
-        payload: http(token).get(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${'kasbon'}&realisasi=${realisasi}&search=${search === undefined ? '' : search}`),
+        payload: http(token).patch(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${'kasbon'}&realisasi=${realisasi}&search=${search === undefined ? '' : search}`, data={depo: depo}),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_OPS',
@@ -82,6 +82,10 @@ export default {
     confirmNewIdent: (token, id) => ({
         type: 'CONFIRM_IDENT',
         payload: http(token).patch(`/ops/confident/${id}`)
+    }),
+    changeNoTrans: (token, data) => ({
+        type: 'CHANGE_NOTRANS',
+        payload: http(token).patch(`/ops/changeno`, qs.stringify(data))
     }),
     submitRevisi: (token, data) => ({
         type: 'SUBMIT_REVISI',

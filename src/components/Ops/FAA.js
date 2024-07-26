@@ -9,6 +9,16 @@ import ExcelJS from "exceljs";
 import fs from "file-saver";
 
 class FAA extends Component {
+
+    state = {
+        totalfpd: 0,
+        totDpp: 0,
+        totPpn: 0,
+        totPph: 0,
+        totPay: 0,
+        arrTes: "e printing on mobile browsers should work, printing within a WebView",
+    }
+
     async componentDidMount() {
         const dataCek = localStorage.getItem('printData')
         if (dataCek !== undefined && dataCek !== null) {
@@ -21,23 +31,52 @@ class FAA extends Component {
 
             const {detailOps} = this.props.ops
             let total = 0
+            let totDpp = 0
+            let totPpn = 0
+            let totPph = 0
+            let totPay = 0
             for (let i = 0; i < detailOps.length; i++) {
                 total += parseInt(detailOps[i].nilai_ajuan)
+                totDpp += parseInt(detailOps[i].dpp)
+                totPpn += parseInt(detailOps[i].ppn)
+                totPph += parseInt(detailOps[i].nilai_utang)
+                totPay += parseInt(detailOps[i].nilai_bayar)
             }
-            this.setState({totalfpd: total})
+            this.setState({
+                totalfpd: total,
+                totDpp: totDpp,
+                totPpn: totPpn,
+                totPph: totPph,
+                totPay: totPay
+            })
             this.downloadForm()
         } else {
             const {detailOps} = this.props.ops
             let total = 0
+            let totDpp = 0
+            let totPpn = 0
+            let totPph = 0
+            let totPay = 0
             for (let i = 0; i < detailOps.length; i++) {
                 total += parseInt(detailOps[i].nilai_ajuan)
+                totDpp += detailOps[i].dpp === null || detailOps[i].dpp === undefined ? 0 : parseInt(detailOps[i].dpp)
+                totPpn += detailOps[i].ppn === null || detailOps[i].ppn === undefined ? 0 : parseInt(detailOps[i].ppn)
+                totPph += detailOps[i].nilai_utang === null || detailOps[i].nilai_utang === undefined ? 0 : parseInt(detailOps[i].nilai_utang)
+                totPay += detailOps[i].nilai_bayar === null || detailOps[i].nilai_bayar === undefined ? 0 : parseInt(detailOps[i].nilai_bayar)
             }
-            this.setState({totalfpd: total})
+            this.setState({
+                totalfpd: total,
+                totDpp: totDpp,
+                totPpn: totPpn,
+                totPph: totPph,
+                totPay: totPay
+            })
         }
     }
 
     downloadForm = () => {
         const { detailOps, ttdOps } = this.props.ops
+        const { totalfpd, totDpp, totPpn, totPph, totPay } = this.state
         
         const alpha = Array.from(Array(26)).map((e, i) => i + 65)
         const alphabet = alpha.map((x) => String.fromCharCode(x))
@@ -46,12 +85,18 @@ class FAA extends Component {
         const str3 = 'L'
 
         const workbook = new ExcelJS.Workbook();
-        const ws = workbook.addWorksheet('form ajuan area')
+        const ws = workbook.addWorksheet('form ajuan area', {
+            pageSetup: { orientation:'landscape', paperSize: 8 }
+        })
         const borderStyles = {
             top: {style:'thin'},
             left: {style:'thin'},
             bottom: {style:'thin'},
             right: {style:'thin'}
+        }
+
+        const fontStyle = {
+            size: 16
         }
 
         ws.addRow(['', 'FORM AJUAN AREA'])
@@ -65,21 +110,28 @@ class FAA extends Component {
         detailOps.map((item, index) => { 
             return (
                 dataRow.push([
-                    index + 1, 
-                    item.cost_center, 
-                    item.no_coa, 
-                    item.nama_coa, 
-                    item.keterangan, 
-                    `${moment(item.periode_awal).format('DD/MMMM/YYYY')} - ${moment(item.periode_akhir).format('DD/MMMM/YYYY')}`, 
-                    item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."), 
+                    index + 1,
+                    item.cost_center,
+                    item.no_coa,
+                    item.nama_coa,
+                    item.sub_coa,
+                    item.keterangan,
+                    item.periode_awal === null ? '' : `${moment(item.periode_awal).format('DD MMMM YYYY')} - ${moment(item.periode_akhir).format('DD MMMM YYYY')}`,
+                    item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                     item.bank_tujuan,
-                    item.norek_ajuan,
+                    item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan,
                     item.nama_tujuan,
-                    item.ppu,
-                    item.pa,
-                    item.nominal,
-                    item.nilai_bayar,
-                    moment(item.tanggal_transfer).format('DD/MMMM/YYYY')
+                    item.status_npwp === 1 ? 'Ya' : "Tidak",
+                    item.status_npwp === 1 ? item.nama_npwp : '',
+                    item.status_npwp === 1 ? item.no_npwp : '',
+                    item.status_npwp === 0 ? item.nama_ktp : '',
+                    item.status_npwp === 0 ? item.no_ktp : '',
+                    item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    item.ppn === null || item.ppn === undefined ? 0 : item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    item.nilai_utang === null || item.nilai_utang === undefined ? 0 : item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    item.jenis_pph,
+                    item.nilai_bayar  === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    item.tanggal_transfer === null ? '-' : moment(item.tanggal_transfer).format('DD MMMM YYYY')
                 ])
             )
         })
@@ -98,15 +150,22 @@ class FAA extends Component {
                 {name: 'COST CENTRE'},
                 {name: 'NO COA'},
                 {name: 'NAMA COA'},
+                {name: 'SUB COA'},
                 {name: 'KETERANGAN TAMBAHAN'},
                 {name: 'PERIODE'},
                 {name: 'NILAI YANG DIAJUKAN'},
                 {name: 'BANK'},
                 {name: 'NOMOR REKENING'},
                 {name: 'ATAS NAMA'},
-                {name: 'PPU'},
-                {name: 'PA'},
-                {name: 'NOMINAL VERIFIKASI'},
+                {name: 'MEMILIKI NPWP'},
+                {name: 'NAMA NPWP'},
+                {name: 'NOMOR NPWP'},
+                {name: 'NAMA KTP'},
+                {name: 'NOMOR KTP'},
+                {name: 'DPP'},
+                {name: 'PPN'},
+                {name: 'PPh'},
+                {name: 'JENIS PPh'},
                 {name: 'NILAI YANG DIBAYARKAN'},
                 {name: 'TANGGAL TRANSFER'}
             ],
@@ -117,15 +176,53 @@ class FAA extends Component {
             const lengths = column.values.map(v => v.toString().length)
             const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
             if (index === 0) {    
-                column.width = maxLength
+                column.width = maxLength + (maxLength * 0.5) + 2
             } else if (ws.columns.length - 1 === index || ws.columns.length - 2 === index) {
-                column.width = maxLength + 15
+                column.width = maxLength + (maxLength * 0.5) + 15
             } else {
-                column.width = maxLength + 5
+                column.width = maxLength + (maxLength * 0.5) + 5
             }
+            // column.width = maxLength + 5
         })
+
+        const totRow = 9 + dataRow.length
         
-        ws.addRow()
+        ws.mergeCells(`A${totRow}`, `G${totRow}`)
+        ws.getCell(`A${totRow}`).value = 'Total'
+
+        ws.getCell(`A${totRow}`).alignment = { 
+            horizontal:'center', 
+            wrapText: true, 
+            vertical: 'middle'
+        }
+
+        ws.getCell(`A${totRow}`).border = { 
+            ...borderStyles
+        }
+
+        ws.getCell(`H${totRow}`).value = totalfpd.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+        ws.getCell(`Q${totRow}`).value = totDpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+        ws.getCell(`R${totRow}`).value = totPpn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+        ws.getCell(`S${totRow}`).value = totPph.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+        ws.getCell(`U${totRow}`).value = totPay.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+
+
+        ws.getCell(`H${totRow}`).border = { 
+            ...borderStyles
+        }
+        ws.getCell(`Q${totRow}`).border = { 
+            ...borderStyles
+        }
+        ws.getCell(`R${totRow}`).border = { 
+            ...borderStyles
+        }
+        ws.getCell(`S${totRow}`).border = { 
+            ...borderStyles
+        }
+        ws.getCell(`U${totRow}`).border = { 
+            ...borderStyles
+        }
+
         const sumRow = 11 + dataRow.length
         const headRow = 1 + sumRow
         const mainRow = 3 + sumRow
@@ -289,6 +386,12 @@ class FAA extends Component {
                     ...borderStyles
                 }
             }
+        })
+
+        ws.eachRow({ includeEmpty: true }, function (row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function (cell, colNumber) {
+                cell.font = fontStyle
+            })
         })
 
         workbook.xlsx.writeBuffer().then(function(buffer) {

@@ -35,6 +35,10 @@ export default {
         type: 'EXPORT_MASTER_FAKTUR',
         payload: http(token).get(`/faktur/export`)
     }),
+    deleteRaw: (token, data) => ({
+        type: 'DELETE_RAW',
+        payload: http(token).patch(`/faktur/delraw`, data)
+    }),
     nextPage: (token, link) => ({
         type: 'NEXT_DATA_FAKTUR',
         payload: http(token).get(`${link}`)

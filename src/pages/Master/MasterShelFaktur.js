@@ -1,13 +1,13 @@
 import React, { Component } from 'react'
 import {  NavbarBrand, DropdownToggle, DropdownMenu,
     DropdownItem, Table, ButtonDropdown, Input, Button,
-    Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
+    Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown, Row, Col} from 'reactstrap'
 import style from '../../assets/css/input.module.css'
-import {FaSearch, FaCoaCircle, FaBars} from 'react-icons/fa'
-import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
+import {FaSearch, FaBars} from 'react-icons/fa'
+import {AiFillCheckCircle, AiOutlineFileExcel, AiOutlineClose} from 'react-icons/ai'
 import depo from '../../redux/actions/depo'
 import user from '../../redux/actions/user'
-import coa from '../../redux/actions/coa'
+import shelfaktur from '../../redux/actions/shelfaktur'
 import {connect} from 'react-redux'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
@@ -16,32 +16,42 @@ import {default as axios} from 'axios'
 import Sidebar from "../../components/Header";
 import MaterialTitlePanel from "../../components/material_title_panel";
 import SidebarContent from "../../components/sidebar_content";
-import NavBar from '../../components/NavBar'
 import moment from 'moment'
+import NavBar from '../../components/NavBar'
 import ExcelJS from "exceljs"
 import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 
-const coaSchema = Yup.object().shape({
-    no_coa: Yup.number().required(),
-    nama_coa: Yup.string().required(),
-    nama_subcoa: Yup.string().required(),
-    tipe: Yup.string().required()
+const fakturSchema = Yup.object().shape({
+    no_faktur: Yup.string().required(),
+    tgl_faktur: Yup.date().required(),
+    npwp: Yup.string().required(),
+    nama: Yup.string().required(),
+    jumlah_dpp: Yup.string().required(),
+    jumlah_ppn: Yup.string().required()
 });
 
-const coaEditSchema = Yup.object().shape({
-    no_coa: Yup.number().required(),
-    nama_coa: Yup.string().required(),
-    nama_subcoa: Yup.string().required(),
-    tipe: Yup.string().required()
+const fakturEditSchema = Yup.object().shape({
+    no_faktur: Yup.string().required(),
+    tgl_faktur: Yup.date().required(),
+    npwp: Yup.string().required(),
+    nama: Yup.string().required(),
+    jumlah_dpp: Yup.string().required(),
+    jumlah_ppn: Yup.string().required()
 });
+
+const filterSchema = Yup.object().shape({
+    no_faktur:  Yup.string(),
+    date1: Yup.date(),
+    date2: Yup.date()
+})
 
 const changeSchema = Yup.object().shape({
     confirm_password: Yup.string().required('must be filled'),
     new_password: Yup.string().required('must be filled')
 });
 
-class MasterCoa extends Component {
+class MasterFaktur extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -78,15 +88,58 @@ class MasterCoa extends Component {
             filterName: 'All',
             modalDel: false,
             page: 1,
-            listData: []
+            listData: [],
+            openSync: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
     }
 
+    downloadTemplate = () => {
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data klaim')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [					
+            {header: 'NOMOR_FAKTUR', key: 'c1'},
+            {header: 'TANGGAL_FAKTUR', key: 'c2'},
+            {header: 'NPWP', key: 'c3'},
+            {header: 'NAMA', key: 'c4'},
+            {header: 'JUMLAH_DPP', key: 'c5'},
+            {header: 'JUMLAH_PPN', key: 'c6'},
+        ]
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+                cell.border = borderStyles;
+            })
+        })
+
+        ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+                new Blob([buffer], { type: "application/octet-stream" }),
+                `Template upload faktur ${moment().format('DD MMMM YYYY')}.xlsx`
+            )
+        })
+    }
+
     chekApp = (val) => {
         const { listData } = this.state
-        const {dataAll} = this.props.coa
+        const {dataAll} = this.props.shelfaktur
         if (val === 'all') {
             const data = []
             for (let i = 0; i < dataAll.length; i++) {
@@ -119,7 +172,7 @@ class MasterCoa extends Component {
 
     downloadData = () => {
         const {listData} = this.state
-        const {dataAll} = this.props.coa
+        const {dataAll} = this.props.shelfaktur
         const dataDownload = []
         for (let i = 0; i < listData.length; i++) {
             for (let j = 0; j < dataAll.length; j++) {
@@ -130,7 +183,7 @@ class MasterCoa extends Component {
         }
 
         const workbook = new ExcelJS.Workbook();
-        const ws = workbook.addWorksheet('data user')
+        const ws = workbook.addWorksheet('data')
 
         // await ws.protect('F1n4NcePm4')
 
@@ -143,18 +196,22 @@ class MasterCoa extends Component {
         
 
         ws.columns = [
-            {header: 'No COA', key: 'c1'},
-            {header: 'Nama COA', key: 'c2'},
-            {header: 'Nama SUB COA', key: 'c3'},
-            {header: 'Tipe', key: 'c4'}
+            {header: 'NOMOR_FAKTUR', key: 'c1'},
+            {header: 'TANGGAL_FAKTUR', key: 'c2'},
+            // {header: 'NPWP', key: 'c3'},
+            {header: 'NAMA', key: 'c4'},
+            {header: 'JUMLAH_DPP', key: 'c5'},
+            {header: 'JUMLAH_PPN', key: 'c6'},
         ]
 
         dataDownload.map((item, index) => { return ( ws.addRow(
             {
-                c1: item.no_coa,
-                c2: item.nama_coa,
-                c3: item.nama_subcoa,
-                c4: item.tipe
+                c1: item.no_faktur,
+                c2: moment(item.tgl_faktur).format('DD/MM/YYYY'),
+                // c3: item.npwp,
+                c4: item.nama,
+                c5: item.jumlah_dpp,
+                c6: item.jumlah_ppn,
             }
         )
         ) })
@@ -174,7 +231,7 @@ class MasterCoa extends Component {
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
               new Blob([buffer], { type: "application/octet-stream" }),
-              `Master COA ${moment().format('DD MMMM YYYY')}.xlsx`
+              `Data Faktur ${moment().format('DD MMMM YYYY')}.xlsx`
             );
           });
     }
@@ -208,7 +265,7 @@ class MasterCoa extends Component {
      }
 
     DownloadMaster = () => {
-        const {link} = this.props.coa
+        const {link} = this.props.shelfaktur
         axios({
             url: `${link}`,
             method: 'GET',
@@ -217,7 +274,7 @@ class MasterCoa extends Component {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master coa.xlsx"); //or any other extension
+            link.setAttribute('download', "master faktur.xlsx"); //or any other extension
             document.body.appendChild(link);
             link.click();
         });
@@ -244,6 +301,7 @@ class MasterCoa extends Component {
         this.setState({modalAdd: !this.state.modalAdd})
     }
     openModalEdit = () => {
+        console.log(this.state.detail)
         this.setState({modalEdit: !this.state.modalEdit})
     }
     openModalUpload = () => {
@@ -253,25 +311,38 @@ class MasterCoa extends Component {
         this.setState({modalUpload: !this.state.modalUpload})
     }
 
+    prosesSync = async (val) => {
+        const token = localStorage.getItem("token")
+        await this.props.syncFaktur(token, val.type_faktur, val.no_faktur, val.date1, val.date2)
+        this.setState({confirm: 'sync'})
+        this.openConfirm()
+        this.openModsync()
+        this.getDataCount({limit: this.state.limit, search: this.state.search, filter: this.state.filter, page: 1})
+    }
+
+    openModsync = () => {
+        this.setState({openSync: !this.state.openSync})
+    }
+
     DownloadTemplate = () => {
         axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/coa.xlsx`,
+            url: `${REACT_APP_BACKEND_URL}/masters/faktur.xlsx`,
             method: 'GET',
             responseType: 'blob',
         }).then((response) => {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', "master coa.xlsx");
+            link.setAttribute('download', "template faktur.xlsx");
             document.body.appendChild(link);
             link.click();
         });
     }
 
-    addCoa = async (values) => {
+    addFaktur = async (values) => {
         const token = localStorage.getItem("token")
-        await this.props.addCoa(token, values)
-        const {isAdd} = this.props.coa
+        await this.props.addFaktur(token, values)
+        const {isAdd} = this.props.shelfaktur
         if (isAdd) {
             this.setState({confirm: 'add'})
             this.openConfirm()
@@ -280,10 +351,10 @@ class MasterCoa extends Component {
         }
     }
 
-    delCoa = async () => {
+    delFaktur = async () => {
         const token = localStorage.getItem("token")
         const {detail} = this.state
-        await this.props.deleteCoa(token, detail.id)
+        await this.props.deleteFaktur(token, detail.id)
         this.openModalEdit()
         this.setState({confirm: 'del'})
         this.openConfirm()
@@ -292,13 +363,13 @@ class MasterCoa extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.coa
+        const { page } = this.props.shelfaktur
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.coa
+        const { page } = this.props.shelfaktur
         const token = localStorage.getItem('token')
         await this.props.nextPage(token, page.prevLink)
     }
@@ -330,10 +401,10 @@ class MasterCoa extends Component {
         await this.props.uploadMaster(token, data)
     }
 
-    editCoa = async (values, id) => {
+    editFaktur = async (values, id) => {
         const token = localStorage.getItem("token")
-        await this.props.updateCoa(token, values, id)
-        const {isUpdate} = this.props.coa
+        await this.props.updateFaktur(token, values, id)
+        const {isUpdate} = this.props.shelfaktur
         if (isUpdate) {
             this.setState({confirm: 'edit'})
             this.openConfirm()
@@ -348,7 +419,7 @@ class MasterCoa extends Component {
     }
 
     componentDidUpdate() {
-        const {isError, isUpload, isExport, isReset} = this.props.coa
+        const {isError, isUpload, isExport, isReset, isGet} = this.props.shelfaktur
         if (isError) {
             this.props.resetError()
             this.showAlert()
@@ -368,6 +439,11 @@ class MasterCoa extends Component {
         } else if (isExport) {
             this.DownloadMaster()
             this.props.resetError()
+        } if (isGet === false) {
+            console.log('masuk else')
+            this.setState({confirm: 'syncfalse'})
+            this.openConfirm()
+            this.props.resetError()
         }
     }
 
@@ -377,14 +453,14 @@ class MasterCoa extends Component {
     }
 
     getDataCount = async (value) => {
-        const { page } = this.props.coa
+        const { page } = this.props.shelfaktur
         const pages = value === undefined || value.page === undefined ? page.currentPage : value.page
         const token = localStorage.getItem("token")
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
         const filter = value === undefined || value.filter === undefined ? this.state.filter : value.filter
         console.log(this.state.filter)
-        await this.props.getCoa(token, limit, search, pages, filter)
+        await this.props.getShelfaktur(token, limit, search, pages, filter)
         this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages})
     }
 
@@ -412,7 +488,7 @@ class MasterCoa extends Component {
 
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg, listData} = this.state
-        const {dataCoa, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.coa
+        const {dataFaktur, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.shelfaktur
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
 
@@ -462,7 +538,7 @@ class MasterCoa extends Component {
                             </Alert>
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master COA Klaim</div>
+                                    <div className={style.titleDashboard}>Data Faktur E-Invoice</div>
                                 </div>
                                 <div className={style.secHeadDashboard} >
                                     <div>
@@ -475,11 +551,12 @@ class MasterCoa extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
                                     </div>
-                                    <div className='filterCoa'>
+                                    <div className='filterFaktur'>
                                         {/* <text className='mr-2'>Filter:</text>
                                         <UncontrolledDropdown className={style.drop}>
                                             <DropdownToggle caret color="light">
@@ -515,8 +592,8 @@ class MasterCoa extends Component {
                                 </div>
                                 <div className='secEmail'>
                                     <div className={style.headEmail}>
-                                        <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
-                                        <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
+                                        {/* <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button> */}
+                                        <Button className='mr-1' onClick={this.openModsync} color="warning" size="lg">Synchronize</Button>
                                         <Button className='mr-1' onClick={this.downloadData} color="success" size="lg">Download</Button>
                                     </div>
                                     <div className={style.searchEmail}>
@@ -531,25 +608,23 @@ class MasterCoa extends Component {
                                         </Input>
                                     </div>
                                 </div>
-                                {isAll === false ? (
+                                {dataAll.length === 0 ? (
                                     <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
-                                                <th>No</th>
-                                                <th>No COA</th>
-                                                <th>Nama COA</th>
-                                                <th>Nama SUB COA</th>
-                                                <th>Tipe</th>
+                                                <th>NO</th>
+                                                <th>NO FAKTUR</th>
+                                                <th>TGL FAKTUR</th>
+                                                {/* <th>NPWP</th> */}
+                                                <th>NAMA</th>
+                                                <th>JUMLAH DPP</th>
+                                                <th>JUMLAH PPN</th>
                                             </tr>
                                         </thead>
                                     </Table>
                                         <div className={style.spin}>
-                                            <Spinner type="grow" color="primary"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="success"/>
-                                            <Spinner type="grow" color="warning"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="danger"/>
-                                            <Spinner type="grow" color="info"/>
+                                            Data tidak ditemukan
                                         </div>
                                     </div>
                                 ) : (
@@ -566,29 +641,51 @@ class MasterCoa extends Component {
                                                     />
                                                     {/* Select */}
                                                 </th>
-                                                <th>No</th>
-                                                <th>No COA</th>
-                                                <th>Nama COA</th>
-                                                <th>Nama SUB COA</th>
-                                                <th>Tipe</th>
+                                                <th>NO</th>
+                                                <th>NO FAKTUR</th>
+                                                <th>TGL FAKTUR</th>
+                                                {/* <th>NPWP</th> */}
+                                                <th>NAMA</th>
+                                                <th>JUMLAH DPP</th>
+                                                <th>JUMLAH PPN</th>
+                                                {/* <th>STATUS</th> */}
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {dataAll.length !== 0 && dataAll.map(item => {
                                                 return (
-                                                <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
+                                                <tr >
                                                     <th>
-                                                        <input 
+                                                        <input  
+                                                        className='mr-2'
                                                         type='checkbox'
-                                                        checked={listData.find(element => element === item.id) !== undefined ? true : false}
-                                                        onChange={listData.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                        checked={listData.length === 0 ? false : listData.length === dataAll.length ? true : false}
+                                                        onChange={() => listData.length === dataAll.length ? this.chekRej('all') : this.chekApp('all')}
                                                         />
+                                                        {/* Select */}
                                                     </th>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
-                                                    <td>{item.no_coa}</td>
-                                                    <td>{item.nama_coa}</td>
-                                                    <td>{item.nama_subcoa}</td>
-                                                    <td>{item.tipe}</td>
+                                                    <td>{item.no_faktur}</td>
+                                                    <td>{moment(item.tgl_faktur).format('DD/MM/YYYY')}</td>
+                                                    {/* <td>{item.npwp}</td> */}
+                                                    <td>{item.nama}</td>
+                                                    <td>{item.jumlah_dpp}</td>
+                                                    <td>{item.jumlah_ppn}</td>
+                                                    {/* <td>
+                                                        {item.status !== null ? 'used' 
+                                                        : Math.floor(Math.abs(moment().format('M') - moment(item.tgl_faktur).format('M'))) > 3 ? 'expired'
+                                                        : 'available'
+                                                        }
+                                                    </td> */}
+                                                    <td className='rowCenter'>
+                                                        <Button 
+                                                        onClick={()=>this.openModalEdit(this.setState({detail: item}))} 
+                                                        className='mb-1 mr-1' 
+                                                        color='success'>
+                                                            Detail
+                                                        </Button>
+                                                    </td>
                                                 </tr>
                                             )})}
                                         </tbody>
@@ -609,88 +706,119 @@ class MasterCoa extends Component {
                     </MaterialTitlePanel>
                 </Sidebar>
                 <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
-                    <ModalHeader toggle={this.openModalAdd}>Add Master Coa</ModalHeader>
+                    <ModalHeader toggle={this.openModalAdd}>Add Master Faktur</ModalHeader>
                     <Formik
                     initialValues={{
-                        no_coa: '',
-                        nama_coa: '',
-                        nama_subcoa: '',
-                        tipe: ''
+                        no_faktur: '',
+                        tgl_faktur: '',
+                        npwp: '',
+                        nama: '',
+                        jumlah_dpp: '',
+                        jumlah_ppn: ''
                     }}
-                    validationSchema={coaSchema}
-                    onSubmit={(values) => {this.addCoa(values)}}
+                    validationSchema={fakturSchema}
+                    onSubmit={(values) => {this.addFaktur(values)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                No COA
+                                No Faktur
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="no_coa"
-                                value={values.no_coa}
-                                onBlur={handleBlur("no_coa")}
-                                onChange={handleChange("no_coa")}
+                                value={values.no_faktur}
+                                onBlur={handleBlur("no_faktur")}
+                                onChange={handleChange("no_faktur")}
                                 />
-                                {errors.no_coa ? (
-                                    <text className={style.txtError}>{errors.no_coa}</text>
+                                {errors.no_faktur ? (
+                                    <text className={style.txtError}>{errors.no_faktur}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama COA
+                                Tgl Faktur
                             </text>
                             <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="nama_coa"
-                                value={values.nama_coa}
-                                onBlur={handleBlur("nama_coa")}
-                                onChange={handleChange("nama_coa")}
+                                <Input
+                                type= "date" 
+                                className="inputRinci"
+                                value={values.tgl_faktur}
+                                onBlur={handleBlur("tgl_faktur")}
+                                onChange={handleChange("tgl_faktur")}
                                 />
-                                {errors.nama_coa ? (
-                                    <text className={style.txtError}>{errors.nama_coa}</text>
+                                {errors.tgl_faktur ? (
+                                    <text className={style.txtError}>{errors.tgl_faktur}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama Sub COA
+                                NPWP
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="nama_subcoa"
-                                value={values.nama_subcoa}
-                                onBlur={handleBlur("nama_subcoa")}
-                                onChange={handleChange("nama_subcoa")}
+                                name="npwp"
+                                value={values.npwp}
+                                onBlur={handleBlur("npwp")}
+                                onChange={handleChange("npwp")}
                                 />
-                                {errors.nama_subcoa ? (
-                                    <text className={style.txtError}>{errors.nama_subcoa}</text>
+                                {errors.npwp ? (
+                                    <text className={style.txtError}>{errors.npwp}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Tipe
+                                Nama
                             </text>
                             <div className="col-md-9">
-                            <Input 
-                                type="select"
-                                name="tipe"
-                                value={values.tipe}
-                                onChange={handleChange("tipe")}
-                                onBlur={handleBlur("tipe")}
-                                >   
-                                    <option>-Pilih-</option>
-                                    {/* <option value="OPS">Operasional</option> */}
-                                    <option value="KLAIM">Klaim</option>
-                                </Input>
-                                {errors.tipe ? (
-                                    <text className={style.txtError}>{errors.tipe}</text>
+                                <Input 
+                                type="name" 
+                                name="nama"
+                                value={values.nama}
+                                onBlur={handleBlur("nama")}
+                                onChange={handleChange("nama")}
+                                />
+                                {errors.nama ? (
+                                    <text className={style.txtError}>{errors.nama}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Jumlah DPP
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="jumlah_dpp"
+                                value={values.jumlah_dpp}
+                                onBlur={handleBlur("jumlah_dpp")}
+                                onChange={handleChange("jumlah_dpp")}
+                                />
+                                {errors.jumlah_dpp ? (
+                                    <text className={style.txtError}>{errors.jumlah_dpp}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Jumlah PPN
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="jumlah_ppn"
+                                value={values.jumlah_ppn}
+                                onBlur={handleBlur("jumlah_ppn")}
+                                onChange={handleChange("jumlah_ppn")}
+                                />
+                                {errors.jumlah_ppn ? (
+                                    <text className={style.txtError}>{errors.jumlah_ppn}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -707,106 +835,228 @@ class MasterCoa extends Component {
                     </Formik>
                 </Modal>
                 <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
-                    <ModalHeader toggle={this.openModalEdit}>Edit Master Coa</ModalHeader>
+                    <ModalHeader toggle={this.openModalEdit}>Edit Master Faktur</ModalHeader>
                     <Formik
                     initialValues={{
-                    no_coa: detail.no_coa === null ? '' : detail.no_coa,
-                    nama_coa: detail.nama_coa === null ? '' : detail.nama_coa,
-                    nama_subcoa: detail.nama_subcoa === null ? '' : detail.nama_subcoa,
-                    tipe: detail.tipe === null ? '' : detail.tipe
+                        no_faktur: detail.no_faktur === null ? '' : detail.no_faktur,
+                        tgl_faktur: detail.tgl_faktur === null ? '' : detail.tgl_faktur,
+                        npwp: detail.npwp === null ? '' : detail.npwp,
+                        nama: detail.nama === null ? '' : detail.nama,
+                        jumlah_dpp: detail.jumlah_dpp === null ? '' : detail.jumlah_dpp,
+                        jumlah_ppn: detail.jumlah_ppn === null ? '' : detail.jumlah_ppn
                     }}
-                    validationSchema={coaEditSchema}
-                    onSubmit={(values) => {this.editCoa(values, detail.id)}}
+                    validationSchema={fakturEditSchema}
+                    onSubmit={(values) => {this.editFaktur(values, detail.id)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                No COA
+                                No Faktur
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="name" 
-                                name="no_coa"
-                                value={values.no_coa}
-                                onBlur={handleBlur("no_coa")}
-                                onChange={handleChange("no_coa")}
+                                type="name"
+                                disabled
+                                value={values.no_faktur}
+                                onBlur={handleBlur("no_faktur")}
+                                onChange={handleChange("no_faktur")}
                                 />
-                                {errors.no_coa ? (
-                                    <text className={style.txtError}>{errors.no_coa}</text>
+                                {errors.no_faktur ? (
+                                    <text className={style.txtError}>{errors.no_faktur}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama COA
+                                Tgl Faktur
                             </text>
                             <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="nama_coa"
-                                value={values.nama_coa}
-                                onBlur={handleBlur("nama_coa")}
-                                onChange={handleChange("nama_coa")}
+                                <Input
+                                type= "date" 
+                                disabled
+                                className="inputRinci"
+                                value={moment(values.tgl_faktur).format('YYYY-MM-DD')}
+                                onBlur={handleBlur("tgl_faktur")}
+                                onChange={handleChange("tgl_faktur")}
                                 />
-                                {errors.nama_coa ? (
-                                    <text className={style.txtError}>{errors.nama_coa}</text>
+                                {errors.tgl_faktur ? (
+                                    <text className={style.txtError}>{errors.tgl_faktur}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama Sub COA
+                                NPWP
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="nama_subcoa"
-                                value={values.nama_subcoa}
-                                onBlur={handleBlur("nama_subcoa")}
-                                onChange={handleChange("nama_subcoa")}
+                                disabled
+                                name="npwp"
+                                value={values.npwp}
+                                onBlur={handleBlur("npwp")}
+                                onChange={handleChange("npwp")}
                                 />
-                                {errors.nama_subcoa ? (
-                                    <text className={style.txtError}>{errors.nama_subcoa}</text>
+                                {errors.npwp ? (
+                                    <text className={style.txtError}>{errors.npwp}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Tipe
+                                Nama
                             </text>
                             <div className="col-md-9">
-                            <Input 
-                                type="select"
-                                name="tipe"
-                                value={values.tipe}
-                                onChange={handleChange("tipe")}
-                                onBlur={handleBlur("tipe")}
-                                >   
-                                    <option>-Pilih-</option>
-                                    {/* <option value="OPS">Operasional</option> */}
-                                    <option value="KLAIM">Klaim</option>
-                                </Input>
-                                {errors.tipe ? (
-                                    <text className={style.txtError}>{errors.tipe}</text>
+                                <Input 
+                                type="name" 
+                                name="nama"
+                                disabled
+                                value={values.nama}
+                                onBlur={handleBlur("nama")}
+                                onChange={handleChange("nama")}
+                                />
+                                {errors.nama ? (
+                                    <text className={style.txtError}>{errors.nama}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Jumlah DPP
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="jumlah_dpp"
+                                disabled
+                                value={values.jumlah_dpp}
+                                onBlur={handleBlur("jumlah_dpp")}
+                                onChange={handleChange("jumlah_dpp")}
+                                />
+                                {errors.jumlah_dpp ? (
+                                    <text className={style.txtError}>{errors.jumlah_dpp}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Jumlah PPN
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                disabled
+                                name="jumlah_ppn"
+                                value={values.jumlah_ppn}
+                                onBlur={handleBlur("jumlah_ppn")}
+                                onChange={handleChange("jumlah_ppn")}
+                                />
+                                {errors.jumlah_ppn ? (
+                                    <text className={style.txtError}>{errors.jumlah_ppn}</text>
                                 ) : null}
                             </div>
                         </div>
                         <hr/>
                         <div className={style.foot}>
                             <div>
-                                <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Coa</Button>
+                                {/* <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Faktur</Button> */}
                             </div>
                             <div>
-                                <Button  onClick={handleSubmit} color="primary">Save</Button>
+                                {/* <Button  onClick={handleSubmit} color="primary">Save</Button> */}
+                                <Button onClick={this.openModalEdit} color="secondary" >Close</Button>
                             </div>
                         </div>
                     </ModalBody>
                         )}
                     </Formik>
                 </Modal>
+                <Modal toggle={this.openModsync} isOpen={this.state.openSync} size='lg'>
+                    <ModalHeader>Synchronize Data Faktur</ModalHeader>
+                    <Formik
+                    initialValues={{
+                        type_faktur: '',
+                        no_faktur: '',
+                        date1: '',
+                        date2: ''
+                    }}
+                    validationSchema={filterSchema}
+                    onSubmit={(values) => {this.prosesSync(values)}}
+                    >
+                        {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                        <ModalBody>
+                            <Row className="mb-2 rowRinci">
+                                <Col md={3}>Pilih Tipe Synchronize</Col>
+                                <Col md={9} className="colRinci">:  <Input
+                                    type="select"
+                                    className="inputRinci"
+                                    value={values.type_faktur}
+                                    onBlur={handleBlur("type_faktur")}
+                                    onChange={handleChange('type_faktur')}
+                                >
+                                    <option value=''>Pilih</option>
+                                    <option value="no">No Faktur</option>
+                                    <option value="time">Tanggal Faktur</option>
+                                </Input>
+                                </Col>
+                            </Row>
+                            <Row className="mb-2 rowRinci">
+                                <Col md={3}>No Faktur</Col>
+                                <Col md={9} className="colRinci">:  <Input
+                                    type="text"
+                                    className="inputRinci"
+                                    disabled={values.type_faktur === 'no' ? false : true}
+                                    value={values.no_faktur}
+                                    onBlur={handleBlur("no_faktur")}
+                                    onChange={handleChange("no_faktur")}
+                                />
+                                </Col>
+                            </Row>
+                            <Row className="mb-2 rowRinci">
+                                <Col md={3}>Tanggal Faktur</Col>
+                                <Col md={9} className="colRinci">:
+                                    <Input
+                                        type="date"
+                                        className="inputRinci"
+                                        disabled={values.type_faktur === 'time' ? false : true}
+                                        value={values.date1}
+                                        onBlur={handleBlur("date1")}
+                                        onChange={handleChange("date1")}
+                                    />
+                                    <text className='mr-1 ml-1'>To</text>
+                                    <Input
+                                        type="date"
+                                        className="inputRinci"
+                                        disabled={values.type_faktur === 'time' ? false : true}
+                                        value={values.date2}
+                                        onBlur={handleBlur("date2")}
+                                        onChange={handleChange("date2")}
+                                    />
+                                </Col>
+                            </Row>
+                            <hr/>
+                            <div className={style.foot}>
+                                <div></div>
+                                <div>
+                                    <Button 
+                                    disabled={
+                                    values.type_faktur === 'time' && (values.date1 === '' || values.date2 === '') ? true 
+                                    : (values.type_faktur === 'no' && values.no_faktur === '') ? true 
+                                    : values.type_faktur === '' ? true
+                                    : false}
+                                    className="mr-2" onClick={handleSubmit} 
+                                    color="primary">
+                                        Synchronize
+                                    </Button>
+                                    <Button className="mr-3" onClick={this.openModsync}>Cancel</Button>
+                                </div>
+                            </div>
+                        </ModalBody>
+                        )}
+                    </Formik>
+                </Modal>
                 <Modal toggle={this.openModalUpload} isOpen={this.state.modalUpload} >
-                    <ModalHeader>Upload Master Coa</ModalHeader>
+                    <ModalHeader>Upload Master Faktur</ModalHeader>
                     <ModalBody className={style.modalUpload}>
                         <div className={style.titleModalUpload}>
                             <text>Upload File: </text>
@@ -823,7 +1073,7 @@ class MasterCoa extends Component {
                             </div>
                         </div>
                         <div className={style.btnUpload}>
-                            <Button color="info" onClick={this.DownloadTemplate}>Download Template</Button>
+                            <Button color="info" onClick={this.downloadTemplate}>Download Template</Button>
                             <Button color="primary" disabled={this.state.fileUpload === "" ? true : false } onClick={this.uploadMaster}>Upload</Button>
                             <Button onClick={this.openModalUpload}>Cancel</Button>
                         </div>
@@ -834,23 +1084,23 @@ class MasterCoa extends Component {
                         {this.state.confirm === 'edit' ? (
                         <div className={style.cekUpdate}>
                             <AiFillCheckCircle size={80} className={style.green} />
-                            <div className={style.sucUpdate}>Berhasil Memperbarui Coa</div>
+                            <div className={style.sucUpdate}>Berhasil Memperbarui Faktur</div>
                         </div>
                         ) : this.state.confirm === 'add' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menambahkan Coa</div>
+                                <div className={style.sucUpdate}>Berhasil Menambahkan Faktur</div>
                             </div>
                         ) : this.state.confirm === 'del' ? (
                             <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Menghapus Coa</div>
+                                <div className={style.sucUpdate}>Berhasil Menghapus Faktur</div>
                             </div>
                         ) : this.state.confirm === 'upload' ?(
                             <div>
                                 <div className={style.cekUpdate}>
                                     <AiFillCheckCircle size={80} className={style.green} />
-                                <div className={style.sucUpdate}>Berhasil Mengupload Master Coa</div>
+                                <div className={style.sucUpdate}>Berhasil Mengupload Master Faktur</div>
                             </div>
                             </div>
                         ) : this.state.confirm === 'reset' ? (
@@ -860,12 +1110,27 @@ class MasterCoa extends Component {
                                 <div className={style.sucUpdate}>Berhasil Mereset Password</div>
                             </div>
                             </div>
+                        ) : this.state.confirm === 'sync' ?(
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={style.sucUpdate}>Berhasil Synchronize Data Faktur</div>
+                            </div>
+                            </div>
+                        ) : this.state.confirm === 'syncfalse' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Synchronize Data</div>
+                                    <div className={[style.sucUpdate, style.green]}>Data Faktur Tidak Ditemukan</div>
+                                </div>
+                            </div>
                         ) : (
                             <div></div>
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.coa.isLoading ? true: false} size="sm">
+                <Modal isOpen={this.props.shelfaktur.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -875,7 +1140,7 @@ class MasterCoa extends Component {
                         </div>
                         </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.coa.isUpload ? true: false} size="sm">
+                <Modal isOpen={this.props.shelfaktur.isUpload ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -952,12 +1217,12 @@ class MasterCoa extends Component {
                     <div className={style.modalApprove}>
                         <div>
                             <text>
-                                Anda yakin untuk delete coa {detail.nama_subcoa} ?
+                                Anda yakin untuk delete faktur {detail.no_ktp} ?
                             </text>
                         </div>
                         <div className={style.btnApprove}>
-                            <Button color="primary" onClick={() => this.delCoa()}>Ya</Button>
-                            <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
+                            <Button color="primary" onClick={() => this.delFaktur()}>Ya</Button>
+                            <Button color="secondary" onClick={this.openModalDel}>Tidak</Button>
                         </div>
                     </div>
                 </ModalBody>
@@ -969,21 +1234,18 @@ class MasterCoa extends Component {
 
 const mapStateToProps = state => ({
     user: state.user,
-    coa: state.coa
+    faktur: state.faktur,
+    shelfaktur: state.shelfaktur
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
-    addCoa: coa.addCoa,
-    updateCoa: coa.updateCoa,
-    getCoa: coa.getAllCoa,
-    uploadMaster: coa.uploadMaster,
-    nextPage: coa.nextPage,
-    exportMaster: coa.exportMaster,
-    resetError: coa.resetError,
+    getShelfaktur: shelfaktur.getShelfaktur,
+    syncFaktur: shelfaktur.syncFaktur,
+    nextPage: shelfaktur.nextPage,
+    resetError: shelfaktur.resetError,
     resetPassword: user.resetPassword,
-    deleteCoa: coa.deleteCoa
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(MasterCoa)
+export default connect(mapStateToProps, mapDispatchToProps)(MasterFaktur)
 	

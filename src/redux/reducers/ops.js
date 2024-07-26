@@ -45,6 +45,7 @@ const opsState = {
     subBayar: null,
     genPemb: null,
     noTransfer: '',
+    noRev: '',
     newOps: [],
     editVrf: null,
     isTtdList: null,
@@ -71,7 +72,18 @@ const opsState = {
     dataKasbon: [],
     newKasbon: [],
     isLoadingKasbon: false,
-    isFormOps: null
+    isFormOps: null,
+    changeNo: null,
+    glListrik: [
+        547710,
+        55020001
+    ],
+    glInternet: [
+        547810, 
+        55020004
+    ],
+    depoOps: [],
+    depoKasbon: []
 };
 
 export default (state = opsState, action) => {
@@ -116,6 +128,7 @@ export default (state = opsState, action) => {
                 dataOps: action.payload.data.result,
                 noDis: action.payload.data.noDis,
                 newOps: action.payload.data.newOps,
+                depoOps: action.payload.data.findDepo,
                 alertMsg: 'get coa Succesfully'
             };
         }
@@ -142,6 +155,7 @@ export default (state = opsState, action) => {
                 isGetKasbon: true,
                 dataKasbon: action.payload.data.result,
                 newKasbon: action.payload.data.newOps,
+                depoKasbon: action.payload.data.findDepo,
                 alertMsg: 'get coa Succesfully'
             };
         }
@@ -537,6 +551,30 @@ export default (state = opsState, action) => {
                 ...state,
                 isLoading: false,
                 subRevisi: false,
+                alertMsg: "Unable connect to server"
+            };
+        }
+        case 'CHANGE_NOTRANS_PENDING': {
+            return {
+                ...state,
+                isLoading: true,
+                alertMsg: 'Waiting ...'
+            };
+        }
+        case 'CHANGE_NOTRANS_FULFILLED': {
+            return {
+                ...state,
+                isLoading: false,
+                changeNo: true,
+                noRev: action.payload.data.noRev,
+                alertMsg: 'get detail coa Succesfully',
+            };
+        }
+        case 'CHANGE_NOTRANS_REJECTED': {
+            return {
+                ...state,
+                isLoading: false,
+                changeNo: false,
                 alertMsg: "Unable connect to server"
             };
         }
@@ -1045,7 +1083,8 @@ export default (state = opsState, action) => {
                 isAddBbm: null,
                 isGetBbm: null,
                 isDelBbm: null,
-                isFormOps: null
+                isFormOps: null,
+                changeNo: null
             }
         }
         default: {

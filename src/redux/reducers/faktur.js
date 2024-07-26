@@ -19,7 +19,8 @@ const fakturState = {
     dataAll: [],
     isAll: false,
     isUpload: false,
-    allFaktur: []
+    allFaktur: [],
+    delraw: null
 };
 
 export default (state=fakturState, action) => {
@@ -148,6 +149,28 @@ export default (state=fakturState, action) => {
                     alertM: action.payload.response.data.error
                 };
             }
+            case 'DELETE_RAW_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting'
+                };
+            }
+            case 'DELETE_RAW_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    delraw: true,
+                    alertMsg: 'update user Succesfully'
+                };
+            }
+            case 'DELETE_RAW_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    delraw: false,
+                };
+            }
             case 'ADD_FAKTUR_PENDING': {
                 return {
                     ...state,
@@ -231,7 +254,8 @@ export default (state=fakturState, action) => {
                     isGet: false,
                     isExport: false,
                     isLoading: false,
-                    isUpload: false
+                    isUpload: false,
+                    delraw: null
                 }
             }
             default: {

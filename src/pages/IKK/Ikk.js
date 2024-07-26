@@ -45,6 +45,7 @@ import Countdown from 'react-countdown'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 const {REACT_APP_BACKEND_URL} = process.env
+const userAppArea = ['10', '11', '12', '15']
 
 const stockSchema = Yup.object().shape({
     merk: Yup.string().required("must be filled"),
@@ -143,7 +144,7 @@ class IKK extends Component {
             openRejDoc: false,
             message: '',
             time: 'pilih',
-            time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             subject: '',
             docHist: false,
@@ -542,7 +543,8 @@ class IKK extends Component {
     getDataIkk = async (value) => {
         const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilter(level === '5' ? 'all' : 'available')
+        const cekLevArea = userAppArea.find(item => item === level) !== undefined
+        this.changeFilter(cekLevArea ? 'available' : 'all')
     }
 
     getDataList = async () => {

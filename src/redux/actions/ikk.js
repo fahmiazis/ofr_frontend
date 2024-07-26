@@ -35,9 +35,9 @@ export default {
         type: 'SUBMIT_IKKFINAL',
         payload: http(token).patch(`/ikk/subfinikk`, qs.stringify(no))
     }),
-    getIkk: (token, status, reject, menu, type, category, data, time1, time2, search) => ({
+    getIkk: (token, status, reject, menu, type, category, data, time1, time2, search, depo) => ({
         type: 'GET_IKK',
-        payload: http(token).get(`/ikk/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&search=${search === undefined ? '' : search}`),
+        payload: http(token).patch(`/ikk/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&search=${search === undefined ? '' : search}`, data={depo: depo}),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_IKK',

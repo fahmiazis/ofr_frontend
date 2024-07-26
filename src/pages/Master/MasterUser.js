@@ -160,17 +160,54 @@ class MasterUser extends Component {
     }
 
     DownloadTemplate = () => {
-        axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/user.xlsx`,
-            method: 'GET',
-            responseType: 'blob',
-        }).then((response) => {
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', "master user.xlsx");
-            document.body.appendChild(link);
-            link.click();
+        const {listUser} = this.state
+        const {dataUser} = this.props.user
+        const dataDownload = []
+        for (let i = 0; i < listUser.length; i++) {
+            for (let j = 0; j < dataUser.length; j++) {
+                if (dataUser[j].id === listUser[i]) {
+                    dataDownload.push(dataUser[j])
+                }
+            }
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data user')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+            {header: 'User Name', key: 'c2'},
+            {header: 'Full Name', key: 'c3'},
+            {header: 'Kode Area', key: 'c4'},
+            {header: 'Email', key: 'c5'},
+            {header: 'User Level', key: 'c6'},
+        ]
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+                cell.border = borderStyles;
+            })
+        })
+
+        ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+                new Blob([buffer], { type: "application/octet-stream" }),
+                `Template Master User ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
         });
     }
 
@@ -222,7 +259,7 @@ class MasterUser extends Component {
     onSearch = (e) => {
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            this.getDataUser({limit: 10, search: this.state.search})
+            this.getDataUser({limit: 10, search: this.state.search, page: 1})
         }
     }
 

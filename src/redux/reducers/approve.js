@@ -20,6 +20,8 @@ const approveState = {
     idName: {},
     isDetailId: null,
     isDeleteName: null,
+    isPlantApp: null,
+    plantApp: [],
 };
 
 export default (state=approveState, action) => {
@@ -76,6 +78,31 @@ export default (state=approveState, action) => {
                     isLoading: false,
                     isGet: false,
                     isError: true,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'GET_PLANTAPP_PENDING': {
+                return {
+                    ...state,
+                    isGet: false,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GET_PLANTAPP_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isPlantApp: true,
+                    plantApp: action.payload.data.result,
+                    alertMsg: 'get detail approve Succesfully',
+                };
+            }
+            case 'GET_PLANTAPP_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isPlantApp: false,
                     alertMsg: "Unable connect to server"
                 };
             }
@@ -283,7 +310,8 @@ export default (state=approveState, action) => {
                     isEditName: null,
                     isDetailId: null,
                     isLoading: false,
-                    isDeleteName: null
+                    isDeleteName: null,
+                    isPlantApp: null
                 }
             }
             default: {

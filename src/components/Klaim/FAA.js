@@ -10,6 +10,13 @@ import fs from "file-saver";
 
 class FAA extends Component {
 
+    state = {
+        totalfpd: 0,
+        totNom: 0,
+        totPay: 0,
+        arrTes: "e printing on mobile browsers should work, printing within a WebView",
+    }
+
     async componentDidMount() {
         const dataCek = localStorage.getItem('printData')
         if (dataCek !== undefined && dataCek !== null) {
@@ -22,10 +29,14 @@ class FAA extends Component {
 
             const {detailKlaim} = this.props.klaim
             let total = 0
+            let totNom = 0
+            let totPay = 0
             for (let i = 0; i < detailKlaim.length; i++) {
                 total += parseInt(detailKlaim[i].nilai_ajuan)
+                totNom += detailKlaim[i].nominal === null || detailKlaim[i].nominal === undefined ? 0 : parseInt(detailKlaim[i].nominal)
+                totPay += detailKlaim[i].nilai_bayar === null || detailKlaim[i].nilai_bayar === undefined ? 0 : parseInt(detailKlaim[i].nilai_bayar)
             }
-            this.setState({totalfpd: total})
+            this.setState({totalfpd: total, totNom: totNom, totPay: totPay,})
             this.downloadForm()
         } else {
             const {detailKlaim} = this.props.klaim
@@ -39,6 +50,7 @@ class FAA extends Component {
 
     downloadForm = () => {
         const { detailKlaim, ttdKlaim } = this.props.klaim
+        const { totalfpd, totNom, totPay } = this.state
         
         const alpha = Array.from(Array(26)).map((e, i) => i + 65)
         const alphabet = alpha.map((x) => String.fromCharCode(x))
@@ -47,7 +59,9 @@ class FAA extends Component {
         const str3 = 'L'
 
         const workbook = new ExcelJS.Workbook();
-        const ws = workbook.addWorksheet('form ajuan bayar')
+        const ws = workbook.addWorksheet('form ajuan area', {
+            pageSetup: { orientation:'landscape', paperSize: 8 }
+        })
         const borderStyles = {
             top: {style:'thin'},
             left: {style:'thin'},
@@ -71,16 +85,16 @@ class FAA extends Component {
                     item.no_coa, 
                     item.nama_coa, 
                     item.keterangan, 
-                    `${moment(item.periode_awal).format('DD/MMMM/YYYY')} - ${moment(item.periode_akhir).format('DD/MMMM/YYYY')}`, 
+                    `${moment(item.periode_awal).format('DD MMMM YYYY')} - ${moment(item.periode_akhir).format('DD MMMM YYYY')}`, 
                     item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."), 
                     item.bank_tujuan,
                     item.norek_ajuan,
                     item.nama_tujuan,
                     item.ppu,
                     item.pa,
-                    item.nominal,
-                    item.nilai_bayar,
-                    moment(item.tanggal_transfer).format('DD/MMMM/YYYY')
+                    item.nominal === null || item.nominal === undefined ? 0 : item.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    item.tanggal_transfer === null ? '-' : moment(item.tanggal_transfer).format('DD MMMM YYYY')
                 ])
             )
         })
@@ -118,15 +132,43 @@ class FAA extends Component {
             const lengths = column.values.map(v => v.toString().length)
             const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
             if (index === 0) {    
-                column.width = maxLength
+                column.width = maxLength + (maxLength * 0.5) + 2
             } else if (ws.columns.length - 1 === index || ws.columns.length - 2 === index) {
-                column.width = maxLength + 15
+                column.width = maxLength + (maxLength * 0.5) + 17
             } else {
-                column.width = maxLength + 5
+                column.width = maxLength + (maxLength * 0.5) + 5
             }
         })
+
+        const totRow = 9 + dataRow.length
         
-        ws.addRow()
+        ws.mergeCells(`A${totRow}`, `F${totRow}`)
+        ws.getCell(`A${totRow}`).value = 'Total'
+
+        ws.getCell(`A${totRow}`).alignment = { 
+            horizontal:'center', 
+            wrapText: true, 
+            vertical: 'middle'
+        }
+
+        ws.getCell(`A${totRow}`).border = { 
+            ...borderStyles
+        }
+
+        ws.getCell(`G${totRow}`).value = totalfpd.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+        ws.getCell(`M${totRow}`).value = totNom.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+        ws.getCell(`N${totRow}`).value = totPay.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+
+        ws.getCell(`G${totRow}`).border = { 
+            ...borderStyles
+        }
+        ws.getCell(`M${totRow}`).border = { 
+            ...borderStyles
+        }
+        ws.getCell(`N${totRow}`).border = { 
+            ...borderStyles
+        }
+
         const sumRow = 11 + dataRow.length
         const headRow = 1 + sumRow
         const mainRow = 3 + sumRow
@@ -290,6 +332,16 @@ class FAA extends Component {
                     ...borderStyles
                 }
             }
+        })
+
+        const fontStyle = {
+            size: 16
+        }
+
+        ws.eachRow({ includeEmpty: true }, function (row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function (cell, colNumber) {
+                cell.font = fontStyle
+            })
         })
 
         workbook.xlsx.writeBuffer().then(function(buffer) {

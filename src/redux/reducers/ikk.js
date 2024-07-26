@@ -59,7 +59,8 @@ const ikkState = {
     detailReport: [],
     isDetRep: false,
     updateNilai: null,
-    isFormIkk: null
+    isFormIkk: null,
+    depoIkk: []
 };
 
 export default (state=ikkState, action) => {
@@ -105,6 +106,7 @@ export default (state=ikkState, action) => {
                     dataIkk: action.payload.data.result,
                     noDis: action.payload.data.noDis,
                     newIkk: action.payload.data.newIkk,
+                    depoIkk: action.payload.data.findDepo,
                     alertMsg: 'get coa Succesfully'
                 };
             }

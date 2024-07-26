@@ -104,6 +104,16 @@ class NavOps extends Component {
         }
     }
 
+    showAlert = () => {
+        this.setState({alert: true})
+       
+         setTimeout(() => {
+            this.setState({
+                alert: false
+            })
+         }, 10000)
+    }
+
     getNotif = async () => {
         const token = localStorage.getItem("token")
         await this.props.getNotif(token)

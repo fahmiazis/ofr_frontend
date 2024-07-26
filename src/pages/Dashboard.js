@@ -46,7 +46,18 @@ import FPDIkk from '../components/Ikk/FPD'
 import Tracking from '../components/Klaim/tracking'
 import TrackingIkk from '../components/Ikk/tracking'
 import TrackingOps from '../components/Ops/tracking'
+import { MdOpenInNew } from "react-icons/md";
+import Select from 'react-select'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
+const userArea = ['5', '6']
+const userAppArea = ['10', '11', '12', '15']
+const userFinance = ['2']
+const userFinApp = ['7', '8', '9']
+const userKlaim = ['3', '13', '23']
+const userTax = ['4', '14', '24', '34']
+
 
 const stockSchema = Yup.object().shape({
     merk: Yup.string().required("must be filled"),
@@ -141,19 +152,33 @@ class Klaim extends Component {
             statKlaim: 'all',
             statOps: 'all',
             statIkk: 'all',
+            statKasbon: 'all',
             timeKlaim: 'pilih',
-            time1Klaim: moment().startOf('month').format('YYYY-MM-DD'),
+            time1Klaim: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2Klaim: moment().endOf('month').format('YYYY-MM-DD'),
             timeOps: 'pilih',
-            time1Ops: moment().startOf('month').format('YYYY-MM-DD'),
+            time1Ops: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2Ops: moment().endOf('month').format('YYYY-MM-DD'),
             timeKasbon: 'pilih',
-            time1Kasbon: moment().startOf('month').format('YYYY-MM-DD'),
+            time1Kasbon: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2Kasbon: moment().endOf('month').format('YYYY-MM-DD'),
             timeIkk: 'pilih',
-            time1Ikk: moment().startOf('month').format('YYYY-MM-DD'),
+            time1Ikk: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time2Ikk: moment().endOf('month').format('YYYY-MM-DD'),
-
+            depoKlaim: 'pilih',
+            depoOps: 'pilih',
+            depoKasbon: 'pilih',
+            depoIkk: 'pilih',
+            modalDepo: false,
+            tipeDepo: '',
+            searchKlaim: '',
+            searchOps: '',
+            searchKasbon: '',
+            searchIkk: '',
+            klaimDepo: '',
+            opsDepo: '',
+            kasbonDepo: '',
+            ikkDepo: '',
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -372,11 +397,24 @@ class Klaim extends Component {
     }
 
     componentDidMount() {
-        // const level = localStorage.getItem('level')
-        this.getDataKlaim()
-        this.getDataIkk()
-        this.getDataOps()
-        this.getDataKasbon()
+        const level = localStorage.getItem('level')
+        if (userAppArea.find(item => item === level) !== undefined) {
+            this.setState({statKlaim: '2', statOps: '2', statKasbon: '2', statIkk: '2'})
+        } else if (userFinance.find(item => item === level) !== undefined) {
+            this.setState({statKlaim: '3', statOps: '3', statKasbon: '3', statIkk: '3'})
+        } else if (userFinApp.find(item => item === level) !== undefined) {
+            this.setState({statKlaim: '6', statOps: '6', statKasbon: '6', statIkk: '6'})
+        } else if (userTax.find(item => item === level) !== undefined) {
+            this.setState({statKasbon: '4'})
+        } else if (userKlaim.find(item => item === level) !== undefined) {
+            this.setState({statKlaim: '4'})
+        }
+        setTimeout(() => {
+            this.getDataKlaim()
+            this.getDataIkk()
+            this.getDataOps()
+            this.getDataKasbon()
+        }, 200)
     }
 
     componentDidUpdate() {
@@ -396,7 +434,7 @@ class Klaim extends Component {
         }
     }
 
-    downloadData = () => {
+    downloadDokumen = () => {
         const { fileName } = this.state
         const download = fileName.path.split('/')
         const cek = download[2].split('.')
@@ -412,6 +450,73 @@ class Klaim extends Component {
             document.body.appendChild(link);
             link.click();
         });
+    }
+
+    downloadData = (val) => {
+        const { newKlaim} = this.props.klaim
+        const { newIkk } = this.props.ikk
+        const { newOps, newKasbon } = this.props.ops
+
+        const dataDownload = val === 'klaim' ? newKlaim : val === 'ops' ? newOps : val === 'kasbon' ? newKasbon : newIkk
+        const dataName = val === 'klaim' ? 'Klaim' : val === 'ops' ? 'Operasional' : val === 'kasbon' ? 'Kasbon' : 'Ikhtisar Kas Kecil'
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data user')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+            {header: 'NO', key: 'c1'},
+            {header: 'NO.AJUAN', key: 'c2'},
+            {header: 'COST CENTRE', key: 'c3'},
+            {header: 'AREA', key: 'c4'},
+            {header: 'NO.COA', key: 'c5'},
+            {header: 'NAMA COA', key: 'c6'},
+            {header: 'KETERANGAN TAMBAHAN', key: 'c7'},
+            {header: 'TGL AJUAN', key: 'c8'},
+            {header: 'STATUS', key: 'c9'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: index + 1,
+                c2: item.no_transaksi,
+                c3: item.cost_center,
+                c4: item.area,
+                c5: item.no_coa,
+                c6: item.nama_coa,
+                c7: val === 'ikik' ? item.uraian : item.keterangan,
+                c8: val === 'klaim' ? moment(item.start_klaim).format('DD MMMM YYYY') : val === 'ops' || val === 'kasbon' ? moment(item.start_ops).format('DD MMMM YYYY') : moment(item.start_ikk).format('DD MMMM YYYY'),
+                c9: item.history !== null && item.history.split(',').reverse()[0]
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `${dataName} ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
     }
 
     openConfirm = () => {
@@ -450,130 +555,446 @@ class Klaim extends Component {
         this.setState({modalEdit: !this.state.modalEdit})
     }
 
+    openDepo = () => {
+        this.setState({
+            modalDepo: !this.state.modalDepo
+        })
+    }
+
+    prosesOpenDepo = (val) => {
+        const {depoKlaim} = this.props.klaim
+        const {depoOps} = this.props.ops
+        const {depoKasbon} = this.props.ops
+        const {depoIkk} = this.props.ikk
+        // if (val === 'klaim') {
+
+        // } else if (val === 'ops') {
+
+        // } else if (val === 'kasbon') {
+
+        // } else if (val === 'ikk') {
+
+        // }
+        const temp = [
+            {value: 'all', label: 'all'}
+        ]
+        const finDepo = val === 'klaim' ? depoKlaim : val === 'ops' ? depoOps : val === 'kasbon' ? depoKasbon : depoIkk
+        for (let i = 0; i < finDepo.length; i++) {
+            temp.push({value: finDepo[i].kode_plant, label: `${finDepo[i].kode_plant} ~ ${finDepo[i].area}`})
+        }
+        this.setState({
+            tipeDepo: val,
+        })
+        this.setState(val === 'klaim' ? {
+            klaimDepo: temp
+        } : val === 'ops' ? {
+            opsDepo: temp
+        } : val === 'kasbon' ? {
+            kasbonDepo: temp
+        } : {
+            ikkDepo: temp
+        } )
+        this.openDepo()
+    }
+
+    selectDepoKlaim = (e) => {
+        const val = e.value
+        let {depoKlaim} = this.state
+        const depo = depoKlaim.split(',')
+        console.log(depo)
+        if (val === 'all' && depoKlaim === 'all') {
+            this.setState({depoKlaim: 'pilih'})
+        } else if (val === 'all' && depoKlaim !== 'all') {
+            this.setState({depoKlaim: 'all'})
+        } else {
+            const temp = []
+            let finDepo = ''
+            for (let i = 0; i < depo.length; i++) {
+                if (val === 'pilih' || depo[i] === 'pilih' || depo[i] === 'all' || depo[i] === '') {
+                    console.log('if')
+                } else if (depo[i] === val) {
+                    temp.push(depo[i])
+                } else {
+                    finDepo += `${depo[i]},`
+                }
+            }
+            if (temp.length > 0) {
+                this.setState({depoKlaim: finDepo})
+            } else {
+                finDepo += `${val}`
+                this.setState({depoKlaim: finDepo})
+            }
+        }
+    }
+
+    selectDepoOps = (e) => {
+        const val = e.value
+        let {depoOps} = this.state
+        const depo = depoOps.split(',')
+        console.log(depo)
+        if (val === 'all' && depoOps === 'all') {
+            this.setState({depoOps: 'pilih'})
+        } else if (val === 'all' && depoOps !== 'all') {
+            this.setState({depoOps: 'all'})
+        } else {
+            const temp = []
+            let finDepo = ''
+            for (let i = 0; i < depo.length; i++) {
+                if (val === 'pilih' || depo[i] === 'pilih' || depo[i] === 'all' || depo[i] === '') {
+                    console.log('if')
+                } else if (depo[i] === val) {
+                    temp.push(depo[i])
+                } else {
+                    finDepo += `${depo[i]},`
+                }
+            }
+            if (temp.length > 0) {
+                this.setState({depoOps: finDepo})
+            } else {
+                finDepo += `${val}`
+                this.setState({depoOps: finDepo})
+            }
+        }
+    }
+
+    selectDepoKasbon = (e) => {
+        const val = e.value
+        let {depoKasbon} = this.state
+        const depo = depoKasbon.split(',')
+        console.log(depo)
+        if (val === 'all' && depoKasbon === 'all') {
+            this.setState({depoKasbon: 'pilih'})
+        } else if (val === 'all' && depoKasbon !== 'all') {
+            this.setState({depoKasbon: 'all'})
+        } else {
+            const temp = []
+            let finDepo = ''
+            for (let i = 0; i < depo.length; i++) {
+                if (val === 'pilih' || depo[i] === 'pilih' || depo[i] === 'all' || depo[i] === '') {
+                    console.log('if')
+                } else if (depo[i] === val) {
+                    temp.push(depo[i])
+                } else {
+                    finDepo += `${depo[i]},`
+                }
+            }
+            if (temp.length > 0) {
+                this.setState({depoKasbon: finDepo})
+            } else {
+                finDepo += `${val}`
+                this.setState({depoKasbon: finDepo})
+            }
+        }
+    }
+
+    selectDepoIkk = (e) => {
+        const val = e.value
+        let {depoIkk} = this.state
+        const depo = depoIkk.split(',')
+        console.log(depo)
+        if (val === 'all' && depoIkk === 'all') {
+            this.setState({depoIkk: 'pilih'})
+        } else if (val === 'all' && depoIkk !== 'all') {
+            this.setState({depoIkk: 'all'})
+        } else {
+            const temp = []
+            let finDepo = ''
+            for (let i = 0; i < depo.length; i++) {
+                if (val === 'pilih' || depo[i] === 'pilih' || depo[i] === 'all' || depo[i] === '') {
+                    console.log('if')
+                } else if (depo[i] === val) {
+                    temp.push(depo[i])
+                } else {
+                    finDepo += `${depo[i]},`
+                }
+            }
+            if (temp.length > 0) {
+                this.setState({depoIkk: finDepo})
+            } else {
+                finDepo += `${val}`
+                this.setState({depoIkk: finDepo})
+            }
+        }
+    }
+
     getDataKlaim = async (value) => {
         const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilterKlaim(level === '5' ? 'all' : 'available')
+        const cekLevArea = userAppArea.find(item => item === level) !== undefined
+        const cekLevFin = userFinance.find(item => item === level) !== undefined
+        const cekLevFinApp = userFinApp.find(item => item === level) !== undefined
+        const cekLevKlm = userKlaim.find(item => item === level) !== undefined
+        this.changeFilterKlaim(cekLevArea || cekLevFin || cekLevFinApp || cekLevKlm ? 'available' : 'all')
     }
 
     changeFilterKlaim = async (val) => {
-        const {time1Klaim, time2Klaim, statKlaim} = this.state
+        const {depoKlaim} = this.state
+        const {time1Klaim, time2Klaim, statKlaim, searchKlaim} = this.state
         const cekTime1 = time1Klaim === '' ? 'undefined' : time1Klaim
         const cekTime2 = time2Klaim === '' ? 'undefined' : time2Klaim
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const status = statKlaim
-        const tipe = status === '3' || status === '4' ? 'verif' : status === '6' ? 'ajuan bayar' : 'approve'
+
+        const cekLevFin = userFinance.find(item => item === level) !== undefined
+        const cekLevFinApp = userFinApp.find(item => item === level) !== undefined
+        const cekLevKlm = userKlaim.find(item => item === level) !== undefined
+        const cekVal = cekLevFin ? '3' : cekLevFinApp ? '6' : cekLevKlm ? '4' : '2'
+        const status = val === 'available' ? cekVal : statKlaim
+        const tipe = status === '3' || status === '4' ? 'verif' : status === '6' || status === '8' ? 'ajuan bayar' : 'approve'
         const newKlaim = []
-        await this.props.getKlaim(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2)
-        this.setState({filter: val, newKlaim: newKlaim})
+        this.setState({filter: val, newKlaim: newKlaim, statKlaim: status})
+        
+        await this.props.getKlaim(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, searchKlaim, depoKlaim)
     }
 
     changeStatKlaim = async (val) => {
-        const {time1Klaim, time2Klaim, filter} = this.state
+        const {depoKlaim} = this.state
+        const {time1Klaim, time2Klaim, filter, searchKlaim} = this.state
         const cekTime1 = time1Klaim === '' ? 'undefined' : time1Klaim
         const cekTime2 = time2Klaim === '' ? 'undefined' : time2Klaim
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const tipe = val === '3' || val === '4' ? 'verif' : val === '6' ? 'ajuan bayar' : 'approve'
+        const tipe = val === '3' || val === '4' ? 'verif' : val === '6' || val === '8' ? 'ajuan bayar' : 'approve'
         const status = val
-        await this.props.getKlaim(token, status, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2)
-        this.setState({statKlaim: val})
+        const filterFin = (val === 'all' && filter === 'available') || (val === '8' && (filter === 'available' || filter === 'reject')) ? 'all' : filter 
+        this.setState({statKlaim: val, filter: filterFin})
+
+        await this.props.getKlaim(token, status, 'all', 'all', filterFin, tipe, 'undefined', cekTime1, cekTime2, searchKlaim, depoKlaim)
+    }
+
+    changeDepoKlaim = async () => {
+        this.openDepo()
+        const {depoKlaim} = this.state
+        const token = localStorage.getItem("token")
+        const {time1Klaim, time2Klaim, filter, statKlaim, searchKlaim} = this.state
+        const cekTime1 = time1Klaim === '' ? 'undefined' : time1Klaim
+        const cekTime2 = time2Klaim === '' ? 'undefined' : time2Klaim
+        const statNow = statKlaim
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
+        await this.props.getKlaim(token, statKlaim, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, searchKlaim, depoKlaim)
+    }
+
+    searchKlaim = async (val) => {
+        const {depoKlaim} = this.state
+        const token = localStorage.getItem("token")
+        const {time1Klaim, time2Klaim, filter, statKlaim} = this.state
+        const cekTime1 = time1Klaim === '' ? 'undefined' : time1Klaim
+        const cekTime2 = time2Klaim === '' ? 'undefined' : time2Klaim
+        this.setState({searchKlaim: val.target.value})
+        const statNow = statKlaim
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
+        if(val.key === 'Enter'){
+            await this.props.getKlaim(token, statKlaim, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, val.target.value, depoKlaim)
+        }
     }
 
     getDataIkk = async (value) => {
         const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilterIkk(level === '5' ? 'all' : 'available')
+        const cekLevArea = userAppArea.find(item => item === level) !== undefined
+        const cekLevFin = userFinance.find(item => item === level) !== undefined
+        const cekLevFinApp = userFinApp.find(item => item === level) !== undefined
+        this.changeFilterIkk(cekLevArea || cekLevFin || cekLevFinApp ? 'available' : 'all')
     }
 
     changeFilterIkk = async (val) => {
         const {statIkk, time1Ikk, time2Ikk} = this.state
+        const {depoIkk, searchIkk} = this.state
+
         const cekTime1 = time1Ikk === '' ? 'undefined' : time1Ikk
         const cekTime2 = time2Ikk === '' ? 'undefined' : time2Ikk
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const status = statIkk
-        const tipe = status === '3' || status === '4' ? 'verif' : status === '6' ? 'ajuan bayar' : 'approve'
+        const cekLevFin = userFinance.find(item => item === level) !== undefined
+        const cekLevFinApp = userFinApp.find(item => item === level) !== undefined
+        const cekVal = cekLevFin ? '3' : cekLevFinApp ? '6' : '2'
+        const status = val === 'available' ? cekVal : statIkk
+        const tipe = status === '3' || status === '4' ? 'verif' : status === '6' || status === '8' ? 'ajuan bayar' : 'approve'
         const newIkk = []
-        await this.props.getIkk(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2)
-        this.setState({filterIkk: val, newIkk: newIkk})
+        this.setState({filterIkk: val, newIkk: newIkk, statIkk: status})
+
+        await this.props.getIkk(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, searchIkk, depoIkk)
     }
 
     changeStatIkk = async (val) => {
         const {filterIkk, time1Ikk, time2Ikk} = this.state
+        const {depoIkk, searchIkk} = this.state
         const cekTime1 = time1Ikk === '' ? 'undefined' : time1Ikk
         const cekTime2 = time2Ikk === '' ? 'undefined' : time2Ikk
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const tipe = val === '3' || val === '4' ? 'verif' : val === '6' ? 'ajuan bayar' : 'approve'
+        const tipe = val === '3' || val === '4' ? 'verif' : val === '6' || val === '8' ? 'ajuan bayar' : 'approve'
         const status = val
-        console.log(typeof status)
-        console.log(tipe, filterIkk, status)
-        await this.props.getIkk(token, status, 'all', 'all', filterIkk, tipe, 'undefined', cekTime1, cekTime2)
-        this.setState({statIkk: val})
+        const filterFin = (val === 'all' && filterIkk === 'available') || (val === '8' && (filterIkk === 'available' || filterIkk === 'reject')) ? 'all' : filterIkk
+        this.setState({statIkk: val, filterIkk: filterFin})
+
+        await this.props.getIkk(token, status, 'all', 'all', filterFin, tipe, 'undefined', cekTime1, cekTime2, searchIkk, depoIkk)
+    }
+
+    changeDepoIkk = async () => {
+        this.openDepo()
+        const {depoIkk, searchIkk} = this.state
+        const token = localStorage.getItem("token")
+        const {time1Ikk, time2Ikk, filter, statIkk} = this.state
+        const cekTime1 = time1Ikk === '' ? 'undefined' : time1Ikk
+        const cekTime2 = time2Ikk === '' ? 'undefined' : time2Ikk
+        const statNow = statIkk
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
+        await this.props.getIkk(token, statIkk, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, searchIkk, depoIkk)
+    }
+
+    searchIkk = async (val) => {
+        const {depoIkk} = this.state
+        const token = localStorage.getItem("token")
+        const {time1Ikk, time2Ikk, filter, statIkk} = this.state
+        const cekTime1 = time1Ikk === '' ? 'undefined' : time1Ikk
+        const cekTime2 = time2Ikk === '' ? 'undefined' : time2Ikk
+        this.setState({searchIkk: val.target.value})
+        const statNow = statIkk
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
+        if(val.key === 'Enter'){
+            await this.props.getIkk(token, statIkk, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, val.target.value, depoIkk)
+        }
     }
 
     getDataOps = async (value) => {
         const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilterOps(level === '5' ? 'all' : 'available')
+        const cekLevArea = userAppArea.find(item => item === level) !== undefined
+        const cekLevFin = userFinance.find(item => item === level) !== undefined
+        const cekLevFinApp = userFinApp.find(item => item === level) !== undefined
+        this.changeFilterOps(cekLevArea || cekLevFin || cekLevFinApp ? 'available' : 'all')
     }
 
     changeFilterOps = async (val) => {
         const {statOps, time1Ops, time2Ops} = this.state
+        const {depoOps, searchOps} = this.state
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const cekTime1 = time1Ops === '' ? 'undefined' : time1Ops
         const cekTime2 = time2Ops === '' ? 'undefined' : time2Ops
-        const status = statOps
-        const tipe = status === '3' || status === '4' ? 'verif' : status === '6' ? 'ajuan bayar' : 'approve'
+        
+        const cekLevFin = userFinance.find(item => item === level) !== undefined
+        const cekLevFinApp = userFinApp.find(item => item === level) !== undefined
+        const cekVal = cekLevFin ? '3' : cekLevFinApp ? '6' : '2'
+        const status = val === 'available' ? cekVal : statOps
+        const tipe = status === '3' || status === '4' ? 'verif' : status === '6' || status === '8' ? 'ajuan bayar' : 'approve'
         const newOps = []
-        await this.props.getOps(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
-        this.setState({filterOps: val, newOps: newOps})
+        this.setState({filterOps: val, newOps: newOps, statOps: status})
+
+        await this.props.getOps(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps)
     }
 
     changeStatOps = async (val) => {
         const {filterOps, time1Ops, time2Ops} = this.state
+        const {depoOps, searchOps} = this.state
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const cekTime1 = time1Ops === '' ? 'undefined' : time1Ops
         const cekTime2 = time2Ops === '' ? 'undefined' : time2Ops
-        const tipe = val === '3' || val === '4' ? 'verif' : val === '6' ? 'ajuan bayar' : 'approve'
+        const tipe = val === '3' || val === '4' ? 'verif' : val === '6' || val === '8' ? 'ajuan bayar' : 'approve'
         const status = val
-        await this.props.getOps(token, status, 'all', 'all', filterOps, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
-        this.setState({statOps: val})
+        const filterFin = (val === 'all' && filterOps === 'available') || (val === '8' && (filterOps === 'available' || filterOps === 'reject')) ? 'all' : filterOps 
+        this.setState({statOps: val, filterOps: filterFin})
+
+        await this.props.getOps(token, status, 'all', 'all', filterFin, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps)
+    }
+
+    changeDepoOps = async () => {
+        this.openDepo()
+        const {depoOps, searchOps} = this.state
+        const token = localStorage.getItem("token")
+        const {time1Ops, time2Ops, filter, statOps} = this.state
+        const cekTime1 = time1Ops === '' ? 'undefined' : time1Ops
+        const cekTime2 = time2Ops === '' ? 'undefined' : time2Ops
+        const statNow = statOps
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
+        await this.props.getOps(token, statOps, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps)
+    }
+
+    searchOps = async (val) => {
+        const {depoOps} = this.state
+        const token = localStorage.getItem("token")
+        const {time1Ops, time2Ops, filter, statOps} = this.state
+        const cekTime1 = time1Ops === '' ? 'undefined' : time1Ops
+        const cekTime2 = time2Ops === '' ? 'undefined' : time2Ops
+        this.setState({searchOps: val.target.value})
+        const statNow = statOps
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
+        if(val.key === 'Enter'){
+            await this.props.getOps(token, statOps, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', val.target.value, 'undefined', 'undefined', depoOps)
+        }
     }
 
     getDataKasbon = async (value) => {
         const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        this.changeFilterKasbon(level === '5' ? 'all' : 'available')
+        const cekLevArea = userAppArea.find(item => item === level) !== undefined
+        const cekLevFin = userFinance.find(item => item === level) !== undefined
+        const cekLevFinApp = userFinApp.find(item => item === level) !== undefined
+        const cekLevTax = userTax.find(item => item === level) !== undefined
+        this.changeFilterKasbon(cekLevArea || cekLevFin || cekLevFinApp || cekLevTax ? 'available' : 'all')
     }
 
     changeFilterKasbon = async (val) => {
         const {statKasbon, time1Kasbon, time2Kasbon} = this.state
+        const {depoKasbon, searchKasbon} = this.state
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const cekTime1 = time1Kasbon === '' ? 'undefined' : time1Kasbon
         const cekTime2 = time2Kasbon === '' ? 'undefined' : time2Kasbon
-        const status = statKasbon
-        const tipe = status === '3' || status === '4' ? 'verif' : status === '6' ? 'ajuan bayar' : 'approve'
+        
+        const cekLevFin = userFinance.find(item => item === level) !== undefined
+        const cekLevFinApp = userFinApp.find(item => item === level) !== undefined
+        const cekLevTax = userTax.find(item => item === level) !== undefined
+        const cekVal = cekLevFin ? '3' : cekLevFinApp ? '6' : cekLevTax ? '4' : '2'
+        const status = val === 'available' ? cekVal : statKasbon
+        const tipe = status === '3' || status === '4' ? 'verif' : status === '6' || status === '8' ? 'ajuan bayar' : 'approve'
         const newKasbon = []
-        await this.props.getKasbon(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
-        this.setState({filterKasbon: val, newKasbon: newKasbon})
+        this.setState({filterKasbon: val, newKasbon: newKasbon, statKasbon: status})
+
+        await this.props.getKasbon(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon)
     }
 
     changeStatKasbon = async (val) => {
         const {filterKasbon, time1Kasbon, time2Kasbon} = this.state
+        const {depoKasbon, searchKasbon} = this.state
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const cekTime1 = time1Kasbon === '' ? 'undefined' : time1Kasbon
         const cekTime2 = time2Kasbon === '' ? 'undefined' : time2Kasbon
-        const tipe = val === '3' || val === '4' ? 'verif' : val === '6' ? 'ajuan bayar' : 'approve'
+        const tipe = val === '3' || val === '4' ? 'verif' : val === '6' || val === '8' ? 'ajuan bayar' : 'approve'
         const status = val
-        await this.props.getKasbon(token, status, 'all', 'all', filterKasbon, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
-        this.setState({statKasbon: val})
+        const filterFin = (val === 'all' && filterKasbon === 'available') || (val === '8' && (filterKasbon === 'available' || filterKasbon === 'reject')) ? 'all' : filterKasbon 
+        this.setState({statKasbon: val, filterKasbon: filterFin})
+
+        await this.props.getKasbon(token, status, 'all', 'all', filterFin, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon)
+    }
+
+    changeDepoKasbon = async () => {
+        this.openDepo()
+        const {depoKasbon, searchKasbon} = this.state
+        const token = localStorage.getItem("token")
+        const {time1Kasbon, time2Kasbon, filter, statKasbon} = this.state
+        const cekTime1 = time1Kasbon === '' ? 'undefined' : time1Kasbon
+        const cekTime2 = time2Kasbon === '' ? 'undefined' : time2Kasbon
+        const statNow = statKasbon
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
+        await this.props.getKasbon(token, statKasbon, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon)
+    }
+
+    searchKasbon = async (val) => {
+        const {depoKasbon} = this.state
+        const token = localStorage.getItem("token")
+        const {time1Kasbon, time2Kasbon, filter, statKasbon} = this.state
+        const cekTime1 = time1Kasbon === '' ? 'undefined' : time1Kasbon
+        const cekTime2 = time2Kasbon === '' ? 'undefined' : time2Kasbon
+        this.setState({searchKasbon: val.target.value})
+        const statNow = statKasbon
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
+        if(val.key === 'Enter'){
+            await this.props.getKasbon(token, statKasbon, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', val.target.value, depoKasbon)
+        }
     }
 
     getDataList = async () => {
@@ -974,14 +1395,15 @@ class Klaim extends Component {
     }
 
     getDataTimeKlaim = async () => {
-        const {time1Klaim, time2Klaim, filter, statKlaim} = this.state
+        const {depoKlaim} = this.state
+        const {time1Klaim, time2Klaim, filter, statKlaim, searchKlaim} = this.state
         const cekTime1 = time1Klaim === '' ? 'undefined' : time1Klaim
         const cekTime2 = time2Klaim === '' ? 'undefined' : time2Klaim
         const token = localStorage.getItem("token")
         const statNow = statKlaim
-        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' ? 'ajuan bayar' : 'approve'
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
         const status = statKlaim
-        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2)
+        await this.props.getKlaim(token, status, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, searchKlaim, depoKlaim)
     }
 
     changeTimeOps = async (val) => {
@@ -1001,13 +1423,14 @@ class Klaim extends Component {
 
     getDataTimeOps = async () => {
         const {time1Ops, time2Ops, filterOps, statOps} = this.state
+        const {depoOps, searchOps} = this.state
         const cekTime1 = time1Ops === '' ? 'undefined' : time1Ops
         const cekTime2 = time2Ops === '' ? 'undefined' : time2Ops
         const statNow = statOps
-        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' ? 'ajuan bayar' : 'approve'
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
         const token = localStorage.getItem("token")
         const status = statOps
-        await this.props.getOps(token, filterOps === 'all' ? 'all' : status, 'all', 'all', filterOps, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
+        await this.props.getOps(token, status, 'all', 'all', filterOps, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps)
     }
 
     changeTimeKasbon = async (val) => {
@@ -1027,13 +1450,14 @@ class Klaim extends Component {
 
     getDataTimeKasbon = async () => {
         const {time1Kasbon, time2Kasbon, filterKasbon, statKasbon} = this.state
+        const {depoKasbon, searchKasbon} = this.state
         const cekTime1 = time1Kasbon === '' ? 'undefined' : time1Kasbon
         const cekTime2 = time2Kasbon === '' ? 'undefined' : time2Kasbon
         const statNow = statKasbon
-        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' ? 'ajuan bayar' : 'approve'
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
         const token = localStorage.getItem("token")
         const status = statKasbon
-        await this.props.getKasbon(token, filterKasbon === 'all' ? 'all' : status, 'all', 'all', filterKasbon, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon')
+        await this.props.getKasbon(token, status, 'all', 'all', filterKasbon, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon)
     }
 
     changeTimeIkk = async (val) => {
@@ -1053,20 +1477,21 @@ class Klaim extends Component {
 
     getDataTimeIkk = async () => {
         const {time1Ikk, time2Ikk, filterIkk, statIkk} = this.state
+        const {depoIkk, searchIkk} = this.state
         const cekTime1 = time1Ikk === '' ? 'undefined' : time1Ikk
         const cekTime2 = time2Ikk === '' ? 'undefined' : time2Ikk
         const token = localStorage.getItem("token")
         const statNow = statIkk
-        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' ? 'ajuan bayar' : 'approve'
+        const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
         const status = statIkk
-        await this.props.getIkk(token, filterIkk === 'all' ? 'all' : status, 'all', 'all', filterIkk, tipe, 'undefined', cekTime1, cekTime2)
+        await this.props.getIkk(token, status, 'all', 'all', filterIkk, tipe, 'undefined', cekTime1, cekTime2, searchIkk, depoIkk)
     }
 
 
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {typeTrans} = this.state
+        const {typeTrans, tipeDepo, depoKlaim, depoOps, depoKasbon, depoIkk, klaimDepo, opsDepo, kasbonDepo, ikkDepo} = this.state
         const { dataReason } = this.props.reason
         const { detailKlaim, dataDoc, newKlaim, isLoading } = this.props.klaim
         const { detailIkk, newIkk } = this.props.ikk
@@ -1118,16 +1543,51 @@ class Klaim extends Component {
                                 <div className={style.titleDashboard}>Dashboard</div>
                             </div>
                             <div className='boxDash'>
-                                <div className='subtitle'>Klaim</div>
+                                <div className='rowBetween'>
+                                    <div className='subtitle' onClick={() => this.goRoute('navklaim')}>Klaim </div>
+                                    <MdOpenInNew size={30} onClick={() => this.goRoute('navklaim')} />
+                                </div>
                                 <div className={style.secEmail3}>
-                                    <Button color='primary' onClick={() => this.goRoute('klaim')}>More Data</Button>
+                                    <Button color='primary' onClick={() => this.downloadData('klaim')}>Download</Button>
+                                    {level === '5' || level === '6' ? (
+                                        <div></div>
+                                    ) : (
+                                        <div className={style.searchEmail2}>
+                                            <Col md={2}>
+                                                Depo:
+                                            </Col>
+                                            <Col md={10}>
+                                                <Input className={style.filter} type="select" value={this.state.depoKlaim} onClick={() => this.prosesOpenDepo('klaim')}>
+                                                    <option disabled value="pilih">---Pilih Depo---</option>
+                                                    <option disabled value="all">All</option>
+                                                    <option disabled value={this.state.depoKlaim}>{this.state.depoKlaim}</option>
+                                                </Input>
+                                            </Col>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className={style.secEmail4}>
                                     <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilterKlaim(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="reject">Reject</option>
-                                            <option value="available">Available Approve</option>
+                                        <text>Search: </text>
+                                        <Input 
+                                            className={style.search}
+                                            onChange={this.searchKlaim}
+                                            value={this.state.searchKlaim}
+                                            onKeyPress={this.searchKlaim}
+                                            >
                                         </Input>
+                                    </div>
+                                    <div className={style.searchEmail2}>
+                                        <Col md={2}>
+                                            Filter:
+                                        </Col>
+                                        <Col md={10}>
+                                            <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilterKlaim(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="reject">Reject</option>
+                                                <option value="available">Available Approve</option>
+                                            </Input>
+                                        </Col>
                                     </div>
                                 </div>
                                 <div className={[style.secEmail4]}>
@@ -1168,14 +1628,19 @@ class Klaim extends Component {
                                         ) : null}
                                     </div>
                                     <div className={style.searchEmail2}>
-                                        <text>Status:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.statKlaim} onChange={e => this.changeStatKlaim(e.target.value)}>
-                                            <option value='all'>All</option>
-                                            <option value={2} >Pengajuan Area</option>
-                                            <option value={6} >List Ajuan Bayar</option>
-                                            <option value={3} >Verifikasi Finance</option>
-                                            <option value={4} >Verifikasi Klaim</option>
-                                        </Input>
+                                        <Col md={2}>
+                                            Status:
+                                        </Col>
+                                        <Col md={10}>
+                                            <Input className={style.filter} type="select" value={this.state.statKlaim} onChange={e => this.changeStatKlaim(e.target.value)}>
+                                                <option value='all'>All</option>
+                                                <option value={2} >Pengajuan Area</option>
+                                                <option value={3} >Verifikasi Finance</option>
+                                                <option value={4} >Verifikasi Klaim</option>
+                                                <option value={6} >List Ajuan Bayar</option>
+                                                <option value={8} >Sudah Payment</option>
+                                            </Input>
+                                        </Col>
                                     </div>
                                 </div>
                                 <div className={style.tableDashboard}>
@@ -1195,7 +1660,34 @@ class Klaim extends Component {
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             {this.state.filter === "available" && (
-                                                                <Button size='sm' onClick={() => this.goProses({route: 'klaim', type: 'approve', item: item})}  className='mb-1 mr-1' color='success'>Proses</Button>
+                                                                <Button 
+                                                                size='sm' 
+                                                                onClick={() => this.goProses(
+                                                                    {
+                                                                        route: this.state.statKlaim === '2' ? 'klaim' : this.state.statKlaim === '6' ? 'listklm' : this.state.statKlaim === '3' && item.status_transaksi === 5 ? 'listklm' : 'veriffinklm', 
+                                                                        type: 'approve', 
+                                                                        item: item
+                                                                    }
+                                                                )}  
+                                                                className='mb-1 mr-1' 
+                                                                color='success'>
+                                                                    Proses
+                                                                </Button>
+                                                            )}
+                                                            {item.status_reject === 1 && (level === '5' || level === '6') && (
+                                                                <Button 
+                                                                size='sm' 
+                                                                onClick={() => this.goProses(
+                                                                    {
+                                                                        route: 'revklm', 
+                                                                        type: 'revisi', 
+                                                                        item: item
+                                                                    }
+                                                                )}  
+                                                                className='mb-1 mr-1' 
+                                                                color='success'>
+                                                                    Proses
+                                                                </Button>
                                                             )}
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesDetail({type: 'klaim', item: item})} color='warning'>Rincian</Button>
                                                         </th>
@@ -1221,17 +1713,50 @@ class Klaim extends Component {
                                 </div>
                             </div>
                             <div className='boxDash'>
-                                <div className='subtitle'>Operasional</div>
+                                <div className='rowBetween'>
+                                    <div className='subtitle' onClick={() => this.goRoute('navops')}>Operasional </div>
+                                    <MdOpenInNew size={30} onClick={() => this.goRoute('navops')} />
+                                </div>
                                 <div className={style.secEmail3}>
-                                    <Button color='primary' onClick={() => this.goRoute('ops')}>More Data</Button>
+                                    <Button color='primary' onClick={() => this.downloadData('ops')}>Download</Button>
+                                    {level === '5' || level === '6' ? (
+                                        <div></div>
+                                    ) : (
+                                        <div className={style.searchEmail2}>
+                                            <Col md={2}>
+                                                Depo:
+                                            </Col>
+                                            <Col md={10}>
+                                                <Input className={style.filter} type="select" value={this.state.depoOps} onClick={() => this.prosesOpenDepo('ops')}>
+                                                    <option disabled value="pilih">---Pilih Depo---</option>
+                                                    <option disabled value="all">All</option>
+                                                    <option disabled value={this.state.depoOps}>{this.state.depoOps}</option>
+                                                </Input>
+                                            </Col>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className={style.secEmail4}>
                                     <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filterOps} onChange={e => this.changeFilterOps(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="reject">Reject</option>
-                                            <option value="available">Available Approve</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        <text>Search: </text>
+                                        <Input 
+                                            className={style.search}
+                                            onChange={this.searchOps}
+                                            value={this.state.searchOps}
+                                            onKeyPress={this.searchOps}
+                                            >
                                         </Input>
+                                    </div>
+                                    <div className={style.searchEmail2}>
+                                        <Col md={2}>Filter:  </Col>
+                                        <Col md={10}>
+                                            <Input className={style.filter} type="select" value={this.state.filterOps} onChange={e => this.changeFilterOps(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="reject">Reject</option>
+                                                <option value="available">Available Approve</option>
+                                                {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                            </Input>
+                                        </Col>
                                     </div>
                                 </div>
                                 <div className={[style.secEmail4]}>
@@ -1272,14 +1797,17 @@ class Klaim extends Component {
                                         ) : null}
                                     </div>
                                     <div className={style.searchEmail2}>
-                                        <text>Status:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.statOps} onChange={e => this.changeStatOps(e.target.value)}>
-                                        <option value='all'>All</option>
-                                            <option value={2} >Pengajuan Area</option>
-                                            <option value={6} >List Ajuan Bayar</option>
-                                            <option value={3} >Verifikasi Finance</option>
-                                            <option value={4} >Verifikasi Tax</option>
-                                        </Input>
+                                        <Col md={2}>Status:  </Col>
+                                        <Col md={10}>
+                                            <Input className={style.filter} type="select" value={this.state.statOps} onChange={e => this.changeStatOps(e.target.value)}>
+                                                <option value='all'>All</option>
+                                                <option value={2} >Pengajuan Area</option>
+                                                <option value={3} >Verifikasi Finance</option>
+                                                {/* <option value={4} >Verifikasi Tax</option> */}
+                                                <option value={6} >List Ajuan Bayar</option>
+                                                <option value={8} >Sudah Payment</option>
+                                            </Input>
+                                        </Col>
                                     </div>
                                 </div>
                                 <div className={style.tableDashboard}>
@@ -1299,7 +1827,30 @@ class Klaim extends Component {
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             {this.state.filterOps === "available" && (
-                                                                <Button size='sm' onClick={() => this.goProses({route: 'ops', type: 'approve', item: item})}  className='mb-1 mr-1' color='success'>Proses</Button>
+                                                                <Button size='sm' 
+                                                                onClick={() => this.goProses(
+                                                                    {
+                                                                        route: this.state.statOps === '2' ? 'ops' : this.state.statOps === '6' ? 'listops' : this.state.statOps === '3' && item.status_transaksi === 5 ? 'listops' : 'veriffintax', 
+                                                                        type: 'approve', 
+                                                                        item: item
+                                                                    }
+                                                                )}  
+                                                                className='mb-1 mr-1' color='success'>
+                                                                    Proses
+                                                                </Button>
+                                                            )}
+                                                            {item.status_reject === 1 && (level === '5' || level === '6') && (
+                                                                <Button size='sm' 
+                                                                onClick={() => this.goProses(
+                                                                    {
+                                                                        route: 'revops', 
+                                                                        type: 'revisi', 
+                                                                        item: item
+                                                                    }
+                                                                )}  
+                                                                className='mb-1 mr-1' color='success'>
+                                                                    Revisi
+                                                                </Button>
                                                             )}
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesDetail({type: 'ops', item: item})} color='warning'>Rincian</Button>
                                                         </th>
@@ -1325,17 +1876,50 @@ class Klaim extends Component {
                                 </div>
                             </div>
                             <div className='boxDash'>
-                                <div className='subtitle'>Kasbon</div>
+                                <div className='rowBetween'>
+                                    <div className='subtitle' onClick={() => this.goRoute('navkasbon')}>Kasbon </div>
+                                    <MdOpenInNew size={30} onClick={() => this.goRoute('navkasbon')} />
+                                </div>
                                 <div className={style.secEmail3}>
-                                    <Button color='primary' onClick={() => this.goRoute('kasbon')}>More Data</Button>
+                                    <Button color='primary' onClick={() => this.downloadData('kasbon')}>Download</Button>
+                                    {level === '5' || level === '6' ? (
+                                        <div></div>
+                                    ) : (
+                                        <div className={style.searchEmail2}>
+                                            <Col md={2}>
+                                                Depo:
+                                            </Col>
+                                            <Col md={10}>
+                                                <Input className={style.filter} type="select" value={this.state.depoKasbon} onClick={() => this.prosesOpenDepo('kasbon')}>
+                                                    <option disabled value="pilih">---Pilih Depo---</option>
+                                                    <option disabled value="all">All</option>
+                                                    <option disabled value={this.state.depoKasbon}>{this.state.depoKasbon}</option>
+                                                </Input>
+                                            </Col>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className={style.secEmail4}>
                                     <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filterKasbon} onChange={e => this.changeFilterKasbon(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="reject">Reject</option>
-                                            <option value="available">Available Approve</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        <text>Search: </text>
+                                        <Input 
+                                            className={style.search}
+                                            onChange={this.searchKasbon}
+                                            value={this.state.searchKasbon}
+                                            onKeyPress={this.searchKasbon}
+                                            >
                                         </Input>
+                                    </div>
+                                    <div className={style.searchEmail2}>
+                                        <Col md={2}>Filter:  </Col>
+                                        <Col md={10}>
+                                            <Input className={style.filter} type="select" value={this.state.filterKasbon} onChange={e => this.changeFilterKasbon(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="reject">Reject</option>
+                                                <option value="available">Available Approve</option>
+                                                {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                            </Input>
+                                        </Col>
                                     </div>
                                 </div>
                                 <div className={[style.secEmail4]}>
@@ -1376,14 +1960,17 @@ class Klaim extends Component {
                                         ) : null}
                                     </div>
                                     <div className={style.searchEmail2}>
-                                        <text>Status:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.statKasbon} onChange={e => this.changeStatKasbon(e.target.value)}>
-                                        <option value='all'>All</option>
-                                            <option value={2} >Pengajuan Area</option>
-                                            <option value={6} >List Ajuan Bayar</option>
-                                            <option value={3} >Verifikasi Finance</option>
-                                            <option value={4} >Verifikasi Tax</option>
-                                        </Input>
+                                        <Col md={2}>Status:  </Col>
+                                        <Col md={10}>
+                                            <Input className={style.filter} type="select" value={this.state.statKasbon} onChange={e => this.changeStatKasbon(e.target.value)}>
+                                                <option value='all'>All</option>
+                                                <option value={2} >Pengajuan Area</option>
+                                                <option value={3} >Verifikasi Finance</option>
+                                                <option value={4} >Verifikasi Tax</option>
+                                                <option value={6} >List Ajuan Bayar</option>
+                                                <option value={8} >Sudah Payment</option>
+                                            </Input>
+                                        </Col>
                                     </div>
                                 </div>
                                 <div className={style.tableDashboard}>
@@ -1403,7 +1990,32 @@ class Klaim extends Component {
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             {this.state.filterKasbon === "available" && (
-                                                                <Button size='sm' onClick={() => this.goProses({route: 'kasbon', type: 'approve', item: item})}  className='mb-1 mr-1' color='success'>Proses</Button>
+                                                                <Button 
+                                                                size='sm' 
+                                                                onClick={() => this.goProses(
+                                                                    {
+                                                                        route: this.state.statKasbon === '2' ? 'kasbon' : this.state.statKasbon === '4' ? 'verifkasbon' : this.state.statKasbon === '6' ? 'listops' : this.state.statKasbon === '3' && item.status_transaksi === 5 ? 'listops' : 'veriffintax', 
+                                                                        type: 'approve', 
+                                                                        item: item
+                                                                    }
+                                                                )}  
+                                                                className='mb-1 mr-1' color='success'>
+                                                                    Proses
+                                                                </Button>
+                                                            )}
+                                                            {item.status_reject === 1 && (level === '5' || level === '6') && (
+                                                                <Button 
+                                                                size='sm' 
+                                                                onClick={() => this.goProses(
+                                                                    {
+                                                                        route: 'revkasbon', 
+                                                                        type: 'revisi', 
+                                                                        item: item
+                                                                    }
+                                                                )}  
+                                                                className='mb-1 mr-1' color='success'>
+                                                                    Revisi
+                                                                </Button>
                                                             )}
                                                             <Button size='sm' className='mb-1' onClick={() => this.prosesDetail({type: 'kasbon', item: item})} color='warning'>Rincian</Button>
                                                         </th>
@@ -1429,17 +2041,50 @@ class Klaim extends Component {
                                 </div>
                             </div>
                             <div className='boxDash mb-4'>
-                                <div className='subtitle'>Ikhtisar Kas Kecil</div>
+                                <div className='rowBetween'>
+                                    <div className='subtitle' onClick={() => this.goRoute('navikk')}>Ikhtisar Kas Kecil </div>
+                                    <MdOpenInNew size={30} onClick={() => this.goRoute('navikk')} />
+                                </div>
                                 <div className={style.secEmail3}>
-                                    <Button color='primary' onClick={() => this.goRoute('ikk')}>More Data</Button>
-                                    <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.filterIkk} onChange={e => this.changeFilterIkk(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="reject">Reject</option>
-                                            <option value="available">Available Approve</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                    <Button color='primary' onClick={() => this.downloadData('ikk')}>Download</Button>
+                                    {level === '5' || level === '6' ? (
+                                        <div></div>
+                                    ) : (
+                                        <div className={style.searchEmail2}>
+                                            <Col md={2}>
+                                                Depo:
+                                            </Col>
+                                            <Col md={10}>
+                                                <Input className={style.filter} type="select" value={this.state.depoIkk} onClick={() => this.prosesOpenDepo('ikk')}>
+                                                    <option disabled value="pilih">---Pilih Depo---</option>
+                                                    <option disabled value="all">All</option>
+                                                    <option disabled value={this.state.depoIkk}>{this.state.depoIkk}</option>
+                                                </Input>
+                                            </Col>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className={style.secEmail4}>
+                                <div className={style.searchEmail2}>
+                                        <text>Search: </text>
+                                        <Input 
+                                            className={style.search}
+                                            onChange={this.searchIkk}
+                                            value={this.state.searchIkk}
+                                            onKeyPress={this.searchIkk}
+                                            >
                                         </Input>
+                                    </div>
+                                    <div className={style.searchEmail2}>
+                                        <Col md={2}>Filter:  </Col>
+                                        <Col md={10}>
+                                            <Input className={style.filter} type="select" value={this.state.filterIkk} onChange={e => this.changeFilterIkk(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="reject">Reject</option>
+                                                <option value="available">Available Approve</option>
+                                                {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                            </Input>
+                                        </Col>
                                     </div>
                                 </div>
                                 <div className={[style.secEmail4]}>
@@ -1480,14 +2125,17 @@ class Klaim extends Component {
                                         ) : null}
                                     </div>
                                     <div className={style.searchEmail2}>
-                                        <text>Status:  </text>
-                                        <Input className={style.filter} type="select" value={this.state.statIkk} onChange={e => this.changeStatIkk(e.target.value)}>
-                                            <option value='all'>All</option>
-                                            <option value={2} >Pengajuan Area</option>
-                                            <option value={6} >List Ajuan Bayar</option>
-                                            <option value={3} >Verifikasi Finance</option>
-                                            <option value={4} >Verifikasi Tax</option>
-                                        </Input>
+                                        <Col md={2}>Status:  </Col>
+                                        <Col md={10}>
+                                            <Input className={style.filter} type="select" value={this.state.statIkk} onChange={e => this.changeStatIkk(e.target.value)}>
+                                                <option value='all'>All</option>
+                                                <option value={2} >Pengajuan Area</option>
+                                                <option value={3} >Verifikasi Finance</option>
+                                                {/* <option value={4} >Verifikasi Tax</option> */}
+                                                <option value={6} >List Ajuan Bayar</option>
+                                                <option value={8} >Sudah Payment</option>
+                                            </Input>
+                                        </Col>
                                     </div>
                                 </div>
                                 <div className={style.tableDashboard}>
@@ -1502,7 +2150,7 @@ class Klaim extends Component {
                                                         <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
-                                                        <th>{item.keterangan}</th>
+                                                        <th>{item.uraian}</th>
                                                         <th>{moment(item.start_ikk).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                         <th>
@@ -1515,6 +2163,19 @@ class Klaim extends Component {
                                                                 className='mb-1 mr-1' 
                                                                 color='success'>
                                                                     Proses
+                                                                </Button>
+                                                            )}
+                                                            {item.status_reject === 1 && (level === '5' || level === '6') && (
+                                                                <Button size='sm' 
+                                                                onClick={() => this.goProses(
+                                                                    {
+                                                                        route: 'revikk', 
+                                                                        type: 'revisi', 
+                                                                        item: item
+                                                                    }
+                                                                )}  
+                                                                className='mb-1 mr-1' color='success'>
+                                                                    Revisi
                                                                 </Button>
                                                             )}
                                                             <Button 
@@ -1837,7 +2498,7 @@ class Klaim extends Component {
                     <hr/>
                     <div className={style.foot}>
                         <div>
-                            <Button color="success" onClick={() => this.downloadData()}>Download</Button>
+                            <Button color="success" onClick={() => this.downloadDokumen()}>Download</Button>
                         </div>
                         <Button color="primary" onClick={() => this.setState({openPdf: false})}>Close</Button>
                     </div>
@@ -1846,12 +2507,12 @@ class Klaim extends Component {
             <Modal isOpen={this.state.formDis} toggle={() => {this.openModalDis()}} size="xl">
                 <ModalBody>
                     {typeTrans === 'klaim' ? (
-                            <Tracking />
-                        ) : typeTrans === 'ops' || typeTrans === 'kasbon' ? (
-                            <TrackingOps />
-                        ) : (
-                            <TrackingIkk />
-                        )}
+                        <Tracking />
+                    ) : typeTrans === 'ops' || typeTrans === 'kasbon' ? (
+                        <TrackingOps />
+                    ) : (
+                        <TrackingIkk />
+                    )}
                 </ModalBody>
                 <hr />
                 <div className="modalFoot ml-3">
@@ -1864,6 +2525,7 @@ class Klaim extends Component {
                 </div>
             </Modal>
             <Modal isOpen={this.state.history} toggle={this.openHistory}>
+                <ModalHeader>Dokumen</ModalHeader>
                 <ModalBody>
                     <div className='mb-4'>History Transaksi</div>
                     <div className='history'>
@@ -1875,6 +2537,105 @@ class Klaim extends Component {
                         })}
                     </div>
                 </ModalBody>
+            </Modal>
+            <Modal isOpen={this.state.modalDepo} toggle={this.openDepo} size="lg">
+                <ModalHeader>Pilih Depo</ModalHeader>
+                <ModalBody>
+                    <Row className="mb-2 rowRinci">
+                        <Col md={3}>Depo</Col>
+                        <Col md={9} className="colRinci">
+                            <Select
+                                className="inputRinci2"
+                                options={
+                                    tipeDepo === 'klaim' ? this.state.klaimDepo :
+                                    tipeDepo === 'ops' ? this.state.opsDepo : 
+                                    tipeDepo === 'kasbon' ? this.state.kasbonDepo :
+                                    this.state.ikkDepo
+                                }
+                                value={{value: '', label: "---pilih depo---"}}
+                                onChange={
+                                    tipeDepo === 'klaim' ? this.selectDepoKlaim :
+                                    tipeDepo === 'ops' ? this.selectDepoOps : 
+                                    tipeDepo === 'kasbon' ? this.selectDepoKasbon :
+                                    this.selectDepoIkk
+                                }
+                            />
+                        </Col>
+                    </Row>
+                    <Row className="mb-2 addModalMenu">
+                        <Col md={3}>Selected depo</Col>
+                        <Col md={9} className='listcek'>
+                            <div className='listcek maleft'>
+                            {tipeDepo === 'klaim' ? (
+                                depoKlaim.split(',').map(item => {
+                                    return (
+                                        <div className='mr-5'>
+                                            <Input 
+                                            type="checkbox"
+                                            checked
+                                            onClick={() => this.selectDepoKlaim({value: item})}
+                                            />
+                                            <text>{klaimDepo.find(x => x.value === item) !== undefined && klaimDepo.find(x => x.value === item).label}</text>
+                                        </div>
+                                    )
+                                })
+                            ) : tipeDepo === 'ops' ? (
+                                depoOps.split(',').map(item => {
+                                    return (
+                                        <div className='mr-5'>
+                                            <Input 
+                                            type="checkbox"
+                                            checked
+                                            onClick={() => this.selectDepoOps({value: item})}
+                                            />
+                                            <text>{opsDepo.find(x => x.value === item) !== undefined && opsDepo.find(x => x.value === item).label}</text>
+                                        </div>
+                                    )
+                                })
+                            ) : tipeDepo === 'kasbon' ? (
+                                depoKasbon.split(',').map(item => {
+                                    return (
+                                        <div className='mr-5'>
+                                            <Input 
+                                            type="checkbox"
+                                            checked
+                                            onClick={() => this.selectDepoKasbon({value: item})}
+                                            />
+                                            <text>{kasbonDepo.find(x => x.value === item) !== undefined && kasbonDepo.find(x => x.value === item).label}</text>
+                                        </div>
+                                    )
+                                })
+                            ) : tipeDepo === 'ikk' && (
+                                depoIkk.split(',').map(item => {
+                                    return (
+                                        <div className='mr-5'>
+                                            <Input 
+                                            type="checkbox"
+                                            checked
+                                            onClick={() => this.selectDepoIkk({value: item})}
+                                            />
+                                            <text>{ikkDepo.find(x => x.value === item) !== undefined && ikkDepo.find(x => x.value === item).label}</text>
+                                        </div>
+                                    )
+                                })
+                            )}
+                            </div>
+                        </Col>
+                    </Row>
+                </ModalBody>
+                <ModalFooter>
+                    <Button 
+                    color='primary' 
+                    onClick={
+                        tipeDepo === 'klaim' ? this.changeDepoKlaim
+                        : tipeDepo === 'ops' ? this.changeDepoOps
+                        : tipeDepo === 'kasbon' ? this.changeDepoKasbon
+                        : this.changeDepoIkk
+                    }>
+                        Apply
+                    </Button>
+                    <Button onClick={this.openDepo}>Close</Button>
+                </ModalFooter>
             </Modal>
             </>
         )

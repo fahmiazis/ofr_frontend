@@ -50,7 +50,7 @@ const {REACT_APP_BACKEND_URL} = process.env
 const vendorSchema = Yup.object().shape({
     nama: Yup.string().required('must be filled'),
     jenis: Yup.string().required('must be filled'),
-    no_npwp: Yup.number().required('must be filled'),
+    no_npwp: Yup.number(),
     no_ktp: Yup.number(),
     alamat: Yup.string().required('must be filled'),
     datef_skb: Yup.date(),
@@ -163,7 +163,8 @@ class IKK extends Component {
             modResmail: false,
             appDoc: false,
             type_skb: '',
-            fileName: {}
+            fileName: {},
+            infoError: ''
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -474,6 +475,13 @@ class IKK extends Component {
         }
     }
 
+    setError = (val) => {
+        this.setState({infoError: val, confirm: 'errfill'})
+        setTimeout(() => {
+            this.openConfirm()
+        }, 100)
+    }
+
     componentDidUpdate() {
         const token = localStorage.getItem("token")
         const { isApprove } = this.props.verven
@@ -733,8 +741,22 @@ class IKK extends Component {
     prosesEdit = async (val) => {
         const token = localStorage.getItem("token")
         const { detailVerven, idVerven } = this.props.verven
+        const tipe = this.state.type_skb
 
-        await this.props.editVerven(token, idVerven.id, val)
+        const sendData = {
+            nama: val.nama,
+            no_npwp: val.no_npwp.length < 16 ? '' : val.no_npwp,
+            no_ktp: val.jenis === 'Orang Pribadi' ? val.no_ktp : '',
+            alamat: val.alamat,
+            jenis: val.jenis,
+            type_skb: tipe,
+            no_skb: val.no_skb,
+            no_skt: val.no_skt,
+            datef_skb: val.datef_skb,
+            datel_skb: val.datel_skb
+        }
+
+        await this.props.editVerven(token, idVerven.id, sendData)
 
         const noData = {
             no: detailVerven[0].no_transaksi
@@ -1417,7 +1439,7 @@ class IKK extends Component {
         const dataSend = {
             nama: dataAdd.nama,
             jenis: dataAdd.jenis,
-            no_npwp: dataAdd.no_npwp,
+            no_npwp: dataAdd.no_npwp.length < 16 ? '' : dataAdd.no_npwp,
             no_ktp: dataAdd.jenis === 'Orang Pribadi' ? dataAdd.no_ktp : '',
             alamat: dataAdd.alamat,
             no: noTrans,
@@ -1681,6 +1703,7 @@ class IKK extends Component {
                                                 <th>AREA</th>
                                                 <th>TGL AJUAN</th>
                                                 <th>NAMA VENDOR</th>
+                                                <th>JENIS VENDOR</th>
                                                 <th>NPWP</th>
                                                 <th>NIK</th>
                                                 <th>STATUS</th>
@@ -1697,6 +1720,7 @@ class IKK extends Component {
                                                         <th>{item.depo.area}</th>
                                                         <th>{moment(item.start_transaksi).format('DD MMMM YYYY')}</th>
                                                         <th>{item.nama}</th>
+                                                        <th>{item.jenis_vendor !== null && item.jenis_vendor !== '' ? item.jenis_vendor : item.nik === null || item.nik === '' || item.nik === 'TIDAK ADA' ? "Badan" : "Orang Pribadi"}</th>
                                                         <th>{item.npwp}</th>
                                                         <th>{item.nik}</th>
                                                         <th>
@@ -1744,6 +1768,7 @@ class IKK extends Component {
                                                 <th>AREA</th>
                                                 <th>TGL AJUAN</th>
                                                 <th>NAMA VENDOR</th>
+                                                <th>JENIS VENDOR</th>
                                                 <th>NPWP</th>
                                                 <th>NIK</th>
                                                 <th>STATUS</th>
@@ -1760,6 +1785,7 @@ class IKK extends Component {
                                                         <th>{item.depo.area}</th>
                                                         <th>{moment(item.start_transaksi).format('DD MMMM YYYY')}</th>
                                                         <th>{item.nama}</th>
+                                                        <th>{item.jenis_vendor !== null && item.jenis_vendor !== '' ? item.jenis_vendor : item.nik === null || item.nik === '' || item.nik === 'TIDAK ADA' ? "Badan" : "Orang Pribadi"}</th>
                                                         <th>{item.npwp}</th>
                                                         <th>{item.nik}</th>
                                                         <th>
@@ -1834,7 +1860,7 @@ class IKK extends Component {
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama Vendor
+                                Nama Vendor <text className='txtError'>{'*'}</text>
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -1844,14 +1870,14 @@ class IKK extends Component {
                                 onBlur={handleBlur("nama")}
                                 onChange={handleChange("nama")}
                                 />
-                                {errors.nama ? (
+                                {/* {errors.nama ? (
                                     <text className={style.txtError}>{errors.nama}</text>
-                                ) : null}
+                                ) : null} */}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Jenis Vendor
+                                Jenis Vendor <text className='txtError'>{'*'}</text>
                             </text>
                             <div className="col-md-9">
                                 <Input
@@ -1864,14 +1890,14 @@ class IKK extends Component {
                                         <option value="Orang Pribadi">Orang Pribadi</option>
                                         <option value="Badan">Badan</option>
                                 </Input>
-                                {errors.jenis || values.jenis === '' ? (
+                                {/* {errors.jenis || values.jenis === '' ? (
                                     <text className={style.txtError}>{errors.jenis}</text>
-                                ) : null}
+                                ) : null} */}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                No NPWP
+                                No NPWP {values.jenis === 'Badan' && <text className='txtError'>{'*'}</text>}
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -1881,18 +1907,21 @@ class IKK extends Component {
                                     // .replace(/(\d{2})(\d{3})(\d{3})(\d{1})(\d{3})(\d{3})/, '$1.$2.$3.$4-$5.$6')
                                     onBlur={handleBlur("no_npwp")}
                                     onChange={handleChange("no_npwp")}
-                                    minLength={15}
-                                    maxLength={15}
+                                    minLength={16}
+                                    maxLength={16}
                                     className='spaceChar'
                                 />
-                                {values.no_npwp.toString().length !== 15 || errors.no_npwp ? (
-                                    <text className={style.txtError}>must be filled with number & 15 digits characters</text>
+                                {(
+                                    (values.no_npwp.toString().length !== 16 || errors.no_npwp) && values.jenis === 'Badan') || 
+                                    ((values.no_npwp.toString().length > 0 && values.no_npwp.toString().length < 16) || errors.no_npwp) ? 
+                                (
+                                    <text className={style.txtError}>must be filled with number & 16 digits characters</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                No KTP
+                                No KTP {values.jenis === 'Orang Pribadi' && <text className='txtError'>{'*'}</text>}
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -1913,7 +1942,7 @@ class IKK extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Alamat
+                                Alamat <text className='txtError'>{'*'}</text>
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -1923,14 +1952,14 @@ class IKK extends Component {
                                 onBlur={handleBlur("alamat")}
                                 onChange={handleChange("alamat")}
                                 />
-                                {errors.alamat ? (
+                                {/* {errors.alamat ? (
                                     <text className={style.txtError}>{errors.alamat}</text>
-                                ) : null}
+                                ) : null} */}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Vendor Memiliki SKB / SKT
+                                Vendor Memiliki SKB / SKT <text className='txtError'>{'*'}</text>
                             </text>
                             <div className="col-md-9">
                                 <Input
@@ -1943,9 +1972,9 @@ class IKK extends Component {
                                         <option value="SKB">SKB</option>
                                         <option value="tidak">Tidak</option>
                                 </Input>
-                                {this.state.type_skb === '' ? (
+                                {/* {this.state.type_skb === '' ? (
                                     <text className={style.txtError}>Must be filled</text>
-                                ) : null}
+                                ) : null} */}
                             </div>
                         </div>
                         {(this.state.type_skb === 'SKT' || this.state.type_skb === 'SKB') && (
@@ -1953,7 +1982,7 @@ class IKK extends Component {
                             {this.state.type_skb === 'SKB' && (
                                 <div className={style.addModalDepo}>
                                     <text className="col-md-3">
-                                        No SKB
+                                        No SKB <text className='txtError'>{'*'}</text>
                                     </text>
                                     <div className="col-md-9">
                                         <Input 
@@ -1972,7 +2001,7 @@ class IKK extends Component {
                             {this.state.type_skb === 'SKT' && (
                                 <div className={style.addModalDepo}>
                                     <text className="col-md-3">
-                                        No SKT
+                                        No SKT <text className='txtError'>{'*'}</text>
                                     </text>
                                     <div className="col-md-9">
                                         <Input 
@@ -1990,7 +2019,7 @@ class IKK extends Component {
                             )}
                             <div className={style.addModalDepo}>
                                 <text className="col-md-3">
-                                    Periode SKB / SKT
+                                    Periode SKB / SKT <text className='txtError'>{'*'}</text>
                                 </text>
                                 <div className="col-md-9 rowCenter">
                                     <Input
@@ -2026,7 +2055,7 @@ class IKK extends Component {
                                 <Row className="mt-4 mb-4 ml-1">
                                     {x.path !== null ? (
                                         <Col md={12} lg={12} >
-                                            <div className="btnDocIo mb-2" >{x.desc}</div>
+                                            <div className="btnDocIo mb-2" >{x.desc} <text className='txtError'>{x.stat_upload === 0 ? '' : '*'}</text></div>
                                             {x.status === 0 ? (
                                                 <AiOutlineClose size={20} />
                                             ) : x.status === 3 ? (
@@ -2042,14 +2071,14 @@ class IKK extends Component {
                                                 onClick={() => this.setState({detail: x})}
                                                 onChange={this.onChangeUpload}
                                                 />
-                                                <text className="txtError ml-4">Maximum file upload is 25 Mb</text>
-                                                <text className="txtError ml-4">Only excel, pdf, zip, png, jpg and rar files are allowed</text>
+                                                {/* <text className="txtError ml-4">Maximum file upload is 25 Mb</text>
+                                                <text className="txtError ml-4">Only excel, pdf, zip, png, jpg and rar files are allowed</text> */}
                                             </div>
                                         </Col>
                                     ) : (
                                         <Col md={12} lg={12} className="colDoc">
-                                            <text className="btnDocIo" >{x.desc}</text>
-                                            <text className="italRed" >{x.stat_upload === 0 ? '*tidak harus upload' : '*harus upload'}</text>
+                                            <div className="btnDocIo" >{x.desc} <text className='txtError'>{x.stat_upload === 0 ? '' : '*'}</text></div>
+                                            {/* <text className="italRed" >{x.stat_upload === 0 ? '*tidak harus upload' : '*harus upload'}</text> */}
                                             <div className="colDoc">
                                                 <input
                                                 type="file"
@@ -2057,20 +2086,36 @@ class IKK extends Component {
                                                 onChange={this.onChangeUpload}
                                                 />
                                             </div>
-                                            <text className="txtError">Maximum file upload is 25 Mb</text>
-                                            <text className="txtError">Only excel, pdf, zip, png, jpg and rar files are allowed</text>
+                                            {/* <text className="txtError">Maximum file upload is 25 Mb</text>
+                                            <text className="txtError">Only excel, pdf, zip, png, jpg and rar files are allowed</text> */}
                                         </Col>
                                     )}
                                 </Row>
                             )
                         })}
+                        <Row className="mt-3 mb-4 ml-1">
+                            <Col md={12} lg={12} className="colDoc">
+                                <text className="txtError" >* Wajib Upload Document</text>
+                                <text className="txtError">Maximum file upload is 25 Mb</text>
+                                <text className="txtError">Only excel, pdf, zip, png, jpg and rar files are allowed</text>
+                            </Col>
+                        </Row>
                         <hr/>
                         <div className={style.foot}>
                             <div></div>
                             <div>
                                 <Button 
                                 className="mr-2" 
-                                onClick={handleSubmit} 
+                                onClick={errors.nama || (errors.jenis || values.jenis === '')
+                                    || ((values.no_npwp.toString().length !== 16 || errors.no_npwp) && values.jenis === 'Badan')
+                                    || (values.jenis === 'Orang Pribadi' && (values.no_ktp.toString().length !== 16 || errors.no_ktp))
+                                    || errors.alamat || this.state.type_skb === ''
+                                    || (this.state.type_skb === 'SKB' && errors.no_skb)
+                                    || (this.state.type_skb === 'SKT' && errors.no_skt)
+                                    ? () => this.setError('Masih Terdapat Data Yang Belum Terisi..!!')
+                                    : ((this.state.type_skb === 'SKT' || this.state.type_skb === 'SKB') && values.datef_skb > values.datel_skb)
+                                    ? () => this.setError('Pastikan Periode diisi dengan benar..!!')
+                                    : handleSubmit} 
                                 color="primary"
                                 disabled={
                                     this.state.type_skb === '' ? true
@@ -2078,7 +2123,7 @@ class IKK extends Component {
                                     (values.no_skt === '' || values.datef_skb === '' || values.datel_skb === '') ? true 
                                     : this.state.type_skb === 'SKB' &&
                                     (values.no_skb === '' || values.datef_skb === '' || values.datel_skb === '') ? true 
-                                    : (values.nama === '' || values.no_npwp.length !== 15 || errors.no_npwp) ? true 
+                                    : (values.nama === '' || (values.no_npwp.length !== 0 && values.no_npwp.length !== 16) || errors.no_npwp) ? true 
                                     : values.jenis === 'Orang Pribadi' && (values.nama === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true
                                     : false
                                 }
@@ -2096,14 +2141,15 @@ class IKK extends Component {
                     <ModalHeader>Form Edit Pengajuan Data Vendor</ModalHeader>
                     <Formik
                     initialValues={{
-                        nama: idVerven.nama,
-                        no_npwp: idVerven.npwp,
-                        no_ktp: idVerven.nik,
-                        alamat: idVerven.alamat,
-                        datef_skb: idVerven.datef_skb,
-                        datel_skb: idVerven.datel_skb,
-                        no_skb: idVerven.no_skb,
-                        no_skt: idVerven.no_skt
+                        nama: idVerven.nama === null ? '' : idVerven.nama,
+                        jenis: idVerven.nik === null || idVerven.nik === '' ? "Badan" : "Orang Pribadi",
+                        no_npwp: idVerven.npwp === null ? '' : idVerven.npwp,
+                        no_ktp: idVerven.nik === null ? '' : idVerven.nik,
+                        alamat: idVerven.alamat === null ? '' : idVerven.alamat,
+                        datef_skb: idVerven.datef_skb === null ? '' : idVerven.datef_skb,
+                        datel_skb: idVerven.datel_skb === null ? '' : idVerven.datel_skb,
+                        no_skb: idVerven.no_skb === null ? '' : idVerven.no_skb,
+                        no_skt: idVerven.no_skt === null ? '' : idVerven.no_skt
                     }}
                     validationSchema={vendorSchema}
                     onSubmit={(values) => {this.prosesEdit(values)}}
@@ -2112,7 +2158,7 @@ class IKK extends Component {
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Nama Vendor
+                                Nama Vendor <text className='txtError'>{'*'}</text>
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -2129,7 +2175,27 @@ class IKK extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                No NPWP
+                                Jenis Vendor <text className='txtError'>{'*'}</text>
+                            </text>
+                            <div className="col-md-9">
+                                <Input
+                                    type= "select" 
+                                    value={values.jenis}
+                                    onBlur={handleBlur("jenis")}
+                                    onChange={handleChange("jenis")}
+                                    >
+                                        <option value=''>Pilih</option>
+                                        <option value="Orang Pribadi">Orang Pribadi</option>
+                                        <option value="Badan">Badan</option>
+                                </Input>
+                                {errors.jenis || values.jenis === '' ? (
+                                    <text className={style.txtError}>{errors.jenis}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                No NPWP {values.jenis === 'Badan' && <text className='txtError'>{'*'}</text>}
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -2139,18 +2205,21 @@ class IKK extends Component {
                                     // .replace(/(\d{2})(\d{3})(\d{3})(\d{1})(\d{3})(\d{3})/, '$1.$2.$3.$4-$5.$6')
                                     onBlur={handleBlur("no_npwp")}
                                     onChange={handleChange("no_npwp")}
-                                    minLength={15}
-                                    maxLength={15}
+                                    minLength={16}
+                                    maxLength={16}
                                     className='spaceChar'
                                 />
-                                {values.no_npwp.toString().length !== 15 || errors.no_npwp ? (
-                                    <text className={style.txtError}>must be filled with number & 15 digits characters</text>
+                                {(
+                                    (values.no_npwp.toString().length !== 16 || errors.no_npwp) && values.jenis === 'Badan') || 
+                                    ((values.no_npwp.toString().length > 0 && values.no_npwp.toString().length < 16) || errors.no_npwp) ? 
+                                (
+                                    <text className={style.txtError}>must be filled with number & 16 digits characters</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                No KTP
+                                No KTP {values.jenis === 'Orang Pribadi' && <text className='txtError'>{'*'}</text>}
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -2163,14 +2232,14 @@ class IKK extends Component {
                                     maxLength={16}
                                     className='spaceChar'
                                 />
-                                {values.no_ktp.toString().length !== 16 || errors.no_ktp  ? (
+                                {values.jenis === 'Orang Pribadi' && (values.no_ktp.toString().length !== 16 || errors.no_ktp)  ? (
                                     <text className={style.txtError}>must be filled with number & 16 digits characters</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Alamat
+                                Alamat <text className='txtError'>{'*'}</text>
                             </text>
                             <div className="col-md-9">
                                 <Input 
@@ -2187,7 +2256,7 @@ class IKK extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Vendor Memiliki SKB / SKT
+                                Vendor Memiliki SKB / SKT <text className='txtError'>{'*'}</text>
                             </text>
                             <div className="col-md-9">
                                 <Input
@@ -2213,7 +2282,7 @@ class IKK extends Component {
                             {this.state.type_skb === 'SKB' && (
                                 <div className={style.addModalDepo}>
                                     <text className="col-md-3">
-                                        No SKB
+                                        No SKB <text className='txtError'>{'*'}</text>
                                     </text>
                                     <div className="col-md-9">
                                         <Input 
@@ -2233,7 +2302,7 @@ class IKK extends Component {
                             {this.state.type_skb === 'SKT' && (
                                 <div className={style.addModalDepo}>
                                     <text className="col-md-3">
-                                        No SKT
+                                        No SKT <text className='txtError'>{'*'}</text>
                                     </text>
                                     <div className="col-md-9">
                                         <Input 
@@ -2251,7 +2320,7 @@ class IKK extends Component {
                             )}
                             <div className={style.addModalDepo}>
                                 <text className="col-md-3">
-                                    Periode SKB / SKT
+                                    Periode SKB / SKT <text className='txtError'>{'*'}</text>
                                 </text>
                                 <div className="col-md-9 rowCenter">
                                     <Input
@@ -2282,7 +2351,16 @@ class IKK extends Component {
                             <div>
                                 <Button 
                                 className="mr-2" 
-                                onClick={handleSubmit} 
+                                onClick={errors.nama || (errors.jenis || values.jenis === '')
+                                || ((values.no_npwp.toString().length !== 16 || errors.no_npwp) && values.jenis === 'Badan')
+                                || (values.jenis === 'Orang Pribadi' && (values.no_ktp.toString().length !== 16 || errors.no_ktp))
+                                || errors.alamat || this.state.type_skb === ''
+                                || (this.state.type_skb === 'SKB' && errors.no_skb)
+                                || (this.state.type_skb === 'SKT' && errors.no_skt)
+                                ? () => this.setError('Masih Terdapat Data Yang Belum Terisi..!!')
+                                : ((this.state.type_skb === 'SKT' || this.state.type_skb === 'SKB') && values.datef_skb > values.datel_skb)
+                                ? () => this.setError('Pastikan Periode diisi dengan benar..!!')
+                                : handleSubmit} 
                                 color="primary"
                                 disabled={
                                     this.state.type_skb === '' ? true
@@ -2290,10 +2368,11 @@ class IKK extends Component {
                                     (values.no_skt === '' || values.datef_skb === '' || values.datel_skb === '') ? true 
                                     : this.state.type_skb === 'SKB' &&
                                     (values.no_skb === '' || values.datef_skb === '' || values.datel_skb === '') ? true 
-                                    : (values.nama === '' || values.no_npwp.length !== 15 || errors.no_npwp) ? true 
-                                    : (values.nama === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true
+                                    : (values.nama === '' || (values.no_npwp.length !== 0 && values.no_npwp.length !== 16) || errors.no_npwp) ? true 
+                                    : values.jenis === 'Orang Pribadi' && (values.nama === '' || values.no_ktp.length !== 16 || errors.no_ktp) ? true
                                     : false
-                                }>
+                                }
+                                >
                                     Save
                                 </Button>
                                 <Button className="mr-3" onClick={this.openEdit}>Cancel</Button>
@@ -2337,6 +2416,7 @@ class IKK extends Component {
                                         <th>NO</th>
                                         <th>No ajuan</th>
                                         <th>Nama Vendor</th>
+                                        <th>Jenis Vendor</th>
                                         <th>No KTP</th>
                                         <th>No NPWP</th>
                                         <th>Alamat</th>
@@ -2361,6 +2441,7 @@ class IKK extends Component {
                                                 <th scope="row">{detailVerven.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.nama}</th>
+                                                <th>{item.jenis_vendor !== null && item.jenis_vendor !== '' ? item.jenis_vendor : item.nik === null || item.nik === '' || item.nik === 'TIDAK ADA' ? "Badan" : "Orang Pribadi"}</th>
                                                 <th>{item.nik}</th>
                                                 <th>{item.npwp}</th>
                                                 <th>{item.alamat}</th>
@@ -2433,6 +2514,7 @@ class IKK extends Component {
                                         <th>NO</th>
                                         <th>No ajuan</th>
                                         <th>Nama Vendor</th>
+                                        <th>Jenis Vendor</th>
                                         <th>No KTP</th>
                                         <th>No NPWP</th>
                                         <th>Alamat</th>
@@ -2449,6 +2531,7 @@ class IKK extends Component {
                                                 <th scope="row">{detailVerven.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.nama}</th>
+                                                <th>{item.jenis_vendor !== null && item.jenis_vendor !== '' ? item.jenis_vendor : item.nik === null || item.nik === '' || item.nik === 'TIDAK ADA' ? "Badan" : "Orang Pribadi"}</th>
                                                 <th>{item.nik}</th>
                                                 <th>{item.npwp}</th>
                                                 <th>{item.alamat}</th>
@@ -2462,6 +2545,7 @@ class IKK extends Component {
                     </ModalBody>
                     <div className="modalFoot ml-3">
                         <div className="btnFoot">
+                            <Button color="primary"  onClick={() => this.openDocCon()}>Dokumen</Button>
                         </div>
                         <div className="btnFoot">
                             <Button className="mr-2" 
@@ -2958,6 +3042,14 @@ class IKK extends Component {
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Gagal Upload Dokumen</div>
                                 <div className={[style.sucUpdate, style.green, 'mt-2']}>Web Hanya Menerima Tipe Dokumen excel, pdf, zip, png, jpg dan rar </div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'errfill' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Save</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>{this.state.infoError}</div>
                             </div>
                         </div>
                     ) : (

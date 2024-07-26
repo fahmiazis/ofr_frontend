@@ -18,6 +18,8 @@ import MaterialTitlePanel from "../../components/material_title_panel";
 import SidebarContent from "../../components/sidebar_content";
 import NavBar from '../../components/NavBar'
 import moment from 'moment'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 
 const tarifSchema = Yup.object().shape({
@@ -32,7 +34,8 @@ const tarifSchema = Yup.object().shape({
     dpp_nongrossup: Yup.string().required(),
     dpp_grossup: Yup.string().required(),
     tax_type: Yup.string().required(),
-    tax_code: Yup.string().required()
+    tax_code: Yup.string().required(),
+    grouping: Yup.string().required()
 });
 
 const tarifEditSchema = Yup.object().shape({
@@ -47,7 +50,8 @@ const tarifEditSchema = Yup.object().shape({
     dpp_nongrossup: Yup.string().required(),
     dpp_grossup: Yup.string().required(),
     tax_type: Yup.string().required(),
-    tax_code: Yup.string().required()
+    tax_code: Yup.string().required(),
+    grouping: Yup.string().required()
 });
 
 const changeSchema = Yup.object().shape({
@@ -91,7 +95,8 @@ class MasterTarif extends Component {
             filter: null,
             filterName: 'All',
             modalDel: false,
-            page: 1
+            page: 1,
+            listData: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -171,18 +176,194 @@ class MasterTarif extends Component {
         this.setState({modalUpload: !this.state.modalUpload})
     }
 
+    chekApp = (val) => {
+        const { listData } = this.state
+        const {dataAll} = this.props.tarif
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataAll.length; i++) {
+                data.push(dataAll[i].id)
+            }
+            this.setState({listData: data})
+        } else {
+            listData.push(val)
+            this.setState({listData: listData})
+        }
+    }
+
+    chekRej = (val) => {
+        const {listData} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listData: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listData.length; i++) {
+                if (listData[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listData[i])
+                }
+            }
+            this.setState({listData: data})
+        }
+    }
+
+    downloadData = () => {
+        const {listData} = this.state
+        const {dataAll} = this.props.tarif
+        const dataDownload = []
+        for (let i = 0; i < listData.length; i++) {
+            for (let j = 0; j < dataAll.length; j++) {
+                if (dataAll[j].id === listData[i]) {
+                    dataDownload.push(dataAll[j])
+                }
+            }
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data user')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+        
+
+        ws.columns = [
+            {header: 'SAP/SCYLLA', key: 'c1'},
+            {header: 'GL Account', key: 'c2'},
+            {header: 'GL Jurnal', key: 'c3'},
+            {header: 'GL Name', key: 'c4'},
+            {header: 'Jenis Transaksi', key: 'c5'},
+            {header: 'PO/NON PO', key: 'c6'},
+            {header: 'Grouping', key: 'c7'},
+            {header: 'OP/BADAN', key: 'c8'},
+            {header: 'Jenis PPh', key: 'c9'},
+            {header: 'NPWP/NIK', key: 'c10'},
+            {header: 'WHT Tax Type', key: 'c11'},
+            {header: 'WHT Tax Code', key: 'c12'},
+            {header: 'Nominal Minimum', key: 'c13'},
+            {header: 'Nominal Maximum', key: 'c14'},
+            {header: 'Tarif PPh', key: 'c15'},
+            {header: 'Tarif DPP Non Grossup', key: 'c16'},
+            {header: 'Tarif DPP Grossup', key: 'c17'},
+            {header: 'Start Periode', key: 'c18'},
+            {header: 'End Periode', key: 'c19'}
+        ]
+
+        dataDownload.map((item, index) => { return ( ws.addRow(
+            {
+                c1: item.system,
+                c2: item.gl_account,
+                c3: item.gl_jurnal,
+                c4: item.gl_name,
+                c5: item.jenis_transaksi,
+                c6: item.po,
+                c7: item.grouping,
+                c8: item.type_transaksi,
+                c9: item.jenis_pph,
+                c10: item.status_npwp,
+                c11: item.tax_type,
+                c12: item.tax_code,
+                c13: item.min_nominal === null ? '0' : item.min_nominal,
+                c14: item.max_nominal === null ? '-' : item.max_nominal,
+                c15: (parseFloat(item.tarif_pph.split("%")[0]) * 100) + '%',
+                c16: (parseFloat(item.dpp_nongrossup.split("%")[0]) * 100) + '%',
+                c17: (parseFloat(item.dpp_grossup.split("%")[0]) * 100) + '%',
+                c18: item.start_period === null ? '20-12-2023' : moment(item.start_period).format('DD-MM-YYYY'),
+                c19: item.end_period === null ? '' : moment(item.end_period).format('DD-MM-YYYY')
+            }
+        )
+        ) })
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+              cell.border = borderStyles;
+            })
+          })
+
+          ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: "application/octet-stream" }),
+              `Master Tarif ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
+          });
+    }
+
     DownloadTemplate = () => {
-        axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/tarif.xlsx`,
-            method: 'GET',
-            responseType: 'blob',
-        }).then((response) => {
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', "master tarif.xlsx");
-            document.body.appendChild(link);
-            link.click();
+        const {listUser} = this.state
+        const {dataUser} = this.props.user
+        const dataDownload = []
+        for (let i = 0; i < listUser.length; i++) {
+            for (let j = 0; j < dataUser.length; j++) {
+                if (dataUser[j].id === listUser[i]) {
+                    dataDownload.push(dataUser[j])
+                }
+            }
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data user')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+        }
+
+        ws.columns = [
+            {header: 'SAP/SCYLLA', key: 'c1'},
+            {header: 'GL Account', key: 'c2'},
+            {header: 'GL Jurnal', key: 'c3'},
+            {header: 'GL Name', key: 'c4'},
+            {header: 'Jenis Transaksi', key: 'c5'},
+            {header: 'PO/NON PO', key: 'c6'},
+            {header: 'Grouping', key: 'c7'},
+            {header: 'OP/BADAN', key: 'c8'},
+            {header: 'Jenis PPh', key: 'c9'},
+            {header: 'NPWP/NIK', key: 'c10'},
+            {header: 'WHT Tax Type', key: 'c11'},
+            {header: 'WHT Tax Code', key: 'c12'},
+            {header: 'Nominal Minimum', key: 'c13'},
+            {header: 'Nominal Maximum', key: 'c14'},
+            {header: 'Tarif PPh', key: 'c15'},
+            {header: 'Tarif DPP Non Grossup', key: 'c16'},
+            {header: 'Tarif DPP Grossup', key: 'c17'},
+            {header: 'Start Periode', key: 'c18'},
+            {header: 'End Periode', key: 'c19'}
+        ]
+
+        ws.eachRow({ includeEmpty: true }, function(row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+                cell.border = borderStyles;
+            })
+            })
+
+        ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+                new Blob([buffer], { type: "application/octet-stream" }),
+                `Template Master Tarif ${moment().format('DD MMMM YYYY')}.xlsx`
+            );
         });
     }
 
@@ -224,7 +405,7 @@ class MasterTarif extends Component {
     onSearch = (e) => {
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            this.getDataCount({limit: 10, search: this.state.search})
+            this.getDataCount({limit: 10, search: this.state.search, page: 1})
         }
     }
 
@@ -329,7 +510,7 @@ class MasterTarif extends Component {
     }
 
     render() {
-        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
+        const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg, listData,} = this.state
         const {dataTarif, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.tarif
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
@@ -393,6 +574,7 @@ class MasterTarif extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -404,7 +586,8 @@ class MasterTarif extends Component {
                                     <div className={style.headEmail}>
                                         <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
                                         <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button>
+                                        {/* <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button> */}
+                                        <Button className='mr-1' onClick={this.downloadData} color="success" size="lg">Download</Button>
                                     </div>
                                     <div className={style.searchEmail}>
                                         <text>Search: </text>
@@ -423,8 +606,17 @@ class MasterTarif extends Component {
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listData.length === 0 ? false : listData.length === dataAll.length ? true : false}
+                                                    onChange={() => listData.length === dataAll.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    />
+                                                    {/* Select */}
+                                                </th>
                                                 <th>No</th>
-                                                <th>SAP/REDPINE</th>
+                                                <th>SAP/SCYLLA</th>
                                                 <th>GL Account</th>
                                                 <th>GL Jurnal</th>
                                                 <th>GL Name</th>
@@ -449,6 +641,13 @@ class MasterTarif extends Component {
                                             {dataAll.length !== 0 && dataAll.map(item => {
                                                 return (
                                                 <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
+                                                    <th>
+                                                        <input 
+                                                        type='checkbox'
+                                                        checked={listData.find(element => element === item.id) !== undefined ? true : false}
+                                                        onChange={listData.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
+                                                        />
+                                                    </th>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
                                                     <td>{item.system}</td>
                                                     <td>{item.gl_account}</td>
@@ -508,7 +707,8 @@ class MasterTarif extends Component {
                         dpp_nongrossup: '',
                         dpp_grossup: '',
                         tax_type: '',
-                        tax_code: ''
+                        tax_code: '',
+                        grouping: '',
                     }}
                     validationSchema={tarifSchema}
                     onSubmit={(values) => {this.addTarif(values)}}
@@ -529,7 +729,7 @@ class MasterTarif extends Component {
                                 >
                                     <option>-Pilih-</option>
                                     <option value="SAP">SAP</option>
-                                    <option value="REDPINE">REDPINE</option>
+                                    <option value="SCYLLA">SCYLLA</option>
                                 </Input>
                                 {errors.system ? (
                                     <text className={style.txtError}>{errors.system}</text>
@@ -623,6 +823,27 @@ class MasterTarif extends Component {
                                 />
                                 {errors.jenis_pph ? (
                                     <text className={style.txtError}>{errors.jenis_pph}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Grouping
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="select" 
+                                name="grouping"
+                                value={values.grouping}
+                                onBlur={handleBlur("grouping")}
+                                onChange={handleChange("grouping")}
+                                >
+                                    <option>-Pilih-</option>
+                                    <option value="KASBON">KASBON</option>
+                                    <option value="NON KASBON">NON KASBON</option>
+                                </Input>
+                                {errors.grouping ? (
+                                    <text className={style.txtError}>{errors.grouping}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -782,7 +1003,8 @@ class MasterTarif extends Component {
                         dpp_nongrossup: detail.dpp_nongrossup === null ? '' : detail.dpp_nongrossup,
                         dpp_grossup: detail.dpp_grossup === null ? '' : detail.dpp_grossup,
                         tax_type: detail.tax_type === null ? '' : detail.tax_type,
-                        tax_code: detail.tax_code === null ? '' : detail.tax_code
+                        tax_code: detail.tax_code === null ? '' : detail.tax_code,
+                        grouping: detail.grouping === null ? '' : detail.grouping,
                     }}
                     validationSchema={tarifEditSchema}
                     onSubmit={(values) => {this.editTarif(values, detail.id)}}
@@ -803,7 +1025,7 @@ class MasterTarif extends Component {
                                 >
                                     <option>-Pilih-</option>
                                     <option value="SAP">SAP</option>
-                                    <option value="REDPINE">REDPINE</option>
+                                    <option value="SCYLLA">SCYLLA</option>
                                 </Input>
                                 {errors.system ? (
                                     <text className={style.txtError}>{errors.system}</text>
@@ -880,6 +1102,27 @@ class MasterTarif extends Component {
                                 </Input>
                                 {errors.type_transaksi ? (
                                     <text className={style.txtError}>{errors.type_transaksi}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Grouping
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="select" 
+                                name="grouping"
+                                value={values.grouping}
+                                onBlur={handleBlur("grouping")}
+                                onChange={handleChange("grouping")}
+                                >
+                                    <option>-Pilih-</option>
+                                    <option value="KASBON">KASBON</option>
+                                    <option value="NON KASBON">NON KASBON</option>
+                                </Input>
+                                {errors.grouping ? (
+                                    <text className={style.txtError}>{errors.grouping}</text>
                                 ) : null}
                             </div>
                         </div>
