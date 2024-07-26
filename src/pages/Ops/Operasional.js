@@ -45,7 +45,42 @@ import NumberInput from '../../components/NumberInput'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import ListBbm from '../../components/Ops/ListBbm'
+import Pdfprint from 'react-to-pdf'
 const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
+
+const options = {
+    // default is `save`
+    method: 'open',
+    // default is Resolution.MEDIUM = 3, which should be enough, higher values
+    // increases the image quality but also the size of the PDF, so be careful
+    // using values higher than 10 when having multiple pages generated, it
+    // might cause the page to crash or hang.
+    page: {
+       // margin is in MM, default is Margin.NONE = 0
+       // default is 'A4'
+       format: 'letter',
+       // default is 'portrait'
+       orientation: 'landscape',
+    },
+    canvas: {
+       // default is 'image/jpeg' for better size performance
+       mimeType: 'image/png',
+       qualityRatio: 1
+    },
+    // Customize any value passed to the jsPDF instance and html2canvas
+    // function. You probably will not need this and things can break, 
+    // so use with caution.
+    overrides: {
+       // see https://artskydj.github.io/jsPDF/docs/jsPDF.html for more options
+       pdf: {
+          compress: true
+       },
+       // see https://html2canvas.hertzen.com/configuration for more options
+       canvas: {
+          useCORS: true
+       }
+    },
+ }
 
 const stockSchema = Yup.object().shape({
     merk: Yup.string().required("must be filled"),
@@ -75,8 +110,11 @@ const nilaiSchema = Yup.object().shape({
 
 
 class Ops extends Component {
+    componentRef = null;
+    
     constructor(props) {
         super(props);
+        this.callRef = React.createRef()
         this.state = {
             docked: false,
             open: false,
@@ -159,6 +197,10 @@ class Ops extends Component {
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    setComponentRef = (ref) => {
+        this.componentRef = ref;
     }
 
     rejectApp = (val) => {
@@ -2009,12 +2051,27 @@ class Ops extends Component {
                 </Modal>
                 <Modal isOpen={this.state.modalFpd} toggle={this.openModalFpd} size="lg" >
                     <ModalBody>
-                        <FPD totalfpd={this.state.totalfpd} />
+                        <div ref={this.callRef} style={{height: 'auto'}}>
+                            <FPD 
+                                totalfpd={this.state.totalfpd} 
+                                // ref={el => (this.componentRef = el)}
+                            />
+                        </div>
                     </ModalBody>
                     <hr />
                     <div className="modalFoot ml-3">
                         <div></div>
                         <div className="btnFoot">
+                            {/* <Pdfprint targetRef={this.callRef} filename="document.pdf" options={options}>
+                                {({ toPdf }) => (
+                                    // <button onClick={toPdf} className="button">
+                                    //     Download
+                                    // </button>
+                                    <Button className="mr-2" color="warning" onClick={toPdf}>
+                                        Download
+                                    </Button>
+                                )}
+                            </Pdfprint> */}
                             <Button className="mr-2" color="warning" onClick={() => this.printData('opsfpd')}>
                                 Download
                             </Button>

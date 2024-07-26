@@ -11,7 +11,8 @@ import fs from "file-saver";
 class FPD extends Component {
 
     state = {
-        totalfpd: 0
+        totalfpd: 0,
+        arrTes: "e printing on mobile browsers should work, printing within a WebView",
     }
 
     async componentDidMount() {
@@ -30,7 +31,8 @@ class FPD extends Component {
                 total += parseInt(detailOps[i].nilai_ajuan)
             }
             this.setState({totalfpd: total})
-            localStorage.removeItem('printData')
+            // localStorage.removeItem('printData')
+            this.downloadForm()
         } else {
             const {detailOps} = this.props.ops
             let total = 0
@@ -41,95 +43,147 @@ class FPD extends Component {
         }
     }
 
+    downloadForm1 = () => {
+        window.print()
+        localStorage.removeItem('printData')
+    }
+
     downloadForm = () => {
         const { detailOps, ttdOps } = this.props.ops
+        const totalfpd = this.props.totalfpd || this.state.totalfpd
         
         const alpha = Array.from(Array(26)).map((e, i) => i + 65)
         const alphabet = alpha.map((x) => String.fromCharCode(x))
-        const str = 'D'
-        const str2 = 'H'
+        const str = 'F'
+        const str2 = 'J'
         const str3 = 'L'
 
         const workbook = new ExcelJS.Workbook();
-        const ws = workbook.addWorksheet('form list ajuan bayar')
+        const ws = workbook.addWorksheet('fpd')
         const borderStyles = {
-            top: {style:'thick'},
-            left: {style:'thick'},
-            bottom: {style:'thick'},
-            right: {style:'thick'}
+            top: {style: 'thick'},
+            left: {style: 'thick'},
+            bottom: {style: 'thick'},
+            right: {style: 'thick'}
         }
 
-        ws.addRow(['', 'FORM PERMINTAAN DANA'])
-        ws.addRow(['', 'CABANG/DEPO :', `: ${detailOps.length > 0 ? detailOps[0].area : ''}`])
-        ws.addRow(['', 'NO', `: ${detailOps.length > 0 ? detailOps[0].no_transaksi : ''}`])
+        const alignStyle = {
+            horizontal:'center',
+            wrapText: true,
+            vertical: 'middle'
+        }
 
-        const dataRow = []
+        ws.mergeCells(`B1`, `M3`)
+        ws.getCell(`B1`).value = `FORM PERMINTAAN DANA \n CABANG/DEPO : ${detailOps.length > 0 ? detailOps[0].area : ''} \n NO : ${detailOps.length > 0 ? detailOps[0].no_transaksi : ''}`
+        ws.getCell(`B1`).alignment = { 
+            ...alignStyle
+        }
+
+        ws.mergeCells(`B5`, `C6`)
+        ws.getCell(`B5`).value = 'NO'
+
+        ws.mergeCells(`E5`, `J6`)
+        ws.getCell(`E5`).value = 'KEPERLUAN / \n KETERANGAN'
+
+        ws.mergeCells(`L5`, `M6`)
+        ws.getCell(`L5`).value = 'RUPIAH'
+
+        ws.getCell(`B5`).alignment = { 
+            ...alignStyle
+        }
+        ws.getCell(`B5`).border = { 
+            ...borderStyles
+        }
+
+        ws.getCell(`E5`).alignment = { 
+            ...alignStyle
+        }
+        ws.getCell(`E5`).border = {
+            ...borderStyles
+        }
+
+        ws.getCell(`L5`).alignment = { 
+            ...alignStyle
+        }
+        ws.getCell(`L5`).border = {
+            ...borderStyles
+        }
+
+        const startRow = 9
 
         detailOps.map((item, index) => { 
-            return (
-                dataRow.push([
-                    index + 1, 
-                    item.cost_center, 
-                    item.no_coa, 
-                    item.nama_coa, 
-                    item.keterangan, 
-                    `${moment(item.periode_awal).format('DD/MMMM/YYYY')} - ${moment(item.periode_akhir).format('DD/MMMM/YYYY')}`, 
-                    item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."), 
-                    item.bank_tujuan,
-                    item.norek_ajuan,
-                    item.nama_tujuan,
-                    item.ppu,
-                    item.pa,
-                    item.nominal,
-                    item.nilai_bayar,
-                    moment(item.tanggal_transfer).format('DD/MMMM/YYYY')
-                ])
-            )
-        })
+            const gapRow = startRow + (index * 5)
+            
+            ws.mergeCells(`B${gapRow}`, `C${gapRow + 1}`)
+            ws.getCell(`B${gapRow}`).value = `${index + 1}`
 
-        ws.addTable({
-            name: 'MyTable',
-            ref: 'A8',
-            headerRow: true,
-            // totalsRow: true,
-            style: {
-            //   theme: 'TableStyleDark3',
-              showRowStripes: true,
-            },
-            columns: [
-                {name: 'NO'},
-                {name: 'COST CENTRE'},
-                {name: 'NO COA'},
-                {name: 'NAMA COA'},
-                {name: 'KETERANGAN TAMBAHAN'},
-                {name: 'PERIODE'},
-                {name: 'NILAI YANG DIAJUKAN'},
-                {name: 'BANK'},
-                {name: 'NOMOR REKENING'},
-                {name: 'ATAS NAMA'},
-                {name: 'PPU'},
-                {name: 'PA'},
-                {name: 'NOMINAL VERIFIKASI'},
-                {name: 'NILAI YANG DIBAYARKAN'},
-                {name: 'TANGGAL TRANSFER'}
-            ],
-            rows: dataRow,
-        })
+            ws.mergeCells(`E${gapRow}`, `J${gapRow + 1}`)
+            ws.getCell(`E${gapRow}`).value = `${item.keterangan}`
 
-        ws.columns.forEach((column, index) => {
-            const lengths = column.values.map(v => v.toString().length)
-            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
-            if (index === 0) {    
-                column.width = maxLength
-            } else if (ws.columns.length - 1 === index || ws.columns.length - 2 === index) {
-                column.width = maxLength + 15
-            } else {
-                column.width = maxLength + 5
+            ws.mergeCells(`E${gapRow + 3}`, `J${gapRow + 3}`)
+            ws.getCell(`E${gapRow + 3}`).value = `NO REK ${item.bank_tujuan} ${item.norek_ajuan}`
+
+            ws.mergeCells(`L${gapRow}`, `M${gapRow + 1}`)
+            ws.getCell(`L${gapRow}`).value = `${item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`
+
+            ws.getCell(`B${gapRow}`).alignment = { 
+                ...alignStyle
+            }
+            ws.getCell(`B${gapRow}`).border = {
+                ...borderStyles
+            }
+
+            ws.getCell(`E${gapRow}`).alignment = { 
+                ...alignStyle
+            }
+            ws.getCell(`E${gapRow}`).border = {
+                ...borderStyles
+            }
+
+            ws.getCell(`E${gapRow + 3}`).alignment = { 
+                ...alignStyle
+            }
+            ws.getCell(`E${gapRow + 3}`).border = {
+                ...borderStyles
+            }
+
+            ws.getCell(`L${gapRow}`).alignment = { 
+                ...alignStyle
+            }
+            ws.getCell(`L${gapRow}`).border = {
+                ...borderStyles
             }
         })
         
+        const totRow = startRow + (detailOps.length * 5) + 1
+
+        ws.mergeCells(`E${totRow}`, `J${totRow}`)
+        ws.getCell(`E${totRow}`).value = 'TOTAL'
+        ws.getCell(`E${totRow}`).alignment = { 
+            ...alignStyle
+        }
+        ws.getCell(`E${totRow}`).border = {
+            ...borderStyles
+        }
+
+        ws.mergeCells(`L${totRow}`, `M${totRow}`)
+        ws.getCell(`L${totRow}`).value = `${totalfpd.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`
+        ws.getCell(`L${totRow}`).alignment = { 
+            ...alignStyle
+        }
+        ws.getCell(`L${totRow}`).border = { 
+            ...borderStyles
+        }
+
+        const dateRow = totRow + 3
+        ws.mergeCells(`B${dateRow}`, `E${dateRow}`)
+        ws.getCell(`B${dateRow}`).value = `${detailOps.length > 0 ? detailOps[0].area : ''}, ${moment(detailOps.length > 0 ? moment(detailOps[0].updatedAt).format('DD MMMM YYYY') : '').format('DD MMMM YYYY')}`
+        ws.getCell(`B${dateRow}`).alignment = { 
+            ...alignStyle
+        }
+
         ws.addRow()
-        const sumRow = 11 + dataRow.length
+        const sumRow = dateRow + 2
         const headRow = 1 + sumRow
         const mainRow = 3 + sumRow
         const footRow = 5 + sumRow
@@ -137,11 +191,11 @@ class FPD extends Component {
         console.log(sumRow)
 
         // Approval Dibuat
-        ws.mergeCells(`B${sumRow}`, `C${sumRow}`)
+        ws.mergeCells(`B${sumRow}`, `E${sumRow}`)
         ws.getCell(`B${sumRow}`).value = 'Dibuat oleh,'
         ws.getCell(`B${sumRow}`).alignment = { horizontal:'center'}
 
-        ws.mergeCells(`B${headRow}`, `C${botRow}`)
+        ws.mergeCells(`B${headRow}`, `E${botRow}`)
 
         ttdOps.pembuat !== undefined && ttdOps.pembuat.map(item => {
                 ws.getCell(`B${headRow}`).value = item.nama === null 
@@ -152,15 +206,13 @@ class FPD extends Component {
         })
 
         ws.getCell(`B${headRow}`).alignment = { 
-            horizontal:'center', 
-            wrapText: true, 
-            vertical: 'middle', 
+            ...alignStyle,
             ...borderStyles
         }
 
         // Approval Diketahui
-        const cekRow11 = 'D'
-        const cekRow12 = ttdOps.pemeriksa.length > 1 ? 'G' : 'E'
+        const cekRow11 = 'F'
+        const cekRow12 = ttdOps.pemeriksa.length > 1 ? 'I' : 'I'
         ws.mergeCells(`${cekRow11}${sumRow}`, `${cekRow12}${sumRow}`)
         ws.getCell(`${cekRow11}${sumRow}`).value = 'Diperiksa oleh,'
         ws.getCell(`${cekRow11}${sumRow}`).alignment = { horizontal:'center'}
@@ -181,23 +233,19 @@ class FPD extends Component {
                 : `\nApprove (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n ${item.nama} \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}`
 
                 ws.getCell(`${startRow}${headRow}`).alignment = { 
-                    horizontal:'center', 
-                    wrapText: true, 
-                    vertical: 'middle', 
+                    ...alignStyle,
                     ...borderStyles
                 }
             } else {
-                ws.mergeCells(`D${headRow}`, `E${botRow}`)
-                ws.getCell(`D${headRow}`).value = item.nama === null 
+                ws.mergeCells(`F${headRow}`, `I${botRow}`)
+                ws.getCell(`F${headRow}`).value = item.nama === null 
                 ? `\n\n - \n\n\n\n${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}` 
                 : item.status === '0' 
                 ? `\nReject (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}` 
                 : `\nApprove (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n ${item.nama} \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}`
                 
-                ws.getCell(`D${headRow}`).alignment = { 
-                    horizontal:'center', 
-                    wrapText: true, 
-                    vertical: 'middle', 
+                ws.getCell(`F${headRow}`).alignment = { 
+                    ...alignStyle,
                     ...borderStyles
                 }
             }
@@ -205,8 +253,8 @@ class FPD extends Component {
 
 
         // Approval Disetujui
-        const cekRow21 = ttdOps.pemeriksa.length > 1 ? 'H' : 'F'
-        const cekRow22 = ttdOps.pemeriksa.length > 1 ? 'K' : 'G'
+        const cekRow21 = ttdOps.pemeriksa.length > 1 ? 'J' : 'J'
+        const cekRow22 = ttdOps.pemeriksa.length > 1 ? 'M' : 'M'
         ws.mergeCells(`${cekRow21}${sumRow}`, `${cekRow22}${sumRow}`)
         ws.getCell(`${cekRow21}${sumRow}`).value = 'Disetujui oleh,'
         ws.getCell(`${cekRow21}${sumRow}`).alignment = { horizontal:'center'}
@@ -222,14 +270,12 @@ class FPD extends Component {
                 ws.mergeCells(`${startRow}${headRow}`, `${endRow}${botRow}`)
                 ws.getCell(`${startRow}${headRow}`).value = item.nama === null 
                 ? `\n\n - \n\n\n\n${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}` 
-                : item.status === '0' 
+                : item.status === '0'
                 ? `\nReject (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}` 
                 : `\nApprove (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n ${item.nama} \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}`
 
                 ws.getCell(`${startRow}${headRow}`).alignment = { 
-                    horizontal:'center', 
-                    wrapText: true, 
-                    vertical: 'middle', 
+                    ...alignStyle,
                     ...borderStyles
                 }
             } else {
@@ -241,54 +287,7 @@ class FPD extends Component {
                 : `\nApprove (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n ${item.nama} \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}`
                 
                 ws.getCell(`${cekRow21}${headRow}`).alignment = { 
-                    horizontal:'center', 
-                    wrapText: true, 
-                    vertical: 'middle', 
-                    ...borderStyles
-                }
-            }
-        })
-
-        // Approval Mengetahui
-        const cekRow31 = ttdOps.penyetuju.length > 1 ? 'L' : 'H'
-        const cekRow32 = ttdOps.penyetuju.length > 1 ? 'O' : 'I'
-        ws.mergeCells(`${cekRow31}${sumRow}`, `${cekRow32}${sumRow}`)
-        ws.getCell(`${cekRow31}${sumRow}`).value = 'Disetujui oleh,'
-        ws.getCell(`${cekRow31}${sumRow}`).alignment = { horizontal:'center'}
-
-        ttdOps.mengetahui !== undefined && ttdOps.mengetahui.map((item, index) => {
-            if (ttdOps.mengetahui.length > 1) {
-                const startRow = alphabet[alphabet.indexOf(alphabet.find(item => item === str3.toUpperCase())) + (2 * index)]
-                const endRow = alphabet[alphabet.indexOf(alphabet.find(item => item === str3.toUpperCase())) + ((2 * index) + 1)]
-                
-                // console.log(alphabet.indexOf(alphabet.find(item => item === str3.toUpperCase())))
-                // console.log(`${startRow}${headRow}`, `${endRow}${botRow} King`)
-
-                ws.mergeCells(`${startRow}${headRow}`, `${endRow}${botRow}`)
-                ws.getCell(`${startRow}${headRow}`).value = item.nama === null 
-                ? `\n\n - \n\n\n\n${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}` 
-                : item.status === '0' 
-                ? `\nReject (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}` 
-                : `\nApprove (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n ${item.nama} \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}`
-
-                ws.getCell(`${startRow}${headRow}`).alignment = { 
-                    horizontal:'center', 
-                    wrapText: true, 
-                    vertical: 'middle', 
-                    ...borderStyles
-                }
-            } else {
-                ws.mergeCells(`${cekRow31}${headRow}`, `${cekRow32}${botRow}`)
-                ws.getCell(`${cekRow31}${headRow}`).value = item.nama === null 
-                ? `\n\n - \n\n\n\n${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}` 
-                : item.status === '0' 
-                ? `\nReject (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}` 
-                : `\nApprove (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n ${item.nama} \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}`
-                
-                ws.getCell(`${cekRow31}${headRow}`).alignment = { 
-                    horizontal:'center', 
-                    wrapText: true, 
-                    vertical: 'middle', 
+                    ...alignStyle,
                     ...borderStyles
                 }
             }
@@ -297,13 +296,14 @@ class FPD extends Component {
         workbook.xlsx.writeBuffer().then(function(buffer) {
             fs.saveAs(
               new Blob([buffer], { type: "application/octet-stream" }),
-              `Form Permintaan Dana Operasional  ${detailOps.length > 0 ? detailOps[0].no_transaksi : ''} ${moment().format('DD MMMM YYYY')}.xlsx`
+              `Form Permintaan Dana Operasional ${detailOps.length > 0 ? detailOps[0].no_transaksi : ''} ${moment().format('DD MMMM YYYY')}.xlsx`
             );
         });
         localStorage.removeItem('printData')
     }
 
   render() {
+    const {arrTes} = this.state
     const {detailOps, ttdOps} = this.props.ops
     const totalfpd = this.props.totalfpd || this.state.totalfpd
     return (
@@ -326,11 +326,11 @@ class FPD extends Component {
                         <div className='liner'>rupiah</div>
                     </Col>
                 </Row>
-                {detailOps.length !== 0 && detailOps.map(item => {
+                {detailOps.length !== 0 && detailOps.map((item, index) => {
                     return (
                         <Row className='mt-4'>
                             <Col md={2} className='upper'>
-                                <div className='line'>{detailOps.indexOf(item) + 1}</div>
+                                <div className='line'>{index + 1}</div>
                             </Col>
                             <Col md={8} className='upper'>
                                 <div className='line2'>{item.keterangan}</div>

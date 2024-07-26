@@ -1952,3 +1952,23 @@ a:hover{
 .tabRep {
     background-color: rgb(255, 255, 0) !important;
 }
+
+/* .indicator {
+    font-size: 2rem;
+    color: #ff0000;
+    font-weight: 700;
+}
+
+.relativeCSS {
+    border: solid 1px #ff0000;
+}
+
+.testClass {
+    background: rgba(76, 175, 80, 0.3);
+}
+
+@media (max-width: 600px) {
+    .testClass {
+        color: rebeccapurple;
+    }
+} */

@@ -46,7 +46,7 @@ class FAA extends Component {
         const str3 = 'L'
 
         const workbook = new ExcelJS.Workbook();
-        const ws = workbook.addWorksheet('form list ajuan bayar')
+        const ws = workbook.addWorksheet('form ajuan area')
         const borderStyles = {
             top: {style:'thin'},
             left: {style:'thin'},
@@ -250,7 +250,7 @@ class FAA extends Component {
         const cekRow31 = ttdOps.penyetuju.length > 1 ? 'L' : 'H'
         const cekRow32 = ttdOps.penyetuju.length > 1 ? 'O' : 'I'
         ws.mergeCells(`${cekRow31}${sumRow}`, `${cekRow32}${sumRow}`)
-        ws.getCell(`${cekRow31}${sumRow}`).value = 'Disetujui oleh,'
+        ws.getCell(`${cekRow31}${sumRow}`).value = 'Diketahui oleh,'
         ws.getCell(`${cekRow31}${sumRow}`).alignment = { horizontal:'center'}
 
         ttdOps.mengetahui !== undefined && ttdOps.mengetahui.map((item, index) => {

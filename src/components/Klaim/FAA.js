@@ -47,7 +47,7 @@ class FAA extends Component {
         const str3 = 'L'
 
         const workbook = new ExcelJS.Workbook();
-        const ws = workbook.addWorksheet('form list ajuan bayar')
+        const ws = workbook.addWorksheet('form ajuan bayar')
         const borderStyles = {
             top: {style:'thin'},
             left: {style:'thin'},

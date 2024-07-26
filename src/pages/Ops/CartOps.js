@@ -1709,7 +1709,7 @@ class CartOps extends Component {
     }
 
     selectTrans = (e) => {
-        const { allCoa } = this.props.coa
+        const { nomCoa } = this.props.coa
         const { jenisVendor, dataTrans } = this.state
         const statNpwp = this.state.status_npwp
         const cekStat = statNpwp === 'Ya' ? 'NPWP' : statNpwp === 'Tidak' ? 'NIK' : 'No Need NPWP/NIK'
@@ -1718,7 +1718,7 @@ class CartOps extends Component {
         } else {
             let temp = {}
             let jenis = ''
-            const cek = allCoa.find(({id}) => id === e.value)
+            const cek = nomCoa.find(({id}) => id === e.value)
             if (cek.type_transaksi === nonObject) {
                 temp = cek
                 jenis = nonObject
@@ -1738,10 +1738,10 @@ class CartOps extends Component {
                     this.formulaTax()
                  }, 100)
             } else {
-                const selectCoa = allCoa.find(({type_transaksi, jenis_transaksi}) => 
+                const selectCoa = nomCoa.find(({type_transaksi, jenis_transaksi}) => 
                                     type_transaksi === jenisVendor && 
                                     jenis_transaksi === dataTrans.jenis_transaksi)
-                const selectCoaFin = allCoa.find(({type_transaksi, jenis_transaksi, status_npwp}) => 
+                const selectCoaFin = nomCoa.find(({type_transaksi, jenis_transaksi, status_npwp}) => 
                                     type_transaksi === jenisVendor && 
                                     jenis_transaksi === dataTrans.jenis_transaksi
                                     && status_npwp === cekStat)

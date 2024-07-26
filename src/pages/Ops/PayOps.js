@@ -1161,7 +1161,7 @@ class AjuanBayarOps extends Component {
         detailOps.map(item => { return ( ws.addRow(
             {
                 c1: item.norek_ajuan,
-                c2: item.nama_tujuan.slice(0, 70), 
+                c2: item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' '), 
                 c3: '',
                 c4: '',
                 c5: '',
@@ -1239,13 +1239,13 @@ class AjuanBayarOps extends Component {
         }, 0)
 
         const tempData = [
-            ["P", moment().format('YYYYMMDD'), "1300015005005", detailOps.length, nilai, "", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", ""]
+            ["P", moment().format('YYYYMMDD'), "1300015005005", detailOps.length, nilai, "", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", ""]
         ]
         for (let i = 0; i < detailOps.length; i++) {
             const item = detailOps[i]
             const data = [
                 item.norek_ajuan,
-                item.nama_tujuan.slice(0, 70),
+                item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' '),
                 "",
                 "",
                 "",
@@ -1261,6 +1261,7 @@ class AjuanBayarOps extends Component {
                 "",
                 "",
                 "N",
+                "",
                 "",
                 "",
                 "",
@@ -2052,7 +2053,7 @@ class AjuanBayarOps extends Component {
                                         return (
                                             <tr>
                                                 <th className='tabRep'>{item.norek_ajuan}</th>
-                                                <th className='tabRep'>{item.nama_tujuan.slice(0, 70)}</th>
+                                                <th className='tabRep'>{item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' ')}</th>
                                                 <th ></th>
                                                 <th ></th>
                                                 <th ></th>

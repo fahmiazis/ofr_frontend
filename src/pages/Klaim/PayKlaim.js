@@ -1155,7 +1155,7 @@ class AjuanBayarKlaim extends Component {
         detailKlaim.map(item => { return ( ws.addRow(
             {
                 c1: item.norek_ajuan,
-                c2: item.nama_tujuan.slice(0, 70), 
+                c2: item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' '), 
                 c3: '',
                 c4: '',
                 c5: '',
@@ -1229,13 +1229,13 @@ class AjuanBayarKlaim extends Component {
             return accumulator + parseInt(object.nilai_ajuan);
         }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
         const tempData = [
-            ["P", moment().format('YYYYMMDD'), "1300015005005", detailKlaim.length, nilai, "", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", ""]
+            ["P", moment().format('YYYYMMDD'), "1300015005005", detailKlaim.length, nilai, "", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", "", "","", "", "", ""]
         ]
         for (let i = 0; i < detailKlaim.length; i++) {
             const item = detailKlaim[i]
             const data = [
                 item.norek_ajuan,
-                item.nama_tujuan.slice(0, 70),
+                item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' '),
                 "",
                 "",
                 "",
@@ -1251,6 +1251,7 @@ class AjuanBayarKlaim extends Component {
                 "",
                 "",
                 "N",
+                "",
                 "",
                 "",
                 "",
@@ -2042,7 +2043,7 @@ class AjuanBayarKlaim extends Component {
                                         return (
                                             <tr>
                                                 <th className='tabRep'>{item.norek_ajuan}</th>
-                                                <th className='tabRep'>{item.nama_tujuan.slice(0, 70)}</th>
+                                                <th className='tabRep'>{item.nama_tujuan.slice(0, 70).replace(/[-_$#%^&*()<>,!@{}+=]/g, ' ')}</th>
                                                 <th ></th>
                                                 <th ></th>
                                                 <th ></th>
