@@ -544,12 +544,16 @@ class MasterKpp extends Component {
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="name" 
+                                type="select" 
                                 name="system"
                                 value={values.system}
                                 onBlur={handleBlur("system")}
                                 onChange={handleChange("system")}
-                                />
+                                >
+                                    <option>-Pilih-</option>
+                                    <option value="SAP">SAP</option>
+                                    <option value="REDPINE">REDPINE</option>
+                                </Input>
                                 {errors.system ? (
                                     <text className={style.txtError}>{errors.system}</text>
                                 ) : null}
@@ -638,12 +642,16 @@ class MasterKpp extends Component {
                             </text>
                             <div className="col-md-9">
                                 <Input 
-                                type="name" 
+                                type="select" 
                                 name="system"
                                 value={values.system}
                                 onBlur={handleBlur("system")}
                                 onChange={handleChange("system")}
-                                />
+                                >
+                                <option>-Pilih-</option>
+                                    <option value="SAP">SAP</option>
+                                    <option value="REDPINE">REDPINE</option>
+                                </Input>
                                 {errors.system ? (
                                     <text className={style.txtError}>{errors.system}</text>
                                 ) : null}

@@ -2017,11 +2017,9 @@ class CartKlaim extends Component {
                                                         <th>{item.bank_tujuan}</th>
                                                         <th>{item.norek_ajuan}</th>
                                                         <th>{item.nama_tujuan}</th>
-                                                        <th >
-                                                            <div className='rowCenter'>
-                                                                <Button onClick={() => this.prosesOpenEdit(item.id)} className='mb-1 mr-1' color='success'><MdEditSquare size={25}/></Button>
-                                                                <Button onClick={() => this.prosesDelete(item.id)} color='danger'><MdDelete size={25}/></Button>
-                                                            </div>
+                                                        <th>
+                                                            <Button onClick={() => this.prosesOpenEdit(item.id)} className='mb-1 mr-1' color='success'><MdEditSquare size={25}/></Button>
+                                                            <Button onClick={() => this.prosesDelete(item.id)} color='danger'><MdDelete size={25}/></Button>
                                                         </th>
                                                     </tr>
                                                 )

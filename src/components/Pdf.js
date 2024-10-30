@@ -19,7 +19,7 @@ export default function AllPages(props) {
   return (
     filePict.find(item => item === cekDoc[cekDoc.length - 1]) !== undefined ? 
     <div>
-      <img src={`${REACT_APP_BACKEND_URL}/${dataFile.path}`} />
+      <img className="imgPdf" src={`${REACT_APP_BACKEND_URL}/${dataFile.path}`} />
     </div>
     : cekDoc[cekDoc.length - 1] === 'pdf' ? 
       // <Document

@@ -3,8 +3,8 @@
 import React, { Component } from 'react'
 import {VscAccount} from 'react-icons/vsc'
 import { Container, Collapse, Nav, Navbar,
-    NavbarToggler, NavbarBrand, NavItem, NavLink,
-    Card, CardBody, Table, ButtonDropdown, Input, Button, Col,
+    NavbarToggler, NavbarBrand, NavItem, NavLink, DropdownToggle, DropdownMenu, 
+    Card, CardBody, Table, ButtonDropdown, Input, Button, Col, DropdownItem,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
 import approve from '../../redux/actions/approve'
 import {BsCircle} from 'react-icons/bs'
@@ -73,7 +73,7 @@ class ReportOps extends Component {
             pullRight: false,
             touchHandleWidth: 20,
             dragToggleDistance: 30,
-            limit: 10,
+            limit: 100,
             search: '',
             dataRinci: {},
             dataItem: {},
@@ -122,7 +122,8 @@ class ReportOps extends Component {
             formDis: false,
             history: false,
             time: 'pilih',
-            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            // time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             listOps: [],
             dataDownload: [],
@@ -239,7 +240,8 @@ class ReportOps extends Component {
             {header:  'PPh Amount', key: 'c27'},
             {header:  'DPP', key: 'c28'},
             {header:  'PPN', key: 'c29'},
-            {header:  'Keterangan Tambahan', key: 'c30'}
+            {header:  'Keterangan Tambahan', key: 'c30'},
+            {header:  'Status', key: 'c31'}
         ]
 
         dataDownload.map((item, index) => { return ( ws.addRow(
@@ -273,7 +275,17 @@ class ReportOps extends Component {
                 c27: item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c28: item.dpp !== null && item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c29: item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
-                c30: item.keterangan
+                c30: item.keterangan,
+                c31: item.status_transaksi === 0 ? 'Transaksi Dibatalkan'
+                : item.status_reject === 1 ? item.history.split(',').reverse()[0]
+                : item.status_transaksi === 8 ? 'Transaksi selesai' 
+                : item.status_transaksi === 7 ? 'Menunggu Pembayaran Finance' 
+                : item.status_transaksi === 3 ? 'Proses Verifikasi Finance' 
+                : item.status_transaksi === 4 ? 'Proses Verifikasi Tax' 
+                : item.status_transaksi === 5 ? 'Proses Ajuan Approval List Bayar' 
+                : item.status_transaksi === 2 ? item.appForm.length > 0 && 'Menunggu Approval ' + item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status === null))].jabatan
+                : item.status_transaksi === 6 ? item.appList.length > 0 && 'Menunggu Approval ' + item.appList[item.appList.indexOf(item.appList.find((x) => x.status === null))].jabatan
+                : '-'
             }
         )
         ) })
@@ -443,16 +455,16 @@ class ReportOps extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.asset
+        const { page } = this.props.ops
         const token = localStorage.getItem('token')
-        await this.props.resetData()
+        // await this.props.resetData()
         await this.props.nextPage(token, page.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.asset
+        const { page } = this.props.ops
         const token = localStorage.getItem('token')
-        await this.props.resetData()
+        // await this.props.resetData()
         await this.props.nextPage(token, page.prevLink)
     }
 
@@ -570,7 +582,6 @@ class ReportOps extends Component {
     }
 
     getDataOps = async (value) => {
-        this.setState({limit: value === undefined ? 10 : value.limit})
         this.changeFilter('all')
     }
 
@@ -666,32 +677,32 @@ class ReportOps extends Component {
         this.setState({history: !this.state.history})
     }
 
-    changeStatKlaim = async (val) => {
-        const {filter} = this.state
-        const level = localStorage.getItem('level')
-        const token = localStorage.getItem("token")
-        const tipe = val === '3' || val === '4' ? 'verif' : val === '6' ? 'ajuan bayar' : 'approve'
-        const status = val
-        await this.props.getReport(token, status, 'all', 'all', filter, tipe)
-        this.setState({statKlaim: val})
-    }
-
     changeFilter = async (val) => {
         const token = localStorage.getItem("token")
-        const status = 8
-        const {time1, time2} = this.state
+        const status = val === 'selesai' ? 8 : 'all'
+        const {time1, time2, search, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
-        if (val === 'reject') {
+        // if (val === 'reject') {
+        //     const newKlaim = []
+        //     await this.props.getReport(token, 6, 'all', 'all', cekTime1, cekTime2)
+        //     this.setState({filter: val, newKlaim: newKlaim})
+        // } else {
             const newKlaim = []
-            await this.props.getReport(token, 6, 'all', 'all', cekTime1, cekTime2)
+            await this.props.getReport(token, status, val === 'reject' ? 1 : 'all', 'all',  cekTime1, cekTime2, undefined, search, limit, 1)
             this.setState({filter: val, newKlaim: newKlaim})
-        } else {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all',  cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        }
+        // }
         
+    }
+
+    changeLimit = async (val) => {
+        const {time1, time2, search, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = filter === 'selesai' ? 8 : 'all'
+        this.setState({limit: val})
+        await this.props.getReport(token, status, filter === 'reject' ? 1 : 'all', 'all', cekTime1, cekTime2, undefined, search, val, 1)
     }
 
     changeTime = async (val) => {
@@ -709,12 +720,12 @@ class ReportOps extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, search, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
-        const status = filter === 'reject' ? 6 : 8
-        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+        const status = filter === 'selesai' ? 8 : 'all'
+        await this.props.getReport(token, status, filter === 'reject' ? 1 : 'all', 'all', cekTime1, cekTime2, undefined, search, limit, 1)
     }
 
     prosesSubmitPre = async () => {
@@ -739,13 +750,13 @@ class ReportOps extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
-        const status = filter === 'reject' ? 6 : 8
+        const status = filter === 'selesai' ? 8 : 'all'
         if(e.key === 'Enter'){
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, undefined, e.target.value)
+            await this.props.getReport(token, status, filter === 'reject' ? 1 : 'all', 'all', cekTime1, cekTime2, undefined, e.target.value, limit, 1)
         }
     }
 
@@ -959,7 +970,7 @@ class ReportOps extends Component {
         const {dataRinci, dataDownload, filter, listMut, drop, listReason, dataMenu, listMenu, listOps} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, dataDoc, newOps, dataReport } = this.props.ops
+        const { noDis, detailOps, ttdOps, dataDoc, newOps, dataReport, page } = this.props.ops
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1001,10 +1012,29 @@ class ReportOps extends Component {
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Report Tax (Operasional)</div>
                             </div>
-
                             <div className={[style.secEmail4]}>
                                 <div className={style.headEmail2}>
                                     <Button onClick={this.prosesDownload} className="btn btn-success mr-2">Download</Button>
+                                </div>
+                                <div></div>
+                            </div>
+                            <div className={[style.secEmail4]}>
+                                <div className={style.headEmail2}>
+                                    <div>
+                                        <text>Show: </text>
+                                        <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                            <DropdownToggle caret color="light">
+                                                {this.state.limit}
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                <DropdownItem className={style.item} onClick={() => this.changeLimit(10)}>10</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.changeLimit(20)}>20</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.changeLimit(50)}>50</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.changeLimit(100)}>100</DropdownItem>
+                                            </DropdownMenu>
+                                        </ButtonDropdown>
+                                        <text className={style.textEntries}>entries</text>
+                                    </div>
                                 </div>
                                 <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
@@ -1065,7 +1095,7 @@ class ReportOps extends Component {
                             	
                             <div className='mb-4 mt-2' />
                                 <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-ops">
+                                    <Table bordered responsive hover className={[style.tab, dataReport.length > 0 && 'tableJurnal']} id="table-ops">
                                         <thead>
                                             <tr>
                                                 <th>
@@ -1121,7 +1151,7 @@ class ReportOps extends Component {
                                                             onChange={listOps.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
                                                             />
                                                         </th>
-                                                        <th>{dataReport.indexOf(item) + 1}</th>
+                                                        <th>{(dataReport.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th></th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
@@ -1151,7 +1181,19 @@ class ReportOps extends Component {
                                                         <th>{item.dpp !== null && item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                         <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                         <th>{item.keterangan}</th>
-                                                        <th>{item.status_transaksi === 8 ? 'Transaksi selesai' : item.status_transaksi === 4 ? 'Verifikasi Finance' : item.status_transaksi === 5 ? 'Verifikasi Tax' : item.status_transaksi === 2 ? 'Approval Area' : filter === 'reject' && 'Reject'}</th>
+                                                        <th>
+                                                            { item.status_transaksi === 0 ? 'Transaksi Dibatalkan'
+                                                            : item.status_reject === 1 ? item.history.split(',').reverse()[0]
+                                                            : item.status_transaksi === 8 ? 'Transaksi selesai' 
+                                                            : item.status_transaksi === 7 ? 'Menunggu Pembayaran Finance' 
+                                                            : item.status_transaksi === 3 ? 'Proses Verifikasi Finance' 
+                                                            : item.status_transaksi === 4 ? 'Proses Verifikasi Tax' 
+                                                            : item.status_transaksi === 5 ? 'Proses Ajuan Approval List Bayar' 
+                                                            : item.status_transaksi === 2 ? item.appForm.length > 0 && 'Menunggu Approval ' + item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status === null))].jabatan
+                                                            : item.status_transaksi === 6 ? item.appList.length > 0 && 'Menunggu Approval ' + item.appList[item.appList.indexOf(item.appList.find((x) => x.status === null))].jabatan
+                                                            : '-'
+                                                            }
+                                                        </th>
                                                         {/* <th>{item.history.split(',').reverse()[0]}</th> */}
                                                     </tr>
                                                 )
@@ -1161,20 +1203,20 @@ class ReportOps extends Component {
                                 </div>
                             <div>
                                 <div className={style.infoPageEmail1}>
-                                    <text>Showing 1 of 1 pages</text>
+                                    <text>Showing {page.currentPage} of {page.pages} pages</text>
                                     <div className={style.pageButton}>
                                         <button 
                                             className={style.btnPrev} 
                                             color="info" 
-                                            disabled
-                                            // disabled={page.prevLink === null ? true : false} 
+                                            // disabled
+                                            disabled={page.prevLink === null ? true : false} 
                                             onClick={this.prev}>Prev
                                         </button>
                                         <button 
                                             className={style.btnPrev} 
                                             color="info" 
-                                            disabled
-                                            // disabled={page.nextLink === null ? true : false} 
+                                            // disabled
+                                            disabled={page.nextLink === null ? true : false} 
                                             onClick={this.next}>Next
                                         </button>
                                     </div>
@@ -2285,7 +2327,8 @@ const mapDispatchToProps = {
     getReason: reason.getReason,
     rejectOps: ops.rejectOps,
     resetOps: ops.resetOps,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumen,
+    nextPage: ops.nextPage
     // notifStock: notif.notifStock
 }
 

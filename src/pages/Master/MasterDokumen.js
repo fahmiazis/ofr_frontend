@@ -475,9 +475,10 @@ class MasterDokumen extends Component {
                                             {this.state.limit}
                                         </DropdownToggle>
                                         <DropdownMenu>
-                                        <DropdownItem className={style.item} onClick={() => this.getDataDokumen({limit: 10, search: ''})}>10</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataDokumen({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataDokumen({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataDokumen({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataDokumen({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>

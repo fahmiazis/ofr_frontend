@@ -882,7 +882,7 @@ class Klaim extends Component {
         const newOps = []
         this.setState({filterOps: val, newOps: newOps, statOps: status})
 
-        await this.props.getOps(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps)
+        await this.props.getOps(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps, 1000)
     }
 
     changeStatOps = async (val) => {
@@ -897,7 +897,7 @@ class Klaim extends Component {
         const filterFin = (val === 'all' && filterOps === 'available') || (val === '8' && (filterOps === 'available' || filterOps === 'reject')) ? 'all' : filterOps 
         this.setState({statOps: val, filterOps: filterFin})
 
-        await this.props.getOps(token, status, 'all', 'all', filterFin, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps)
+        await this.props.getOps(token, status, 'all', 'all', filterFin, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps, 1000)
     }
 
     changeDepoOps = async () => {
@@ -909,7 +909,7 @@ class Klaim extends Component {
         const cekTime2 = time2Ops === '' ? 'undefined' : time2Ops
         const statNow = statOps
         const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
-        await this.props.getOps(token, statOps, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps)
+        await this.props.getOps(token, statOps, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps, 1000)
     }
 
     searchOps = async (val) => {
@@ -922,7 +922,7 @@ class Klaim extends Component {
         const statNow = statOps
         const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
         if(val.key === 'Enter'){
-            await this.props.getOps(token, statOps, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', val.target.value, 'undefined', 'undefined', depoOps)
+            await this.props.getOps(token, statOps, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', val.target.value, 'undefined', 'undefined', depoOps, 1000)
         }
     }
 
@@ -953,7 +953,7 @@ class Klaim extends Component {
         const newKasbon = []
         this.setState({filterKasbon: val, newKasbon: newKasbon, statKasbon: status})
 
-        await this.props.getKasbon(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon)
+        await this.props.getKasbon(token, status, 'all', 'all', val, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon, 1000)
     }
 
     changeStatKasbon = async (val) => {
@@ -968,7 +968,7 @@ class Klaim extends Component {
         const filterFin = (val === 'all' && filterKasbon === 'available') || (val === '8' && (filterKasbon === 'available' || filterKasbon === 'reject')) ? 'all' : filterKasbon 
         this.setState({statKasbon: val, filterKasbon: filterFin})
 
-        await this.props.getKasbon(token, status, 'all', 'all', filterFin, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon)
+        await this.props.getKasbon(token, status, 'all', 'all', filterFin, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon, 1000)
     }
 
     changeDepoKasbon = async () => {
@@ -980,7 +980,7 @@ class Klaim extends Component {
         const cekTime2 = time2Kasbon === '' ? 'undefined' : time2Kasbon
         const statNow = statKasbon
         const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
-        await this.props.getKasbon(token, statKasbon, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon)
+        await this.props.getKasbon(token, statKasbon, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon, 1000)
     }
 
     searchKasbon = async (val) => {
@@ -993,7 +993,7 @@ class Klaim extends Component {
         const statNow = statKasbon
         const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
         if(val.key === 'Enter'){
-            await this.props.getKasbon(token, statKasbon, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', val.target.value, depoKasbon)
+            await this.props.getKasbon(token, statKasbon, 'all', 'all', filter, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', val.target.value, depoKasbon, 1000)
         }
     }
 
@@ -1430,7 +1430,7 @@ class Klaim extends Component {
         const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
         const token = localStorage.getItem("token")
         const status = statOps
-        await this.props.getOps(token, status, 'all', 'all', filterOps, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps)
+        await this.props.getOps(token, status, 'all', 'all', filterOps, tipe, 'undefined', cekTime1, cekTime2, 'non kasbon', 'undefined', searchOps, 'undefined', 'undefined', depoOps, 1000)
     }
 
     changeTimeKasbon = async (val) => {
@@ -1457,7 +1457,7 @@ class Klaim extends Component {
         const tipe = statNow === '3' || statNow === '4' ? 'verif' : statNow === '6' || statNow === '8' ? 'ajuan bayar' : 'approve'
         const token = localStorage.getItem("token")
         const status = statKasbon
-        await this.props.getKasbon(token, status, 'all', 'all', filterKasbon, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon)
+        await this.props.getKasbon(token, status, 'all', 'all', filterKasbon, tipe, 'undefined', cekTime1, cekTime2, 'kasbon', 'undefined', searchKasbon, depoKasbon, 1000)
     }
 
     changeTimeIkk = async (val) => {

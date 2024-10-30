@@ -35,9 +35,9 @@ export default {
         type: 'SUBMIT_KLAIMFINAL',
         payload: http(token).patch(`/klaim/subfinklaim`, qs.stringify(no))
     }),
-    getKlaim: (token, status, reject, menu, type, category, data, time1, time2, search, depo) => ({
+    getKlaim: (token, status, reject, menu, type, category, data, time1, time2, search, depo, limit) => ({
         type: 'GET_KLAIM',
-        payload: http(token).patch(`/klaim/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&search=${search === undefined ? '' : search}`, data={depo: depo}),
+        payload: http(token).patch(`/klaim/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&search=${search === undefined ? '' : search}&limit=${limit === undefined ? 100 : limit}&page=1`, data={depo: depo}),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_KLAIM',
@@ -166,6 +166,14 @@ export default {
     addFakturKl: (token, data) => ({
         type: 'ADD_FAKTURKL',
         payload: http(token).patch(`/klaim/faktur/add`, data)
+    }),
+    nextPage: (token, link) => ({
+        type: 'NEXT_REPORT_KLAIM',
+        payload: http(token).get(`${link}`)
+    }),
+    nextKlaim: (token, link) => ({
+        type: 'NEXT_KLAIM',
+        payload: http(token).patch(`${link}`)
     }),
     resetKlaim: () => ({
         type: 'RESET_KLAIM'

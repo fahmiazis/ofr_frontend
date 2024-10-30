@@ -136,9 +136,9 @@ class MasterSpvklaim extends Component {
         
 
         ws.columns = [
-            {header: 'PIC Klaim', key: 'c1'},
-            {header: 'SPV Klaim', key: 'c2'},
-            {header: 'MANAGER Klaim', key: 'c3'}
+            {header: 'PIC KLAIM', key: 'c1'},
+            {header: 'SPV KLAIM', key: 'c2'},
+            {header: 'MANAGER KLAIM', key: 'c3'}
         ]
 
         dataDownload.map((item, index) => { return ( ws.addRow(
@@ -466,6 +466,7 @@ class MasterSpvklaim extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -565,10 +566,9 @@ class MasterSpvklaim extends Component {
                     <ModalHeader toggle={this.openModalAdd}>Add Master Spvklaim</ModalHeader>
                     <Formik
                     initialValues={{
-                        kode_plant: '',
-                        profit_center: '',
-                        region: '',
-                        inisial: ''
+                        pic_klaim: '',
+                        spv_klaim: '',
+                        manager_klaim: ''
                     }}
                     validationSchema={spvklaimSchema}
                     onSubmit={(values) => {this.addSpvklaim(values)}}
@@ -577,69 +577,52 @@ class MasterSpvklaim extends Component {
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Kode Plant
+                                PIC Klaim
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="kode_plant"
-                                value={values.kode_plant}
-                                onBlur={handleBlur("kode_plant")}
-                                onChange={handleChange("kode_plant")}
+                                name="pic_klaim"
+                                value={values.pic_klaim}
+                                onBlur={handleBlur("pic_klaim")}
+                                onChange={handleChange("pic_klaim")}
                                 />
-                                {errors.kode_plant ? (
-                                    <text className={style.txtError}>{errors.kode_plant}</text>
+                                {errors.pic_klaim ? (
+                                    <text className={style.txtError}>{errors.pic_klaim}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Profit Center
+                                SPV Klaim
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="profit_center"
-                                value={values.profit_center}
-                                onBlur={handleBlur("profit_center")}
-                                onChange={handleChange("profit_center")}
+                                name="spv_klaim"
+                                value={values.spv_klaim}
+                                onBlur={handleBlur("spv_klaim")}
+                                onChange={handleChange("spv_klaim")}
                                 />
-                                {errors.profit_center ? (
-                                    <text className={style.txtError}>{errors.profit_center}</text>
+                                {errors.spv_klaim ? (
+                                    <text className={style.txtError}>{errors.spv_klaim}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Region
+                                Manager Klaim
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="region"
-                                value={values.region}
-                                onBlur={handleBlur("region")}
-                                onChange={handleChange("region")}
+                                name="manager_klaim"
+                                value={values.manager_klaim}
+                                onBlur={handleBlur("manager_klaim")}
+                                onChange={handleChange("manager_klaim")}
                                 />
-                                {errors.region ? (
-                                    <text className={style.txtError}>{errors.region}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Inisial
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="inisial"
-                                value={values.inisial}
-                                onBlur={handleBlur("inisial")}
-                                onChange={handleChange("inisial")}
-                                />
-                                {errors.inisial ? (
-                                    <text className={style.txtError}>{errors.inisial}</text>
+                                {errors.manager_klaim ? (
+                                    <text className={style.txtError}>{errors.manager_klaim}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -659,10 +642,9 @@ class MasterSpvklaim extends Component {
                     <ModalHeader toggle={this.openModalEdit}>Edit Master Spvklaim</ModalHeader>
                     <Formik
                     initialValues={{
-                    kode_plant: detail.kode_plant === null ? '' : detail.kode_plant,
-                    profit_center: detail.profit_center === null ? '' : detail.profit_center,
-                    region: detail.region === null ? '' : detail.region,
-                    inisial: detail.inisial === null ? '' : detail.inisial
+                        pic_klaim: detail.pic_klaim,
+                        spv_klaim: detail.spv_klaim,
+                        manager_klaim: detail.manager_klaim
                     }}
                     validationSchema={spvklaimSchema}
                     onSubmit={(values) => {this.editSpvklaim(values, detail.id)}}
@@ -671,69 +653,52 @@ class MasterSpvklaim extends Component {
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Kode Plant
+                                PIC Klaim
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="kode_plant"
-                                value={values.kode_plant}
-                                onBlur={handleBlur("kode_plant")}
-                                onChange={handleChange("kode_plant")}
+                                name="pic_klaim"
+                                value={values.pic_klaim}
+                                onBlur={handleBlur("pic_klaim")}
+                                onChange={handleChange("pic_klaim")}
                                 />
-                                {errors.kode_plant ? (
-                                    <text className={style.txtError}>{errors.kode_plant}</text>
+                                {errors.pic_klaim ? (
+                                    <text className={style.txtError}>{errors.pic_klaim}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Profit Center
+                                SPV Klaim
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="profit_center"
-                                value={values.profit_center}
-                                onBlur={handleBlur("profit_center")}
-                                onChange={handleChange("profit_center")}
+                                name="spv_klaim"
+                                value={values.spv_klaim}
+                                onBlur={handleBlur("spv_klaim")}
+                                onChange={handleChange("spv_klaim")}
                                 />
-                                {errors.profit_center ? (
-                                    <text className={style.txtError}>{errors.profit_center}</text>
+                                {errors.spv_klaim ? (
+                                    <text className={style.txtError}>{errors.spv_klaim}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Region
+                                Manager Klaim
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="region"
-                                value={values.region}
-                                onBlur={handleBlur("region")}
-                                onChange={handleChange("region")}
+                                name="manager_klaim"
+                                value={values.manager_klaim}
+                                onBlur={handleBlur("manager_klaim")}
+                                onChange={handleChange("manager_klaim")}
                                 />
-                                {errors.region ? (
-                                    <text className={style.txtError}>{errors.region}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Inisial
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="inisial"
-                                value={values.inisial}
-                                onBlur={handleBlur("inisial")}
-                                onChange={handleChange("inisial")}
-                                />
-                                {errors.inisial ? (
-                                    <text className={style.txtError}>{errors.inisial}</text>
+                                {errors.manager_klaim ? (
+                                    <text className={style.txtError}>{errors.manager_klaim}</text>
                                 ) : null}
                             </div>
                         </div>

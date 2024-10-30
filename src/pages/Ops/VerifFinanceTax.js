@@ -75,7 +75,7 @@ class VerifOps extends Component {
             pullRight: false,
             touchHandleWidth: 20,
             dragToggleDistance: 30,
-            limit: 10,
+            limit: 100,
             search: '',
             dataRinci: {},
             dataItem: {},
@@ -131,7 +131,7 @@ class VerifOps extends Component {
             message: '',
             subject: '',
             time: 'pilih',
-            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
@@ -340,17 +340,15 @@ class VerifOps extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.asset
+        const { pageOps } = this.props.ops
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.nextLink)
+        await this.props.nextOps(token, pageOps.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.asset
+        const { pageOps } = this.props.ops
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.prevLink)
+        await this.props.nextOps(token, pageOps.prevLink)
     }
 
     onSetOpen(open) {
@@ -482,7 +480,6 @@ class VerifOps extends Component {
     }
 
     getDataOps = async (value) => {
-        this.setState({limit: value === undefined ? 10 : value.limit})
         this.changeFilter('available')
     }
 
@@ -729,25 +726,25 @@ class VerifOps extends Component {
         const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         const status = level === '2' ? 3 : 4
         const statusAll = 'all'
-        const {time1, time2} = this.state
+        const {time1, time2, search, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2, type)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         }
     }
@@ -768,14 +765,26 @@ class VerifOps extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, search, limit} = this.state
         const token = localStorage.getItem("token")
         const level = localStorage.getItem('level')
         const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
-        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type)
+        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
+    }
+
+    getDataLimit = async (val) => {
+        this.setState({limit: val})
+        const {time1, time2, filter, search} = this.state
+        const token = localStorage.getItem("token")
+        const level = localStorage.getItem('level')
+        const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
+        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', val)
     }
 
     prosesSubmit = async () => {
@@ -998,7 +1007,7 @@ class VerifOps extends Component {
 
     prosesDownloadFinance = async () => {
         const token = localStorage.getItem("token")
-        const {listOps} = this.state
+        const {listOps, limit} = this.state
         const {dataOps} = this.props.ops
         const data = []
         for (let i = 0; i < listOps.length; i++) {
@@ -1014,13 +1023,13 @@ class VerifOps extends Component {
         this.setState({dataDownload: data})
         await this.props.downloadFormVerif(token, dataSend)
 
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, search} = this.state
         const level = localStorage.getItem('level')
         const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
-        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, this.state.search)
+        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
         
         this.downloadExcel()
     }
@@ -1117,7 +1126,7 @@ class VerifOps extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, limit} = this.state
         const token = localStorage.getItem("token")
         const level = localStorage.getItem('level')
         const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
@@ -1125,7 +1134,7 @@ class VerifOps extends Component {
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
         if(e.key === 'Enter'){
-            await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, e.target.value)
+            await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, e.target.value, undefined, undefined, 'all', limit)
         }
     }
 
@@ -1518,7 +1527,7 @@ class VerifOps extends Component {
         const {dataRinci, dataZip, filter, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, dataDoc, newOps } = this.props.ops
+        const { noDis, detailOps, ttdOps, dataDoc, newOps, pageOps } = this.props.ops
         const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         // const pages = this.props.depo.page
 
@@ -1562,6 +1571,23 @@ class VerifOps extends Component {
                                 <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : `Tax Non Kasbon`} (Operasional)</div>
                             </div>
                             <div className={style.secEmail3}>
+                                <div>
+                                    <text>Show: </text>
+                                    <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                        <DropdownToggle caret color="light">
+                                            {this.state.limit}
+                                        </DropdownToggle>
+                                        <DropdownMenu>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                        </DropdownMenu>
+                                    </ButtonDropdown>
+                                    <text className={style.textEntries}>entries</text>
+                                </div>
+                            </div>
+                            <div className={style.secEmail4}>
                                 <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
                                     <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
@@ -1677,7 +1703,7 @@ class VerifOps extends Component {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newOps.map(item => {
+                                            {newOps.map((item, index) => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         {(level === '14' || level === '2') && (
@@ -1689,7 +1715,7 @@ class VerifOps extends Component {
                                                                 />
                                                             </th>
                                                         )}
-                                                        <th>{newOps.indexOf(item) + 1}</th>
+                                                        <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.cost_center}</th>
                                                         <th>{item.area}</th>
@@ -1715,27 +1741,27 @@ class VerifOps extends Component {
                                         </div>
                                     )}
                                 </div>
-                            <div>
-                                <div className={style.infoPageEmail1}>
-                                    <text>Showing 1 of 1 pages</text>
-                                    <div className={style.pageButton}>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.prevLink === null ? true : false} 
-                                            onClick={this.prev}>Prev
-                                        </button>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.nextLink === null ? true : false} 
-                                            onClick={this.next}>Next
-                                        </button>
+                                <div>
+                                    <div className={style.infoPageEmail1}>
+                                        <text>Showing {pageOps.currentPage} of {pageOps.pages === 0 ? 1 : pageOps.pages} pages</text>
+                                        <div className={style.pageButton}>
+                                            <button 
+                                                className={style.btnPrev} 
+                                                color="info" 
+                                                // disabled
+                                                disabled={pageOps.prevLink === null ? true : false} 
+                                                onClick={this.prev}>Prev
+                                            </button>
+                                            <button 
+                                                className={style.btnPrev} 
+                                                color="info" 
+                                                // disabled
+                                                disabled={pageOps.nextLink === null ? true : false} 
+                                                onClick={this.next}>Next
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
                         </div>
                     </div>
                     </MaterialTitlePanel>
@@ -1789,6 +1815,7 @@ class VerifOps extends Component {
                                         <th>NOMOR NPWP</th>
                                         <th>NIK</th>
                                         <th>Transaksi Ber PPN</th>
+                                        <th>NO FAKTUR</th>
                                         <th>DPP</th>
                                         <th>PPN</th>
                                         <th>PPh</th>
@@ -1864,6 +1891,7 @@ class VerifOps extends Component {
                                                     {item.no_ktp}
                                                 </th>
                                                 <th>{item.type_transaksi}</th>
+                                                <th>{item.no_faktur}</th>
                                                 <th>{item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>(-){item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
@@ -2964,7 +2992,8 @@ const mapDispatchToProps = {
     sendEmail: email.sendEmail,
     addNotif: notif.addNotif,
     getResmail: email.getResmail,
-    downloadFormVerif: ops.downloadFormVerif
+    downloadFormVerif: ops.downloadFormVerif,
+    nextOps: ops.nextOps
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifOps)

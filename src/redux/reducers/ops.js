@@ -19,6 +19,7 @@ const opsState = {
     alertM: '',
     alertUpload: [],
     page: {},
+    pageOps: {},
     isExport: false,
     detCoa: [],
     link: '',
@@ -126,13 +127,43 @@ export default (state = opsState, action) => {
                 isLoading: false,
                 isGetOps: true,
                 dataOps: action.payload.data.result,
-                noDis: action.payload.data.noDis,
+                // noDis: action.payload.data.noDis,
                 newOps: action.payload.data.newOps,
-                depoOps: action.payload.data.findDepo,
+                // depoOps: action.payload.data.findDepo,
+                pageOps: action.payload.data.pageInfo,
                 alertMsg: 'get coa Succesfully'
             };
         }
         case 'GET_OPS_REJECTED': {
+            return {
+                ...state,
+                isLoading: false,
+                isError: true,
+                isGetOps: false,
+                alertMsg: "Unable connect to server"
+            };
+        }
+        case 'NEXT_OPS_PENDING': {
+            return {
+                ...state,
+                isLoading: true,
+                alertMsg: 'Waiting ...'
+            };
+        }
+        case 'NEXT_OPS_FULFILLED': {
+            return {
+                ...state,
+                isLoading: false,
+                isGetOps: true,
+                dataOps: action.payload.data.result,
+                noDis: action.payload.data.noDis,
+                newOps: action.payload.data.newOps,
+                depoOps: action.payload.data.findDepo,
+                pageOps: action.payload.data.pageInfo,
+                alertMsg: 'get coa Succesfully'
+            };
+        }
+        case 'NEXT_OPS_REJECTED': {
             return {
                 ...state,
                 isLoading: false,
@@ -179,11 +210,39 @@ export default (state = opsState, action) => {
                 ...state,
                 isLoading: false,
                 isGetReport: true,
-                dataReport: action.payload.data.result || [],
+                dataReport: action.payload.data.result.rows || [],
+                page: action.payload.data.pageInfo,
                 alertMsg: 'get coa Succesfully'
             };
         }
         case 'REPORT_OPS_REJECTED': {
+            return {
+                ...state,
+                isLoading: false,
+                isError: true,
+                isGetReport: false,
+                dataReport: [],
+                alertMsg: "Unable connect to server"
+            };
+        }
+        case 'NEXT_REPORT_OPS_PENDING': {
+            return {
+                ...state,
+                isLoading: true,
+                alertMsg: 'Waiting ...'
+            };
+        }
+        case 'NEXT_REPORT_OPS_FULFILLED': {
+            return {
+                ...state,
+                isLoading: false,
+                isGetReport: true,
+                dataReport: action.payload.data.result.rows || [],
+                page: action.payload.data.pageInfo,
+                alertMsg: 'get coa Succesfully'
+            };
+        }
+        case 'NEXT_REPORT_OPS_REJECTED': {
             return {
                 ...state,
                 isLoading: false,

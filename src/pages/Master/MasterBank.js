@@ -469,6 +469,7 @@ class MasterBank extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -530,18 +531,10 @@ class MasterBank extends Component {
                                         <Table bordered responsive hover className={style.tab}>
                                             <thead>
                                                 <tr>
-                                                    <th>
-                                                        <input  
-                                                        className='mr-2'
-                                                        type='checkbox'
-                                                        checked={listData.length === 0 ? false : listData.length === dataAll.length ? true : false}
-                                                        onChange={() => listData.length === dataAll.length ? this.chekRej('all') : this.chekApp('all')}
-                                                        />
-                                                        {/* Select */}
-                                                    </th>
                                                     <th>No</th>
                                                     <th>Nama Bank</th>
                                                     <th>Jumlah Digit</th>
+                                                    <th>Kode Bank</th>
                                                 </tr>
                                             </thead>
                                         </Table>
@@ -554,9 +547,19 @@ class MasterBank extends Component {
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listData.length === 0 ? false : listData.length === dataAll.length ? true : false}
+                                                    onChange={() => listData.length === dataAll.length ? this.chekRej('all') : this.chekApp('all')}
+                                                    />
+                                                    {/* Select */}
+                                                </th>
                                                 <th>No</th>
                                                 <th>Nama Bank</th>
                                                 <th>Jumlah Digit</th>
+                                                <th>Kode Bank</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -573,6 +576,7 @@ class MasterBank extends Component {
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
                                                     <td>{item.name}</td>
                                                     <td>{item.digit}</td>
+                                                    <td>{item.kode_bank}</td>
                                                 </tr>
                                             )})}
                                         </tbody>

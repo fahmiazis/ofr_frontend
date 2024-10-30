@@ -371,6 +371,7 @@ class MasterGlikk extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -575,7 +576,8 @@ class MasterGlikk extends Component {
                                 >   
                                     <option>-Pilih-</option>
                                     {/* <option value="OPS">Operasional</option> */}
-                                    <option value="KLAIM">Klaim</option>
+                                    <option value="SAP">SAP</option>
+                                    <option value="SCYLLA">SCYLLA</option>
                                 </Input>
                                 {errors.system ? (
                                     <text className={style.txtError}>{errors.system}</text>
@@ -588,19 +590,15 @@ class MasterGlikk extends Component {
                             </text>
                             <div className="col-md-9">
                             <Input 
-                                type="select"
+                                type="name" 
                                 name="gl_account"
                                 value={values.gl_account}
-                                onChange={handleChange("gl_account")}
                                 onBlur={handleBlur("gl_account")}
-                                >   
-                                    <option>-Pilih-</option>
-                                    {/* <option value="OPS">Operasional</option> */}
-                                    <option value="KLAIM">Klaim</option>
-                                </Input>
-                                {errors.gl_account ? (
-                                    <text className={style.txtError}>{errors.gl_account}</text>
-                                ) : null}
+                                onChange={handleChange("gl_account")}
+                                />
+                            {errors.gl_account ? (
+                                <text className={style.txtError}>{errors.gl_account}</text>
+                            ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
@@ -617,7 +615,9 @@ class MasterGlikk extends Component {
                                 >   
                                     <option>-Pilih-</option>
                                     {/* <option value="OPS">Operasional</option> */}
-                                    <option value="KLAIM">Klaim</option>
+                                    <option value="Kas Kecil">Kas Kecil</option>
+                                    <option value="Operasional">Operasional</option>
+                                    <option value="Klaim">Klaim</option>
                                 </Input>
                                 {errors.gl_name ? (
                                     <text className={style.txtError}>{errors.gl_name}</text>
@@ -717,7 +717,8 @@ class MasterGlikk extends Component {
                                 >   
                                     <option>-Pilih-</option>
                                     {/* <option value="OPS">Operasional</option> */}
-                                    <option value="KLAIM">Klaim</option>
+                                    <option value="SAP">SAP</option>
+                                    <option value="SCYLLA">SCYLLA</option>
                                 </Input>
                                 {errors.system ? (
                                     <text className={style.txtError}>{errors.system}</text>
@@ -730,19 +731,15 @@ class MasterGlikk extends Component {
                             </text>
                             <div className="col-md-9">
                             <Input 
-                                type="select"
+                                type="name" 
                                 name="gl_account"
                                 value={values.gl_account}
-                                onChange={handleChange("gl_account")}
                                 onBlur={handleBlur("gl_account")}
-                                >   
-                                    <option>-Pilih-</option>
-                                    {/* <option value="OPS">Operasional</option> */}
-                                    <option value="KLAIM">Klaim</option>
-                                </Input>
-                                {errors.gl_account ? (
-                                    <text className={style.txtError}>{errors.gl_account}</text>
-                                ) : null}
+                                onChange={handleChange("gl_account")}
+                                />
+                            {errors.gl_account ? (
+                                <text className={style.txtError}>{errors.gl_account}</text>
+                            ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
@@ -759,7 +756,9 @@ class MasterGlikk extends Component {
                                 >   
                                     <option>-Pilih-</option>
                                     {/* <option value="OPS">Operasional</option> */}
-                                    <option value="KLAIM">Klaim</option>
+                                    <option value="Kas Kecil">Kas Kecil</option>
+                                    <option value="Operasional">Operasional</option>
+                                    <option value="Klaim">Klaim</option>
                                 </Input>
                                 {errors.gl_name ? (
                                     <text className={style.txtError}>{errors.gl_name}</text>

@@ -66,7 +66,7 @@ class AjuanBayarOps extends Component {
             pullRight: false,
             touchHandleWidth: 20,
             dragToggleDistance: 30,
-            limit: 10,
+            limit: 100,
             search: '',
             dataRinci: {},
             dataItem: {},
@@ -327,17 +327,15 @@ class AjuanBayarOps extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.asset
+        const { pageOps } = this.props.ops
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.nextLink)
+        await this.props.nextOps(token, pageOps.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.asset
+        const { pageOps } = this.props.ops
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.prevLink)
+        await this.props.nextOps(token, pageOps.prevLink)
     }
 
     generateData = () => {
@@ -490,7 +488,6 @@ class AjuanBayarOps extends Component {
     }
 
     getDataOps = async (value) => {
-        this.setState({limit: value === undefined ? 10 : value.limit})
         // this.changeFilter('bayar')
         this.changeFilter('ready')
     }
@@ -602,7 +599,7 @@ class AjuanBayarOps extends Component {
 
     changeFilter = async (val) => {
         const {dataOps, noDis} = this.props.ops
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, search, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const level = localStorage.getItem('level')
@@ -613,19 +610,19 @@ class AjuanBayarOps extends Component {
         const role = localStorage.getItem('role')
         if (val === 'ready') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, undefined, undefined, search, undefined, undefined, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, undefined, undefined, search, undefined, undefined, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'bayar') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, undefined, undefined, search, undefined, undefined, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, category, status, cekTime1, cekTime2)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, category, status, cekTime1, cekTime2, undefined, undefined, search, undefined, undefined, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         }
     }
@@ -647,13 +644,25 @@ class AjuanBayarOps extends Component {
 
     getDataTime = async () => {
         const typeKasbon = 'non kasbon'
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, search, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const category = 'ajuan bayar'
         const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
-        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2)
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, undefined, undefined, search, undefined, undefined, 'all', limit)
+    }
+
+    getDataLimit = async (val) => {
+        this.setState=({limit: val})
+        const typeKasbon = 'non kasbon'
+        const {time1, time2, filter, search} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const category = 'ajuan bayar'
+        const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, undefined, undefined, search, undefined, undefined, 'all', val)
     }
 
     prosesSubmit = async () => {
@@ -721,13 +730,13 @@ class AjuanBayarOps extends Component {
     onSearch = async (e) => {
         this.setState({search: e.target.value})
         const typeKasbon = 'non kasbon'
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : 2
         if(e.key === 'Enter'){
-            await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', filter === 'all' ? status : 'undefined', cekTime1, cekTime2, undefined, undefined, e.target.value)
+            await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', filter === 'all' ? status : 'undefined', cekTime1, cekTime2, undefined, undefined, e.target.value, undefined, undefined, 'all', limit)
         }
     }
 
@@ -1411,7 +1420,7 @@ class AjuanBayarOps extends Component {
         const {dataRinci, listMut, listReason, dataMenu, listMenu, listOps, dataDownload, csvData} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps, docBukti } = this.props.ops
+        const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps, docBukti, pageOps } = this.props.ops
         const {glInternet, glListrik} = this.props.ops
         // const pages = this.props.depo.page
           
@@ -1456,6 +1465,21 @@ class AjuanBayarOps extends Component {
                                 <div className={style.titleDashboard}>Pembayaran List Ajuan Ops</div>
                             </div>
                             <div className={style.secEmail3}>
+                                <div>
+                                    <text>Show: </text>
+                                    <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                        <DropdownToggle caret color="light">
+                                            {this.state.limit}
+                                        </DropdownToggle>
+                                        <DropdownMenu>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                        </DropdownMenu>
+                                    </ButtonDropdown>
+                                    <text className={style.textEntries}>entries</text>
+                                </div>
                                 <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
@@ -1514,23 +1538,25 @@ class AjuanBayarOps extends Component {
                                 </div>
                             </div>
                             <div className={style.tableDashboard}>
-                                <Table bordered responsive hover className={style.tab} id="table-ops">
+                                <Table bordered responsive hover className={[style.tab]} id="table-ops">
                                     <thead>
                                         <tr>
                                             <th>No</th>
                                             <th>No.Transaksi Ajuan Bayar</th>
                                             <th>Tanggal Submit Ajuan Bayar</th>
+                                            <th>Tanggal Rencana Bayar</th>
                                             <th>STATUS</th>
                                             <th>OPSI</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {newOps.map(item => {
+                                        {newOps.map((item, index) => {
                                             return (
                                                 <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                    <th>{newOps.indexOf(item) + 1}</th>
+                                                    <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
                                                     <th>{item.no_pembayaran}</th>
-                                                    <th>{moment(item.tgl_sublist || item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                                    <th>{moment(item.tgl_sublist).format('DD MMMM YYYY')}</th>
+                                                    <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
                                                     <th>{item.history.split(',').reverse()[0]}</th>
                                                     <th>
                                                         <Button size='sm' onClick={() => this.prosesDetail(item, 'ajuan bayar')} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -1548,20 +1574,20 @@ class AjuanBayarOps extends Component {
                             </div>
                             <div>
                                 <div className={style.infoPageEmail1}>
-                                    <text>Showing 1 of 1 pages</text>
+                                    <text>Showing {pageOps.currentPage} of {pageOps.pages === 0 ? 1 : pageOps.pages} pages</text>
                                     <div className={style.pageButton}>
                                         <button 
                                             className={style.btnPrev} 
                                             color="info" 
-                                            disabled
-                                            // disabled={page.prevLink === null ? true : false} 
+                                            // disabled
+                                            disabled={pageOps.prevLink === null ? true : false} 
                                             onClick={this.prev}>Prev
                                         </button>
                                         <button 
                                             className={style.btnPrev} 
                                             color="info" 
-                                            disabled
-                                            // disabled={page.nextLink === null ? true : false} 
+                                            // disabled
+                                            disabled={pageOps.nextLink === null ? true : false} 
                                             onClick={this.next}>Next
                                         </button>
                                     </div>
@@ -1637,9 +1663,9 @@ class AjuanBayarOps extends Component {
                                         <th>NOMOR NPWP</th>
                                         <th>NAMA SESUAI KTP</th>
                                         <th>NOMOR KTP</th>
-                                        <th>PPU</th>
-                                        <th>PA</th>
-                                        <th>NOMINAL</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
                                         <th>NILAI YANG DIBAYARKAN</th>
                                         <th>TANGGAL TRANSFER</th>
                                     </tr>
@@ -1669,9 +1695,9 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.status_npwp === 0 ? '' : item.no_npwp}</th>
                                                 <th>{item.status_npwp === 0 ? item.nama_ktp : ''}</th>
                                                 <th>{item.status_npwp === 0 ? item.no_ktp : ''}</th>
-                                                <th>{item.ppu}</th>
-                                                <th>{item.pa}</th>
-                                                <th>{item.nominal}</th>
+                                                <th>{item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>(-){item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.nilai_bayar}</th>
                                                 <th>{item.tanggal_transfer}</th>
                                             </tr>
@@ -1738,7 +1764,10 @@ class AjuanBayarOps extends Component {
                                         <th>Nama Bank</th>
                                         <th>No Rekening</th>
                                         <th>Atas Nama</th>
-                                        <th>Nominal</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
+                                        <th>Total Bayar</th>
                                         <th>Keterangan</th>
                                         <th>No PO</th>
                                         <th>Area</th>
@@ -1761,6 +1790,9 @@ class AjuanBayarOps extends Component {
                                                 </th>
                                                 <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
+                                                <th>{item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>(-){item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
@@ -1835,7 +1867,10 @@ class AjuanBayarOps extends Component {
                                         <th>Nama Bank</th>
                                         <th>No Rekening</th>
                                         <th>Atas Nama</th>
-                                        <th>Nominal</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
+                                        <th>Total Bayar</th>
                                         <th>Keterangan</th>
                                         <th>No PO</th>
                                         <th>Area</th>
@@ -1865,6 +1900,9 @@ class AjuanBayarOps extends Component {
                                                 </th>
                                                 <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
+                                                <th>{item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>(-){item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
@@ -2036,7 +2074,10 @@ class AjuanBayarOps extends Component {
                                         <th>Nama Bank</th>
                                         <th>No Rekening</th>
                                         <th>Atas Nama</th>
-                                        <th>Nominal</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
+                                        <th>Total Bayar</th>
                                         <th>Keterangan</th>
                                         <th>No PO</th>
                                         <th>Area</th>
@@ -2059,6 +2100,9 @@ class AjuanBayarOps extends Component {
                                                 </th>
                                                 <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
+                                                <th>{item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>(-){item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
@@ -3040,7 +3084,8 @@ const mapDispatchToProps = {
     getDraftAjuan: email.getDraftAjuan,
     sendEmail: email.sendEmail,
     resetEmail: email.resetError,
-    addNotif: notif.addNotif
+    addNotif: notif.addNotif,
+    nextOps: ops.nextOps
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarOps)

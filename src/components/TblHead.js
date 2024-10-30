@@ -6,7 +6,7 @@ export default class TblHead extends Component {
   render() {
     const tagBody = this.props.tagBody
     return (
-        <Table bordered responsive hover className={style.tab} id="table-klaim">
+        <Table bordered responsive hover className={[style.tab, 'tableJurnal']} id="table-klaim">
             <thead>
                 <tr>
                     <th>No</th>

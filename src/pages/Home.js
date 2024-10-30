@@ -199,7 +199,7 @@ class Home extends Component {
                         </div>
                     </div>
                     <div className='mainHome'>
-                        <div className="titHome">Welcome to web finance</div>
+                        <div className="titHome">Welcome to web ofr</div>
                         <div className="txtChoose">Please select an option</div>
                         <div className="mainBody">
                             {level === '4' || level === '14' || level === '24' || level === '34' || level === '102' ? null : (

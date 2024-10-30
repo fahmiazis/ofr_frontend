@@ -3,8 +3,8 @@
 import React, { Component } from 'react'
 import {VscAccount} from 'react-icons/vsc'
 import { Container, Collapse, Nav, Navbar,
-    NavbarToggler, NavbarBrand, NavItem, NavLink,
-    Card, CardBody, Table, ButtonDropdown, Input, Button, Col,
+    NavbarToggler, NavbarBrand, NavItem, NavLink, DropdownToggle, DropdownMenu, 
+    Card, CardBody, Table, ButtonDropdown, Input, Button, Col, DropdownItem,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter, UncontrolledTooltip} from 'reactstrap'
 import approve from '../../redux/actions/approve'
 import {BsCircle} from 'react-icons/bs'
@@ -83,7 +83,7 @@ class Klaim extends Component {
             pullRight: false,
             touchHandleWidth: 20,
             dragToggleDistance: 30,
-            limit: 10,
+            limit: 100,
             search: '',
             dataRinci: {},
             dataItem: {},
@@ -399,17 +399,15 @@ class Klaim extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.asset
+        const { pageKlaim } = this.props.klaim
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.nextLink)
+        await this.props.nextKlaim(token, pageKlaim.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.asset
+        const { pageKlaim } = this.props.klaim
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.prevLink)
+        await this.props.nextKlaim(token, pageKlaim.prevLink)
     }
 
     onSetOpen(open) {
@@ -571,7 +569,6 @@ class Klaim extends Component {
 
     getDataKlaim = async (value) => {
         const level = localStorage.getItem('level')
-        this.setState({limit: value === undefined ? 10 : value.limit})
         const cekLevArea = userAppArea.find(item => item === level) !== undefined
         this.changeFilter(cekLevArea ? 'available' : 'all')
     }
@@ -805,24 +802,35 @@ class Klaim extends Component {
     }
 
     changeFilter = async (val) => {
+        this.setState({filter: val})
         const {dataKlaim, noDis} = this.props.klaim
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const status = val === 'bayar' || val === 'completed' ? 8 : 2
         const statusAll = 'all'
-        const {time1, time2} = this.state
+        const {time1, time2, search, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const role = localStorage.getItem('role')
         if (val === 'all') {
             const newKlaim = []
-            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
+            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', limit)
             this.setState({filter: val, newKlaim: newKlaim})
         } else {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', limit)
             this.setState({filter: val, newKlaim: newKlaim})
         }
+    }
+
+    getDataLimit = async (val) => {
+        const {time1, time2, filter, search} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8 : 2
+        this.setState({limit: val})
+        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', val)
     }
 
     changeTime = async (val) => {
@@ -841,12 +849,12 @@ class Klaim extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, search, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8 : 2
-        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2)
+        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', limit)
     }
 
     prosesSubmitPre = async () => {
@@ -1016,14 +1024,14 @@ class Klaim extends Component {
     }
 
     onSearch = async (e) => {
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8 : 2
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            await this.props.getKlaim(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, e.target.value)
+            await this.props.getKlaim(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, e.target.value, 'all', limit)
         }
     }
 
@@ -1398,7 +1406,7 @@ class Klaim extends Component {
         const {listReject, dataRinci, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc, filter, dataZip, dataColl, fileName} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim, docBukti } = this.props.klaim
+        const { noDis, detailKlaim, ttdKlaim, dataDoc, newKlaim, docBukti, pageKlaim } = this.props.klaim
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1440,39 +1448,40 @@ class Klaim extends Component {
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Pengajuan Klaim</div>
                             </div>
+                            {(level === '5' || level === '6') && (
+                                <div className={[style.secEmail4]}>
+                                    <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Create</Button>
+                                </div>
+                            )}
                             <div className={[style.secEmail4]}>
-                                {(level === '5' || level === '6') ? (
-                                    <>
-                                        <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Create</Button>
-                                        <div className={style.searchEmail2}>
-                                            <text>Filter:  </text>
-                                            <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
-                                                <option value="all">All</option>
-                                                <option value="bayar">Telah Bayar</option>
-                                                <option value="completed">Selesai</option>
-                                                <option value="reject">Reject</option>
-                                                {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                            </Input>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                    <div className={style.searchEmail2}>
+                                <div className={style.searchEmail2}>
+                                    <div>
+                                        <text>Show: </text>
+                                        <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                            <DropdownToggle caret color="light">
+                                                {this.state.limit}
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                            </DropdownMenu>
+                                        </ButtonDropdown>
+                                        <text className={style.textEntries}>entries</text>
                                     </div>
-                                    <div className={style.searchEmail2}>
-                                        <text>Filter:  </text>
-                                        <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="reject">Reject</option>
-                                            <option value="available">Available Approve</option>
-                                            <option value="bayar">Telah Bayar</option>
-                                            <option value="completed">Selesai</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                        </Input>
-                                    </div>
-                                    
-                                    </>
-                                )}
+                                </div>
+                                <div className={style.searchEmail2}>
+                                    <text>Filter:  </text>
+                                    <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value="all">All</option>
+                                        <option value="reject">Reject</option>
+                                        <option value="available">Available Approve</option>
+                                        <option value="bayar">Telah Bayar</option>
+                                        <option value="completed">Selesai</option>
+                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                    </Input>
+                                </div>
                             </div>
                             <div className={[style.secEmail4]}>
                                 <div className='rowCenter'>
@@ -1524,7 +1533,7 @@ class Klaim extends Component {
                             </div>
                             {level === '5' || level === '6' ? (
                                 <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                    <Table bordered responsive hover className={[style.tab, newKlaim.length > 0 && 'tableJurnal']} id="table-klaim">
                                         <thead>
                                             <tr>
                                                 <th>No</th>
@@ -1577,7 +1586,7 @@ class Klaim extends Component {
                                 </div>
                             ) : (
                                 <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                    <Table bordered responsive hover className={[style.tab, newKlaim.length > 0 && 'tableJurnal']} id="table-klaim">
                                         <thead>
                                             <tr>
                                                 <th>No</th>
@@ -1623,25 +1632,23 @@ class Klaim extends Component {
                                     )}
                                 </div>
                             )}
-                            <div>
-                                <div className={style.infoPageEmail1}>
-                                    <text>Showing 1 of 1 pages</text>
-                                    <div className={style.pageButton}>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.prevLink === null ? true : false} 
-                                            onClick={this.prev}>Prev
-                                        </button>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.nextLink === null ? true : false} 
-                                            onClick={this.next}>Next
-                                        </button>
-                                    </div>
+                            <div className={style.infoPageEmail1}>
+                                <text>Showing {pageKlaim.currentPage} of {pageKlaim.pages === 0 ? 1 : pageKlaim.pages} pages</text>
+                                <div className={style.pageButton}>
+                                    <button 
+                                        className={style.btnPrev} 
+                                        color="info" 
+                                        // disabled
+                                        disabled={pageKlaim.prevLink === null ? true : false} 
+                                        onClick={this.prev}>Prev
+                                    </button>
+                                    <button 
+                                        className={style.btnPrev} 
+                                        color="info" 
+                                        // disabled
+                                        disabled={pageKlaim.nextLink === null ? true : false} 
+                                        onClick={this.next}>Next
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -2656,6 +2663,7 @@ const mapDispatchToProps = {
     getResmail: email.getResmail,
     getOutlet: klaim.getOutlet,
     getDocBayar: klaim.getDocBayar,
+    nextKlaim: klaim.nextKlaim
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Klaim)

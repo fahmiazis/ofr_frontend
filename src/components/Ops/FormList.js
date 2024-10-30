@@ -60,6 +60,9 @@ class FormList extends Component {
                     item.bank_tujuan, 
                     item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan, 
                     item.nama_tujuan, 
+                    item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
+                    item.nilai_utang !== null && `(-) ${item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`,
                     item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."), 
                     item.keterangan,
                     '-',
@@ -85,7 +88,10 @@ class FormList extends Component {
                 {name: 'Nama Bank'},
                 {name: 'No Rekening'},
                 {name: 'Atas Nama'},
-                {name: 'Nominal'},
+                {name: 'DPP'},
+                {name: 'PPN'},
+                {name: 'PPh'},
+                {name: 'Total Bayar'},
                 {name: 'Keterangan'},
                 {name: 'No PO'},
                 {name: 'Area'}
@@ -108,6 +114,9 @@ class FormList extends Component {
         ws.addRow([
             '', 
             'TOTAL', 
+            '', 
+            '', 
+            '', 
             '', 
             '', 
             '', 
@@ -294,7 +303,10 @@ class FormList extends Component {
                             <th>Nama Bank</th>
                             <th>No Rekening</th>
                             <th>Atas Nama</th>
-                            <th>Nominal</th>
+                            <th>DPP</th>
+                            <th>PPN</th>
+                            <th>PPh</th>
+                            <th>Total Bayar</th>
                             <th>Keterangan</th>
                             <th>No PO</th>
                             <th>Area</th>
@@ -311,6 +323,9 @@ class FormList extends Component {
                                     <th>{item.bank_tujuan}</th>
                                     <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                     <th>{item.nama_tujuan}</th>
+                                    <th>{item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                    <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                    <th>(-) {item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                     <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                     <th>{item.keterangan}</th>
                                     <th>-</th>
@@ -320,7 +335,7 @@ class FormList extends Component {
                         })}
                         {detailOps.length > 0 && (
                             <tr>
-                                <th className='total' colSpan={7}>Total</th>
+                                <th className='total' colSpan={10}>Total</th>
                                 <th>
                                     {detailOps.reduce((accumulator, object) => {
                                         return accumulator + parseInt(object.nilai_bayar);

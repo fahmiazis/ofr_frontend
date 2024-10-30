@@ -67,7 +67,7 @@ class AjuanBayarOps extends Component {
             pullRight: false,
             touchHandleWidth: 20,
             dragToggleDistance: 30,
-            limit: 10,
+            limit: 100,
             search: '',
             dataRinci: {},
             dataItem: {},
@@ -521,17 +521,15 @@ class AjuanBayarOps extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.asset
+        const { pageOps } = this.props.ops
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.nextLink)
+        await this.props.nextOps(token, pageOps.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.asset
+        const { pageOps } = this.props.ops
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.prevLink)
+        await this.props.nextOps(token, pageOps.prevLink)
     }
 
     onSetOpen(open) {
@@ -677,7 +675,6 @@ class AjuanBayarOps extends Component {
 
     getDataOps = async (value) => {
         const level = localStorage.getItem('level')
-        this.setState({limit: value === undefined ? 10 : value.limit})
         this.changeFilter(level === '2' ? 'verif' : 'available')
     }
 
@@ -787,7 +784,7 @@ class AjuanBayarOps extends Component {
 
     changeFilter = async (val) => {
         const {dataOps, noDis} = this.props.ops
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, search, tujuan_tf, jentrans, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const level = localStorage.getItem('level')
@@ -799,23 +796,23 @@ class AjuanBayarOps extends Component {
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'verif') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type)
+            await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, category, status, cekTime1, cekTime2, type)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, category, status, cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', limit)
             this.setState({filter: val, newOps: newOps})
         }
     }
@@ -823,27 +820,41 @@ class AjuanBayarOps extends Component {
     changeJenTrans = async (val) => {
         this.setState({jentrans: val})
         const level = localStorage.getItem('level')
-        const {time1, time2, filter, search, tujuan_tf} = this.state
+        const {time1, time2, filter, search, tujuan_tf, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = level === '2'  && filter === 'verif' ? 5 : 6
         const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
 
-        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, 'undefined', 'undefined', search, val, tujuan_tf)
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, 'undefined', 'undefined', search, val, tujuan_tf, 'all', limit)
     }
 
     changeTransfer = async (val) => {
         this.setState({tujuan_tf: val})
         const level = localStorage.getItem('level')
-        const {time1, time2, filter, search, jentrans} = this.state
+        const {time1, time2, filter, search, jentrans, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = level === '2'  && filter === 'verif' ? 5 : 6
         const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
 
-        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, 'undefined', 'undefined', search, jentrans, val)
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, 'undefined', 'undefined', search, jentrans, val, 'all', limit)
+    }
+
+    getDataLimit = async (val) => {
+        const typeKasbon = 'non kasbon'
+        const level = localStorage.getItem('level')
+        const {time1, time2, filter, tujuan_tf, jentrans, search} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = level === '2'  && filter === 'verif' ? 5 : 6
+        const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
+        const type = 'undefined'
+        this.setState({limit: val})
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', val)
     }
 
     changeTime = async (val) => {
@@ -864,14 +875,14 @@ class AjuanBayarOps extends Component {
     getDataTime = async () => {
         const typeKasbon = 'non kasbon'
         const level = localStorage.getItem('level')
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, limit, tujuan_tf, jentrans, search} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = level === '2'  && filter === 'verif' ? 5 : 6
         const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
         const type = 'undefined'
-        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, type)
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', limit)
     }
 
     prosesSubmit = async () => {
@@ -936,14 +947,14 @@ class AjuanBayarOps extends Component {
     onSearch = async (e) => {
         this.setState({search: e.target.value})
         const level = localStorage.getItem('level')
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, limit, tujuan_tf, jentrans} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = level === '2'  && filter === 'verif' ? 5 : 6
         const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
         if(e.key === 'Enter'){
-            await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, undefined, undefined, e.target.value)
+            await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, undefined, undefined, e.target.value, jentrans, tujuan_tf, 'all', limit)
         }
     }
 
@@ -1304,7 +1315,7 @@ class AjuanBayarOps extends Component {
         const {detailDoc, tipeTrans, dataRinci, listMut, listReason, dataMenu, listMenu, listOps, dataDownload, tipeReject, dataZip} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps, dataOps } = this.props.ops
+        const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps, dataOps, pageOps } = this.props.ops
         const {glInternet, glListrik} = this.props.ops
         // const pages = this.props.depo.page
         const { allCoa } = this.props.coa
@@ -1348,7 +1359,51 @@ class AjuanBayarOps extends Component {
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Approval List Ajuan Bayar Operasional</div>
                             </div>
-                            <div className={style.secEmail3}>
+                            {this.state.filter === 'verif' && level === '2' && (
+                                <div className={style.secEmail4}>
+                                    <div>
+                                        <text>Show: </text>
+                                        <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                            <DropdownToggle caret color="light">
+                                                {this.state.limit}
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                            </DropdownMenu>
+                                        </ButtonDropdown>
+                                        <text className={style.textEntries}>entries</text>
+                                    </div>
+                                </div>
+                            )}
+                            <div className={style.secEmail4}>
+                                <div className={style.headEmail2}>
+                                    {this.state.filter === 'verif' && level === '2' ?  (
+                                        <>
+                                            <Button className='mr-1' onClick={this.prosesSubmit} color="primary" size="lg">Submit</Button>
+                                            {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button> */}
+                                            <Button className='ml-2' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
+                                        </>
+                                    ) : (
+                                        <div>
+                                            <text>Show: </text>
+                                            <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                                <DropdownToggle caret color="light">
+                                                    {this.state.limit}
+                                                </DropdownToggle>
+                                                <DropdownMenu>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                                </DropdownMenu>
+                                            </ButtonDropdown>
+                                            <text className={style.textEntries}>entries</text>
+                                        </div>
+                                    )}
+                                </div>
                                 <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
@@ -1357,15 +1412,6 @@ class AjuanBayarOps extends Component {
                                         <option value={level === '2' ? "verif" : 'available'}>{level === '2' ? 'Verifikasi Tax' : 'Available approve'}</option>
                                         {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                     </Input>
-                                </div>
-                                <div className={style.headEmail2}>
-                                    {this.state.filter === 'verif' && level === '2' ?  (
-                                        <>
-                                            <Button className='mr-1' onClick={this.prosesSubmit} color="primary" size="lg">Submit</Button>
-                                            {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button> */}
-                                            <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
-                                        </>
-                                    ) : <div></div>}
                                 </div>
                             </div>
                             <div className={[style.secEmail4]}>
@@ -1468,7 +1514,7 @@ class AjuanBayarOps extends Component {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {dataOps.map(item => {
+                                            {dataOps.map((item, index) => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>
@@ -1479,7 +1525,7 @@ class AjuanBayarOps extends Component {
                                                             onChange={listOps.find(element => element === item.id) === undefined ? () => this.chekAppDataOps(item.id) : () => this.chekRejDataOps(item.id)}
                                                             />
                                                         </th>
-                                                        <th>{dataOps.indexOf(item) + 1}</th>
+                                                        <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{item.depo.profit_center}</th>
                                                         <th>{item.area}</th>
@@ -1502,22 +1548,24 @@ class AjuanBayarOps extends Component {
                                         </tbody>
                                     </Table>
                                 ) : (
-                                    <Table bordered responsive hover className={style.tab} id="table-ops">
+                                    <Table bordered responsive hover className={[style.tab]} id="table-ops">
                                         <thead>
                                             <tr>
                                                 <th>No</th>
                                                 <th>NO.Transaksi Ajuan Bayar</th>
                                                 <th>Tanggal Submit Ajuan Bayar</th>
+                                                <th>Tanggal Rencana Bayar</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newOps.map(item => {
+                                            {newOps.map((item, index) => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                        <th>{newOps.indexOf(item) + 1}</th>
+                                                        <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
                                                         <th>{item.no_pembayaran}</th>
+                                                        <th>{moment(item.tgl_sublist).format('DD MMMM YYYY')}</th>
                                                         <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history.split(',').reverse()[0]}</th>
                                                         <th>
@@ -1537,20 +1585,20 @@ class AjuanBayarOps extends Component {
                             </div>
                             <div>
                                 <div className={style.infoPageEmail1}>
-                                    <text>Showing 1 of 1 pages</text>
+                                    <text>Showing {pageOps.currentPage} of {pageOps.pages === 0 ? 1 : pageOps.pages} pages</text>
                                     <div className={style.pageButton}>
                                         <button 
                                             className={style.btnPrev} 
                                             color="info" 
-                                            disabled
-                                            // disabled={page.prevLink === null ? true : false} 
+                                            // disabled
+                                            disabled={pageOps.prevLink === null ? true : false} 
                                             onClick={this.prev}>Prev
                                         </button>
                                         <button 
                                             className={style.btnPrev} 
                                             color="info" 
-                                            disabled
-                                            // disabled={page.nextLink === null ? true : false} 
+                                            // disabled
+                                            disabled={pageOps.nextLink === null ? true : false} 
                                             onClick={this.next}>Next
                                         </button>
                                     </div>
@@ -1811,7 +1859,10 @@ class AjuanBayarOps extends Component {
                                         <th>Nama Bank</th>
                                         <th>No Rekening</th>
                                         <th>Atas Nama</th>
-                                        <th>Nominal</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
+                                        <th>Total Bayar</th>
                                         <th>Keterangan</th>
                                         <th>No PO</th>
                                         <th>Area</th>
@@ -1834,13 +1885,29 @@ class AjuanBayarOps extends Component {
                                                 </th>
                                                 <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
+                                                <th>{item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>(-) {item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
                                             </tr>
-                                            )
-                                        })}
+                                        )
+                                    })}
+                                    {dataDownload.length > 0 && (
+                                        <tr>
+                                            <th className='total' colSpan={10}>Total</th>
+                                            <th>
+                                                {dataDownload.reduce((accumulator, object) => {
+                                                    return accumulator + parseInt(object.nilai_bayar);
+                                                }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                            </th>
+                                            <th></th>
+                                            <th></th>
+                                            <th></th>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </Table>
                         </div>
@@ -1910,7 +1977,10 @@ class AjuanBayarOps extends Component {
                                         <th>Nama Bank</th>
                                         <th>No Rekening</th>
                                         <th>Atas Nama</th>
-                                        <th>Nominal</th>
+                                        <th>DPP</th>
+                                        <th>PPN</th>
+                                        <th>PPh</th>
+                                        <th>Total Bayar</th>
                                         <th>Keterangan</th>
                                         <th>No PO</th>
                                         <th>Area</th>
@@ -1942,13 +2012,29 @@ class AjuanBayarOps extends Component {
                                                 </th>
                                                 <th>{item.tujuan_tf === 'ID Pelanggan' ? item.id_pelanggan : item.norek_ajuan}</th>
                                                 <th>{item.nama_tujuan}</th>
+                                                <th>{item.dpp !== null && item.dpp !== 0 && item.dpp !== '0' && item.dpp !== '' ? item.dpp.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>{item.ppn !== null && item.ppn.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
+                                                <th>(-) {item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
                                                 <th>{item.depo.channel}</th>
                                             </tr>
-                                            )
-                                        })}
+                                        )
+                                    })}
+                                    {detailOps.length > 0 && (
+                                        <tr>
+                                            <th className='total' colSpan={11}>Total</th>
+                                            <th>
+                                                {detailOps.reduce((accumulator, object) => {
+                                                    return accumulator + parseInt(object.nilai_bayar);
+                                                }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                                            </th>
+                                            <th></th>
+                                            <th></th>
+                                            <th></th>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </Table>
                         </div>
@@ -2878,6 +2964,7 @@ const mapDispatchToProps = {
     genNomorTransfer: ops.genNomorTransfer,
     addNotif: notif.addNotif,
     getCoa: coa.getCoa,
+    nextOps: ops.nextOps
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarOps)

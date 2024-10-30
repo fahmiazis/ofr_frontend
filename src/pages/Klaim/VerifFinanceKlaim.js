@@ -77,7 +77,7 @@ class VerifKlaim extends Component {
             pullRight: false,
             touchHandleWidth: 20,
             dragToggleDistance: 30,
-            limit: 10,
+            limit: 100,
             search: '',
             dataRinci: {},
             dataItem: {},
@@ -130,7 +130,8 @@ class VerifKlaim extends Component {
             message: '',
             subject: '',
             time: 'pilih',
-            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            // time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             tipeEmail: '',
             dataRej: {},
@@ -347,17 +348,15 @@ class VerifKlaim extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.asset
+        const { pageKlaim } = this.props.klaim
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.nextLink)
+        await this.props.nextKlaim(token, pageKlaim.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.asset
+        const { pageKlaim } = this.props.klaim
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.prevLink)
+        await this.props.nextKlaim(token, pageKlaim.prevLink)
     }
 
     onSetOpen(open) {
@@ -481,7 +480,6 @@ class VerifKlaim extends Component {
     }
 
     getDataKlaim = async (value) => {
-        this.setState({limit: value === undefined ? 10 : value.limit})
         this.changeFilter('available')
     }
 
@@ -615,7 +613,7 @@ class VerifKlaim extends Component {
 
     changeFilter = async (val) => {
         const {dataKlaim, noDis} = this.props.klaim
-        const {time1, time2} = this.state
+        const {time1, time2, search, limit} = this.state
         const type = localStorage.getItem('tipeKasbon')
         const level = localStorage.getItem('level')
         const cekTime1 = time1 === '' ? 'undefined' : time1
@@ -626,22 +624,34 @@ class VerifKlaim extends Component {
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'reject') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'revisi') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2)
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit)
             this.setState({filter: val, newKlaim: newKlaim})
         } else {
             const newKlaim = []
-            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2)
+            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2, search, 'all', limit)
             this.setState({filter: val, newKlaim: newKlaim})
         }
     }
+
+    getDataLimit = async (val) => {
+        const {time1, time2, filter, search} = this.state
+        const level = localStorage.getItem('level')
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
+        this.setState({limit: val})
+        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', val)
+    }
+
 
     changeTime = async (val) => {
         const token = localStorage.getItem("token")
@@ -659,13 +669,13 @@ class VerifKlaim extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, search, limit} = this.state
         const level = localStorage.getItem('level')
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
-        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2)
+        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit)
     }
 
     prosesSubmitPre = async () => {
@@ -806,7 +816,7 @@ class VerifKlaim extends Component {
     }
 
     onSearch = async (e) => {
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, limit} = this.state
         const level = localStorage.getItem('level')
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
@@ -814,7 +824,7 @@ class VerifKlaim extends Component {
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, e.target.value)
+            await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, e.target.value, 'all', limit)
         }
     }
 
@@ -1264,12 +1274,12 @@ class VerifKlaim extends Component {
         this.setState({dataDownload: data})
         await this.props.downloadFormVerif(token, dataSend)
 
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, limit} = this.state
         const level = localStorage.getItem('level')
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
-        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, this.state.search)
+        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, this.state.search, 'all', limit)
         
         this.downloadExcel()
     }
@@ -1627,9 +1637,44 @@ class VerifKlaim extends Component {
                                     <div className='rowCenter'>
                                         <Button className='mr-1' onClick={this.downloadTandaTerima} color="primary" size="lg">Download Tanda Terima</Button>
                                     </div>
-                                ) : <div></ div>}
+                                ) : (
                                 <div className={style.searchEmail2}>
+                                    <div>
+                                        <text>Show: </text>
+                                        <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                            <DropdownToggle caret color="light">
+                                                {this.state.limit}
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                            </DropdownMenu>
+                                        </ButtonDropdown>
+                                        <text className={style.textEntries}>entries</text>
+                                    </div>
                                 </div>
+                                )}
+                                {accKlaim.find(item => item.toString() === level) !== undefined && (
+                                    <div className={style.searchEmail2}>
+                                        <div>
+                                            <text>Show: </text>
+                                            <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                                <DropdownToggle caret color="light">
+                                                    {this.state.limit}
+                                                </DropdownToggle>
+                                                <DropdownMenu>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                                </DropdownMenu>
+                                            </ButtonDropdown>
+                                            <text className={style.textEntries}>entries</text>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div className={style.secEmail4}>
                                 {accKlaim.find(item => item.toString() === level) !== undefined ? (
@@ -1699,7 +1744,7 @@ class VerifKlaim extends Component {
                                 <div className={style.searchEmail2}>
                                     <text>Search: </text>
                                     <Input 
-                                    className={style.search}
+                                    className={style.search2}
                                     onChange={this.onSearch}
                                     value={this.state.search}
                                     onKeyPress={this.onSearch}
@@ -1708,7 +1753,30 @@ class VerifKlaim extends Component {
                                 </div>
                             </div>
                                 <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                    <Table bordered responsive hover className={
+                                        [
+                                        style.tab, 
+                                        newKlaim.length > 0 && level ===  '3' &&  newKlaim.filter((item) => 
+                                        item.picklaim !== null && 
+                                        // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
+                                        // item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                        item.nama_coa !== undefined &&
+                                        // item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null && 
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase()
+                                        ).length > 0 ? 'tableJurnal' 
+                                        : newKlaim.length > 0 && level ===  '23' && newKlaim.filter((item) => 
+                                        item.picklaim !== null && 
+                                        // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
+                                        item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null &&
+                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()) !== undefined &&
+                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
+                                        ).length > 0 ? 'tableJurnal' 
+                                        : ''
+                                    ]
+                                    } 
+                                        id="table-klaim">
                                         <thead>
                                             <tr>
                                                 {(accKlaim.find(item => item.toString() === level) !== undefined || level === '2') && (
@@ -1740,112 +1808,120 @@ class VerifKlaim extends Component {
                                         </thead>
                                         {accKlaim.find(x => x.toString() === level) !== undefined ? (
                                             <tbody>
-                                                {newKlaim.map(item => {
-                                                    return (
-                                                        level ===  '3' ? (
-                                                            item.picklaim !== null && 
-                                                            // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
-                                                            // item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
-                                                            item.nama_coa !== undefined &&
-                                                            // item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
-                                                            item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase() &&
-                                                            ( 
-                                                                <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                                    <th>
-                                                                        <input 
-                                                                        type='checkbox'
-                                                                        checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
-                                                                        onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekKlApp(item.id) : () => this.chekKlRej(item.id)}
-                                                                        />
-                                                                    </th>
-                                                                    <th>{newKlaim.indexOf(item) + 1}</th>
-                                                                    <th>{item.no_transaksi}</th>
-                                                                    <th>{item.dn_area}</th>
-                                                                    <th>{item.cost_center}</th>
-                                                                    <th>{item.area}</th>
-                                                                    <th>{item.no_coa}</th>
-                                                                    <th>{item.nama_coa}</th>
-                                                                    <th>{item.keterangan}</th>
-                                                                    <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
-                                                                    <th>{item.history.split(',').reverse()[0]}</th>
-                                                                    <th>
-                                                                        <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
-                                                                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
-                                                                        </Button>
-                                                                        <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
-                                                                    </th>
-                                                                </tr>
-                                                            )
-                                                        ) : level ===  '23' ? (
-                                                            item.picklaim !== null && 
-                                                            // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
-                                                            item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
-                                                            dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()) !== undefined
-                                                            && dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
-                                                            && 
-                                                            (
-                                                                <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                                    <th>
-                                                                        <input 
-                                                                        type='checkbox'
-                                                                        checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
-                                                                        onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekKlApp(item.id) : () => this.chekKlRej(item.id)}
-                                                                        />
-                                                                    </th>
-                                                                    <th>{newKlaim.indexOf(item) + 1}</th>
-                                                                    <th>{item.no_transaksi}</th>
-                                                                    <th>{item.dn_area}</th>
-                                                                    <th>{item.cost_center}</th>
-                                                                    <th>{item.area}</th>
-                                                                    <th>{item.no_coa}</th>
-                                                                    <th>{item.nama_coa}</th>
-                                                                    <th>{item.keterangan}</th>
-                                                                    <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
-                                                                    <th>{item.history.split(',').reverse()[0]}</th>
-                                                                    <th>
-                                                                        <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
-                                                                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
-                                                                        </Button>
-                                                                        <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
-                                                                    </th>
-                                                                </tr>
-                                                            )
-                                                        ) : (
-                                                            <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
-                                                                    <th>
-                                                                        <input 
-                                                                        type='checkbox'
-                                                                        checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
-                                                                        onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekKlApp(item.id) : () => this.chekKlRej(item.id)}
-                                                                        />
-                                                                    </th>
-                                                                    <th>{newKlaim.indexOf(item) + 1}</th>
-                                                                    <th>{item.no_transaksi}</th>
-                                                                    <th>{item.dn_area}</th>
-                                                                    <th>{item.cost_center}</th>
-                                                                    <th>{item.area}</th>
-                                                                    <th>{item.no_coa}</th>
-                                                                    <th>{item.nama_coa}</th>
-                                                                    <th>{item.keterangan}</th>
-                                                                    <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
-                                                                    <th>{item.history.split(',').reverse()[0]}</th>
-                                                                    <th>
-                                                                        <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
-                                                                            {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
-                                                                        </Button>
-                                                                        <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
-                                                                    </th>
-                                                                </tr>
-                                                        )
-                                                        // : (
-                                                        //     <div>
-                                                        //         <div>{item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()}</div>
-                                                        //         <div>{names.toLowerCase()}</div>
-                                                        //         <div>{item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase()}</div>
-                                                        //     </div>
-                                                        // )
+                                                {level ===  '3' ? (
+                                                    newKlaim.filter((item) => 
+                                                    item.picklaim !== null && 
+                                                    // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
+                                                    // item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                                    item.nama_coa !== undefined &&
+                                                    // item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
+                                                    item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null && 
+                                                    item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase()
+                                                    ).map((item, index) => {
+                                                    return ( 
+                                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>
+                                                                <input 
+                                                                type='checkbox'
+                                                                checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                                onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekKlApp(item.id) : () => this.chekKlRej(item.id)}
+                                                                />
+                                                            </th>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.dn_area}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
+                                                                    {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
+                                                                </Button>
+                                                                <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                            </th>
+                                                        </tr>
                                                     )
-                                                })}
+                                                })
+                                            ) : level ===  '23' ? (
+                                                newKlaim.filter((item) => 
+                                                item.picklaim !== null && 
+                                                // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
+                                                item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                                item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null &&
+                                                dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()) !== undefined &&
+                                                dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
+                                                ).map((item, index) => {
+                                                    return (
+                                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>
+                                                                <input 
+                                                                type='checkbox'
+                                                                checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                                onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekKlApp(item.id) : () => this.chekKlRej(item.id)}
+                                                                />
+                                                            </th>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.dn_area}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
+                                                                    {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
+                                                                </Button>
+                                                                <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })
+                                            ) : (
+                                                newKlaim.map((item, index) => {
+                                                    return (
+                                                        <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                            <th>
+                                                                <input 
+                                                                type='checkbox'
+                                                                checked={listKlaim.find(element => element === item.id) !== undefined ? true : false}
+                                                                onChange={listKlaim.find(element => element === item.id) === undefined ? () => this.chekKlApp(item.id) : () => this.chekKlRej(item.id)}
+                                                                />
+                                                            </th>
+                                                            <th>{index + 1}</th>
+                                                            <th>{item.no_transaksi}</th>
+                                                            <th>{item.dn_area}</th>
+                                                            <th>{item.cost_center}</th>
+                                                            <th>{item.area}</th>
+                                                            <th>{item.no_coa}</th>
+                                                            <th>{item.nama_coa}</th>
+                                                            <th>{item.keterangan}</th>
+                                                            <th>{moment(item.start_klaim).format('DD MMMM YYYY')}</th>
+                                                            <th>{item.history.split(',').reverse()[0]}</th>
+                                                            <th>
+                                                                <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>
+                                                                    {this.state.filter !== 'available' && this.state.filter !== 'revisi' ? 'Detail' : 'Proses'}
+                                                                </Button>
+                                                                <Button size='sm' className='mb-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
+                                                            </th>
+                                                        </tr>
+                                                    )
+                                                })
+                                            )
+                                            // : (
+                                            //     <div>
+                                            //         <div>{item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()}</div>
+                                            //         <div>{names.toLowerCase()}</div>
+                                            //         <div>{item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase()}</div>
+                                            //     </div>
+                                            // )
+                                                    }
                                             </tbody>
                                         ) : (
                                             <tbody>
@@ -1887,7 +1963,22 @@ class VerifKlaim extends Component {
                                         )}
                                         
                                     </Table>
-                                    {newKlaim.length === 0 && (
+                                    {newKlaim.length === 0 || (level ===  '3' &&  newKlaim.filter((item) => 
+                                        item.picklaim !== null && 
+                                        // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
+                                        // item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                        item.nama_coa !== undefined &&
+                                        // item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null && 
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase()
+                                        ).length === 0) || (level ===  '23' && newKlaim.filter((item) => 
+                                        item.picklaim !== null && 
+                                        // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
+                                        item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null &&
+                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()) !== undefined &&
+                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
+                                        ).length === 0) && (
                                         <div className={style.spin}>
                                             <text className='textInfo'>Data ajuan tidak ditemukan</text>
                                         </div>
@@ -3181,6 +3272,7 @@ const mapDispatchToProps = {
     getFinRek: finance.getFinRek,
     getOutlet: klaim.getOutlet,
     getFakturKl: klaim.getFakturKl,
+    nextKlaim: klaim.nextKlaim
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifKlaim)

@@ -66,7 +66,7 @@ class AjuanBayarKlaim extends Component {
             pullRight: false,
             touchHandleWidth: 20,
             dragToggleDistance: 30,
-            limit: 10,
+            limit: 100,
             search: '',
             dataRinci: {},
             dataItem: {},
@@ -549,17 +549,15 @@ class AjuanBayarKlaim extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.asset
+        const { pageKlaim } = this.props.klaim
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.nextLink)
+        await this.props.nextKlaim(token, pageKlaim.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.asset
+        const { pageKlaim } = this.props.klaim
         const token = localStorage.getItem('token')
-        await this.props.resetData()
-        await this.props.nextPage(token, page.prevLink)
+        await this.props.nextKlaim(token, pageKlaim.prevLink)
     }
 
     onSetOpen(open) {
@@ -694,7 +692,6 @@ class AjuanBayarKlaim extends Component {
 
     getDataKlaim = async (value) => {
         const level = localStorage.getItem('level')
-        this.setState({limit: value === undefined ? 10 : value.limit})
         this.changeFilter(level === '2' ? 'verif' : 'available')
     }
 
@@ -809,31 +806,43 @@ class AjuanBayarKlaim extends Component {
         const status = level === '2'  && val === 'verif' ? 5 : 6
         const statusAll = 'all'
         const category = level === '2' && val === 'verif' ? 'verif' : 'ajuan bayar'
-        const {time1, time2} = this.state
+        const {time1, time2, search, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
+            await this.props.getKlaim(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, search, 'all', limit)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'reject') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
+            await this.props.getKlaim(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, search, 'all', limit)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'revisi') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
+            await this.props.getKlaim(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, search, 'all', limit)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'verif') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2)
+            await this.props.getKlaim(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, search, 'all', limit)
             this.setState({filter: val, newKlaim: newKlaim})
         } else {
             const newKlaim = []
-            await this.props.getKlaim(token, statusAll, 'all', 'all', val, category, status, cekTime1, cekTime2)
+            await this.props.getKlaim(token, statusAll, 'all', 'all', val, category, status, cekTime1, cekTime2, search, 'all', limit)
             this.setState({filter: val, newKlaim: newKlaim})
         }
+    }
+
+    getDataLimit = async (val) => {
+        const {time1, time2, filter, search} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const level = localStorage.getItem('level')
+        const token = localStorage.getItem("token")
+        const status = level === '2'  && filter === 'verif' ? 5 : 6
+        const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
+        this.setState({limit: val})
+        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, search, 'all', val)
     }
 
     changeTime = async (val) => {
@@ -852,14 +861,14 @@ class AjuanBayarKlaim extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, search, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
         const status = level === '2'  && filter === 'verif' ? 5 : 6
         const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
-        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2)
+        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, search, 'all', limit)
     }
 
     prosesSubmit = async () => {
@@ -906,7 +915,7 @@ class AjuanBayarKlaim extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const level = localStorage.getItem('level')
@@ -914,7 +923,7 @@ class AjuanBayarKlaim extends Component {
         const status = level === '2'  && filter === 'verif' ? 5 : 6
         const category = level === '2' && filter === 'verif' ? 'verif' : 'ajuan bayar'
         if(e.key === 'Enter'){
-            await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, e.target.value)
+            await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, category, filter === 'all' ? status : 'undefined', cekTime1, cekTime2, e.target.value, 'all', limit)
         }
     }
 
@@ -1284,6 +1293,25 @@ class AjuanBayarKlaim extends Component {
                             </div>
                             <div className={style.secEmail3}>
                                 <div className={style.searchEmail2}>
+                                    <div>
+                                        <text>Show: </text>
+                                        <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                            <DropdownToggle caret color="light">
+                                                {this.state.limit}
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                            </DropdownMenu>
+                                        </ButtonDropdown>
+                                        <text className={style.textEntries}>entries</text>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className={style.secEmail4}>
+                                <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                         <option value="all">All</option>
@@ -1417,6 +1445,7 @@ class AjuanBayarKlaim extends Component {
                                                 <th>No</th>
                                                 <th>NO.Transaksi Ajuan Bayar</th>
                                                 <th>Tanggal Submit Ajuan Bayar</th>
+                                                <th>Tanggal Rencana Bayar</th>
                                                 <th>STATUS</th>
                                                 <th>OPSI</th>
                                             </tr>
@@ -1427,7 +1456,8 @@ class AjuanBayarKlaim extends Component {
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>{newKlaim.indexOf(item) + 1}</th>
                                                         <th>{item.no_pembayaran}</th>
-                                                        <th>{moment(item.tgl_sublist || item.tanggal_transfer).format('DD MMMM YYYY')}</th>
+                                                        <th>{moment(item.tgl_sublist).format('DD MMMM YYYY')}</th>
+                                                        <th>{moment(item.tanggal_transfer).format('DD MMMM YYYY')}</th>
                                                         <th>{item.history.split(',').reverse()[0]}</th>
                                                         <th>
                                                             <Button size='sm' onClick={() => this.prosesDetail(item, 'ajuan bayar')} className='mb-1 mr-1' color='success'>Proses</Button>
@@ -2747,7 +2777,8 @@ const mapDispatchToProps = {
     sendEmail: email.sendEmail,
     getDraftAjuan: email.getDraftAjuan,
     genNomorTransfer: klaim.genNomorTransfer,
-    addNotif: notif.addNotif
+    addNotif: notif.addNotif,
+    nextKlaim: klaim.nextKlaim
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarKlaim)

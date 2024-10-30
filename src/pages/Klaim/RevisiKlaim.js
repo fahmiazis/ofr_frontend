@@ -996,7 +996,7 @@ class RevisiKlaim extends Component {
         const token = localStorage.getItem("token")
         const level = localStorage.getItem('level')
         const menu = level === '5' ? 'Revisi Area' : level === '2' ? "Revisi Finance" : level === '3' && 'Revisi Klaim'
-        await this.props.getKlaim(token, 'all', 1, menu, 'all', 'revisi')
+        await this.props.getKlaim(token, 'all', 1, menu, 'all', 'revisi', 'undefined', 'all', 'all', '', 'all', 100)
         this.prepareSelect()
         this.setState({limit: value === undefined ? 10 : value.limit})
         // this.changeFilter('available')

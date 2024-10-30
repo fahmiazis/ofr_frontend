@@ -361,7 +361,8 @@ const mapStateToProps = state => ({
 })
   
 const mapDispatchToProps = {
-    setToken: auth.setToken
+    setToken: auth.setToken,
+    logout: auth.logout
 }
   
 export default connect(mapStateToProps, mapDispatchToProps)(App)

@@ -1,0 +1,136 @@
+/* src/App.css */
+
+/* Sidebar styles remain the same */
+
+.sidebar {
+    background-color: #C62828; /* Merah Gelap */
+    color: #FFFFFF;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    overflow-y: auto;
+    transition: width 0.3s;
+    z-index: 1000; /* Ensure sidebar is above content */
+  }
+  
+  .sidebar-open {
+    width: 250px;
+  }
+  
+  .sidebar-closed {
+    width: 0;
+  }
+  
+  .sidebar .list-group-item {
+    color: #FFFFFF;
+    background-color: transparent; /* Set background to transparent for better readability */
+  }
+  
+  .sidebar .list-group-item:hover {
+    background-color: #B71C1C; /* Merah lebih gelap saat hover */
+  }
+  
+  /* Navbar styles */
+  .navbar-light {
+    background-color: #C62828; /* Merah Gelap */
+    position: relative; /* Ensure navbar is positioned relative for absolute children */
+  }
+  
+  .navbar-light .navbar-brand {
+    color: #FFFFFF;
+    text-align: center;
+    width: 100%;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  
+  .navbar-light .navbar-toggler {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0.5rem;
+  }
+  
+  .navbar-light .nav-link {
+    color: #FFFFFF;
+  }
+  
+  .navbar-light .nav-link:hover {
+    color: #FFCDD2; /* Merah Muda */
+  }
+  
+  .page-item.active .page-link {
+    background-color: #C62828; /* Merah Gelap */
+    border-color: #C62828;
+  }
+  
+  .page-link {
+    color: #C62828; /* Merah Gelap */
+  }
+  
+  .page-link:hover {
+    background-color: #FFCDD2; /* Merah Muda */
+    color: #C62828; /* Merah Gelap */
+  }
+  
+  .table thead {
+    background-color: #C62828; /* Merah Gelap */
+    color: #FFFFFF;
+  }
+  
+  .table tbody tr:nth-child(odd) {
+    background-color: #FFCDD2; /* Merah Muda */
+  }
+  
+  .table tbody tr:nth-child(even) {
+    background-color: #FFFFFF;
+  }
+  
+  .table tbody tr:hover {
+    background-color: #FFAB91; /* Merah lebih lembut saat hover */
+  }
+  
+  .table th, .table td {
+    border-color: #FFCDD2; /* Merah Muda */
+  }
+  
+  @media (max-width: 768px) {
+    .sidebar {
+      position: absolute;
+      width: 100%;
+      z-index: 1050; /* Ensure sidebar is above content */
+    }
+  
+    .sidebar-open {
+      width: 250px;
+      display: block;
+    }
+  
+    .sidebar-closed {
+      width: 0;
+      display: none;
+    }
+  
+    .navbar-light .navbar-toggler {
+      margin: 0; /* Reset margin for mobile */
+    }
+  
+    .navbar-light .navbar-brand {
+      font-size: 1.25rem;
+      width: auto; /* Reset width */
+      position: relative; /* Reset position */
+      text-align: center; /* Center align */
+    }
+  
+    .table {
+      font-size: 0.875rem; /* Small font size for mobile */
+    }
+  
+    .page-link {
+      padding: 0.5rem 0.75rem; /* Increase padding for better touch targets */
+    }
+  }

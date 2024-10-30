@@ -1189,8 +1189,22 @@ class CartOps extends Component {
 
     prosesSubmitPre = async () => {
         const {listMut} = this.state
+        const {dataCart} = this.props.ops
         if (listMut.length > 0) {
-            this.modalSubmitPre()
+            const temp = []
+            for (let i = 0; i < listMut.length; i++) {
+                const dataCek = dataCart.find(item => item.id === listMut[i])
+                if (temp.find(item => item.no_coa === dataCek.no_coa)) {
+                    temp.push(dataCek)
+                } else if (i === 0) {
+                    temp.push(dataCek)
+                }
+            }
+            if (temp.length === listMut.length) {
+                this.modalSubmitPre()
+            } else {
+                this.openConfirm(this.setState({confirm: 'failSubCoa'}))
+            }
         } else {
             this.openConfirm(this.setState({confirm: 'failSubChek'}))
         }
@@ -2301,7 +2315,7 @@ class CartOps extends Component {
                                 </div> */}
                             </div>
                             <div className={style.tableDashboard}>
-                                <Table bordered responsive hover className={style.tab}>
+                                <Table bordered responsive hover className={[style.tab, dataCart.length > 0 && 'tableJurnal']}>
                                     <thead>
                                         <tr>
                                             <th>
@@ -2347,7 +2361,7 @@ class CartOps extends Component {
                                                 <th>{item.nilai_ajuan === null || item.nilai_ajuan === undefined ? 0 : item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.nama_tujuan}</th>
                                                 <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
-                                                <th className='rowCenter'>
+                                                <th>
                                                     <Button onClick={() => this.prosesOpenEdit(item.id)} className='mb-1 mr-1' color='success'><MdEditSquare size={25}/></Button>
                                                     <Button onClick={() => this.prosesDelete(item.id)} color='danger'><MdDelete size={25}/></Button>
                                                 </th>
@@ -5295,7 +5309,7 @@ class CartOps extends Component {
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Gagal Memilih Data</div>
-                                <div className={[style.sucUpdate, style.green]}>Pastikan nilai ajuan data yg dipilih tidak melewati nilai pagu</div>
+                                <div className={[style.sucUpdate, style.green]}>Pastikan nilai ajuan data yang dipilih tidak melewati nilai pagu</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'failSubChek' ?(
@@ -5303,7 +5317,16 @@ class CartOps extends Component {
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
-                                <div className={[style.sucUpdate, style.green]}>Pilih data Operasional yg ingin diajukan terlebih dahulu</div>
+                                <div className={[style.sucUpdate, style.green]}>Pilih data Operasional yang ingin diajukan terlebih dahulu</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'failSubCoa' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                                <div className='mb-1'>.</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-3']}>Pastikan jenis COA yang diajukan sama</div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'rejCart' ?(
@@ -5439,15 +5462,17 @@ class CartOps extends Component {
                                 )}
                             </div>
                         </div>
-                    ) : this.state.confirm === 'failSubChek' ? (
-                        <div>
-                            <div className={style.cekUpdate}>
-                                <AiOutlineClose size={80} className={style.red} />
-                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
-                                <div className={[style.sucUpdate, style.green]}>Pastikan Data BBM Telah Ditambahkan</div>
-                            </div>
-                        </div>
-                    ) : this.state.confirm === 'falseUpload' ? (
+                    ) 
+                    // : this.state.confirm === 'failSubChek' ? (
+                    //     <div>
+                    //         <div className={style.cekUpdate}>
+                    //             <AiOutlineClose size={80} className={style.red} />
+                    //             <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                    //             <div className={[style.sucUpdate, style.green]}>Pastikan Data BBM Telah Ditambahkan</div>
+                    //         </div>
+                    //     </div>
+                    // ) 
+                    : this.state.confirm === 'falseUpload' ? (
                         <div>
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />

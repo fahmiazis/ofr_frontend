@@ -1054,7 +1054,7 @@ class RevisiOps extends Component {
         const level = localStorage.getItem('level')
         const menu = level === '5' ? 'Revisi Area' : level === '2' ? "Revisi Finance" : level === '3' && 'Revisi Tax'
         this.prepareSelect()
-        await this.props.getOps(token, 'all', 1, menu, 'all', 'revisi')
+        await this.props.getOps(token, 'all', 1, menu, 'all', 'revisi', 'undefined', 'all', 'all', undefined, undefined, '', undefined, undefined, 'all', 100)
         this.setState({limit: value === undefined ? 10 : value.limit})
         // this.changeFilter('available')
     }
@@ -2293,7 +2293,7 @@ class RevisiOps extends Component {
                             </div>
                             {level === '5' ? (
                                 <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                    <Table bordered responsive hover className={[style.tab, newOps.length > 0 && 'tableJurnal']} id="table-klaim">
                                         <thead>
                                             <tr>
                                                 <th>No</th>
@@ -2339,7 +2339,7 @@ class RevisiOps extends Component {
                                     <div></div>
                                 ) : (
                                     <div className={style.tableDashboard}>
-                                        <Table bordered responsive hover className={style.tab} id="table-klaim">
+                                        <Table bordered responsive hover className={[style.tab, newOps.length > 0 && 'tableJurnal']} id="table-klaim">
                                             <thead>
                                                 <tr>
                                                     <th>No</th>
@@ -4580,7 +4580,8 @@ const mapDispatchToProps = {
     addBbm: ops.addBbm,
     getBbm: ops.getBbm,
     deleteBbm: ops.deleteBbm,
-    changeNoTrans: ops.changeNoTrans
+    changeNoTrans: ops.changeNoTrans,
+    nextPage: ops.nextPage
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(RevisiOps)

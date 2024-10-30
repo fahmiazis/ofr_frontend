@@ -35,13 +35,13 @@ export default {
         type: 'SUBMIT_OPSFINAL',
         payload: http(token).patch(`/ops/subfinops`, qs.stringify(no))
     }),
-    getOps: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search, jentrans, desttf, depo) => ({
+    getOps: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search, jentrans, desttf, depo, limit) => ({
         type: 'GET_OPS',
-        payload: http(token).patch(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${kasbon}&realisasi=${realisasi}&search=${search === undefined ? '' : search}&jentrans=${jentrans}&desttf=${desttf}`, data={depo: depo}),
+        payload: http(token).patch(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${kasbon}&realisasi=${realisasi}&search=${search === undefined ? '' : search}&jentrans=${jentrans}&desttf=${desttf}&limit=${limit === undefined ? 100 : limit}&page=1`, data={depo: depo}),
     }),
-    getKasbon: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search, depo) => ({
+    getKasbon: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search, depo, limit) => ({
         type: 'GET_KASBON',
-        payload: http(token).patch(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${'kasbon'}&realisasi=${realisasi}&search=${search === undefined ? '' : search}`, data={depo: depo}),
+        payload: http(token).patch(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${'kasbon'}&realisasi=${realisasi}&search=${search === undefined ? '' : search}&limit=${limit === undefined ? 100 : limit}&page=1`, data={depo: depo}),
     }),
     getDetail: (token, no) => ({
         type: 'DETAIL_OPS',
@@ -115,9 +115,9 @@ export default {
         type: 'REJECTLIST_OPS',
         payload: http(token).patch(`/ops/rejectlist`, data)
     }),
-    getReport: (token, status, reject, menu, time1, time2, type, search) => ({
+    getReport: (token, status, reject, menu, time1, time2, type, search, limit, page) => ({
         type: 'REPORT_OPS',
-        payload: http(token).get(`/ops/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}&type=${type}&search=${search === undefined ? '' : search}`),
+        payload: http(token).get(`/ops/report?status=${status}&reject=${reject}&menu=${menu}&time1=${time1}&time2=${time2}&type=${type}&search=${search === undefined ? '' : search}&limit=${limit}&page=${page}`),
     }),
     uploadBuktiBayar: (token, id, data) => ({
         type: 'UPLOAD_BUKTIOPS',
@@ -162,6 +162,14 @@ export default {
     downloadFormVerif: (token, list) => ({
         type: 'DOWNLOAD_FORM_OPS',
         payload: http(token).patch(`/ops/download`, list)
+    }),
+    nextPage: (token, link) => ({
+        type: 'NEXT_REPORT_OPS',
+        payload: http(token).get(`${link}`)
+    }),
+    nextOps: (token, link) => ({
+        type: 'NEXT_OPS',
+        payload: http(token).patch(`${link}`)
     }),
     resetOps: () => ({
         type: 'RESET_OPS'

@@ -100,7 +100,7 @@ class NavBar extends Component {
             <>
             <div className={style.divLogo}>
                 <marquee className={style.marquee}>
-                    <span>WEB FINANCE</span>
+                    <span className='letTitle'>WEB OFR - OPERATIONAL FUND REQUEST</span>
                 </marquee>
                 <div className={style.textLogo}>
                     {/* <Button onClick={() => this.cek('king')}>klik guys</Button> */}

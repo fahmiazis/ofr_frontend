@@ -3,8 +3,8 @@
 import React, { Component } from 'react'
 import {VscAccount} from 'react-icons/vsc'
 import { Container, Collapse, Nav, Navbar,
-    NavbarToggler, NavbarBrand, NavItem, NavLink,
-    Card, CardBody, Table, ButtonDropdown, Input, Button, Col,
+    NavbarToggler, NavbarBrand, NavItem, NavLink, DropdownToggle, DropdownMenu, 
+    Card, CardBody, Table, ButtonDropdown, Input, Button, Col, DropdownItem,
     Alert, Spinner, Row, Modal, ModalBody, ModalHeader, ModalFooter} from 'reactstrap'
 import approve from '../../redux/actions/approve'
 import {BsCircle} from 'react-icons/bs'
@@ -78,7 +78,7 @@ class ReportOps extends Component {
             pullRight: false,
             touchHandleWidth: 20,
             dragToggleDistance: 30,
-            limit: 10,
+            limit: 100,
             search: '',
             dataRinci: {},
             dataItem: {},
@@ -303,16 +303,16 @@ class ReportOps extends Component {
     }
 
     next = async () => {
-        const { page } = this.props.asset
+        const { page } = this.props.ops
         const token = localStorage.getItem('token')
-        await this.props.resetData()
+        // await this.props.resetData()
         await this.props.nextPage(token, page.nextLink)
     }
 
     prev = async () => {
-        const { page } = this.props.asset
+        const { page } = this.props.ops
         const token = localStorage.getItem('token')
-        await this.props.resetData()
+        // await this.props.resetData()
         await this.props.nextPage(token, page.prevLink)
     }
 
@@ -430,7 +430,6 @@ class ReportOps extends Component {
     }
 
     getDataOps = async (value) => {
-        this.setState({limit: value === undefined ? 10 : value.limit})
         this.changeFilter('bayar')
     }
 
@@ -529,26 +528,22 @@ class ReportOps extends Component {
     changeFilter = async (val) => {
         const token = localStorage.getItem("token")
         const status = val === 'reject' ? 6 : val === 'bayar' ? 8 : 7
-        const {time1, time2} = this.state
+        const {time1, time2, search, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
-        if (val === 'available') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'reject') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else if (val === 'revisi') {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        } else {
-            const newKlaim = []
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
-            this.setState({filter: val, newKlaim: newKlaim})
-        }
+        const newKlaim = []
+        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, undefined, search, limit, 1)
+        this.setState({filter: val, newKlaim: newKlaim})
+    }
+
+    changeLimit = async (val) => {
+        const {time1, time2, search, filter} = this.state
+        const cekTime1 = time1 === '' ? 'undefined' : time1
+        const cekTime2 = time2 === '' ? 'undefined' : time2
+        const token = localStorage.getItem("token")
+        const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
+        this.setState({limit: val})
+        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, undefined, search, val, 1)
     }
 
     changeTime = async (val) => {
@@ -566,12 +561,12 @@ class ReportOps extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, search, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
-        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2)
+        await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, undefined, search, limit, 1)
     }
 
     prosesSubmitPre = async () => {
@@ -596,13 +591,13 @@ class ReportOps extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
-        const {time1, time2, filter} = this.state
+        const {time1, time2, filter, limit} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'reject' ? 6 : filter === 'bayar' ? 8 : 7
         if(e.key === 'Enter'){
-            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, undefined, e.target.value)
+            await this.props.getReport(token, status, 'all', 'all', cekTime1, cekTime2, undefined, e.target.value, limit, 1)
         }
     }
 
@@ -1597,7 +1592,7 @@ class ReportOps extends Component {
             dataMenu, listMenu, dataDownload, jurnal2, jurnal3, jurnal4, jurnal6} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, dataDoc, newOps, dataReport } = this.props.ops
+        const { noDis, detailOps, ttdOps, dataDoc, newOps, dataReport, page } = this.props.ops
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1640,6 +1635,26 @@ class ReportOps extends Component {
                                 <div className={style.titleDashboard}>Report Konsol Operasional</div>
                             </div>
                             <div className={style.secEmail3}>
+                                <div className={style.headEmail2}>
+                                    <div>
+                                        <text>Show: </text>
+                                        <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                            <DropdownToggle caret color="light">
+                                                {this.state.limit}
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                <DropdownItem className={style.item} onClick={() => this.changeLimit(10)}>10</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.changeLimit(20)}>20</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.changeLimit(50)}>50</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.changeLimit(100)}>100</DropdownItem>
+                                            </DropdownMenu>
+                                        </ButtonDropdown>
+                                        <text className={style.textEntries}>entries</text>
+                                    </div>
+                                </div>
+                                <div></div>
+                            </div>
+                            <div className={style.secEmail4}>
                                 <div className={style.headEmail2}>
                                     <Button className="mr-2" color='success' onClick={this.prosesDownload}>Download Konsol</Button>
                                     <Button 
@@ -1705,7 +1720,7 @@ class ReportOps extends Component {
                             </div>
                             <div className='mb-4 mt-2' />
                                 <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={[style.tab, 'tableJurnal']} id="table-ops">
+                                    <Table bordered responsive hover className={[style.tab, dataReport.length > 0 && 'tableJurnal']} id="table-ops">
                                         <thead>
                                             <tr>
                                                 <th>
@@ -1760,7 +1775,7 @@ class ReportOps extends Component {
                                                             onChange={listOps.find(element => element === item.id) === undefined ? () => this.chekApp(item.id) : () => this.chekRej(item.id)}
                                                             />
                                                         </td>
-                                                        <td>{dataReport.indexOf(item) + 1}</td>
+                                                        <td>{(dataReport.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</td>
                                                         <td>{item.finance.pic_finance}</td>
                                                         <td>{item.area}</td>
                                                         <td>{item.finance.channel}</td>
@@ -1828,27 +1843,27 @@ class ReportOps extends Component {
                                         </tbody>
                                     </Table>
                                 </div>
-                            <div>
-                                <div className={style.infoPageEmail1}>
-                                    <text>Showing 1 of 1 pages</text>
-                                    <div className={style.pageButton}>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.prevLink === null ? true : false} 
-                                            onClick={this.prev}>Prev
-                                        </button>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.nextLink === null ? true : false} 
-                                            onClick={this.next}>Next
-                                        </button>
+                                <div>
+                                    <div className={style.infoPageEmail1}>
+                                        <text>Showing {page.currentPage} of {page.pages} pages</text>
+                                        <div className={style.pageButton}>
+                                            <button 
+                                                className={style.btnPrev} 
+                                                color="info" 
+                                                // disabled
+                                                disabled={page.prevLink === null ? true : false} 
+                                                onClick={this.prev}>Prev
+                                            </button>
+                                            <button 
+                                                className={style.btnPrev} 
+                                                color="info" 
+                                                // disabled
+                                                disabled={page.nextLink === null ? true : false} 
+                                                onClick={this.next}>Next
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
                         </div>
                     </div>
                     </MaterialTitlePanel>
@@ -3535,7 +3550,8 @@ const mapDispatchToProps = {
     getReason: reason.getReason,
     rejectOps: ops.rejectOps,
     resetOps: ops.resetOps,
-    showDokumen: dokumen.showDokumen
+    showDokumen: dokumen.showDokumenm,
+    nextPage: ops.nextPage
     // notifStock: notif.notifStock
 }
 

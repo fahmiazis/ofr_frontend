@@ -19,6 +19,7 @@ const klaimState = {
     alertM: '',
     alertUpload: [],
     page: {},
+    pageKlaim: {},
     isExport: false,
     detCoa: [],
     link: '',
@@ -120,10 +121,40 @@ export default (state=klaimState, action) => {
                     noDis: action.payload.data.noDis,
                     newKlaim: action.payload.data.newKlaim,
                     depoKlaim: action.payload.data.findDepo,
+                    pageKlaim: action.payload.data.pageInfo,
                     alertMsg: 'get coa Succesfully'
                 };
             }
             case 'GET_KLAIM_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    isGetKlaim: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'NEXT_KLAIM_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'NEXT_KLAIM_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetKlaim: true,
+                    dataKlaim: action.payload.data.result,
+                    noDis: action.payload.data.noDis,
+                    newKlaim: action.payload.data.newKlaim,
+                    depoKlaim: action.payload.data.findDepo,
+                    pageKlaim: action.payload.data.pageInfo,
+                    alertMsg: 'get coa Succesfully'
+                };
+            }
+            case 'NEXT_KLAIM_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -149,6 +180,31 @@ export default (state=klaimState, action) => {
                 };
             }
             case 'REPORT_KLAIM_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: true,
+                    isGetReport: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'NEXT_REPORT_KLAIM_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'NEXT_REPORT_KLAIM_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetReport: true,
+                    dataReport: action.payload.data.result,
+                    alertMsg: 'get coa Succesfully'
+                };
+            }
+            case 'NEXT_REPORT_KLAIM_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,

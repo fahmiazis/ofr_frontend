@@ -483,6 +483,7 @@ class MasterKliring extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -587,14 +588,16 @@ class MasterKliring extends Component {
                         </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
+                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd} size='lg'>
                     <ModalHeader toggle={this.openModalAdd}>Add Master Kliring</ModalHeader>
                     <Formik
                     initialValues={{
                         nama: '',
                         nama_singkat: '',
                         bic: '',
-                        sandi_bank: ''
+                        sandi_bank: '',
+                        sandi_usaha: '',
+                        sandi_kliring: ''
                     }}
                     validationSchema={kliringSchema}
                     onSubmit={(values) => {this.addKliring(values)}}
@@ -669,6 +672,40 @@ class MasterKliring extends Component {
                                 ) : null}
                             </div>
                         </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Sandi Jenis Usaha
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="sandi_usaha"
+                                value={values.sandi_usaha}
+                                onBlur={handleBlur("sandi_usaha")}
+                                onChange={handleChange("sandi_usaha")}
+                                />
+                                {errors.sandi_usaha ? (
+                                    <text className={style.txtError}>{errors.sandi_usaha}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Sandi Kliring Kantor Pusat
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="sandi_kliring"
+                                value={values.sandi_kliring}
+                                onBlur={handleBlur("sandi_kliring")}
+                                onChange={handleChange("sandi_kliring")}
+                                />
+                                {errors.sandi_kliring ? (
+                                    <text className={style.txtError}>{errors.sandi_kliring}</text>
+                                ) : null}
+                            </div>
+                        </div>
                         <hr/>
                         <div className={style.foot}>
                             <div></div>
@@ -681,14 +718,16 @@ class MasterKliring extends Component {
                         )}
                     </Formik>
                 </Modal>
-                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
+                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit} size='lg'>
                     <ModalHeader toggle={this.openModalEdit}>Edit Master Kliring</ModalHeader>
                     <Formik
                     initialValues={{
                     nama: detail.nama === null ? '' : detail.nama,
                     nama_singkat: detail.nama_singkat === null ? '' : detail.nama_singkat,
                     bic: detail.bic === null ? '' : detail.bic,
-                    sandi_bank: detail.sandi_bank === null ? '' : detail.sandi_bank
+                    sandi_bank: detail.sandi_bank === null ? '' : detail.sandi_bank,
+                    sandi_usaha: detail.sandi_usaha === null ? '' : detail.sandi_usaha,
+                    sandi_kliring: detail.sandi_kliring === null ? '' : detail.sandi_kliring
                     }}
                     validationSchema={kliringEditSchema}
                     onSubmit={(values) => {this.editKliring(values, detail.id)}}
@@ -760,6 +799,57 @@ class MasterKliring extends Component {
                                 />
                                 {errors.sandi_bank ? (
                                     <text className={style.txtError}>{errors.sandi_bank}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Sandi Bank
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="sandi_bank"
+                                value={values.sandi_bank}
+                                onBlur={handleBlur("sandi_bank")}
+                                onChange={handleChange("sandi_bank")}
+                                />
+                                {errors.sandi_bank ? (
+                                    <text className={style.txtError}>{errors.sandi_bank}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Sandi Jenis Usaha
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="sandi_usaha"
+                                value={values.sandi_usaha}
+                                onBlur={handleBlur("sandi_usaha")}
+                                onChange={handleChange("sandi_usaha")}
+                                />
+                                {errors.sandi_usaha ? (
+                                    <text className={style.txtError}>{errors.sandi_usaha}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Sandi Kliring Kantor Pusat
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="sandi_kliring"
+                                value={values.sandi_kliring}
+                                onBlur={handleBlur("sandi_kliring")}
+                                onChange={handleChange("sandi_kliring")}
+                                />
+                                {errors.sandi_kliring ? (
+                                    <text className={style.txtError}>{errors.sandi_kliring}</text>
                                 ) : null}
                             </div>
                         </div>

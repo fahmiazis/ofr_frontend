@@ -1376,6 +1376,9 @@ html,body{
     /* display: block; */
 }
 
+/* .tableJurnal > thead > tr {
+} */
+
 .relogin {
     justify-content: center;
     text-align: center;
@@ -2084,4 +2087,15 @@ a:hover{
 
 .borderGen {
     border: 1px solid black;
+}
+
+.letTitle {
+    letter-spacing: 10px;
+}
+
+.imgPdf {
+    width: 100%; 
+    height: auto;
+    transform: (0.5);
+    transform-style: (0.5);
 }

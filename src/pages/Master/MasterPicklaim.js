@@ -505,6 +505,7 @@ class MasterPicklaim extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
                                         <text className={style.textEntries}>entries</text>
@@ -639,14 +640,26 @@ class MasterPicklaim extends Component {
                         </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
+                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd} size='lg'>
                     <ModalHeader toggle={this.openModalAdd}>Add Master Picklaim</ModalHeader>
                     <Formik
                     initialValues={{
                         kode_plant: '',
+                        kode_dist: '',
                         profit_center: '',
-                        region: '',
-                        inisial: ''
+                        area: '',
+                        area_sap: '',
+                        ksni: '',
+                        nni: '',
+                        nsi: '',
+                        mas: '',
+                        mcp: '',
+                        simba: '',
+                        lotte: '',
+                        mun: '',
+                        eiti: '',
+                        edot: '',
+                        meiji: ''
                     }}
                     validationSchema={picklaimSchema}
                     onSubmit={(values) => {this.addPicklaim(values)}}
@@ -672,6 +685,23 @@ class MasterPicklaim extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
+                                Kode Distribution
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="kode_dist"
+                                value={values.kode_dist}
+                                onBlur={handleBlur("kode_dist")}
+                                onChange={handleChange("kode_dist")}
+                                />
+                                {errors.kode_dist ? (
+                                    <text className={style.txtError}>{errors.kode_dist}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
                                 Profit Center
                             </text>
                             <div className="col-md-9">
@@ -689,35 +719,205 @@ class MasterPicklaim extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Region
+                                Nama Area
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="region"
-                                value={values.region}
-                                onBlur={handleBlur("region")}
-                                onChange={handleChange("region")}
+                                name="area"
+                                value={values.area}
+                                onBlur={handleBlur("area")}
+                                onChange={handleChange("area")}
                                 />
-                                {errors.region ? (
-                                    <text className={style.txtError}>{errors.region}</text>
+                                {errors.area ? (
+                                    <text className={style.txtError}>{errors.area}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Inisial
+                                Nama Area SAP
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="inisial"
-                                value={values.inisial}
-                                onBlur={handleBlur("inisial")}
-                                onChange={handleChange("inisial")}
+                                name="area_sap"
+                                value={values.area_sap}
+                                onBlur={handleBlur("area_sap")}
+                                onChange={handleChange("area_sap")}
                                 />
-                                {errors.inisial ? (
-                                    <text className={style.txtError}>{errors.inisial}</text>
+                                {errors.area_sap ? (
+                                    <text className={style.txtError}>{errors.area_sap}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                KSNI
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="ksni"
+                                value={values.ksni}
+                                onBlur={handleBlur("ksni")}
+                                onChange={handleChange("ksni")}
+                                />
+                                {errors.ksni ? (
+                                    <text className={style.txtError}>{errors.ksni}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                NNI
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="nni"
+                                value={values.nni}
+                                onBlur={handleBlur("nni")}
+                                onChange={handleChange("nni")}
+                                />
+                                {errors.nni ? (
+                                    <text className={style.txtError}>{errors.nni}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MAS
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="mas"
+                                value={values.mas}
+                                onBlur={handleBlur("mas")}
+                                onChange={handleChange("mas")}
+                                />
+                                {errors.mas ? (
+                                    <text className={style.txtError}>{errors.mas}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MCP
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="mcp"
+                                value={values.mcp}
+                                onBlur={handleBlur("mcp")}
+                                onChange={handleChange("mcp")}
+                                />
+                                {errors.mcp ? (
+                                    <text className={style.txtError}>{errors.mcp}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                SIMBA
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="simba"
+                                value={values.simba}
+                                onBlur={handleBlur("simba")}
+                                onChange={handleChange("simba")}
+                                />
+                                {errors.simba ? (
+                                    <text className={style.txtError}>{errors.simba}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                LOTTE
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="lotte"
+                                value={values.lotte}
+                                onBlur={handleBlur("lotte")}
+                                onChange={handleChange("lotte")}
+                                />
+                                {errors.lotte ? (
+                                    <text className={style.txtError}>{errors.lotte}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MUN
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="mun"
+                                value={values.mun}
+                                onBlur={handleBlur("mun")}
+                                onChange={handleChange("mun")}
+                                />
+                                {errors.mun ? (
+                                    <text className={style.txtError}>{errors.mun}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                EITI
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="eiti"
+                                value={values.eiti}
+                                onBlur={handleBlur("eiti")}
+                                onChange={handleChange("eiti")}
+                                />
+                                {errors.eiti ? (
+                                    <text className={style.txtError}>{errors.eiti}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                EDOT
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="edot"
+                                value={values.edot}
+                                onBlur={handleBlur("edot")}
+                                onChange={handleChange("edot")}
+                                />
+                                {errors.edot ? (
+                                    <text className={style.txtError}>{errors.edot}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MEIJI
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="meiji"
+                                value={values.meiji}
+                                onBlur={handleBlur("meiji")}
+                                onChange={handleChange("meiji")}
+                                />
+                                {errors.meiji ? (
+                                    <text className={style.txtError}>{errors.meiji}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -733,14 +933,26 @@ class MasterPicklaim extends Component {
                         )}
                     </Formik>
                 </Modal>
-                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
+                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit} size='lg'>
                     <ModalHeader toggle={this.openModalEdit}>Edit Master Picklaim</ModalHeader>
                     <Formik
                     initialValues={{
-                    kode_plant: detail.kode_plant === null ? '' : detail.kode_plant,
-                    profit_center: detail.profit_center === null ? '' : detail.profit_center,
-                    region: detail.region === null ? '' : detail.region,
-                    inisial: detail.inisial === null ? '' : detail.inisial
+                        kode_plant: detail.kode_plant,
+                        kode_dist: detail.kode_dist,
+                        profit_center: detail.profit_center,
+                        area: detail.area,
+                        area_sap: detail.area_sap,
+                        ksni: detail.ksni,
+                        nni: detail.nni,
+                        nsi: detail.nsi,
+                        mas: detail.mas,
+                        mcp: detail.mcp,
+                        simba: detail.simba,
+                        lotte: detail.lotte,
+                        mun: detail.mun,
+                        eiti: detail.eiti,
+                        edot: detail.edot,
+                        meiji: detail.meiji
                     }}
                     validationSchema={picklaimSchema}
                     onSubmit={(values) => {this.editPicklaim(values, detail.id)}}
@@ -766,6 +978,23 @@ class MasterPicklaim extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
+                                Kode Distribution
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="kode_dist"
+                                value={values.kode_dist}
+                                onBlur={handleBlur("kode_dist")}
+                                onChange={handleChange("kode_dist")}
+                                />
+                                {errors.kode_dist ? (
+                                    <text className={style.txtError}>{errors.kode_dist}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
                                 Profit Center
                             </text>
                             <div className="col-md-9">
@@ -783,35 +1012,205 @@ class MasterPicklaim extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Region
+                                Nama Area
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="region"
-                                value={values.region}
-                                onBlur={handleBlur("region")}
-                                onChange={handleChange("region")}
+                                name="area"
+                                value={values.area}
+                                onBlur={handleBlur("area")}
+                                onChange={handleChange("area")}
                                 />
-                                {errors.region ? (
-                                    <text className={style.txtError}>{errors.region}</text>
+                                {errors.area ? (
+                                    <text className={style.txtError}>{errors.area}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                Inisial
+                                Nama Area SAP
                             </text>
                             <div className="col-md-9">
                                 <Input 
                                 type="name" 
-                                name="inisial"
-                                value={values.inisial}
-                                onBlur={handleBlur("inisial")}
-                                onChange={handleChange("inisial")}
+                                name="area_sap"
+                                value={values.area_sap}
+                                onBlur={handleBlur("area_sap")}
+                                onChange={handleChange("area_sap")}
                                 />
-                                {errors.inisial ? (
-                                    <text className={style.txtError}>{errors.inisial}</text>
+                                {errors.area_sap ? (
+                                    <text className={style.txtError}>{errors.area_sap}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                KSNI
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="ksni"
+                                value={values.ksni}
+                                onBlur={handleBlur("ksni")}
+                                onChange={handleChange("ksni")}
+                                />
+                                {errors.ksni ? (
+                                    <text className={style.txtError}>{errors.ksni}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                NNI
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="nni"
+                                value={values.nni}
+                                onBlur={handleBlur("nni")}
+                                onChange={handleChange("nni")}
+                                />
+                                {errors.nni ? (
+                                    <text className={style.txtError}>{errors.nni}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MAS
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="mas"
+                                value={values.mas}
+                                onBlur={handleBlur("mas")}
+                                onChange={handleChange("mas")}
+                                />
+                                {errors.mas ? (
+                                    <text className={style.txtError}>{errors.mas}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MCP
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="mcp"
+                                value={values.mcp}
+                                onBlur={handleBlur("mcp")}
+                                onChange={handleChange("mcp")}
+                                />
+                                {errors.mcp ? (
+                                    <text className={style.txtError}>{errors.mcp}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                SIMBA
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="simba"
+                                value={values.simba}
+                                onBlur={handleBlur("simba")}
+                                onChange={handleChange("simba")}
+                                />
+                                {errors.simba ? (
+                                    <text className={style.txtError}>{errors.simba}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                LOTTE
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="lotte"
+                                value={values.lotte}
+                                onBlur={handleBlur("lotte")}
+                                onChange={handleChange("lotte")}
+                                />
+                                {errors.lotte ? (
+                                    <text className={style.txtError}>{errors.lotte}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MUN
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="mun"
+                                value={values.mun}
+                                onBlur={handleBlur("mun")}
+                                onChange={handleChange("mun")}
+                                />
+                                {errors.mun ? (
+                                    <text className={style.txtError}>{errors.mun}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                EITI
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="eiti"
+                                value={values.eiti}
+                                onBlur={handleBlur("eiti")}
+                                onChange={handleChange("eiti")}
+                                />
+                                {errors.eiti ? (
+                                    <text className={style.txtError}>{errors.eiti}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                EDOT
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="edot"
+                                value={values.edot}
+                                onBlur={handleBlur("edot")}
+                                onChange={handleChange("edot")}
+                                />
+                                {errors.edot ? (
+                                    <text className={style.txtError}>{errors.edot}</text>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                MEIJI
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="meiji"
+                                value={values.meiji}
+                                onBlur={handleBlur("meiji")}
+                                onChange={handleChange("meiji")}
+                                />
+                                {errors.meiji ? (
+                                    <text className={style.txtError}>{errors.meiji}</text>
                                 ) : null}
                             </div>
                         </div>
