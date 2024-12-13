@@ -1366,17 +1366,29 @@ html,body{
 .tableJurnal {
     display: block;
     border-collapse: collapse;
+    width: 100% !important;
     height: 500px;
-    overflow: auto;
+    overflow-y: auto;
 }
 
 .tableJurnal > thead > tr > th {
-    top: 0 !important;
-    position: sticky !important;
+    top: 0;
+    position: sticky;
     /* display: block; */
 }
 
-/* .tableJurnal > thead > tr {
+.tableJurnal1 > thead > tr > th {
+    top: 0;
+    position: sticky;
+    /* display: block; */
+}
+
+/* .tableJurnal > thead {
+    display: block;
+}
+
+.tableJurnal > tbody {
+    display: block;
 } */
 
 .relogin {

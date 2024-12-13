@@ -5,13 +5,14 @@ import {  NavbarBrand, DropdownToggle, DropdownMenu,
 import style from '../../assets/css/input.module.css'
 import {FaSearch, FaBankCircle, FaBars} from 'react-icons/fa'
 import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
-import depo from '../../redux/actions/depo'
 import user from '../../redux/actions/user'
 import rekening from '../../redux/actions/rekening'
 import {connect} from 'react-redux'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
+import depo from '../../redux/actions/depo'
+import bank from '../../redux/actions/bank'
 import {default as axios} from 'axios'
 import Sidebar from "../../components/Header";
 import MaterialTitlePanel from "../../components/material_title_panel";
@@ -21,16 +22,16 @@ const {REACT_APP_BACKEND_URL} = process.env
 
 const rekeningSchema = Yup.object().shape({
     kode_plant: Yup.string().required(),
-    rek_spending: Yup.number().required(),
-    rek_zba: Yup.number().required(),
-    rek_bankcol: Yup.number().required()
+    no_rekening: Yup.number().required(),
+    type: Yup.string().required(),
+    bank: Yup.string().required()
 });
 
 const rekeningEditSchema = Yup.object().shape({
     kode_plant: Yup.string().required(),
-    rek_spending: Yup.number().required(),
-    rek_zba: Yup.number().required(),
-    rek_bankcol: Yup.number().required()
+    no_rekening: Yup.number().required(),
+    type: Yup.string().required(),
+    bank: Yup.string().required()
 });
 
 const changeSchema = Yup.object().shape({
@@ -274,6 +275,8 @@ class MasterRek extends Component {
 
     async componentDidMount() {
         const token = localStorage.getItem("token")
+        await this.props.getDepo(token, 1000, '')
+        await this.props.getBank(token)
         this.getDataCount()
     }
 
@@ -314,6 +317,8 @@ class MasterRek extends Component {
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg} = this.state
         const {dataRek, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.rekening
+        const { dataDepo } = this.props.depo
+        const { dataBank } = this.props.bank
         const levels = localStorage.getItem('level')
         const names = localStorage.getItem('name')
 
@@ -349,7 +354,7 @@ class MasterRek extends Component {
                 <Sidebar {...sidebarProps}>
                     <MaterialTitlePanel title={contentHeader}>
                         <div className={style.backgroundLogo}>
-                            <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
+                            {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
                                 <div>{alertMsg}</div>
                                 <div>{alertM}</div>
                                 {alertUpload !== undefined && alertUpload.map(item => {
@@ -360,7 +365,7 @@ class MasterRek extends Component {
                             </Alert>
                             <Alert color="danger" className={style.alertWrong} isOpen={upload}>
                                 <div>{errMsg}</div>
-                            </Alert>
+                            </Alert> */}
                             <div className={style.bodyDashboard}>
                                 <div className={style.headMaster}>
                                     <div className={style.titleDashboard}>Master Rekening</div>
@@ -433,37 +438,15 @@ class MasterRek extends Component {
                                         </Input>
                                     </div>
                                 </div>
-                                {isAll === false ? (
                                     <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
                                             <tr>
                                                 <th>No</th>
                                                 <th>Kode Plant</th>
-                                                <th>No Rek Spending Card</th>
-                                                <th>No Rek ZBA</th>
-                                                <th>No Rek Bank Coll</th>
-                                            </tr>
-                                        </thead>
-                                    </Table>
-                                        <div className={style.spin}>
-                                            <Spinner type="grow" color="primary"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="success"/>
-                                            <Spinner type="grow" color="warning"/>
-                                            <Spinner type="grow" className="mr-3 ml-3" color="danger"/>
-                                            <Spinner type="grow" color="info"/>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={style.tab}>
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>Kode Plant</th>
-                                                <th>No Rek Spending Card</th>
-                                                <th>No Rek ZBA</th>
-                                                <th>No Rek Bank Coll</th>
+                                                <th>Nomor Rekening</th>
+                                                <th>Tipe Rekening</th>
+                                                <th>Nama Bank</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -472,15 +455,19 @@ class MasterRek extends Component {
                                                 <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
                                                     <th scope="row">{(dataAll.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</th>
                                                     <td>{item.kode_plant}</td>
-                                                    <td>{item.rek_spending}</td>
-                                                    <td>{item.rek_zba}</td>
-                                                    <td>{item.rek_bankcol}</td>
+                                                    <td>{item.no_rekening}</td>
+                                                    <td>{item.type}</td>
+                                                    <td>{item.bank}</td>
                                                 </tr>
                                             )})}
                                         </tbody>
                                     </Table>
+                                    {dataAll.length === 0 && (
+                                        <div className={style.spin}>
+                                            Data tidak ditemukan
+                                        </div>
+                                    )}
                                 </div>  
-                                )}
                                 <div>
                                     <div className='infoPageEmail'>
                                         <text>Showing {page.currentPage} of {page.pages} pages</text>
@@ -494,14 +481,14 @@ class MasterRek extends Component {
                         </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
+                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd} size="md">
                     <ModalHeader toggle={this.openModalAdd}>Add Master Rekening</ModalHeader>
                     <Formik
                     initialValues={{
                         kode_plant: '',
-                        rek_spending: '',
-                        rek_zba: '',
-                        rek_bankcol: ''
+                        no_rekening: '',
+                        type: '',
+                        bank: ''
                     }}
                     validationSchema={rekeningSchema}
                     onSubmit={(values) => {this.addRek(values)}}
@@ -509,70 +496,94 @@ class MasterRek extends Component {
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
-                            <text className="col-md-3">
+                            <text className="col-md-4">
                                 Kode Plant
                             </text>
-                            <div className="col-md-9">
+                            <div className="col-md-8">
                                 <Input 
-                                type="name" 
+                                type="select"  
                                 name="kode_plant"
                                 value={values.kode_plant}
                                 onBlur={handleBlur("kode_plant")}
                                 onChange={handleChange("kode_plant")}
-                                />
+                                >
+                                    <option>-Pilih Kode Plant-</option>
+                                    {dataDepo.length !== 0 && dataDepo.map(item => {
+                                        return (
+                                            <option value={item.kode_plant}>{item.kode_plant + '-' + item.area}</option>
+                                        )
+                                    })}
+                                </Input>
                                 {errors.kode_plant ? (
                                     <text className={style.txtError}>{errors.kode_plant}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                NO REK SPENDING CARD
+                            <text className="col-md-4">
+                                Tipe Rekening
                             </text>
-                            <div className="col-md-9">
+                            <div className="col-md-8">
                                 <Input 
-                                type="name" 
-                                name="rek_spending"
-                                value={values.rek_spending}
-                                onBlur={handleBlur("rek_spending")}
-                                onChange={handleChange("rek_spending")}
-                                />
-                                {errors.rek_spending ? (
-                                    <text className={style.txtError}>{errors.rek_spending}</text>
+                                type="select" 
+                                name="type"
+                                value={values.type}
+                                onBlur={handleBlur("type")}
+                                onChange={handleChange("type")}
+                                >
+                                    <option>-Pilih Tipe Rekening-</option>
+                                    <option value="Rekening Spending Card" >Rekening Spending Card</option>
+                                    <option value="Rekening ZBA" >Rekening ZBA</option>
+                                    <option value="Rekening Bank Coll" >Rekening Bank Coll</option>
+                                </Input>
+                                {errors.type ? (
+                                    <text className={style.txtError}>{errors.type}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                NO REK ZBA
+                            <text className="col-md-4">
+                                Nama Bank
                             </text>
-                            <div className="col-md-9">
+                            <div className="col-md-8">
                                 <Input 
-                                type="name" 
-                                name="rek_zba"
-                                value={values.rek_zba}
-                                onBlur={handleBlur("rek_zba")}
-                                onChange={handleChange("rek_zba")}
-                                />
-                                {errors.rek_zba ? (
-                                    <text className={style.txtError}>{errors.rek_zba}</text>
+                                type="select" 
+                                name="bank"
+                                value={values.bank}
+                                onBlur={handleBlur("bank")}
+                                onChange={handleChange("bank")}
+                                >
+                                    <option>-Pilih Bank-</option>
+                                    {dataBank.length !== 0 && dataBank.map(item => {
+                                        return (
+                                            <option value={item.name}>{item.name}</option>
+                                        )
+                                    })}
+                                </Input>
+                                {errors.bank ? (
+                                    <text className={style.txtError}>{errors.bank}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                NO REK BANK COLL
+                            <text className="col-md-4">
+                                Nomor Rekening
                             </text>
-                            <div className="col-md-9">
+                            <div className="col-md-8">
                                 <Input 
                                 type="name" 
-                                name="rek_bankcol"
-                                value={values.rek_bankcol}
-                                onBlur={handleBlur("rek_bankcol")}
-                                onChange={handleChange("rek_bankcol")}
+                                name="no_rekening"
+                                value={values.no_rekening}
+                                disabled={values.bank === '' ? true : false}
+                                minLength={values.bank === '' ? 10 : dataBank.find(item => item.name === values.bank).digit}
+                                maxLength={values.bank === '' ? 16 : dataBank.find(item => item.name === values.bank).digit}
+                                onBlur={handleBlur("no_rekening")}
+                                onChange={handleChange("no_rekening")}
                                 />
-                                {errors.rek_bankcol ? (
-                                    <text className={style.txtError}>{errors.rek_bankcol}</text>
+                                {errors.no_rekening ? (
+                                    <text className={style.txtError}>{errors.no_rekening}</text>
+                                ) : values.bank !== '' && values.no_rekening.length !== dataBank.find(item => item.name === values.bank).digit ? (
+                                    <text className={style.txtError}>Pastikan nomor rekening {dataBank.find(item => item.name === values.bank).digit} digit</text>
                                 ) : null}
                             </div>
                         </div>
@@ -593,9 +604,9 @@ class MasterRek extends Component {
                     <Formik
                     initialValues={{
                         kode_plant: detail.kode_plant === null ? '' : detail.kode_plant,
-                        rek_spending: detail.rek_spending === null ? '' : detail.rek_spending,
-                        rek_zba: detail.rek_zba === null ? '' : detail.rek_zba,
-                        rek_bankcol: detail.rek_bankcol === null ? '' : detail.rek_bankcol
+                        no_rekening: detail.no_rekening === null ? '' : detail.no_rekening,
+                        type: detail.type === null ? '' : detail.type,
+                        bank: detail.bank === null ? '' : detail.bank
                     }}
                     validationSchema={rekeningEditSchema}
                     onSubmit={(values) => {this.editRek(values, detail.id)}}
@@ -603,10 +614,10 @@ class MasterRek extends Component {
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
-                            <text className="col-md-3">
+                            <text className="col-md-4">
                                 Kode Plant
                             </text>
-                            <div className="col-md-9">
+                            <div className="col-md-8">
                                 <Input 
                                 type="name" 
                                 name="kode_plant"
@@ -620,53 +631,53 @@ class MasterRek extends Component {
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                NO REK SPENDING CARD
+                            <text className="col-md-4">
+                                Nomor Rekening
                             </text>
-                            <div className="col-md-9">
+                            <div className="col-md-8">
                                 <Input 
                                 type="name" 
-                                name="rek_spending"
-                                value={values.rek_spending}
-                                onBlur={handleBlur("rek_spending")}
-                                onChange={handleChange("rek_spending")}
+                                name="no_rekening"
+                                value={values.no_rekening}
+                                onBlur={handleBlur("no_rekening")}
+                                onChange={handleChange("no_rekening")}
                                 />
-                                {errors.rek_spending ? (
-                                    <text className={style.txtError}>{errors.rek_spending}</text>
+                                {errors.no_rekening ? (
+                                    <text className={style.txtError}>{errors.no_rekening}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                NO REK ZBA
+                            <text className="col-md-4">
+                                Tipe Rekening
                             </text>
-                            <div className="col-md-9">
+                            <div className="col-md-8">
                                 <Input 
                                 type="name" 
-                                name="rek_zba"
-                                value={values.rek_zba}
-                                onBlur={handleBlur("rek_zba")}
-                                onChange={handleChange("rek_zba")}
+                                name="type"
+                                value={values.type}
+                                onBlur={handleBlur("type")}
+                                onChange={handleChange("type")}
                                 />
-                                {errors.rek_zba ? (
-                                    <text className={style.txtError}>{errors.rek_zba}</text>
+                                {errors.type ? (
+                                    <text className={style.txtError}>{errors.type}</text>
                                 ) : null}
                             </div>
                         </div>
                         <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                NO REK BANK COLL
+                            <text className="col-md-4">
+                                Nama Bank
                             </text>
-                            <div className="col-md-9">
+                            <div className="col-md-8">
                                 <Input 
                                 type="name" 
-                                name="rek_bankcol"
-                                value={values.rek_bankcol}
-                                onBlur={handleBlur("rek_bankcol")}
-                                onChange={handleChange("rek_bankcol")}
+                                name="bank"
+                                value={values.bank}
+                                onBlur={handleBlur("bank")}
+                                onChange={handleChange("bank")}
                                 />
-                                {errors.rek_bankcol ? (
-                                    <text className={style.txtError}>{errors.rek_bankcol}</text>
+                                {errors.bank ? (
+                                    <text className={style.txtError}>{errors.bank}</text>
                                 ) : null}
                             </div>
                         </div>
@@ -847,7 +858,9 @@ class MasterRek extends Component {
 
 const mapStateToProps = state => ({
     user: state.user,
-    rekening: state.rekening
+    rekening: state.rekening,
+    depo: state.depo,
+    bank: state.bank
 })
 
 const mapDispatchToProps = {
@@ -860,7 +873,9 @@ const mapDispatchToProps = {
     exportMaster: rekening.exportMaster,
     resetError: rekening.resetError,
     resetPassword: user.resetPassword,
-    deleteRek: rekening.deleteRek
+    deleteRek: rekening.deleteRek,
+    getDepo: depo.getDepo,
+    getBank: bank.getBank,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(MasterRek)

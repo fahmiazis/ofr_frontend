@@ -1472,14 +1472,20 @@ class CartOps extends Component {
         await this.props.getFinRek(token)
         await this.props.getDetailFinance(token)
         const { dataRek } = this.props.finance
-        const spending = dataRek[0].rek_spending
-        const zba = dataRek[0].rek_zba
-        const bankcoll = dataRek[0].rek_bankcoll
+        const cekRek = dataRek[0].rek !== undefined && dataRek[0].rek.length > 0 ? dataRek[0].rek : []
+        const spending = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Spending Card') !== undefined ? cekRek.find(item => item.type === 'Rekening Spending Card').no_rekening : dataRek[0].rek_spending
+        const zba = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening ZBA') !== undefined ? cekRek.find(item => item.type === 'Rekening ZBA').no_rekening : dataRek[0].rek_zba
+        const bankcoll = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Bank Coll') !== undefined ? cekRek.find(item => item.type === 'Rekening Bank Coll').no_rekening : dataRek[0].rek_bankcoll
+        
+        const bankSpending = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Spending Card') !== undefined ? cekRek.find(item => item.type === 'Rekening Spending Card').bank : 'Bank Mandiri'
+        const bankZba = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening ZBA') !== undefined ? cekRek.find(item => item.type === 'Rekening ZBA').bank : 'Bank Mandiri'
+        const bankBankcoll = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Bank Coll') !== undefined ? cekRek.find(item => item.type === 'Rekening Bank Coll').bank : 'Bank Mandiri'
+        
         const temp = [
             {label: '-Pilih-', value: ''},
-            spending !== '0' ? {label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card'} : {value: '', label: ''},
-            zba !== '0' ? {label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA'} : {value: '', label: ''},
-            bankcoll !== '0' ? {label: `${bankcoll}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
+            spending !== '0' ? {label: `${spending}~Rekening Spending Card~${bankSpending}`, value: 'Rekening Spending Card'} : {value: '', label: ''},
+            zba !== '0' ? {label: `${zba}~Rekening ZBA~${bankZba}`, value: 'Rekening ZBA'} : {value: '', label: ''},
+            bankcoll !== '0' ? {label: `${bankcoll}~Rekening Bank Coll~${bankBankcoll}`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
         ]
         this.setState({
             rekList: temp, 
@@ -1515,14 +1521,20 @@ class CartOps extends Component {
         await this.props.getDetailFinance(token)
         await this.props.getBbm(token, val)
         const { dataRek } = this.props.finance
-        const spending = dataRek[0].rek_spending
-        const zba = dataRek[0].rek_zba
-        const bankcoll = dataRek[0].rek_bankcoll
+        const cekRek = dataRek[0].rek !== undefined && dataRek[0].rek.length > 0 ? dataRek[0].rek : []
+        const spending = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Spending Card') !== undefined ? cekRek.find(item => item.type === 'Rekening Spending Card').no_rekening : dataRek[0].rek_spending
+        const zba = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening ZBA') !== undefined ? cekRek.find(item => item.type === 'Rekening ZBA').no_rekening : dataRek[0].rek_zba
+        const bankcoll = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Bank Coll') !== undefined ? cekRek.find(item => item.type === 'Rekening Bank Coll').no_rekening : dataRek[0].rek_bankcoll
+        
+        const bankSpending = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Spending Card') !== undefined ? cekRek.find(item => item.type === 'Rekening Spending Card').bank : 'Bank Mandiri'
+        const bankZba = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening ZBA') !== undefined ? cekRek.find(item => item.type === 'Rekening ZBA').bank : 'Bank Mandiri'
+        const bankBankcoll = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Bank Coll') !== undefined ? cekRek.find(item => item.type === 'Rekening Bank Coll').bank : 'Bank Mandiri'
+        
         const temp = [
             {label: '-Pilih-', value: ''},
-            spending !== '0' ? {label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card'} : {value: '', label: ''},
-            zba !== '0' ? {label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA'} : {value: '', label: ''},
-            bankcoll !== '0' ? {label: `${bankcoll}~Rekening Bank Coll`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
+            spending !== '0' ? {label: `${spending}~Rekening Spending Card~${bankSpending}`, value: 'Rekening Spending Card'} : {value: '', label: ''},
+            zba !== '0' ? {label: `${zba}~Rekening ZBA~${bankZba}`, value: 'Rekening ZBA'} : {value: '', label: ''},
+            bankcoll !== '0' ? {label: `${bankcoll}~Rekening Bank Coll~${bankBankcoll}`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
         ]
 
         const {idOps} = this.props.ops
@@ -1901,12 +1913,17 @@ class CartOps extends Component {
     }
 
     selectRek = (e) => {
-        this.setState({norek: e.label.split('~')[0], tiperek: e.value})
+        this.setState({
+            norek: e.label.split('~')[0], 
+            tiperek: e.value, 
+            bank: e.label.split('~')[2] !== undefined && e.label.split('~')[2] !== null ? e.label.split('~')[2] : 'Bank Mandiri',
+            digit: e.label.split('~')[0].length
+        })
     }
 
     selectTujuan = (val) => {
         if (val === 'PMA') {
-            this.setState({tujuan_tf: val, bank: 'Bank Mandiri', digit: 13})
+            this.setState({tujuan_tf: val, bank: '', digit: 13})
         } else {
             this.setState({tujuan_tf: val, bank: '', digit: 0})
         }
@@ -2159,17 +2176,17 @@ class CartOps extends Component {
                 if (temp.jenis_pph === 'Non PPh' || temp.jenis_pph === undefined) {
                     this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: Math.round(parseFloat(nilai) + plusVal), tipeVendor: tipe})
                 } else {
-                    const tarifPph = tipeSkb === 'SKB' ? '0%' : tipeSkb === 'SKT' ? '0.05%' : temp.tarif_pph
+                    const tarifPph = tipeSkb === 'SKB' ? '0%' : tipeSkb === 'SKT' ? '0.005%' : temp.tarif_pph
                     const grossup = tipeSkb === 'SKB' ? '1%' : tipeSkb === 'SKT' ? '1%' : temp.dpp_grossup
                     if (tipePpn === 'Ya' && type_kasbon !== 'kasbon') {
                     // if (tipePpn === 'Ya') {
-                        if (tipe === 'PMA') {
+                        if (tipe === 'PMA' && (tipeSkb !== 'SKT' && tipeSkb !== 'SKB')) {
                             const nilai_buku = nilai_dpp
                             const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
                             // const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
                             const nilai_vendor = Math.round(parseFloat(nilai) + plusVal)
                             this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
-                        } else if (tipe === 'Vendor') {
+                        } else if (tipe === 'Vendor' || (tipeSkb === 'SKT' || tipeSkb === 'SKB')) {
                             const nilai_buku = nilai_dpp
                             const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
                             // const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
@@ -2177,12 +2194,12 @@ class CartOps extends Component {
                             this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                         }
                     } else {
-                        if (tipe === 'PMA') {
+                        if (tipe === 'PMA' && (tipeSkb !== 'SKT' && tipeSkb !== 'SKB')) {
                             const nilai_buku = Math.round(parseFloat(nilai) / parseFloat(grossup))
                             const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
                             const nilai_vendor = Math.round(parseFloat(nilai) + plusVal)
                             this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
-                        } else if (tipe === 'Vendor') {
+                        } else if (tipe === 'Vendor' || (tipeSkb === 'SKT' || tipeSkb === 'SKB')) {
                             const nilai_buku = nilai
                             const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
                             const nilai_vendor = Math.round((parseFloat(nilai) - parseFloat(nilai_utang)) + plusVal)
@@ -2314,8 +2331,8 @@ class CartOps extends Component {
                                     <div className="ml-1">{(parseFloat(dataPagu.pagu) - this.state.nominal).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>
                                 </div> */}
                             </div>
-                            <div className={style.tableDashboard}>
-                                <Table bordered responsive hover className={[style.tab, dataCart.length > 0 && 'tableJurnal']}>
+                            <div className={style.tableDashboard1}>
+                                <Table bordered responsive hover className={[style.tab, dataCart.length > 0 && 'tableJurnal1']}>
                                     <thead>
                                         <tr>
                                             <th>

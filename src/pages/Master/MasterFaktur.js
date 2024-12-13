@@ -684,8 +684,18 @@ class MasterFaktur extends Component {
                                                         color='success'>
                                                             Update
                                                         </Button>
+                                                        
+                                                        {item.status !== null && (
+                                                            <Button 
+                                                            onClick={()=>this.openModalEdit(this.setState({detail: item}))} 
+                                                            className='mb-1 mr-1' 
+                                                            color='success'>
+                                                                Transaksi
+                                                            </Button>
+                                                        )}
+                                                        
                                                         <Button 
-                                                        className="mr-2" 
+                                                        className="" 
                                                         onClick={() => this.openModalDel(this.setState({detail: item}))} 
                                                         color='danger'>
                                                             Delete

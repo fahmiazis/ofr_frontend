@@ -1532,8 +1532,8 @@ class Klaim extends Component {
                                 </div>
                             </div>
                             {level === '5' || level === '6' ? (
-                                <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={[style.tab, newKlaim.length > 0 && 'tableJurnal']} id="table-klaim">
+                                <div className={style.tableDashboard1}>
+                                    <Table bordered responsive hover className={[style.tab, newKlaim.length > 0 && 'tableJurnal1']} id="table-klaim">
                                         <thead>
                                             <tr>
                                                 <th>No</th>
@@ -1585,8 +1585,8 @@ class Klaim extends Component {
                                     )}
                                 </div>
                             ) : (
-                                <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={[style.tab, newKlaim.length > 0 && 'tableJurnal']} id="table-klaim">
+                                <div className={style.tableDashboard1}>
+                                    <Table bordered responsive hover className={[style.tab, newKlaim.length > 0 && 'tableJurnal1']} id="table-klaim">
                                         <thead>
                                             <tr>
                                                 <th>No</th>

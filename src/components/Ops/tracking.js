@@ -259,7 +259,7 @@ class Tracking extends Component {
                                     </div>
                                 ) : this.state.tipeCol === 'Approval List Ajuan Bayar' ? (
                                     <div class="steps d-flex flex-wrap flex-sm-nowrap justify-content-between padding-top-2x padding-bottom-1x">
-                                        {detailOps[0].appList !== undefined && detailOps[0].appList.length && detailOps[0].appList.slice(0).reverse().map(item => {
+                                        {detailOps[0].appList !== undefined && detailOps[0].appList.length && detailOps[0].appList.slice(0).reverse().map((item, index) => {
                                             return (
                                                 <div class={item.status === '1' ? 'step completed' : item.status === '0' ? 'step reject' : 'step'}>
                                                     <div class="step-icon-wrap">

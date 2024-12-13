@@ -187,8 +187,8 @@ class FAA extends Component {
                 ws.getCell(`B${headRow}`).value = item.nama === null 
                 ? `\n\n - \n\n\n\n${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}` 
                 : item.status === '0' 
-                ? `\nReject (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}` 
-                : `\nApprove (${moment(item.updatedAt).format('DD/MM/YYYY')}) \n\n ${item.nama} \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}`
+                ? `\nReject (${moment(detailKlaim[0].start_klaim).format('DD/MM/YYYY')}) \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}` 
+                : `\nApprove (${moment(detailKlaim[0].start_klaim).format('DD/MM/YYYY')}) \n\n ${item.nama} \n\n\n ${item.jabatan === null ? "-" : item.jabatan.toUpperCase()}`
         })
 
         ws.getCell(`B${headRow}`).alignment = { 
@@ -402,7 +402,7 @@ class FAA extends Component {
                                             {ttdKlaim.pembuat !== undefined && ttdKlaim.pembuat.map(item => {
                                                 return (
                                                     <th className="headPre">
-                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(detailKlaim[0].start_klaim).format('DD/MM/YYYY')})` : `Approve (${moment(detailKlaim[0].start_klaim).format('DD/MM/YYYY')})`}</div>
                                                         <div>{item.nama === null ? "-" : item.nama}</div>
                                                     </th>
                                                 )

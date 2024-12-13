@@ -1752,7 +1752,7 @@ class VerifKlaim extends Component {
                                     </Input>
                                 </div>
                             </div>
-                                <div className={style.tableDashboard}>
+                                <div className={style.tableDashboard1}>
                                     <Table bordered responsive hover className={
                                         [
                                         style.tab, 
@@ -1764,7 +1764,7 @@ class VerifKlaim extends Component {
                                         // item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
                                         item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null && 
                                         item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase()
-                                        ).length > 0 ? 'tableJurnal' 
+                                        ).length > 0 ? 'tableJurnal1' 
                                         : newKlaim.length > 0 && level ===  '23' && newKlaim.filter((item) => 
                                         item.picklaim !== null && 
                                         // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
@@ -1772,7 +1772,7 @@ class VerifKlaim extends Component {
                                         item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null &&
                                         dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()) !== undefined &&
                                         dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
-                                        ).length > 0 ? 'tableJurnal' 
+                                        ).length > 0 ? 'tableJurnal1' 
                                         : ''
                                     ]
                                     } 

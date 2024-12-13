@@ -1776,14 +1776,20 @@ class CartKlaim extends Component {
             await this.props.getFinRek(token)
             await this.props.getDetailFinance(token)
             const { dataRek } = this.props.finance
-            const spending = dataRek[0].rek_spending
-            const zba = dataRek[0].rek_zba
-            const bankcoll = dataRek[0].rek_bankcoll
+            const cekRek = dataRek[0].rek !== undefined && dataRek[0].rek.length > 0 ? dataRek[0].rek : []
+            const spending = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Spending Card') !== undefined ? cekRek.find(item => item.type === 'Rekening Spending Card').no_rekening : dataRek[0].rek_spending
+            const zba = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening ZBA') !== undefined ? cekRek.find(item => item.type === 'Rekening ZBA').no_rekening : dataRek[0].rek_zba
+            const bankcoll = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Bank Coll') !== undefined ? cekRek.find(item => item.type === 'Rekening Bank Coll').no_rekening : dataRek[0].rek_bankcoll
+            
+            const bankSpending = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Spending Card') !== undefined ? cekRek.find(item => item.type === 'Rekening Spending Card').bank : 'Bank Mandiri'
+            const bankZba = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening ZBA') !== undefined ? cekRek.find(item => item.type === 'Rekening ZBA').bank : 'Bank Mandiri'
+            const bankBankcoll = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Bank Coll') !== undefined ? cekRek.find(item => item.type === 'Rekening Bank Coll').bank : 'Bank Mandiri'
+            
             const temp = [
-                { label: '-Pilih-', value: '' },
-                spending !== '0' ? { label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card' } : { value: '', label: '' },
-                zba !== '0' ? { label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA' } : { value: '', label: '' },
-                bankcoll !== '0' ? { label: `${bankcoll}~Rekening Bank Coll`, value: 'Rekening Bank Coll' } : { value: '', label: '' }
+                {label: '-Pilih-', value: ''},
+                spending !== '0' ? {label: `${spending}~Rekening Spending Card~${bankSpending}`, value: 'Rekening Spending Card'} : {value: '', label: ''},
+                zba !== '0' ? {label: `${zba}~Rekening ZBA~${bankZba}`, value: 'Rekening ZBA'} : {value: '', label: ''},
+                bankcoll !== '0' ? {label: `${bankcoll}~Rekening Bank Coll~${bankBankcoll}`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
             ]
             this.setState({ rekList: temp })
             this.openModalAdd()
@@ -1798,14 +1804,20 @@ class CartKlaim extends Component {
         await this.props.getOutlet(token, val)
         await this.props.getFakturKl(token, val)
         const { dataRek } = this.props.finance
-        const spending = dataRek[0].rek_spending
-        const zba = dataRek[0].rek_zba
-        const bankcoll = dataRek[0].rek_bankcoll
+        const cekRek = dataRek[0].rek !== undefined && dataRek[0].rek.length > 0 ? dataRek[0].rek : []
+        const spending = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Spending Card') !== undefined ? cekRek.find(item => item.type === 'Rekening Spending Card').no_rekening : dataRek[0].rek_spending
+        const zba = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening ZBA') !== undefined ? cekRek.find(item => item.type === 'Rekening ZBA').no_rekening : dataRek[0].rek_zba
+        const bankcoll = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Bank Coll') !== undefined ? cekRek.find(item => item.type === 'Rekening Bank Coll').no_rekening : dataRek[0].rek_bankcoll
+        
+        const bankSpending = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Spending Card') !== undefined ? cekRek.find(item => item.type === 'Rekening Spending Card').bank : 'Bank Mandiri'
+        const bankZba = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening ZBA') !== undefined ? cekRek.find(item => item.type === 'Rekening ZBA').bank : 'Bank Mandiri'
+        const bankBankcoll = cekRek.length > 0 && cekRek.find(item => item.type === 'Rekening Bank Coll') !== undefined ? cekRek.find(item => item.type === 'Rekening Bank Coll').bank : 'Bank Mandiri'
+        
         const temp = [
-            { label: '-Pilih-', value: '' },
-            spending !== '0' ? { label: `${spending}~Rekening Spending Card`, value: 'Rekening Spending Card' } : { value: '', label: '' },
-            zba !== '0' ? { label: `${zba}~Rekening ZBA`, value: 'Rekening ZBA' } : { value: '', label: '' },
-            bankcoll !== '0' ? { label: `${bankcoll}~Rekening Bank Coll`, value: 'Rekening Bank Coll' } : { value: '', label: '' }
+            {label: '-Pilih-', value: ''},
+            spending !== '0' ? {label: `${spending}~Rekening Spending Card~${bankSpending}`, value: 'Rekening Spending Card'} : {value: '', label: ''},
+            zba !== '0' ? {label: `${zba}~Rekening ZBA~${bankZba}`, value: 'Rekening ZBA'} : {value: '', label: ''},
+            bankcoll !== '0' ? {label: `${bankcoll}~Rekening Bank Coll~${bankBankcoll}`, value: 'Rekening Bank Coll'} : {value: '', label: ''}
         ]
 
         const { idKlaim } = this.props.klaim
@@ -1889,12 +1901,17 @@ class CartKlaim extends Component {
     }
 
     selectRek = (e) => {
-        this.setState({ norek: e.label.split('~')[0], tiperek: e.value })
+        this.setState({
+            norek: e.label.split('~')[0], 
+            tiperek: e.value, 
+            bank: e.label.split('~')[2] !== undefined && e.label.split('~')[2] !== null ? e.label.split('~')[2] : 'Bank Mandiri',
+            digit: e.label.split('~')[0].length
+        })
     }
 
     selectTujuan = (val) => {
         if (val === 'PMA') {
-            this.setState({ tujuan_tf: val, bank: 'Bank Mandiri', digit: 13 })
+            this.setState({ tujuan_tf: val, bank: '', digit: 13 })
         } else {
             this.setState({ tujuan_tf: val, bank: '', digit: 0 })
         }

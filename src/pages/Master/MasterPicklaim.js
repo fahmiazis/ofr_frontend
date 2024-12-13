@@ -362,6 +362,7 @@ class MasterPicklaim extends Component {
 
     editPicklaim = async (values, id) => {
         const token = localStorage.getItem("token")
+        console.log('king')
         await this.props.updatePicklaim(token, values, id)
         const {isUpdate} = this.props.picklaim
         if (isUpdate) {
@@ -955,7 +956,7 @@ class MasterPicklaim extends Component {
                         meiji: detail.meiji
                     }}
                     validationSchema={picklaimSchema}
-                    onSubmit={(values) => {this.editPicklaim(values, detail.id)}}
+                    onSubmit={(values) => {console.log('king'); this.editPicklaim(values, detail.id)}}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                     <ModalBody>

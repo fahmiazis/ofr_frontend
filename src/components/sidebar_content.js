@@ -258,10 +258,10 @@ const SidebarContent = props => {
               Master PIC Klaim
             </button>
 
-            {/* <button onClick={() => goHome('rekening')} className={stile.btnSide}>
+            <button onClick={() => goHome('rekening')} className={stile.btnSide}>
               <RiBankCardFill size={20} className="mr-2"/>
               Master Rekening
-            </button> */}
+            </button>
             <button onClick={() => goHome('spvklaim')} className={stile.btnSide}>
               <FiUser size={20} className="mr-2"/>
               Master SPV Klaim

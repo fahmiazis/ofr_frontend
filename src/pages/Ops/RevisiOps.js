@@ -1831,6 +1831,7 @@ class RevisiOps extends Component {
         const { nomCoa } = this.props.coa
         const {dataTrans, nilai_ajuan, tipeVendor, tipePpn, nilai_dpp, nilai_ppn, type_kasbon, tipeSkb} = this.state
         const nilai = nilai_ajuan
+        const valAdm = 2500
         const tipe = tipeVendor
         console.log(dataTrans)
         if (dataTrans.jenis_pph === undefined) {
@@ -1855,36 +1856,38 @@ class RevisiOps extends Component {
                 console.log('masuk not undefined formula tax')
                 const temp = selectCoaFin === undefined ? selectCoa : selectCoa === undefined ? dataTrans: selectCoaFin
                 console.log(temp)
+                const cekIndi = temp.jenis_transaksi === 'Pembayaran Tagihan Internet (Indihome)' ? 'ya' : 'tidak'
+                const plusVal = cekIndi === 'ya' ? valAdm : 0
                 if (temp.jenis_pph === 'Non PPh' || temp.jenis_pph === undefined) {
-                    this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: nilai, tipeVendor: tipe})
+                    this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: Math.round(parseFloat(nilai) + plusVal), tipeVendor: tipe})
                 } else {
-                    const tarifPph = tipeSkb === 'SKB' ? '0%' : tipeSkb === 'SKT' ? '0.05%' : temp.tarif_pph
+                    const tarifPph = tipeSkb === 'SKB' ? '0%' : tipeSkb === 'SKT' ? '0.005%' : temp.tarif_pph
                     const grossup = tipeSkb === 'SKB' ? '1%' : tipeSkb === 'SKT' ? '1%' : temp.dpp_grossup
                     if (tipePpn === 'Ya' && type_kasbon !== 'kasbon') {
                     // if (tipePpn === 'Ya') {
-                        if (tipe === 'PMA') {
+                        if (tipe === 'PMA' && (tipeSkb !== 'SKT' && tipeSkb !== 'SKB')) {
                             const nilai_buku = nilai_dpp
                             const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
                             // const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
-                            const nilai_vendor = nilai
+                            const nilai_vendor = Math.round(parseFloat(nilai) + plusVal)
                             this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
-                        } else if (tipe === 'Vendor') {
+                        } else if (tipe === 'Vendor' || (tipeSkb === 'SKT' || tipeSkb === 'SKB')) {
                             const nilai_buku = nilai_dpp
                             const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
                             // const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
-                            const nilai_vendor = Math.round(parseFloat(nilai) - parseFloat(nilai_utang))
+                            const nilai_vendor = Math.round((parseFloat(nilai) - parseFloat(nilai_utang)) + plusVal)
                             this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                         }
                     } else {
-                        if (tipe === 'PMA') {
+                        if (tipe === 'PMA' && (tipeSkb !== 'SKT' && tipeSkb !== 'SKB')) {
                             const nilai_buku = Math.round(parseFloat(nilai) / parseFloat(grossup))
                             const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
-                            const nilai_vendor = nilai
+                            const nilai_vendor = Math.round(parseFloat(nilai) + plusVal)
                             this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
-                        } else if (tipe === 'Vendor') {
+                        } else if (tipe === 'Vendor' || (tipeSkb === 'SKT' || tipeSkb === 'SKB')) {
                             const nilai_buku = nilai
                             const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
-                            const nilai_vendor = Math.round(parseFloat(nilai) - parseFloat(nilai_utang))
+                            const nilai_vendor = Math.round((parseFloat(nilai) - parseFloat(nilai_utang)) + plusVal)
                             this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                         }
                     }

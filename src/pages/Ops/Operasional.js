@@ -1623,8 +1623,8 @@ class Ops extends Component {
                                 </div>
                             </div>
                             {level === '5' || level === '6' ? (
-                                <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={[style.tab, newOps.length > 0 && 'tableJurnal']} id="table-ops">
+                                <div className={style.tableDashboard1}>
+                                    <Table bordered responsive hover className={[style.tab, newOps.length > 0 && 'tableJurnal1']} id="table-ops">
                                         <thead>
                                             <tr>
                                                 <th>No</th>
@@ -1676,8 +1676,8 @@ class Ops extends Component {
                                     )}
                                 </div>
                             ) : (
-                                <div className={style.tableDashboard}>
-                                    <Table bordered responsive hover className={[style.tab, newOps.length > 0 && 'tableJurnal']} id="table-ops">
+                                <div className={style.tableDashboard1}>
+                                    <Table bordered responsive hover className={[style.tab, newOps.length > 0 && 'tableJurnal1']} id="table-ops">
                                         <thead>
                                             <tr>
                                                 <th>No</th>

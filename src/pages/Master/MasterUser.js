@@ -544,6 +544,10 @@ class MasterUser extends Component {
                                             <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 10, search: ''})}>10</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 20, search: ''})}>20</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 50, search: ''})}>50</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 100, search: ''})}>100</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 200, search: ''})}>200</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 500, search: ''})}>500</DropdownItem>
+                                            <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 1000, search: ''})}>1000</DropdownItem>
                                             <DropdownItem className={style.item} onClick={() => this.getDataUser({limit: 'all', search: ''})}>All</DropdownItem>
                                         </DropdownMenu>
                                         </ButtonDropdown>
