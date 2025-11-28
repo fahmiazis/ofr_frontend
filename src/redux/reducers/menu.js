@@ -18,7 +18,8 @@ const menuState = {
     detailApp: [],
     link: '',
     isAll: false,
-    dataAll: []
+    dataAll: [],
+    detailMenu: {}
 };
 
 export default (state=menuState, action) => {
@@ -127,6 +128,28 @@ export default (state=menuState, action) => {
                     isLoading: false,
                     isGet: false,
                     isError: true,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'GET_SUB_MENU_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GET_SUB_MENU_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    detailMenu: action.payload.data.result,
+                    alertMsg: 'get approve Succesfully',
+                };
+            }
+            case 'GET_SUB_MENU_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
                     alertMsg: "Unable connect to server"
                 };
             }

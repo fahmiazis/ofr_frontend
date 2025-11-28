@@ -545,7 +545,7 @@ class MasterDokumen extends Component {
                                             return (
                                             <tr>
                                                 <th scope="row">{(dataName.indexOf(item) + 1)}</th>
-                                                <td>{item.name}</td>
+                                                <td>{`${item.menu} (${item.name})`}</td>
                                                 <td>{item.type}</td>
                                                 <td>{item.kode_plant}</td>
                                                 <td>{item.status === null ? 'active' : item.status}</td>

@@ -26,7 +26,6 @@ import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
 import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
-import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
@@ -48,8 +47,12 @@ import ListBbm from '../../components/Ops/ListBbm'
 import { BiExpand, BiCollapse } from "react-icons/bi";
 import { MdKeyboardArrowRight, MdKeyboardArrowDown } from 'react-icons/md'
 import Pdfprint from 'react-to-pdf'
+import depo from '../../redux/actions/depo'
+import tarif from '../../redux/actions/tarif'
+import taxcode from '../../redux/actions/taxcode'
+import kliring from '../../redux/actions/kliring'
 const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
-const userAppArea = ['10', '11', '12', '15']
+const userAppArea = ['10', '11', '12', '15', '30']
 
 const options = {
     // default is `save`
@@ -402,9 +405,45 @@ class Ops extends Component {
         const { listReject } = this.state
         const { detailOps } = this.props.ops
         const token = localStorage.getItem('token')
-        const tempno = {
-            no: detailOps[0].no_transaksi
+        const level = localStorage.getItem("level")
+        const id = localStorage.getItem('id')
+
+        await this.props.getRole(token)
+        await this.props.getDetailUser(token, id)
+        const { detailUser, dataRole } = this.props.user
+
+        const arrRole = detailUser.detail_role
+        const listRole = []
+        for (let i = 0; i < arrRole.length + 1; i++) {
+            if (detailUser.level === 1) {
+                const data = {fullname: 'admin', name: 'admin', level: 1, type: 'all'}
+                listRole.push(data)
+            } else if (i === arrRole.length) {
+                const cek = dataRole.find(item => item.level === detailUser.level)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            } else {
+                const cek = dataRole.find(item => item.level === arrRole[i].id_role)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            }
         }
+
+        let index = null
+
+        for (let i = 0; i < listRole.length; i++) {
+            const app =  detailOps[0].appForm === undefined ? [] :  detailOps[0].appForm
+            const cekApp = app.find(item => (item.jabatan === listRole[i].name))
+            const find = app.indexOf(cekApp)
+            if (find !== -1) {
+                if ((app[find].status === null || app[find].status === '0') && (level !== '5' && app[find + 1].status !== undefined && app[find + 1].status === '1')) {
+                    index = find
+                }
+            }
+        }
+
         let temp = ''
         for (let i = 0; i < listReason.length; i++) {
             temp += listReason[i] + '. '
@@ -414,7 +453,8 @@ class Ops extends Component {
             list: listMut,
             alasan: temp + val.alasan,
             menu: listMenu.toString(),
-            type_reject: listReject[0]
+            type_reject: listReject[0],
+            indexApp: index
         }
         await this.props.rejectOps(token, data)
         this.dataSendEmail('reject')
@@ -539,9 +579,17 @@ class Ops extends Component {
         await this.props.submitAsset(token, detailStock[0].no_stock)
     }
 
-    componentDidMount() {
+    async componentDidMount() {
+        const token = localStorage.getItem('token')
         const dataCek = localStorage.getItem('docData')
         const {item, type} = (this.props.location && this.props.location.state) || {}
+        const id = localStorage.getItem('id')
+        // await this.props.getRole(token)
+        // await this.props.getDetailUser(token, id)
+        await this.props.getDepo(token, 'all', '', 1)
+        await this.props.getTarif(token, 'all', '', 1)
+        await this.props.getKliring(token, 'all', '', 1)
+        await this.props.getTaxcode(token, 'all', '', 1)
         if (type === 'approve') {
             this.setState({
                 time1: moment(item.createdAt).startOf('month').format('YYYY-MM-DD')
@@ -879,6 +927,23 @@ class Ops extends Component {
         }
     }
 
+    // changeFilter = async (val) => {
+    //     const {dataOps, noDis} = this.props.ops
+    //     const level = localStorage.getItem('level')
+    //     const token = localStorage.getItem("token")
+    //     const { detailUser, dataRole } = this.props.user
+    //     const { dataDepo } = this.props.depo
+
+    //     const status = val === 'available' ? 2 : val === 'selesai' ? 8 : 'all'
+    //     const {time1, time2, search, limit} = this.state
+    //     const cekTime1 = time1 === '' ? 'undefined' : time1
+    //     const cekTime2 = time2 === '' ? 'undefined' : time2
+    //     const typeKasbon = 'non kasbon'
+
+    //     await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit)
+        
+    // }
+
     getDataLimit = async (val) => {
         const typeKasbon = 'non kasbon'
         const {time1, time2, filter, search} = this.state
@@ -956,10 +1021,53 @@ class Ops extends Component {
         const { detailOps } = this.props.ops
         const token = localStorage.getItem("token")
         const level = localStorage.getItem("level")
-        const tempno = {
-            no: detailOps[0].no_transaksi
+        const id = localStorage.getItem('id')
+        await this.props.getRole(token)
+        await this.props.getDetailUser(token, id)
+        const { detailUser, dataRole } = this.props.user
+
+        const arrRole = detailUser.detail_role
+        const listRole = []
+        for (let i = 0; i < arrRole.length + 1; i++) {
+            if (detailUser.level === 1) {
+                const data = {fullname: 'admin', name: 'admin', level: 1, type: 'all'}
+                listRole.push(data)
+            } else if (i === arrRole.length) {
+                const cek = dataRole.find(item => item.level === detailUser.level)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            } else {
+                const cek = dataRole.find(item => item.level === arrRole[i].id_role)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            }
         }
+
+        const index = []
+
+        for (let i = 0; i < listRole.length; i++) {
+            const app =  detailOps[0].appForm === undefined ? [] :  detailOps[0].appForm
+            const cekApp = app.find(item => (item.jabatan === listRole[i].name))
+            const find = app.indexOf(cekApp)
+            if (find !== -1) {
+                if ((app[find].status === null || app[find].status === '0') && (level !== '5' && app[find + 1].status !== undefined && app[find + 1].status === '1')) {
+                    index.push(find)
+                } else if ((app[find].status === null || app[find].status === '0') && (level !== '5' && app[find + 1].status !== undefined && listRole.find(x => x.name === app[find + 1].jabatan))) {
+                    index.push(find)
+                }
+            }
+        }
+
+        const tempno = {
+            no: detailOps[0].no_transaksi,
+            indexApp: index
+        }
+
         await this.props.approveOps(token, tempno)
+        this.dataSendEmail()
+
         // if (level === '12') {
         //     this.getDataOps()
         //     this.setState({confirm: 'isApprove'})
@@ -967,7 +1075,7 @@ class Ops extends Component {
         //     this.openModalApprove()
         //     this.openModalRinci()
         // } else {
-        this.dataSendEmail()
+        // this.dataSendEmail()
         // }
     }
 
@@ -1027,6 +1135,7 @@ class Ops extends Component {
     prepSendEmail = async () => {
         const { detailOps } = this.props.ops
         const token = localStorage.getItem("token")
+        const level = localStorage.getItem("level")
         const app = detailOps[0].appForm
         const tempApp = []
         app.map(item => {
@@ -1034,13 +1143,58 @@ class Ops extends Component {
                 item.status === '1' && tempApp.push(item)
             )
         })
-        const tipe = tempApp.length === app.length-1 ? 'full approve' : 'approve'
+
+        const id = localStorage.getItem('id')
+        await this.props.getRole(token)
+        await this.props.getDetailUser(token, id)
+        const { detailUser, dataRole } = this.props.user
+
+        const arrRole = detailUser.detail_role
+        const listRole = []
+        for (let i = 0; i < arrRole.length + 1; i++) {
+            if (detailUser.level === 1) {
+                const data = {fullname: 'admin', name: 'admin', level: 1, type: 'all'}
+                listRole.push(data)
+            } else if (i === arrRole.length) {
+                const cek = dataRole.find(item => item.level === detailUser.level)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            } else {
+                const cek = dataRole.find(item => item.level === arrRole[i].id_role)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            }
+        }
+
+        const index = []
+
+        for (let i = 0; i < listRole.length; i++) {
+            const app =  detailOps[0].appForm === undefined ? [] :  detailOps[0].appForm
+            const cekApp = app.find(item => (item.jabatan === listRole[i].name))
+            const find = app.indexOf(cekApp)
+            console.log(find)
+            console.log(app[find])
+            if (find !== -1) {
+                if ((app[find].status === null || app[find].status === '0') && (level !== '5' && app[find + 1].status !== undefined && app[find + 1].status === '1')) {
+                    index.push(find)
+                } else if ((app[find].status === null || app[find].status === '0') && (level !== '5' && app[find + 1].status !== undefined && listRole.find(x => x.name === app[find + 1].jabatan))) {
+                    index.push(find)
+                }
+            }
+        }
+
+        const getLow = Math.min(...index)
+
+        const tipe = (tempApp.length === app.length-1) || getLow === 0 ? 'full approve' : 'approve'
         const tempno = {
             no: detailOps[0].no_transaksi,
             kode: detailOps[0].kode_plant,
             jenis: 'ops',
             tipe: tipe,
-            menu: 'Pengajuan Operasional (Operasional)'
+            menu: 'Pengajuan Operasional (Operasional)',
+            indexApp: getLow
         }
         await this.props.getDraftEmail(token, tempno)
         this.setState({tipeEmail: 'app'})
@@ -1646,7 +1800,7 @@ class Ops extends Component {
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_transaksi === 0 ? 'fail' : item.status_reject === 1 && 'bad'}>
                                                         <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
                                                         <th>{item.no_transaksi}</th>
-                                                        <th>{item.depo.profit_center}</th>
+                                                        <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
@@ -1699,7 +1853,7 @@ class Ops extends Component {
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_transaksi === 0 ? 'fail' : item.status_reject === 1 && 'bad'}>
                                                         <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
                                                         <th>{item.no_transaksi}</th>
-                                                        <th>{item.depo.profit_center}</th>
+                                                        <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
@@ -1809,7 +1963,7 @@ class Ops extends Component {
                                             <tr>
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
-                                                <th>{item.depo.profit_center}</th>
+                                                <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                 <th>{item.area}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
@@ -2037,7 +2191,7 @@ class Ops extends Component {
                                                     />
                                                 </th>
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
-                                                <th>{item.depo.profit_center}</th>
+                                                <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
                                                 <th>{item.keterangan}</th>
@@ -2227,7 +2381,7 @@ class Ops extends Component {
                                     ) : null}
                                 </div>
                                 <div className='mt-3 mb-2 titStatus'>Pilih menu revisi :</div>
-                                {dataMenu.length > 0 && dataMenu.map(item => {
+                                {dataMenu.length > 0 && dataMenu.filter(item => item.name === 'Revisi Area').map(item => {
                                     return (
                                     <div className="ml-2">
                                         <Input
@@ -2256,7 +2410,18 @@ class Ops extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.props.menu.isLoading || this.props.reason.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading} size="sm">
+                <Modal isOpen={
+                    this.props.ops.isLoading || 
+                    this.props.menu.isLoading ||
+                    this.props.reason.isLoading || 
+                    this.props.email.isLoading || 
+                    this.props.dokumen.isLoading ||
+                    this.props.depo.isLoading || 
+                    this.props.kliring.isLoading || 
+                    this.props.taxcode.isLoading || 
+                    this.props.user.isLoading || 
+                    this.props.tarif.isLoading 
+                     } size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2822,7 +2987,6 @@ class Ops extends Component {
 
 const mapStateToProps = state => ({
     approve: state.approve,
-    depo: state.depo,
     user: state.user,
     notif: state.notif,
     ops: state.ops,
@@ -2830,13 +2994,16 @@ const mapStateToProps = state => ({
     reason: state.reason,
     dokumen: state.dokumen,
     email: state.email,
+    depo: state.depo,
+    tarif: state.tarif,
+    kliring: state.kliring,
+    taxcode: state.taxcode
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
     getDetailDepo: depo.getDetailDepo,
-    getDepo: depo.getDepo,
     getRole: user.getRole,
     getOps: ops.getOps,
     getDetail: ops.getDetail,
@@ -2858,7 +3025,12 @@ const mapDispatchToProps = {
     addNotif: notif.addNotif,
     getResmail: email.getResmail,
     getDocBayar: ops.getDocBayar,
-    nextOps: ops.nextOps
+    nextOps: ops.nextOps,
+    getDepo: depo.getDepo,
+    getTarif: tarif.getAllTarif,
+    getKliring: kliring.getAllKliring,
+    getTaxcode: taxcode.getAllTaxcode,
+    getDetailUser: user.getDetailUser
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Ops)

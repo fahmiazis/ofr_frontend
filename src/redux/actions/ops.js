@@ -61,7 +61,7 @@ export default {
     }),
     approveOps: (token, no) => ({
         type: 'APPROVE_OPS',
-        payload: http(token).patch(`/ops/app`, qs.stringify(no))
+        payload: http(token).patch(`/ops/app`, no)
     }),
     rejectOps: (token, data) => ({
         type: 'REJECT_OPS',

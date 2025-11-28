@@ -137,7 +137,7 @@ class Klaim extends Component {
             openAppDoc: false,
             openRejDoc: false,
             time: 'pilih',
-            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             subject: '',
             docHist: false,
@@ -320,6 +320,44 @@ class Klaim extends Component {
         const { listReject } = this.state
         const { detailKlaim } = this.props.klaim
         const token = localStorage.getItem('token')
+        const level = localStorage.getItem("level")
+        const id = localStorage.getItem('id')
+        await this.props.getRole(token)
+        await this.props.getDetailUser(token, id)
+        const { detailUser, dataRole } = this.props.user
+
+        const arrRole = detailUser.detail_role
+        const listRole = []
+        for (let i = 0; i < arrRole.length + 1; i++) {
+            if (detailUser.level === 1) {
+                const data = {fullname: 'admin', name: 'admin', level: 1, type: 'all'}
+                listRole.push(data)
+            } else if (i === arrRole.length) {
+                const cek = dataRole.find(item => item.level === detailUser.level)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            } else {
+                const cek = dataRole.find(item => item.level === arrRole[i].id_role)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            }
+        }
+
+        let index = null
+
+        for (let i = 0; i < listRole.length; i++) {
+            const app =  detailKlaim[0].appForm === undefined ? [] :  detailKlaim[0].appForm
+            const cekApp = app.find(item => (item.jabatan === listRole[i].name))
+            const find = app.indexOf(cekApp)
+            if (find !== -1) {
+                if ((app[find].status === null || app[find].status === '0') && (level !== '5' && app[find + 1].status !== undefined && app[find + 1].status === '1')) {
+                    index = find
+                }
+            }
+        }
+
         const tempno = {
             no: detailKlaim[0].no_transaksi
         }
@@ -332,7 +370,8 @@ class Klaim extends Component {
             list: listMut,
             alasan: temp + val.alasan,
             menu: listMenu.toString(),
-            type_reject: listReject[0]
+            type_reject: listReject[0],
+            indexApp: index
         }
         await this.props.rejectKlaim(token, data)
         this.dataSendEmail('reject')
@@ -871,10 +910,52 @@ class Klaim extends Component {
         const { detailKlaim } = this.props.klaim
         const token = localStorage.getItem("token")
         const level = localStorage.getItem("level")
-        const tempno = {
-            no: detailKlaim[0].no_transaksi
+        const id = localStorage.getItem('id')
+        await this.props.getRole(token)
+        await this.props.getDetailUser(token, id)
+        const { detailUser, dataRole } = this.props.user
+
+        const arrRole = detailUser.detail_role
+        const listRole = []
+        for (let i = 0; i < arrRole.length + 1; i++) {
+            if (detailUser.level === 1) {
+                const data = {fullname: 'admin', name: 'admin', level: 1, type: 'all'}
+                listRole.push(data)
+            } else if (i === arrRole.length) {
+                const cek = dataRole.find(item => item.level === detailUser.level)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            } else {
+                const cek = dataRole.find(item => item.level === arrRole[i].id_role)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            }
         }
+
+        let index = []
+
+        for (let i = 0; i < listRole.length; i++) {
+            const app =  detailKlaim[0].appForm === undefined ? [] :  detailKlaim[0].appForm
+            const cekApp = app.find(item => (item.jabatan === listRole[i].name))
+            const find = app.indexOf(cekApp)
+            if (find !== -1) {
+                if ((app[find].status === null || app[find].status === '0') && (level !== '5' && app[find + 1].status !== undefined && app[find + 1].status === '1')) {
+                    index.push(find)
+                }  else if ((app[find].status === null || app[find].status === '0') && (level !== '5' && app[find + 1].status !== undefined && listRole.find(x => x.name === app[find + 1].jabatan))) {
+                    index.push(find)
+                }
+            }
+        }
+
+        const tempno = {
+            no: detailKlaim[0].no_transaksi,
+            indexApp: index
+        }
+
         await this.props.approveKlaim(token, tempno)
+        this.dataSendEmail()
         // if (level === '12') {
         //     this.getDataKlaim()
         //     this.setState({confirm: 'isApprove'})
@@ -882,7 +963,7 @@ class Klaim extends Component {
         //     this.openModalApprove()
         //     this.openModalRinci()
         // } else {
-        this.dataSendEmail()
+        // this.dataSendEmail()
         // }
     }
 
@@ -970,19 +1051,63 @@ class Klaim extends Component {
         const { detailKlaim } = this.props.klaim
         const token = localStorage.getItem("token")
         const app = detailKlaim[0].appForm
+        const id = localStorage.getItem('id')
+        const level = localStorage.getItem("level")
+        await this.props.getRole(token)
+        await this.props.getDetailUser(token, id)
+        const { detailUser, dataRole } = this.props.user
+
+        const arrRole = detailUser.detail_role
+        const listRole = []
+        for (let i = 0; i < arrRole.length + 1; i++) {
+            if (detailUser.level === 1) {
+                const data = {fullname: 'admin', name: 'admin', level: 1, type: 'all'}
+                listRole.push(data)
+            } else if (i === arrRole.length) {
+                const cek = dataRole.find(item => item.level === detailUser.level)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            } else {
+                const cek = dataRole.find(item => item.level === arrRole[i].id_role)
+                if (cek !== undefined) {
+                    listRole.push(cek)
+                }
+            }
+        }
+
+        let index = []
+
+        for (let i = 0; i < listRole.length; i++) {
+            const app =  detailKlaim[0].appForm === undefined ? [] :  detailKlaim[0].appForm
+            const cekApp = app.find(item => (item.jabatan === listRole[i].name))
+            const find = app.indexOf(cekApp)
+            if (find !== -1) {
+                if ((app[find].status === null || app[find].status === '0') && (level !== '5' && app[find + 1].status !== undefined && app[find + 1].status === '1')) {
+                    index.push(find)
+                } else if ((app[find].status === null || app[find].status === '0') && (level !== '5' && app[find + 1].status !== undefined && listRole.find(x => x.name === app[find + 1].jabatan))) {
+                    index.push(find)
+                }
+            }
+        }
+
         const tempApp = []
         app.map(item => {
             return (
                 item.status === '1' && tempApp.push(item)
             )
         })
-        const tipe = tempApp.length === app.length-1 ? 'full approve' : 'approve'
+
+        const getLow = Math.min(...index)
+        
+        const tipe = (tempApp.length === app.length-1) || getLow === 0 ? 'full approve' : 'approve'
         const tempno = {
             no: detailKlaim[0].no_transaksi,
             jenis: 'klaim',
             kode: detailKlaim[0].kode_plant,
             tipe: tipe,
-            menu: 'Pengajuan Klaim (Klaim)'
+            menu: 'Pengajuan Klaim (Klaim)',
+            indexApp: getLow
         }
         await this.props.getDraftEmail(token, tempno)
         this.setState({tipeEmail: 'app'})
@@ -2054,7 +2179,14 @@ class Klaim extends Component {
                         </div>
                     </div>
                 </Modal>
-                <Modal isOpen={this.props.klaim.isLoading || this.props.menu.isLoading || this.props.reason.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading} size="sm">
+                <Modal isOpen={
+                    this.props.klaim.isLoading || 
+                    this.props.menu.isLoading || 
+                    this.props.reason.isLoading || 
+                    this.props.email.isLoading || 
+                    this.props.user.isLoading || 
+                    this.props.dokumen.isLoading
+                    } size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2643,6 +2775,7 @@ const mapDispatchToProps = {
     getDetailDepo: depo.getDetailDepo,
     getDepo: depo.getDepo,
     getRole: user.getRole,
+    getDetailUser: user.getDetailUser,
     getKlaim: klaim.getKlaim,
     getDetail: klaim.getDetail,
     getApproval: klaim.getApproval,

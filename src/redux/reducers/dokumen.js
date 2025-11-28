@@ -402,14 +402,14 @@ export default (state=dokumenState, action) => {
                     alertMsg: "Unable connect to server"
                 };
             }
-            case 'DELETE_NAMEAPPROVE_PENDING': {
+            case 'DELETE_NAMEDOK_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'DELETE_NAMEAPPROVE_FULFILLED': {
+            case 'DELETE_NAMEDOK_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -417,7 +417,7 @@ export default (state=dokumenState, action) => {
                     alertMsg: 'delete approve Succesfully',
                 };
             }
-            case 'DELETE_NAMEAPPROVE_REJECTED': {
+            case 'DELETE_NAMEDOK_REJECTED': {
                 return {
                     ...state,
                     isDeleteName: false,

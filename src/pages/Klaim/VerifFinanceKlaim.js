@@ -50,6 +50,8 @@ import { saveAs } from 'file-saver'
 import Select from 'react-select'
 import { CiCirclePlus, CiEdit } from "react-icons/ci";
 import { MdUpload, MdDownload, MdEditSquare, MdAddCircle, MdDelete } from "react-icons/md";
+const cekCoa = 'mr p'
+const cekCoa2 = 'p'
 const {REACT_APP_BACKEND_URL} = process.env
 const accKlaim = ['3', '13', '23']
 
@@ -1502,7 +1504,7 @@ class VerifKlaim extends Component {
                     c2: item.no_transaksi,
                     c3: "Pinus Merah Abadi, PT",
                     c4: item.depo.area,
-                    c5: item.scarea !== null ? item.scarea.channel : '',
+                    c5: item.depo !== null ? item.depo.channel : '',
                     c6: item.nama_program,
                     c7: item.dn_area,
                     c8: parseFloat(item.nilai_ajuan).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
@@ -1513,8 +1515,8 @@ class VerifKlaim extends Component {
                     c13: 'TIDAK SETTING SYSTEM & TIDAK POTONG TAGIHAN',
                     c14: item.keterangan,
                     c15: item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
-                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()) !== undefined
-                        && dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase()).pic_klaim,
+                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === (item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() === cekCoa2 ? 'mcp' : item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase()))].toLowerCase()) !== undefined
+                        && dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === (item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() === cekCoa2 ? 'mcp' : item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase()))].toLowerCase()).pic_klaim,
                     c16: ''
                 }
             )
@@ -1756,22 +1758,18 @@ class VerifKlaim extends Component {
                                     <Table bordered responsive hover className={
                                         [
                                         style.tab, 
-                                        newKlaim.length > 0 && level ===  '3' &&  newKlaim.filter((item) => 
+                                        newKlaim.length > 0 && level === '3' &&  newKlaim.filter((item) => 
                                         item.picklaim !== null && 
-                                        // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
-                                        // item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
                                         item.nama_coa !== undefined &&
-                                        // item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
-                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null && 
-                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase()
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)] !== null && 
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase()
                                         ).length > 0 ? 'tableJurnal1' 
-                                        : newKlaim.length > 0 && level ===  '23' && newKlaim.filter((item) => 
+                                        : newKlaim.length > 0 && level === '23' && newKlaim.filter((item) => 
                                         item.picklaim !== null && 
-                                        // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
                                         item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
-                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null &&
-                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()) !== undefined &&
-                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)] !== null &&
+                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)].toLowerCase()) !== undefined &&
+                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
                                         ).length > 0 ? 'tableJurnal1' 
                                         : ''
                                     ]
@@ -1808,15 +1806,15 @@ class VerifKlaim extends Component {
                                         </thead>
                                         {accKlaim.find(x => x.toString() === level) !== undefined ? (
                                             <tbody>
-                                                {level ===  '3' ? (
+                                                {level === '3' ? (
                                                     newKlaim.filter((item) => 
                                                     item.picklaim !== null && 
                                                     // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
                                                     // item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
                                                     item.nama_coa !== undefined &&
                                                     // item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
-                                                    item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null && 
-                                                    item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase()
+                                                    item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)] !== null && 
+                                                    item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase()
                                                     ).map((item, index) => {
                                                     return ( 
                                                         <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
@@ -1846,14 +1844,14 @@ class VerifKlaim extends Component {
                                                         </tr>
                                                     )
                                                 })
-                                            ) : level ===  '23' ? (
+                                            ) : level === '23' ? (
                                                 newKlaim.filter((item) => 
                                                 item.picklaim !== null && 
                                                 // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
                                                 item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
-                                                item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null &&
-                                                dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()) !== undefined &&
-                                                dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
+                                                item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)] !== null &&
+                                                dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)].toLowerCase()) !== undefined &&
+                                                dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
                                                 ).map((item, index) => {
                                                     return (
                                                         <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
@@ -1963,21 +1961,21 @@ class VerifKlaim extends Component {
                                         )}
                                         
                                     </Table>
-                                    {newKlaim.length === 0 || (level ===  '3' &&  newKlaim.filter((item) => 
+                                    {newKlaim.length === 0 || (level === '3' &&  newKlaim.filter((item) => 
                                         item.picklaim !== null && 
                                         // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
                                         // item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
                                         item.nama_coa !== undefined &&
                                         // item.picklaim[Object.keys(item.picklaim).find(x => x.toLowerCase() === item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase())].toLowerCase() === names.toLowerCase() &&
-                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null && 
-                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase()
-                                        ).length === 0) || (level ===  '23' && newKlaim.filter((item) => 
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)] !== null && 
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)].toLowerCase() === names.toLowerCase()
+                                        ).length === 0) || (level === '23' && newKlaim.filter((item) => 
                                         item.picklaim !== null && 
                                         // Object.values(item.picklaim).find(item => item.toLowerCase() === names.toLowerCase()) !== undefined && 
                                         item.nama_coa.split(' ')[(item.nama_coa.split(' ').length) - 1].toLowerCase() !== undefined &&
-                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)] !== null &&
-                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()) !== undefined &&
-                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
+                                        item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)] !== null &&
+                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)].toLowerCase()) !== undefined &&
+                                        dataSpvklaim.find(({pic_klaim}) => pic_klaim.toLowerCase() === item.picklaim[Object.keys(item.picklaim).find(x => item.nama_coa.toLowerCase().indexOf(x.toLowerCase() === 'mcp' ? cekCoa : x.toLowerCase()) !== -1)].toLowerCase()).spv_klaim.toLowerCase() === names.toLowerCase()
                                         ).length === 0) && (
                                         <div className={style.spin}>
                                             <text className='textInfo'>Data ajuan tidak ditemukan</text>

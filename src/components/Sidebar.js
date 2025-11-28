@@ -34,6 +34,7 @@ function Sidebar(props) {
         history.push('/login')
     }
     const level = localStorage.getItem('level')
+    const accessVendor = [4, 14, 8, 7, 17, 2, 9, 1, 5, 6]
 
     return (
         <div className="sideBar">
@@ -67,7 +68,7 @@ function Sidebar(props) {
                     <FaTasks size={20} className="iconSide" />
                     <text className="txtMenu">Ikhtisar Kas Kecil</text>
                 </button>
-                {(level === '4' || level === '14' || level === '5' || level === '1') && (
+                {(accessVendor.find(x => x === parseInt(level))) && (
                     <button className="menuSides" onClick={() => goHome('verifven')}>
                         <MdOutlineDomainVerification size={20} className="iconSide" />
                         <text className="txtMenu">Pengajuan Data Vendor</text>

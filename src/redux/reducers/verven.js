@@ -63,7 +63,13 @@ const verifvenState = {
     dataAddVer: {},
     noTrans: '',
     isGenNo: null,
-    messAdd: ''
+    messAdd: '',
+    isUploadRekven: null,
+    isUpdateRekven: null,
+    isAddRekven: null,
+    isGetRekven: null,
+    isDelRekven: null,
+    dataRekven: [],
 };
 
 export default (state=verifvenState, action) => {
@@ -333,6 +339,122 @@ export default (state=verifvenState, action) => {
                     ...state,
                     isLoading: false,
                     subRevisi: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'DELETE_REKVEN_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DELETE_REKVEN_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDelRekven: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'DELETE_REKVEN_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDelRekven: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'GET_REKVEN_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GET_REKVEN_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetRekven: true,
+                    dataRekven: action.payload.data.result,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'GET_REKVEN_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isGetRekven: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'UPLOAD_REKVEN_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPLOAD_REKVEN_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUploadRekven: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'UPLOAD_REKVEN_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUploadRekven: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'UPDATE_REKVEN_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPDATE_REKVEN_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpdateRekven: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'UPDATE_REKVEN_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpdateRekven: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'ADD_REKVEN_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'ADD_REKVEN_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isAddRekven: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'ADD_REKVEN_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isAddRekven: false,
                     alertMsg: "Unable connect to server"
                 };
             }

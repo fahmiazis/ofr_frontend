@@ -19,7 +19,9 @@ const vendorState = {
     dataAll: [],
     isAll: false,
     isUpload: false,
-    allVendor: []
+    allVendor: [],
+    isDelRekven: null,
+    isUpdateRekven: null
 };
 
 export default (state=vendorState, action) => {
@@ -221,6 +223,52 @@ export default (state=vendorState, action) => {
                     alertMsg: 'Failed export data'
                 };
             }
+            case 'DELETE_REKVENFIN_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'DELETE_REKVENFIN_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDelRekven: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'DELETE_REKVENFIN_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDelRekven: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
+            case 'UPDATE_REKVENFIN_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'UPDATE_REKVENFIN_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpdateRekven: true,
+                    alertMsg: 'get detail coa Succesfully',
+                };
+            }
+            case 'UPDATE_REKVENFIN_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isUpdateRekven: false,
+                    alertMsg: "Unable connect to server"
+                };
+            }
             case 'RESET_VENDOR': {
                 return {
                     ...state,
@@ -231,7 +279,9 @@ export default (state=vendorState, action) => {
                     isGet: false,
                     isExport: false,
                     isLoading: false,
-                    isUpload: false
+                    isUpload: false,
+                    isDelRekven: null,
+                    isUpdateRekven: null
                 }
             }
             default: {

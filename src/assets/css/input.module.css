@@ -286,6 +286,9 @@ html,body{
 .green {
   color: green;
 }
+.yellow {
+  color: yellow
+}
 .tableSA {
   overflow-y: scroll;
 }

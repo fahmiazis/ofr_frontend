@@ -57,7 +57,7 @@ export default {
     }),
     approveKlaim: (token, no) => ({
         type: 'APPROVE_KLAIM',
-        payload: http(token).patch(`/klaim/app`, qs.stringify(no))
+        payload: http(token).patch(`/klaim/app`, no)
     }),
     rejectKlaim: (token, data) => ({
         type: 'REJECT_KLAIM',

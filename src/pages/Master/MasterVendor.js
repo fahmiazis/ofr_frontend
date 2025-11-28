@@ -1,10 +1,10 @@
 import React, { Component } from 'react'
 import {  NavbarBrand, DropdownToggle, DropdownMenu,
-    DropdownItem, Table, ButtonDropdown, Input, Button,
+    DropdownItem, Table, ButtonDropdown, Input, Button, Row, Col,
     Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
 import style from '../../assets/css/input.module.css'
 import {FaSearch, FaVendorCircle, FaBars} from 'react-icons/fa'
-import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
+import {AiFillCheckCircle, AiOutlineFileExcel, AiOutlineClose} from 'react-icons/ai'
 import depo from '../../redux/actions/depo'
 import user from '../../redux/actions/user'
 import vendor from '../../redux/actions/vendor'
@@ -12,6 +12,7 @@ import {connect} from 'react-redux'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
+import bank from '../../redux/actions/bank'
 import {default as axios} from 'axios'
 import Sidebar from "../../components/Header";
 import MaterialTitlePanel from "../../components/material_title_panel";
@@ -20,7 +21,15 @@ import NavBar from '../../components/NavBar'
 import moment from 'moment'
 import ExcelJS from "exceljs"
 import fs from "file-saver"
+import Select from 'react-select'
 const {REACT_APP_BACKEND_URL} = process.env
+
+const rekvenSchema = Yup.object().shape({
+    // nik: Yup.string(),
+    // npwp: Yup.string(),
+    // bank: Yup.string().required('must be filled'),
+    no_rekening: Yup.string().required('must be filled'),
+})
 
 const vendorSchema = Yup.object().shape({
     nama: Yup.string().required(),
@@ -72,10 +81,92 @@ class MasterVendor extends Component {
             filterName: 'All',
             modalDel: false,
             page: 1,
-            listData: []
+            listData: [],
+            detRekven: {},
+            dataDel: {},
+            detModRekven: false,
+            modalDelRekven: false,
+            bankList: [],
+            bank: '',
+            digit: 0,
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    selectBank = (e) => {
+        const digit = e.value === null || e.value === undefined || e.value === '' ? null : e.value
+        this.setState({ bank: e.label, digit: digit })
+    }
+
+    prosesOpenRekven = async (val) => {
+        this.setState({detRekven: val})
+        const token = localStorage.getItem("token")
+        await this.props.getBank(token)
+        const { dataBank } = this.props.bank
+        const bank = [
+            { value: '', label: '-Pilih-' }
+        ]
+        dataBank.map(item => {
+            return (
+                bank.push({ value: item.digit, label: item.name })
+            )
+        })
+        this.setState({ bankList: bank })
+        const cekVal = this.state.detRekven.bank
+        const data = dataBank.find(({name}) => name === cekVal)
+        if (data === undefined) {
+            this.setState()
+        } else {
+            this.setState({bank: data.name, digit: data.digit})
+        }
+        this.openDetRekven()
+    }
+    
+
+    openDetRekven = () => {
+        this.setState({ detModRekven: !this.state.detModRekven })
+    }
+
+    updateDataRekven = async (val) => {
+        const { detRekven, modalEdit } = this.state
+        const token = localStorage.getItem('token')
+        const data = {
+            nik: val.nik,
+            npwp: val.npwp,
+            bank: this.state.bank,
+            no_rekening: val.no_rekening
+        }
+        const send = {
+            id: detRekven.id,
+            ...data
+        }
+        await this.props.updateRekven(token, send)
+        this.getDataCount({limit: 10, search: this.state.search, page: 1})
+        this.openModalEdit()
+        this.setState({ confirm: 'editRekven' })
+        this.openConfirm()
+        this.openDetRekven()
+    }
+
+    prepDeleteRek = (val) => {
+        this.setState({detRekven: val})
+        this.confirmDel()
+    }
+
+    delDataRekven = async () => {
+        const { detRekven, modalEdit } = this.state
+        const token = localStorage.getItem('token')
+        await this.props.deleteRekven(token, detRekven.id)
+        this.getDataCount({limit: 10, search: this.state.search, page: 1})
+        this.openModalEdit()
+        this.setState({ confirm: 'delRekven' })
+        this.openConfirm()
+        this.confirmDel()
+    }
+
+    confirmDel = () => {
+        this.setState({ modalDelRekven: !this.state.modalDelRekven })
     }
 
     chekApp = (val) => {
@@ -146,7 +237,9 @@ class MasterVendor extends Component {
             {header: 'NO SKB', key: 'c7'},
             {header: 'NO SKT', key: 'c8'},
             {header: 'Start Periode', key: 'c9'},
-            {header: 'End Periode', key: 'c10'}
+            {header: 'End Periode', key: 'c10'},
+            {header: 'Bank', key: 'c11'},
+            {header: 'Nomor Rekening', key: 'c12'}
         ]
 
         dataDownload.map((item, index) => { return ( ws.addRow(
@@ -160,7 +253,9 @@ class MasterVendor extends Component {
                 c7: item.no_skb,
                 c8: item.no_skt,
                 c9: item.datef_skb === null ? '' : moment(item.datef_skb).format('DD-MM-YYYY'),
-                c10: item.datel_skb === null ? '' : moment(item.datel_skb).format('DD-MM-YYYY')
+                c10: item.datel_skb === null ? '' : moment(item.datel_skb).format('DD-MM-YYYY'),
+                c11: item.reknik.length > 0 ? item.reknik[0].bank : item.reknpwp.length > 0 ? item.reknpwp[0].bank : '-',
+                c12: item.reknik.length > 0 ? item.reknik[0].no_rekening : item.reknpwp.length > 0 ? item.reknpwp[0].no_rekening : '-'
             }
         )
         ) })
@@ -459,6 +554,12 @@ class MasterVendor extends Component {
         this.setState({modalDel: !this.state.modalDel})
     }
 
+    prosesOpenVendor = (val) => {
+        console.log(val)
+        this.setState({detail: val})
+        this.openModalEdit()
+    }
+
     render() {
         const {isOpen, dropOpen, dropOpenNum, detail, level, upload, errMsg, listData} = this.state
         const {dataVendor, isAll, alertM, alertMsg, alertUpload, page, dataRole, dataAll} = this.props.vendor
@@ -592,11 +693,14 @@ class MasterVendor extends Component {
                                                 <th>No KTP</th>
                                                 <th>Alamat</th>
                                                 <th>Jenis Vendor</th>
+                                                <th>Bank</th>
+                                                <th>Nomor Rekening</th>
                                                 <th>Memiliki SKB/SKT</th>
                                                 <th>No SKB</th>
                                                 <th>No SKT</th>
                                                 <th>Start Periode</th>
                                                 <th>End Periode</th>
+                                                <th>Status</th>
                                             </tr>
                                         </thead>
                                     </Table>
@@ -624,17 +728,22 @@ class MasterVendor extends Component {
                                                 <th>No KTP</th>
                                                 <th>Alamat</th>
                                                 <th>Jenis Vendor</th>
+                                                <th>Bank</th>
+                                                <th>Nomor Rekening</th>
                                                 <th>Memiliki SKB/SKT</th>
                                                 <th>No SKB</th>
                                                 <th>No SKT</th>
                                                 <th>Start Periode</th>
                                                 <th>End Periode</th>
+                                                <th>Status</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {dataAll.length !== 0 && dataAll.map(item => {
                                                 return (
-                                                <tr onClick={()=>this.openModalEdit(this.setState({detail: item}))}>
+                                                <tr  
+                                                className={item.reknik.length > 0 ? (item.reknik[0].status === null ? 'yellow' : '') : item.reknpwp.length > 0 ? (item.reknpwp[0].status === null ? 'yellow' : '') : ''}
+                                                onClick={()=>this.prosesOpenVendor(item)}>
                                                     <th>
                                                         <input 
                                                         type='checkbox'
@@ -648,11 +757,14 @@ class MasterVendor extends Component {
                                                     <td>{item.no_ktp}</td>
                                                     <td>{item.alamat}</td>
                                                     <td>{item.jenis_vendor !== null && item.jenis_vendor !== '' ? item.jenis_vendor : item.no_ktp === null || item.no_ktp === '' || item.no_ktp === 'TIDAK ADA' ? "Badan" : "Orang Pribadi"}</td>
+                                                    <td>{item.reknik.length > 0 ? item.reknik[0].bank : item.reknpwp.length > 0 ? item.reknpwp[0].bank : '-'}</td>
+                                                    <td>{item.reknik.length > 0 ? item.reknik[0].no_rekening : item.reknpwp.length > 0 ? item.reknpwp[0].no_rekening : '-'}</td>
                                                     <td>{item.type_skb === null ? 'tidak' : item.type_skb}</td>
                                                     <td>{item.no_skb}</td>
                                                     <td>{item.no_skt}</td>
                                                     <td>{item.datef_skb === null ? '' : moment(item.datef_skb).format('DD MMMM YYYY')}</td>
                                                     <td>{item.datel_skb === null ? '' : moment(item.datel_skb).format('DD MMMM YYYY')}</td>
+                                                    <td>{item.reknik.length > 0 ? (item.reknik[0].status === null ? 'Ajuan rekening belum di approve' : 'available') : item.reknpwp.length > 0 ? (item.reknpwp[0].status === null ? 'Ajuan rekening belum di approve' : 'available') : 'available'}</td>
                                                 </tr>
                                             )})}
                                         </tbody>
@@ -672,7 +784,7 @@ class MasterVendor extends Component {
                         </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
+                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd} size='lg'>
                     <ModalHeader toggle={this.openModalAdd}>Add Master Vendor</ModalHeader>
                     <Formik
                     initialValues={{
@@ -792,7 +904,7 @@ class MasterVendor extends Component {
                         )}
                     </Formik>
                 </Modal>
-                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
+                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit} size='xl'>
                     <ModalHeader toggle={this.openModalEdit}>Edit Master Vendor</ModalHeader>
                     <Formik
                     initialValues={{
@@ -901,12 +1013,68 @@ class MasterVendor extends Component {
                             </div>
                         </div>
                         <hr/>
+                        <h6 className='mt-4 mb-4'>Data Rekening Vendor</h6>
+                        <Table>
+                            <thead>
+                                <tr>
+                                    <th>NIK</th>
+                                    <th>NPWP</th>
+                                    <th>BANK</th>
+                                    <th>NO Rekening</th>
+                                    <th>OPSI</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {detail.reknik.length > 0 && detail.reknik.map((item, index) => {
+                                    return (
+                                    <tr>
+                                        <td>{detail.no_ktp}</td>
+                                        <td>{detail.no_npwp}</td>
+                                        <td>{item.bank}</td>
+                                        <td>{item.no_rekening}</td>
+                                        <td>
+                                            <Button onClick={() => this.prosesOpenRekven(item)} className='mt-1' color='info'>Update</Button>
+                                            <Button onClick={() => this.prepDeleteRek(item)} className='mt-1 ml-1' color='danger'>Delete</Button>
+                                        </td>
+                                    </tr>
+                                    )
+                                })}
+                                {detail.reknpwp.length > 0 && detail.reknpwp.map((item, index) => {
+                                    return (
+                                    detail.reknik.length > 0 && detail.reknik.find(e => e.no_rekening === item.no_rekening) === undefined ?
+                                    <tr>
+                                        <td>{detail.no_ktp}</td>
+                                        <td>{detail.no_npwp}</td>
+                                        <td>{item.bank}</td>
+                                        <td>{item.no_rekening}</td>
+                                        <td>
+                                            <Button onClick={() => this.prosesOpenRekven(item)} className='mt-1' color='info'>Update</Button>
+                                            <Button onClick={() => this.prepDeleteRek(item)} className='mt-1 ml-1' color='danger'>Delete</Button>
+                                        </td>
+                                    </tr>
+                                    : detail.reknik.length === 0 &&
+                                    <tr>
+                                        <td>{detail.no_ktp}</td>
+                                        <td>{detail.no_npwp}</td>
+                                        <td>{item.bank}</td>
+                                        <td>{item.no_rekening}</td>
+                                        <td>
+                                            <Button onClick={() => this.prosesOpenRekven(item)} className='mt-1' color='info'>Update</Button>
+                                            <Button onClick={() => this.prepDeleteRek(item)} className='mt-1 ml-1' color='danger'>Delete</Button>
+                                        </td>
+                                    </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </Table>
+                        <hr/>
                         <div className={style.foot}>
                             <div>
                                 <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Vendor</Button>
                             </div>
                             <div>
-                                <Button  onClick={handleSubmit} color="primary">Save</Button>
+                                <Button  onClick={handleSubmit} color="primary" className='mr-1'>Save</Button>
+                                <Button onClick={this.openModalEdit}>Close</Button>
                             </div>
                         </div>
                     </ModalBody>
@@ -968,12 +1136,42 @@ class MasterVendor extends Component {
                                 <div className={style.sucUpdate}>Berhasil Mereset Password</div>
                             </div>
                             </div>
+                        ) : this.state.confirm === 'rejEditRekven' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Mengupdate Data Rekening Vendor</div>
+                                    <div className={[style.sucUpdate, style.green, 'mt-2']}>Data telah terdaftar </div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'rejDelRekven' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiOutlineClose size={80} className={style.red} />
+                                    <div className={[style.sucUpdate, style.green]}>Gagal Mendelete Data Rekening Vendor</div>
+                                    <div className={[style.sucUpdate, style.green, 'mt-2']}>Server sedang ada masalah</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'editRekven' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Mengupdate Data Rekening Vendor</div>
+                                </div>
+                            </div>
+                        ) : this.state.confirm === 'delRekven' ? (
+                            <div>
+                                <div className={style.cekUpdate}>
+                                    <AiFillCheckCircle size={80} className={style.green} />
+                                    <div className={[style.sucUpdate, style.green]}>Berhasil Mendelete Data Rekening Vendor</div>
+                                </div>
+                            </div>
                         ) : (
                             <div></div>
                         )}
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.vendor.isLoading ? true: false} size="sm">
+                <Modal isOpen={this.props.vendor.isLoading || this.state.bank.isLoading ? true: false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -1070,6 +1268,114 @@ class MasterVendor extends Component {
                     </div>
                 </ModalBody>
             </Modal>
+            <Modal isOpen={this.state.detModRekven} size="lg">
+                    <ModalHeader>Update Data Rekening Vendor</ModalHeader>
+                    <Formik
+                        initialValues={{
+                            nik: this.state.detail.no_ktp === null ? '' : this.state.detail.no_ktp,
+                            npwp: this.state.detail.no_npwp === null ? '' : this.state.detail.no_npwp,
+                            no_rekening: this.state.detRekven.no_rekening
+                        }}
+                        validationSchema={rekvenSchema}
+                        onSubmit={(values) => { this.updateDataRekven(values) }}
+                    >
+                        {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched, }) => (
+                            <ModalBody>
+                               <Row className="mb-2 rowRinci">
+                                    <Col md={3}>NIK</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.nik}
+                                        disabled
+                                        className="inputRinci1"
+                                        onChange={handleChange('nik')}
+                                        onBlur={handleBlur('nik')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.nik ? (
+                                    <text className={style.txtError}>{errors.nik}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>NPWP</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.npwp}
+                                        disabled
+                                        className="inputRinci1"
+                                        onChange={handleChange('npwp')}
+                                        onBlur={handleBlur('npwp')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.npwp ? (
+                                    <text className={style.txtError}>{errors.npwp}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>BANK</Col>
+                                    <Col md={9} className="colRinci">:  <Select
+                                        className="inputRinci2"
+                                        options={this.state.bankList}
+                                        onChange={this.selectBank}
+                                        value={{label: this.state.bank, value: this.state.digit}}
+                                        />
+                                    </Col>
+                                </Row>
+                                {this.state.bank === '' ? (
+                                    <text className={style.txtError}>must be filled</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>NO REKENING</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.no_rekening}
+                                        className="inputRinci1"
+                                        disabled={this.state.digit === 0 ? true : false}
+                                        minLength={this.state.digit === null ? 10 : this.state.digit}
+                                        maxLength={this.state.digit === null ? 16 : this.state.digit}
+                                        onChange={handleChange('no_rekening')}
+                                        onBlur={handleBlur('no_rekening')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {this.state.digit !== null && values.no_rekening.length !== this.state.digit ? (
+                                    <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                ) : this.state.digit === null && (values.no_rekening.length < 10 || values.no_rekening.length > 16) ? (
+                                    <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                ) : null}
+                                <hr />
+                                <div className={style.foot}>
+                                    <div></div>
+                                    <div>
+                                        <Button
+                                        className="mr-2"
+                                        onClick={handleSubmit} color="primary"
+                                        disabled={
+                                            this.state.bank === '' ||
+                                            (this.state.digit !== null && values.no_rekening.length !== this.state.digit) ||
+                                            (this.state.digit === null && (values.no_rekening.length < 10 || values.no_rekening.length > 16))
+                                            ? true : false
+                                        }
+                                        >Save</Button>
+                                        <Button className="" onClick={this.openDetRekven}>Cancel</Button>
+                                    </div>
+                                </div>
+                            </ModalBody>
+                        )}
+                    </Formik>
+                </Modal>
+                <Modal isOpen={this.state.modalDelRekven} toggle={this.confirmDel} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk menghapus data rekening vendor ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.delDataRekven()}>Ya</Button>
+                                <Button color="secondary" onClick={this.confirmDel}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     } 
@@ -1077,7 +1383,8 @@ class MasterVendor extends Component {
 
 const mapStateToProps = state => ({
     user: state.user,
-    vendor: state.vendor
+    vendor: state.vendor,
+    bank: state.bank
 })
 
 const mapDispatchToProps = {
@@ -1090,7 +1397,10 @@ const mapDispatchToProps = {
     exportMaster: vendor.exportMaster,
     resetError: vendor.resetError,
     resetPassword: user.resetPassword,
-    deleteVendor: vendor.deleteVendor
+    deleteVendor: vendor.deleteVendor,
+    getBank: bank.getBank,
+    updateRekven: vendor.updateRekven,
+    deleteRekven: vendor.deleteRekven
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(MasterVendor)

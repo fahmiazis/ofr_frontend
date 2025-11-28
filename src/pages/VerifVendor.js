@@ -12,11 +12,12 @@ import {FaSearch, FaUserCircle, FaBars, FaCartPlus, FaTh, FaList, FaFileSignatur
 import {MdAssignment} from 'react-icons/md'
 import {FiSend, FiTruck, FiSettings, FiUpload} from 'react-icons/fi'
 import Sidebar from "../components/Header";
-import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
+import { AiOutlineFileExcel, AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai'
 import MaterialTitlePanel from "../components/material_title_panel"
 import SidebarContent from "../components/sidebar_content"
 import style from '../assets/css/input.module.css'
 import user from '../redux/actions/user'
+import vendor from '../redux/actions/vendor'
 import {connect} from 'react-redux'
 import moment from 'moment'
 import {Formik} from 'formik'
@@ -29,6 +30,7 @@ import Pdf from "../components/Pdf"
 import depo from '../redux/actions/depo'
 import email from '../redux/actions/email'
 import dokumen from '../redux/actions/dokumen'
+import bank from '../redux/actions/bank'
 import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
@@ -45,6 +47,12 @@ import NumberInput from '../components/NumberInput'
 import Countdown from 'react-countdown'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import Select from 'react-select'
+import { MdUpload, MdDownload, MdEditSquare, MdAddCircle, MdDelete } from "react-icons/md";
+import readXlsxFile from 'read-excel-file'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
+const accessFi = [8, 7, 17, 2, 9]
 const {REACT_APP_BACKEND_URL} = process.env
 
 const vendorSchema = Yup.object().shape({
@@ -57,6 +65,18 @@ const vendorSchema = Yup.object().shape({
     datel_skb: Yup.date(),
     no_skb: Yup.string(),
     no_skt: Yup.string()
+})
+
+const filterSchema = Yup.object().shape({
+    ident: Yup.number()
+});
+
+const rekvenSchema = Yup.object().shape({
+    // nik: Yup.string(),
+    // npwp: Yup.string(),
+    // bank: Yup.string().required('must be filled'),
+    no_rekening: Yup.string(),
+    tujuan_tf: Yup.string().required('must be filled'),
 })
 
 const alasanSchema = Yup.object().shape({
@@ -164,7 +184,24 @@ class IKK extends Component {
             appDoc: false,
             type_skb: '',
             fileName: {},
-            infoError: ''
+            infoError: '',
+            detRekven: {},
+            dataDel: {},
+            modalAddRekven: false,
+            detModRekven: false,
+            modUpRekven: false,
+            fileUpload: '',
+            bankList: [],
+            bank: '',
+            digit: 0,
+            modalEdit: '',
+            detailVen: {},
+            duplikat: [],
+            dataRegis: {},
+            typeTrans: false,
+            openSync: false,
+            typeAjuan: '',
+            modalDelRekven: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -318,6 +355,19 @@ class IKK extends Component {
         }
     }
 
+    onChangeHandler = e => {
+        const { size, type } = e.target.files[0]
+        if (size >= 5120000) {
+            this.setState({ errMsg: "Maximum upload size 5 MB" })
+            this.uploadAlert()
+        } else if (type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && type !== 'application/vnd.ms-excel') {
+            this.setState({ errMsg: 'Invalid file type. Only excel files are allowed.' })
+            this.uploadAlert()
+        } else {
+            this.setState({ fileUpload: e.target.files[0] })
+        }
+    }
+
     getApproveStock = async (value) => { 
         const token = localStorage.getItem('token')
         await this.props.getApproveStock(token, value.no, value.nama)
@@ -458,7 +508,12 @@ class IKK extends Component {
         const token = localStorage.getItem("token")
         const dataCek = localStorage.getItem('docData')
         const typeNotif = localStorage.getItem('typeNotif')
-        const {item, type} = (this.props.location && this.props.location.state) || {}
+        const {item, type, regis} = (this.props.location && this.props.location.state) || {}
+        const data = {
+            kdMenu: 'Verifikasi Data Vendor',
+            subMenu: 'Verifikasi Finance'
+        }
+        await this.props.getSubMenu(token, data)
         console.log(dataCek)
         if (typeNotif !== undefined && typeNotif === 'approve') {
             localStorage.removeItem('typeNotif')
@@ -470,6 +525,8 @@ class IKK extends Component {
             }
             this.getDataVerven()
             this.prosesDocTab(data)
+        } else if (regis !== undefined && regis.length > 0) {
+            this.setState({dataRegis: regis[0]})
         } else {
             this.getDataVerven()
         }
@@ -541,6 +598,391 @@ class IKK extends Component {
         this.setState({modalConfirm: !this.state.modalConfirm})
     }
 
+    prosesOpenRekven = async (val) => {
+        const token = localStorage.getItem("token")
+        await this.props.getBank(token)
+        const { dataBank } = this.props.bank
+        const bank = [
+            { value: '', label: '-Pilih-' }
+        ]
+        dataBank.map(item => {
+            return (
+                bank.push({ value: item.digit, label: item.name })
+            )
+        })
+        this.setState({ bankList: bank })
+        if (val === 'add') {
+            this.openAddRekven()
+        } else {
+            const { dataBank } = this.props.bank
+            const cekVal = this.state.detRekven.bank
+            const data = dataBank.find(({name}) => name === cekVal)
+            console.log({dataBank, val})
+            if (data === undefined) {
+                this.setState()
+            } else {
+                this.setState({bank: data.name, digit: data.digit})
+            }
+            this.openDetRekven()
+        }
+    }
+    
+
+    openAddRekven = () => {
+        this.setState({ modalAddRekven: !this.state.modalAddRekven })
+    }
+
+    openDetRekven = () => {
+        this.setState({ detModRekven: !this.state.detModRekven })
+    }
+
+    openUpRekven = (val) => {
+        this.setState({ modUpRekven: !this.state.modUpRekven, fileUpload: '' })
+    }
+
+    cekRekven = (val) => {
+        const data = val.data
+        if ((data.no_ktp === null || data.no_ktp === '') && (data.no_npwp === null || data.no_npwp === '')) {
+            this.setState({confirm: 'falseIdent'})
+            this.openConfirm()
+        } else {
+            this.setState({detailVen: data})
+            if (val.type === 'add') {
+                this.prosesOpenRekven('add')
+            } else if (val.type === 'edit') {
+                this.prosesOpenRekven('edit')
+            } else if (val.type === 'upload') {
+                this.openUpRekven()
+            } else if (val.type === 'download') {
+                this.downloadRekven()
+            }
+        }
+    }
+
+
+    downloadRekven = () => {
+        const { dataRekven } = this.props.verven
+
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data rekening vendor')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        }
+
+
+        ws.columns = [
+            { header: 'NIK', key: 'c1' },
+            { header: 'NPWP', key: 'c2' },
+            { header: 'BANK', key: 'c3' },
+            { header: 'NO REKENING', key: 'c4' }
+        ]
+
+        if (dataRekven.length > 0) {
+            dataRekven.map((item, index) => {
+                return (ws.addRow(
+                    {
+                        c1: item.nik,
+                        c2: item.npwp,
+                        c3: item.bank,
+                        c4: item.no_rekening
+                    }
+                )
+                )
+            })
+        } else {
+            for (let i = 0; i < 1; i++) {
+                ws.addRow(
+                    {
+                        c1: this.state.detailVen.no_ktp,
+                        c2: this.state.detailVen.no_npwp,
+                        c3: '',
+                        c4: ''
+                    }
+                )
+            }
+        }
+
+        ws.eachRow({ includeEmpty: true }, function (row, rowNumber) {
+            row.eachCell({ includeEmpty: true }, function (cell, colNumber) {
+                cell.border = borderStyles;
+            })
+        })
+
+        ws.columns.forEach(column => {
+            const lengths = column.values.map(v => v.toString().length)
+            const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+            column.width = maxLength + 5
+        })
+
+        workbook.xlsx.writeBuffer().then(function (buffer) {
+            fs.saveAs(
+                new Blob([buffer], { type: "application/octet-stream" }),
+                `Data Rekening Vendor ${moment().format('DD MMMM YYYY')}.xlsx`
+            )
+        })
+    }
+
+
+    addDataRekven = async (val) => {
+        const { modalEdit, rinciEdit } = this.state
+        const { dataRekven, detailVerven } = this.props.verven
+        
+        const token = localStorage.getItem('token')
+        const data = {
+            nik: val.nik,
+            npwp: val.npwp,
+            bank: val.tujuan_tf === 'rekening' ? this.state.bank : 'ID Pelanggan',
+            no_rekening: val.tujuan_tf === 'rekening' ? val.no_rekening : 'ID Pelanggan',
+            tujuan_tf: val.tujuan_tf
+        }
+
+        const noTrans = rinciEdit === true ? detailVerven[0].no_transaksi : this.props.verven.noTrans
+
+        const noData = {
+            no: noTrans
+        }
+
+        const dataNo = {
+            no: noTrans,
+            name: 'Pengajuan area'
+        }
+        
+        if (dataRekven.length > 0) {
+            const cek = dataRekven.find((item) => (data.no_rekening !== '' && item.no_rekening === data.no_rekening))
+            if (cek !== undefined) {
+                this.setState({ confirm: 'rejAddRekven' })
+                this.openConfirm()
+            } else {
+                const send = {
+                    no: noTrans,
+                    ...data
+                }
+                await this.props.addRekven(token, send)
+                await this.props.getRekven(token, noData)
+                await this.props.getDocument(token, dataNo)
+                this.setState({ confirm: 'sucAddRekven' })
+                this.openConfirm()
+                this.openAddRekven()
+                // if (modalEdit === true) {
+                //     const send = {
+                //         no: noTrans,
+                //         ...data
+                //     }
+                //     await this.props.addRekven(token, send)
+                //     await this.props.getRekven(token, noData)
+                //     const dataApi = this.props.ops.dataRekven
+                //     this.setState({ dataRekven: dataApi })
+                //     this.setState({ confirm: 'sucAddRekven' })
+                //     this.openConfirm()
+                //     this.openAddRekven()
+                // } else {
+                //     dataRekven.push(data)
+                //     this.setState({ dataRekven: dataRekven })
+                //     this.setState({ confirm: 'sucAddRekven' })
+                //     this.openConfirm()
+                //     this.openAddRekven()
+                // }
+            }
+        } else {
+            const send = {
+                no: noTrans,
+                ...data
+            }
+            await this.props.addRekven(token, send)
+            await this.props.getRekven(token, noData)
+            await this.props.getDocument(token, dataNo)
+            this.setState({ confirm: 'sucAddRekven' })
+            this.openConfirm()
+            this.openAddRekven()
+            // if (modalEdit === true) {
+            //     const send = {
+            //         no: noTrans,
+            //         ...data
+            //     }
+            //     await this.props.addRekven(token, send)
+            //     await this.props.getRekven(token, noData)
+            //     const dataApi = this.props.ops.dataRekven
+            //     this.setState({ dataRekven: dataApi })
+            //     this.setState({ confirm: 'sucAddRekven' })
+            //     this.openConfirm()
+            //     this.openAddRekven()
+            // } else {
+            //     dataRekven.push(data)
+            //     this.setState({ dataRekven: dataRekven })
+            //     this.setState({ confirm: 'sucAddRekven' })
+            //     this.openConfirm()
+            //     this.openAddRekven()
+            // }
+        }
+    }
+
+    updateDataRekven = async (val) => {
+        const { detRekven, modalEdit, rinciEdit } = this.state
+        const { dataRekven, detailVerven } = this.props.verven
+        const token = localStorage.getItem('token')
+        const data = {
+            nik: val.nik,
+            npwp: val.npwp,
+            bank: val.tujuan_tf === 'rekening' ? this.state.bank : 'ID Pelanggan',
+            no_rekening: val.tujuan_tf === 'rekening' ? val.no_rekening : 'ID Pelanggan',
+            tujuan_tf: val.tujuan_tf
+        }
+
+        const noTrans = rinciEdit === true ? detailVerven[0].no_transaksi : this.props.verven.noTrans
+
+        const noData = {
+            no: noTrans
+        }
+
+        const dataNo = {
+            no: noTrans,
+            name: 'Pengajuan area'
+        }
+        const dataUp = []
+        if (dataRekven.length > 0) {
+            const cek = dataRekven.find((item) => (data.no_rekening !== '' && item.no_rekening === data.no_rekening))
+            if (cek !== undefined) {
+                this.setState({ confirm: 'rejEditRekven' })
+                this.openConfirm()
+            } else {
+                const send = {
+                    no: noTrans,
+                    id: detRekven.id,
+                    ...data
+                }
+                await this.props.updateRekven(token, send)
+                await this.props.getRekven(token, noData)
+                await this.props.getDocument(token, dataNo)
+                this.setState({ confirm: 'editRekven' })
+                this.openConfirm()
+                this.openDetRekven()
+            }
+        }
+    }
+
+    delDataRekven = async () => {
+        const { detRekven, modalEdit } = this.state
+        const { noTrans, dataRekven } = this.props.verven
+        const token = localStorage.getItem('token')
+        const noData = {
+            no: noTrans
+        }
+        await this.props.deleteRekven(token, detRekven.id)
+        await this.props.getRekven(token, noData)
+        this.setState({ confirm: 'delRekven' })
+        this.openConfirm()
+        this.confirmDel()
+    }
+
+    confirmDel = () => {
+        this.setState({ modalDelRekven: !this.state.modalDelRekven })
+    }
+
+    uploadDataRekven = async (val) => {
+        const { fileUpload, modalEdit } = this.state
+        const { noTrans, dataRekven } = this.props.verven
+        const token = localStorage.getItem('token')
+        const dataTemp = []
+        const rows = await readXlsxFile(fileUpload)
+        const dataCek = []
+        const count = []
+        const parcek = [
+            'NIK',
+            'NPWP',
+            'BANK',
+            'NO REKENING'
+        ]
+        const noData = {
+            no: noTrans
+        }
+        const valid = rows[0]
+        for (let i = 0; i < parcek.length; i++) {
+            if (valid[i] === parcek[i]) {
+                count.push(1)
+            }
+        }
+        if (count.length === parcek.length) {
+            rows.shift()
+            const noIdent = []
+            const result = []
+            for (let i = 0; i < rows.length; i++) {
+                console.log('masuk cek duplikat')
+                const dataOps = rows[i]
+                const noid = `no rekening: ${dataOps[3]}`
+                noIdent.push(noid)
+            }
+
+            const obj = {}
+
+            noIdent.forEach(item => {
+                if (!obj[item]) { obj[item] = 0 }
+                obj[item] += 1
+            })
+
+            for (const prop in obj) {
+                if (obj[prop] >= 2) {
+                    result.push(prop)
+                }
+            }
+            if (result.length > 0) {
+                this.openUpRekven()
+                this.setState({ confirm: 'dupUpload', duplikat: result })
+                this.openConfirm()
+            } else {
+                for (let i = 0; i < rows.length; i++) {
+                    const dataOps = rows[i]
+                    const data = {
+                        nik: dataOps[0],
+                        npwp: dataOps[1] ,
+                        bank: dataOps[2],
+                        no_rekening: dataOps[3]
+                    }
+
+                    dataTemp.push(data)
+                }
+                console.log(dataCek)
+                console.log(dataTemp)
+                const comb = [...dataRekven, ...dataTemp]
+                console.log(comb)
+                const send = {
+                    no: noTrans,
+                    list: comb
+                }
+                await this.props.uploadRekven(token, send)
+                await this.props.getRekven(token, noData)
+                const { opsRekven } = this.props.ops
+                this.setState({ dataRekven: opsRekven })
+                
+                const valRekven = opsRekven.reduce((accumulator, object) => {
+                    return accumulator + parseFloat(object.nominal);
+                }, 0)
+                this.setState({nilai_ajuan: valRekven})
+                setTimeout(() => {
+                    this.formulaTax()
+                }, 100)
+                
+                this.openUpRekven()
+                this.setState({ confirm: 'upload' })
+                this.openConfirm()
+            }
+        } else {
+            this.openUpRekven()
+            this.setState({ confirm: 'falseUpload' })
+            this.openConfirm()
+        }
+    }
+
+    selectBank = (e) => {
+        const digit = e.value === null || e.value === undefined || e.value === '' ? null : e.value
+        this.setState({ bank: e.label, digit: digit })
+    }
+
     dropOpen = async (val) => {
         if (this.state.dropOp === false) {
             const token = localStorage.getItem("token")
@@ -580,7 +1022,8 @@ class IKK extends Component {
     getDataVerven = async (value) => {
         const level = localStorage.getItem('level')
         this.setState({limit: value === undefined ? 10 : value.limit})
-        await this.changeFilter(level === '5' ? 'all' : 'available')
+        const access = [4, 14, 8, 7, 17, 2, 9]
+        await this.changeFilter(access.find(item => item === parseInt(level)) ? 'available' : 'all')
     }
 
     getDataList = async () => {
@@ -601,6 +1044,7 @@ class IKK extends Component {
 
         this.setState({listMut: []})
         await this.props.getDetailVerven(token, tempno)
+        await this.props.getRekven(token, tempno)
         this.openModalRinci()
 
         // await this.props.getResmail(token, tempno)
@@ -723,6 +1167,7 @@ class IKK extends Component {
         }
         this.setState({listMut: []})
         await this.props.getDetailVerven(token, tempno)
+        await this.props.getRekven(token, tempno)
         this.openRinciEdit()
     }
 
@@ -732,7 +1177,11 @@ class IKK extends Component {
 
     prosesEditId = async (val) => {
         const token = localStorage.getItem("token")
+        const send = {
+            no: val.no_transaksi
+        }
         await this.props.getDetailId(token, val.id)
+        await this.props.getRekven(token, send)
         const {idVerven} = this.props.verven
         this.setState({type_skb: idVerven.type_skb})
         this.openEdit()
@@ -821,19 +1270,20 @@ class IKK extends Component {
         const {dataIkk, noDis} = this.props.verven
         const level = localStorage.getItem('level')
         const token = localStorage.getItem("token")
-        const status = val === 'bayar' || val === 'completed' ? 8 : 2
-        const statusAll = 'all'
+        const status = val === 'available' && accessFi.find(x => x === parseInt(level)) ? 2 : val === 'available' && (level === '4' || level === '14') ? 3 : 9
+        const statusAll = val === 'bayar' || val === 'completed' ? 8 : 'all'
         const {time1, time2} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const role = localStorage.getItem('role')
-        if (val === 'all') {
+        
+        if (val === 'available') {
             const newVerven = []
-            await this.props.getVerven(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
+            await this.props.getVerven(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newVerven: newVerven})
         } else {
             const newVerven = []
-            await this.props.getVerven(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
+            await this.props.getVerven(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2)
             this.setState({filter: val, newVerven: newVerven})
         }
     }
@@ -876,11 +1326,22 @@ class IKK extends Component {
         const level = localStorage.getItem('level')
         const { detailVerven } = this.props.verven
         const token = localStorage.getItem("token")
-        const tempno = {
-            no: detailVerven[0].no_transaksi,
-            list: []
+        if (level === '4' || level === '14') {
+            const tempno = {
+                no: detailVerven[0].no_transaksi,
+                list: []
+            }
+            await this.props.submitVerifVerven(token, tempno)
+            this.dataSendEmail('verif')
+        } else if (accessFi.find(x => x === parseInt(level))) {
+            const tempno = {
+                no: detailVerven[0].no_transaksi,
+                list: [],
+                type: detailVerven[0].status_transaksi === 5 ? 'rekening' : 'vendor'
+            }
+            await this.props.submitVerifFinance(token, tempno)
+            this.dataSendEmail('verif')
         }
-        await this.props.submitVerifVerven(token, tempno)
         // if (level === '11') {
         //     // this.getDataVerven()
         //     // this.setState({confirm: 'isApprove'})
@@ -888,7 +1349,7 @@ class IKK extends Component {
         //     // this.openModalApprove()
         //     // this.openModalRinci()
         // } else {
-        this.dataSendEmail('verif')
+        // this.dataSendEmail('verif')
         // }
     }
 
@@ -912,8 +1373,17 @@ class IKK extends Component {
         // }
     }
 
-    cekDataDoc = () => {
+    cekDataDoc = async () => {
+        const token = localStorage.getItem("token")
         const level = localStorage.getItem("level")
+        const {detailVerven} = this.props.verven
+
+        const data = {
+            no: detailVerven[0].no_transaksi,
+            name: 'Pengajuan area'
+        }
+
+        await this.props.getDocument(token, data)
         const { dataDoc } = this.props.verven
         const tempdoc = []
         const arrDoc = []
@@ -996,6 +1466,7 @@ class IKK extends Component {
     }
 
     prepApprove = async () => {
+        const level = localStorage.getItem('level')
         const { detailVerven } = this.props.verven
         const token = localStorage.getItem("token")
         const tempno = {
@@ -1003,7 +1474,8 @@ class IKK extends Component {
             kode: detailVerven[0].kode_plant,
             jenis: 'vendor',
             tipe: 'submit',
-            menu: 'Verifikasi Tax (Verifikasi Data Vendor)'
+            menu: `Verifikasi ${accessFi.find(x => x === parseInt(level)) ? 'Finance' : 'Tax'} (Verifikasi Data Vendor)`,
+            typeAjuan: detailVerven[0].status_transaksi === 5 ? 'rekening' : 'vendor'
         }
         await this.props.getDraftEmail(token, tempno)
         this.setState({tipeEmail: 'verif'})
@@ -1045,23 +1517,6 @@ class IKK extends Component {
         }
     }
 
-    updateAsset = async (value) => {
-        const token = localStorage.getItem("token")
-        const { dataRinci } = this.state
-        const { detailAsset } = this.props.asset
-        const data = {
-            merk: value.merk,
-            satuan: value.satuan,
-            unit: value.unit,
-            lokasi: value.lokasi,
-            grouping: detailAsset.grouping,
-            keterangan: value.keterangan,
-            status_fisik: detailAsset.fisik,
-            kondisi: detailAsset.kondisi
-        }
-        await this.props.updateAssetNew(token, dataRinci.id, data)
-    }
-
     changeView = (val) => {
         this.setState({view: val})
         if (val === 'list') {
@@ -1096,7 +1551,8 @@ class IKK extends Component {
     }
 
     cekDok = async (val) => {
-        const { dataDoc } = this.props.verven
+        const token = localStorage.getItem("token")
+        const { dataDoc, noTrans } = this.props.verven
         const verifDoc = []
         const tempDoc = []
         for (let i = 0; i < dataDoc.length; i++) {
@@ -1107,13 +1563,20 @@ class IKK extends Component {
                 tempDoc.push(dataDoc[i])
             }
         }
-        if (verifDoc.length === tempDoc.length) {
-            this.modalConfirmAdd(val)
-        } else {
+        const send = {
+            no: noTrans
+        }
+        await this.props.getRekven(token, send)
+        const {dataRekven} = this.props.verven
+        if (verifDoc.length !== tempDoc.length) {
             this.openConfirm(this.setState({confirm: 'verifdoc'}))
+        } else if (dataRekven.length === 0) {
+            this.openConfirm(this.setState({confirm: 'falseRekven'}))
+        } else {
+            this.modalConfirmAdd(val)
         }
     }
-
+    
     showDokumen = async (value) => {
         const token = localStorage.getItem('token')
         await this.props.showDokumen(token, value.id)
@@ -1233,7 +1696,7 @@ class IKK extends Component {
         this.setState({modalDoc: !this.state.modalDoc, dataZip: []})
     }
 
-    prepAddVerven = async () => {
+    prepAddVerven = async (val) => {
         const token = localStorage.getItem("token")
         await this.props.generateNoVendor(token)
         const {noTrans} = this.props.verven
@@ -1241,9 +1704,15 @@ class IKK extends Component {
         const data = {
             no: noTrans,
             name: 'Pengajuan area',
-            modalOpen: 'ya'
+            modalOpen: 'ya',
+            typeAjuan: val
+        }
+        const send = {
+            no: noTrans
         }
         await this.props.getDocument(token, data)
+        await this.props.getRekven(token, send)
+        this.setState({typeTrans: false, openSync: false, typeAjuan: val})
         this.openModalAdd()
     }
 
@@ -1447,7 +1916,8 @@ class IKK extends Component {
             no_skb: dataAdd.no_skb,
             no_skt: dataAdd.no_skt,
             datef_skb: dataAdd.datef_skb,
-            datel_skb: dataAdd.datel_skb
+            datel_skb: dataAdd.datel_skb,
+            typeAjuan: this.state.typeAjuan
         }
         const token = localStorage.getItem("token")
         this.openModalAppDoc()
@@ -1565,14 +2035,37 @@ class IKK extends Component {
         this.setState(data)
     }
 
+    openTypeTrans = () => {
+        this.setState({typeTrans: !this.state.typeTrans})
+    }
+
+    openModsync = () => {
+        this.setState({openSync: !this.state.openSync})
+    }
+
+    prosesSync = async (val) => {
+        const token = localStorage.getItem('token')
+        const sendData = {
+            noIdent: `${val.ident}`
+        }
+
+        await this.props.getVendor(token, sendData)
+
+        const { dataVendor } = this.props.vendor
+        console.log(dataVendor)
+        this.setState({dataRegis: dataVendor[0]})
+        this.prepAddVerven('rekening')
+    }
+
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {listReject, listMut, listReason, dataMenu, listMenu, detailDoc, tipeEmail, filter, dataZip, fileName} = this.state
+        const {listReject, listMut, listReason, dataMenu, listMenu, detailDoc, tipeEmail, filter, dataZip, fileName, duplikat, dataRegis, typeAjuan} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { draftEmail } = this.props.email
-        const {newVerven, detailVerven, idVerven, dataDoc, messAdd} = this.props.verven
+        const {newVerven, detailVerven, idVerven, dataDoc, messAdd, dataRekven} = this.props.verven
+        const { dataBank } = this.props.bank
         const changeSepar = toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
         // const pages = this.props.depo.page
 
@@ -1618,7 +2111,7 @@ class IKK extends Component {
                             <div className={[style.secEmail4]}>
                                 {level === '5' || level === '6' ? (
                                     <>
-                                        <Button onClick={() => this.prepAddVerven()} color="info" size="lg">Create</Button>
+                                        <Button onClick={() => this.openTypeTrans()} color="info" size="lg">Create</Button>
                                         <div className={style.searchEmail2}>
                                             <text>Filter:  </text>
                                             <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
@@ -1717,7 +2210,7 @@ class IKK extends Component {
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>{index + 1}</th>
                                                         <th>{item.no_transaksi}</th>
-                                                        <th>{item.depo.area}</th>
+                                                        <th>{item.depo === null || item.depo === undefined ? '' : item.depo.area}</th>
                                                         <th>{moment(item.start_transaksi).format('DD MMMM YYYY')}</th>
                                                         <th>{item.nama}</th>
                                                         <th>{item.jenis_vendor !== null && item.jenis_vendor !== '' ? item.jenis_vendor : item.nik === null || item.nik === '' || item.nik === 'TIDAK ADA' ? "Badan" : "Orang Pribadi"}</th>
@@ -1729,7 +2222,8 @@ class IKK extends Component {
                                                                 : item.status_reject === 1 ? 'Reject Perbaikan'
                                                                 : item.status_reject === 0 ? 'Telah Revisi'
                                                                 : item.status_transaksi === 8 ? 'selesai' 
-                                                                : item.status_transaksi === 2 && 'Proses Verifikasi Tax'
+                                                                : item.status_transaksi === 2 || item.status_transaksi === 5 ? 'Proses Verifikasi Finance'
+                                                                : item.status_transaksi === 3 && 'Proses Verifikasi Tax'
                                                             }
                                                         </th>
                                                         <th>{item.history.split(',').reverse()[0]}</th>
@@ -1782,7 +2276,7 @@ class IKK extends Component {
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>{index + 1}</th>
                                                         <th>{item.no_transaksi}</th>
-                                                        <th>{item.depo.area}</th>
+                                                        <th>{item.depo === null || item.depo === undefined ? '' : item.depo.area}</th>
                                                         <th>{moment(item.start_transaksi).format('DD MMMM YYYY')}</th>
                                                         <th>{item.nama}</th>
                                                         <th>{item.jenis_vendor !== null && item.jenis_vendor !== '' ? item.jenis_vendor : item.nik === null || item.nik === '' || item.nik === 'TIDAK ADA' ? "Badan" : "Orang Pribadi"}</th>
@@ -1794,7 +2288,8 @@ class IKK extends Component {
                                                                 : item.status_reject === 1 ? 'Reject Perbaikan'
                                                                 : item.status_reject === 0 ? 'Telah Revisi'
                                                                 : item.status_transaksi === 8 ? 'selesai' 
-                                                                : item.status_transaksi === 2 && 'Proses Verifikasi Tax'
+                                                                : item.status_transaksi === 2 || item.status_transaksi === 5 ? 'Proses Verifikasi Finance'
+                                                                : item.status_transaksi === 3 && 'Proses Verifikasi Tax'
                                                             }
                                                         </th>
                                                         <th>{item.history.split(',').reverse()[0]}</th>
@@ -1839,15 +2334,15 @@ class IKK extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal isOpen={this.state.modalAdd} size="lg">
-                    <ModalHeader>Form Pengajuan Data Vendor</ModalHeader>
+                <Modal isOpen={this.state.modalAdd} size="xl" className='xl'>
+                    <ModalHeader>Form Pengajuan {typeAjuan === 'rekening' ? 'Rekning Vendor' : 'Data Vendor'}</ModalHeader>
                     <Formik
                     initialValues={{
-                        nama: '',
-                        jenis: '',
-                        no_npwp: '',
-                        no_ktp: '',
-                        alamat: '',
+                        nama: typeAjuan === 'rekening' ? dataRegis.nama : '',
+                        jenis: typeAjuan === 'rekening' ? (dataRegis.jenis_vendor === null ? 'Orang Pribadi' : dataRegis.jenis_vendor ) : '',
+                        no_npwp: typeAjuan === 'rekening' ? (dataRegis.no_npwp === null ? '' : dataRegis.no_npwp) : '',
+                        no_ktp: typeAjuan === 'rekening' ? (dataRegis.no_ktp  === null ? '' : dataRegis.no_ktp) : '',
+                        alamat: typeAjuan === 'rekening' ? dataRegis.alamat : '',
                         datef_skb: '',
                         datel_skb: '',
                         no_skb: '',
@@ -1864,6 +2359,7 @@ class IKK extends Component {
                             </text>
                             <div className="col-md-9">
                                 <Input 
+                                disabled={typeAjuan === 'rekening' ? true : false}
                                 type="name" 
                                 name="nama"
                                 value={values.nama}
@@ -1881,6 +2377,7 @@ class IKK extends Component {
                             </text>
                             <div className="col-md-9">
                                 <Input
+                                    disabled={typeAjuan === 'rekening' ? true : false}
                                     type= "select" 
                                     value={values.jenis}
                                     onBlur={handleBlur("jenis")}
@@ -1901,6 +2398,7 @@ class IKK extends Component {
                             </text>
                             <div className="col-md-9">
                                 <Input 
+                                    // disabled={typeAjuan === 'rekening' ? true : false}
                                     type="name"
                                     name="no_npwp"
                                     value={values.no_npwp}
@@ -1927,7 +2425,8 @@ class IKK extends Component {
                                 <Input 
                                     type="name"
                                     name="no_ktp"
-                                    disabled={values.jenis === 'Badan' || values.jenis === '' ? true : false}
+                                    // disabled={(values.jenis === 'Badan' || values.jenis === '' || typeAjuan === 'rekening') ? true : false}
+                                    disabled={(values.jenis === 'Badan' || values.jenis === '') ? true : false}
                                     value={values.jenis === 'Orang Pribadi' ? values.no_ktp : ''}
                                     onBlur={handleBlur("no_ktp")}
                                     onChange={handleChange("no_ktp")}
@@ -1946,6 +2445,7 @@ class IKK extends Component {
                             </text>
                             <div className="col-md-9">
                                 <Input 
+                                disabled={typeAjuan === 'rekening' ? true : false}
                                 type="textarea" 
                                 name="alamat"
                                 value={values.alamat}
@@ -2044,6 +2544,76 @@ class IKK extends Component {
                             ) : null }
                             </>
                         )}
+                        <hr/>
+                        <div className='rowBetween'>
+                            <div>Data Rekening Vendor</div>
+                            <div className='rowCenter mt-2 mb-2'>
+                                {/* <Button 
+                                size='sm' 
+                                onClick={() => this.cekRekven({type: 'upload', data: values})} 
+                                className='ml-1' 
+                                color='primary'>
+                                    <MdUpload size={20}/>
+                                </Button> */}
+                                <Button 
+                                size='sm' 
+                                onClick={() => this.cekRekven({type: 'download', data: values})} 
+                                className='ml-1' 
+                                color='warning'>
+                                    <MdDownload size={20}/>
+                                </Button>
+                            </div>
+                        </div>
+                        <Table striped bordered hover responsive className={[style.tab]}>
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>NIK</th>
+                                    <th>NPWP</th>
+                                    <th>BANK</th>
+                                    <th>NO Rekening</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            {dataRekven.length > 0 && dataRekven.map((item, index) => {
+                                return (
+                                    <>
+                                        <tbody>
+                                            <td>{index + 1}</td>
+                                            <td>{item.nik}</td>
+                                            <td>{item.npwp}</td>
+                                            <td>{item.bank}</td>
+                                            <td>{item.no_rekening}</td>
+                                            <td className='rowCenter'>
+                                                <Button 
+                                                size='sm' 
+                                                onClick={() => {this.setState({ detRekven: item }); this.cekRekven({type: 'edit', data: values})}} 
+                                                color='info'>
+                                                    <MdEditSquare size={20}/>
+                                                </Button>
+                                                <Button 
+                                                size='sm' 
+                                                onClick={() => this.confirmDel(this.setState({ detRekven: item }))} 
+                                                className='ml-1' 
+                                                color='danger'>
+                                                    <MdDelete size={20}/>
+                                                </Button>
+                                            </td>
+                                        </tbody>
+                                    </>
+                                )
+                            })}
+                            <tbody>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td>
+                                    <Button size='sm' onClick={() => this.cekRekven({type: 'add', data: values})} color='success'><MdAddCircle size={20}/></Button>
+                                </td>
+                            </tbody>
+                        </Table>
                         <hr/>
                         <div className={style.addModalDepo}>
                             <text className="col-md-12 mt-4">
@@ -2346,6 +2916,76 @@ class IKK extends Component {
                             </>
                         )}
                         <hr/>
+                        <div className='rowBetween'>
+                            <div>Data Rekening Vendor</div>
+                            <div className='rowCenter mt-2 mb-2'>
+                                {/* <Button 
+                                size='sm' 
+                                onClick={() => this.cekRekven({type: 'upload', data: values})} 
+                                className='ml-1' 
+                                color='primary'>
+                                    <MdUpload size={20}/>
+                                </Button> */}
+                                <Button 
+                                size='sm' 
+                                onClick={() => this.cekRekven({type: 'download', data: values})} 
+                                className='ml-1' 
+                                color='warning'>
+                                    <MdDownload size={20}/>
+                                </Button>
+                            </div>
+                        </div>
+                        <Table striped bordered hover responsive className={[style.tab]}>
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>NIK</th>
+                                    <th>NPWP</th>
+                                    <th>BANK</th>
+                                    <th>NO Rekening</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            {dataRekven.length > 0 && dataRekven.map((item, index) => {
+                                return (
+                                    <>
+                                        <tbody>
+                                            <td>{index + 1}</td>
+                                            <td>{item.nik}</td>
+                                            <td>{item.npwp}</td>
+                                            <td>{item.bank}</td>
+                                            <td>{item.no_rekening}</td>
+                                            <td className='rowCenter'>
+                                                <Button 
+                                                size='sm' 
+                                                onClick={() => {this.setState({ detRekven: item }); this.cekRekven({type: 'edit', data: values})}} 
+                                                color='info'>
+                                                    <MdEditSquare size={20}/>
+                                                </Button>
+                                                <Button 
+                                                size='sm' 
+                                                onClick={() => this.confirmDel(this.setState({ detRekven: item }))} 
+                                                className='ml-1' 
+                                                color='danger'>
+                                                    <MdDelete size={20}/>
+                                                </Button>
+                                            </td>
+                                        </tbody>
+                                    </>
+                                )
+                            })}
+                            <tbody>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td>
+                                    <Button size='sm' onClick={() => this.cekRekven({type: 'add', data: values})} color='success'><MdAddCircle size={20}/></Button>
+                                </td>
+                            </tbody>
+                        </Table>
+                        <hr/>
                         <div className={style.foot}>
                             <div></div>
                             <div>
@@ -2456,6 +3096,49 @@ class IKK extends Component {
                                 </tbody>
                             </Table>
                         </div>
+                        <div className='rowBetween'>
+                            <div>Data Rekening Vendor</div>
+                            <div className='rowCenter mt-2 mb-2'>
+                                {/* <Button 
+                                size='sm' 
+                                onClick={() => this.cekRekven({type: 'upload', data: values})} 
+                                className='ml-1' 
+                                color='primary'>
+                                    <MdUpload size={20}/>
+                                </Button> */}
+                                {/* <Button 
+                                size='sm' 
+                                onClick={() => this.cekRekven({type: 'download', data: values})} 
+                                className='ml-1' 
+                                color='warning'>
+                                    <MdDownload size={20}/>
+                                </Button> */}
+                            </div>
+                        </div>
+                        <Table striped bordered hover responsive className={[style.tab]}>
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>NIK</th>
+                                    <th>NPWP</th>
+                                    <th>BANK</th>
+                                    <th>NO Rekening</th>
+                                </tr>
+                            </thead>
+                            {dataRekven.length > 0 && dataRekven.map((item, index) => {
+                                return (
+                                    <>
+                                        <tbody>
+                                            <td>{index + 1}</td>
+                                            <td>{item.nik}</td>
+                                            <td>{item.npwp}</td>
+                                            <td>{item.bank}</td>
+                                            <td>{item.no_rekening}</td>
+                                        </tbody>
+                                    </>
+                                )
+                            })}
+                        </Table>
                     </ModalBody>
                     <div className="modalFoot ml-3">
                         <div className="btnFoot">
@@ -2542,6 +3225,49 @@ class IKK extends Component {
                                 </tbody>
                             </Table>
                         </div>
+                        <div className='rowBetween'>
+                            <div>Data Rekening Vendor</div>
+                            <div className='rowCenter mt-2 mb-2'>
+                                {/* <Button 
+                                size='sm' 
+                                onClick={() => this.cekRekven({type: 'upload', data: values})} 
+                                className='ml-1' 
+                                color='primary'>
+                                    <MdUpload size={20}/>
+                                </Button> */}
+                                {/* <Button 
+                                size='sm' 
+                                onClick={() => this.cekRekven({type: 'download', data: values})} 
+                                className='ml-1' 
+                                color='warning'>
+                                    <MdDownload size={20}/>
+                                </Button> */}
+                            </div>
+                        </div>
+                        <Table striped bordered hover responsive className={[style.tab]}>
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>NIK</th>
+                                    <th>NPWP</th>
+                                    <th>BANK</th>
+                                    <th>NO Rekening</th>
+                                </tr>
+                            </thead>
+                            {dataRekven.length > 0 && dataRekven.map((item, index) => {
+                                return (
+                                    <>
+                                        <tbody>
+                                            <td>{index + 1}</td>
+                                            <td>{item.nik}</td>
+                                            <td>{item.npwp}</td>
+                                            <td>{item.bank}</td>
+                                            <td>{item.no_rekening}</td>
+                                        </tbody>
+                                    </>
+                                )
+                            })}
+                        </Table>
                     </ModalBody>
                     <div className="modalFoot ml-3">
                         <div className="btnFoot">
@@ -3052,6 +3778,97 @@ class IKK extends Component {
                                 <div className={[style.sucUpdate, style.green, 'mt-2']}>{this.state.infoError}</div>
                             </div>
                         </div>
+                    ) : this.state.confirm === 'falseIdent' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Error</div>
+                                <div className={[style.sucUpdate, style.green]}>Pastikan data vendor telah terisi</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'falseRekven' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
+                                <div className={[style.sucUpdate, style.green]}>Pastikan rekening vendor telah terisi</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'dupUpload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green, style.mb4]}>Gagal Upload</div>
+                                <div className={[style.sucUpdate, style.green, style.mb4]}>Terdapat Duplikasi Pada Data Berikut</div>
+                                {duplikat.length > 0 ? duplikat.map(item => {
+                                    return (
+                                        <div className={[style.sucUpdate, style.green, style.mb3]}>{item}</div>
+                                    )
+                                }) : (
+                                    <div></div>
+                                )}
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'sucAddRekven' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Menambahkan Data Rekening Vendor</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'editRekven' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Mengupdate Data Rekening Vendor</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'delRekven' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={[style.sucUpdate, style.green]}>Berhasil Mendelete Data Rekening Vendor</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'rejAddRekven' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Menambahkan Data Rekening Vendor</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Data telah terdaftar </div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'rejEditRekven' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Mengupdate Data Rekening Vendor</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Data telah terdaftar </div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'rejDelRekven' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Mendelete Data Rekening Vendor</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Server sedang ada masalah</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'upload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiFillCheckCircle size={80} className={style.green} />
+                                <div className={style.sucUpdate}>Berhasil Upload Data Rekening Vendor</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'falseUpload' ? (
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Upload</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Pastikan Upload File Menggunakan Template Yang Telah Disediakan</div>
+                            </div>
+                        </div>
                     ) : (
                         <div></div>
                     )}
@@ -3196,6 +4013,354 @@ class IKK extends Component {
                         </div>
                     </ModalBody>
                 </Modal>
+                <Modal isOpen={this.state.typeTrans} toggle={this.openTypeTrans} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div className='btnDocCon'>
+                                <text>
+                                    Pilih Tipe Ajuan
+                                </text>
+                            </div>
+                            <div className='btnDocCon mb-4'>
+                                <Button color="primary" className='mr-2' onClick={() => this.prepAddVerven('vendor')}>Ajuan Vendor</Button>
+                                <Button color="success" className='ml-2' onClick={() => this.openModsync()}>Ajuan Rekening</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal toggle={this.openModsync} isOpen={this.state.openSync} size='lg'>
+                    <ModalHeader>Pengecekan Data Vendor</ModalHeader>
+                    <Formik
+                    initialValues={{
+                        ident: ''
+                    }}
+                    validationSchema={filterSchema}
+                    onSubmit={(values) => {this.prosesSync(values)}}
+                    >
+                        {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                        <ModalBody>
+                            <Row className="mb-2 rowRinci">
+                                <Col md={3}>Nomor Identitas Vendor</Col>
+                                <Col md={9} className="colRinci">:  <Input
+                                    type="text"
+                                    className="inputRinci"
+                                    value={values.ident}
+                                    onBlur={handleBlur("ident")}
+                                    onChange={handleChange("ident")}
+                                />
+                                </Col>
+                            </Row>
+                            {errors.ident ? (
+                                <text className={style.txtError}>{errors.ident}</text>
+                            ) : null}
+                            {/* <Row className="mb-2 rowRinci">
+                                <Col md={3}>NPWP</Col>
+                                <Col md={9} className="colRinci">:  <Input
+                                    type="text"
+                                    className="inputRinci"
+                                    value={values.npwp}
+                                    onBlur={handleBlur("npwp")}
+                                    onChange={handleChange("npwp")}
+                                />
+                                </Col>
+                            </Row>
+                            {errors.npwp ? (
+                                <text className={style.txtError}>{errors.npwp}</text>
+                            ) : null} */}
+                            <hr/>
+                            <div className={style.foot}>
+                                <div></div>
+                                <div>
+                                    <Button 
+                                    // disabled={}
+                                    className="mr-2" onClick={handleSubmit} 
+                                    color="primary">
+                                        Save
+                                    </Button>
+                                    <Button className="mr-3" onClick={this.openModsync}>Cancel</Button>
+                                </div>
+                            </div>
+                        </ModalBody>
+                        )}
+                    </Formik>
+                </Modal>
+                <Modal isOpen={this.state.modalAddRekven} size="lg">
+                    <ModalHeader>Add Data Rekening Vendor</ModalHeader>
+                    <Formik
+                        initialValues={{
+                            nik: this.state.detailVen.no_ktp === null ? '' : this.state.detailVen.no_ktp,
+                            npwp: this.state.detailVen.no_npwp === null ? '' : this.state.detailVen.no_npwp,
+                            no_rekening: "",
+                            tujuan_tf: ""
+                        }}
+                        validationSchema={rekvenSchema}
+                        onSubmit={(values) => { this.addDataRekven(values) }}
+                    >
+                        {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched, }) => (
+                            <ModalBody>
+                               <Row className="mb-2 rowRinci">
+                                    <Col md={3}>NIK</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.nik}
+                                        disabled
+                                        className="inputRinci1"
+                                        onChange={handleChange('nik')}
+                                        onBlur={handleBlur('nik')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.nik ? (
+                                    <text className={style.txtError}>{errors.nik}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>NPWP</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.npwp}
+                                        disabled
+                                        className="inputRinci1"
+                                        onChange={handleChange('npwp')}
+                                        onBlur={handleBlur('npwp')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.npwp ? (
+                                    <text className={style.txtError}>{errors.npwp}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>Tujuan Transfer <text className='txtError'>{'*'}</text></Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        disabled={level === '5' || level === '6' ? false : true}
+                                        type= "select" 
+                                        className="inputRinci"
+                                        value={values.tujuan_tf}
+                                        onChange={handleChange('tujuan_tf')}
+                                        onBlur={handleBlur('tujuan_tf')}
+                                        >
+                                            <option value=''>Pilih</option>
+                                            <option value="rekening">Rekening</option>
+                                            <option value="id">ID Pelanggan</option>
+                                        </Input>
+                                    </Col>
+                                </Row>
+                                {errors.tujuan_tf ? (
+                                    <text className={style.txtError}>{errors.tujuan_tf}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>BANK</Col>
+                                    <Col md={9} className="colRinci">:  <Select
+                                        isDisabled={values.tujuan_tf === 'rekening' ? false : true}
+                                        className="inputRinci2"
+                                        options={this.state.bankList}
+                                        onChange={this.selectBank}
+                                        />
+                                    </Col>
+                                </Row>
+                                {this.state.bank === '' && values.tujuan_tf === 'rekening' ? (
+                                    <text className={style.txtError}>must be filled</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>NO REKENING</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.tujuan_tf === 'id' ? 'ID Pelanggan' : values.no_rekening}
+                                        className="inputRinci1"
+                                        disabled={this.state.digit === 0 || values.tujuan_tf === 'id' ? true : false}
+                                        minLength={this.state.digit === null ? 10 : this.state.digit}
+                                        maxLength={this.state.digit === null ? 16 : this.state.digit}
+                                        onChange={handleChange('no_rekening')}
+                                        onBlur={handleBlur('no_rekening')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {values.tujuan_tf === 'id' ? (
+                                    null
+                                ) : this.state.digit !== null && values.no_rekening.length !== this.state.digit ? (
+                                    <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                ) : this.state.digit === null && (values.no_rekening.length < 10 || values.no_rekening.length > 16) ? (
+                                    <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                ) : null}
+                                {values.tujuan_tf === 'id' && (
+                                    <text className='green'>Tujuan transfer ID Pelanggan langsung isi di form operasional</text>
+                                )}
+                                <hr />
+                                <div className={style.foot}>
+                                    <div></div>
+                                    <div>
+                                        <Button
+                                        className="mr-2"
+                                        onClick={handleSubmit} color="primary"
+                                        disabled={
+                                            (this.state.bank === '' && values.tujuan_tf === 'rekening') ||
+                                            (this.state.digit !== null && values.no_rekening.length !== this.state.digit && values.tujuan_tf === 'rekening') ||
+                                            (this.state.digit === null && (values.no_rekening.length < 10 || values.no_rekening.length > 16) && values.tujuan_tf === 'rekening')
+                                            ? true : false
+                                        }
+                                        >Save</Button>
+                                        <Button className="" onClick={this.openAddRekven}>Cancel</Button>
+                                    </div>
+                                </div>
+                            </ModalBody>
+                        )}
+                    </Formik>
+                </Modal>
+                <Modal isOpen={this.state.detModRekven} size="lg">
+                    <ModalHeader>Update Data Rekening Vendor</ModalHeader>
+                    <Formik
+                        initialValues={{
+                            nik: this.state.detailVen.no_ktp === null ? '' : this.state.detailVen.no_ktp,
+                            npwp: this.state.detailVen.no_npwp === null ? '' : this.state.detailVen.no_npwp,
+                            no_rekening: this.state.detRekven.no_rekening,
+                            tujuan_tf: this.state.detRekven.tujuan_tf
+                        }}
+                        validationSchema={rekvenSchema}
+                        onSubmit={(values) => { this.updateDataRekven(values) }}
+                    >
+                        {({ setFieldValue, handleChange, handleBlur, handleSubmit, values, errors, touched, }) => (
+                            <ModalBody>
+                               <Row className="mb-2 rowRinci">
+                                    <Col md={3}>NIK</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.nik}
+                                        disabled
+                                        className="inputRinci1"
+                                        onChange={handleChange('nik')}
+                                        onBlur={handleBlur('nik')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.nik ? (
+                                    <text className={style.txtError}>{errors.nik}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>NPWP</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.npwp}
+                                        disabled
+                                        className="inputRinci1"
+                                        onChange={handleChange('npwp')}
+                                        onBlur={handleBlur('npwp')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {errors.npwp ? (
+                                    <text className={style.txtError}>{errors.npwp}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>Tujuan Transfer <text className='txtError'>{'*'}</text></Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        disabled={level === '5' || level === '6' ? false : true}
+                                        type= "select" 
+                                        className="inputRinci"
+                                        value={values.tujuan_tf}
+                                        onChange={handleChange('tujuan_tf')}
+                                        onBlur={handleBlur('tujuan_tf')}
+                                        >
+                                            <option value=''>Pilih</option>
+                                            <option value="rekening">Rekening</option>
+                                            <option value="id">ID Pelanggan</option>
+                                        </Input>
+                                    </Col>
+                                </Row>
+                                {errors.tujuan_tf ? (
+                                    <text className={style.txtError}>{errors.tujuan_tf}</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>BANK</Col>
+                                    <Col md={9} className="colRinci">:  <Select
+                                        isDisabled={values.tujuan_tf === 'rekening' ? false : true}
+                                        className="inputRinci2"
+                                        options={this.state.bankList}
+                                        onChange={this.selectBank}
+                                        value={{label: this.state.bank, value: this.state.digit}}
+                                        />
+                                    </Col>
+                                </Row>
+                                {this.state.bank === '' && values.tujuan_tf === 'rekening' ? (
+                                    <text className={style.txtError}>must be filled</text>
+                                ) : null}
+                                <Row className="mb-2 rowRinci">
+                                    <Col md={3}>NO REKENING</Col>
+                                    <Col md={9} className="colRinci">:  <Input
+                                        value={values.tujuan_tf === 'id' ? 'ID Pelanggan' : values.no_rekening}
+                                        className="inputRinci1"
+                                        disabled={this.state.digit === 0 || values.tujuan_tf === 'id' ? true : false}
+                                        minLength={this.state.digit === null ? 10 : this.state.digit}
+                                        maxLength={this.state.digit === null ? 16 : this.state.digit}
+                                        onChange={handleChange('no_rekening')}
+                                        onBlur={handleBlur('no_rekening')}
+                                    />
+                                    </Col>
+                                </Row>
+                                {values.tujuan_tf === 'id' ? (
+                                    null
+                                ) : this.state.digit !== null && values.no_rekening.length !== this.state.digit ? (
+                                    <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                ) : this.state.digit === null && (values.no_rekening.length < 10 || values.no_rekening.length > 16) ? (
+                                    <text className={style.txtError}>must be filled with {this.state.digit} digits characters</text>
+                                ) : null}
+                                {values.tujuan_tf === 'id' && (
+                                    <text className='green'>Tujuan transfer ID Pelanggan langsung isi di form operasional</text>
+                                )}
+                                <hr />
+                                <div className={style.foot}>
+                                    <div></div>
+                                    <div>
+                                        <Button
+                                        className="mr-2"
+                                        onClick={handleSubmit} color="primary"
+                                        disabled={
+                                            (this.state.bank === '' && values.tujuan_tf === 'rekening') ||
+                                            (this.state.digit !== null && values.no_rekening.length !== this.state.digit && values.tujuan_tf === 'rekening') ||
+                                            (this.state.digit === null && (values.no_rekening.length < 10 || values.no_rekening.length > 16) && values.tujuan_tf === 'rekening')
+                                            ? true : false
+                                        }
+                                        >Save</Button>
+                                        <Button className="" onClick={this.openDetRekven}>Cancel</Button>
+                                    </div>
+                                </div>
+                            </ModalBody>
+                        )}
+                    </Formik>
+                </Modal>
+                <Modal isOpen={this.state.modUpRekven} >
+                    <ModalHeader>Upload Data</ModalHeader>
+                    <ModalBody className={style.modalUpload}>
+                        <div className={style.titleModalUpload}>
+                            <text>Upload File: </text>
+                            <div className={style.uploadFileInput}>
+                                <AiOutlineFileExcel size={35} />
+                                <div className="ml-3">
+                                    <Input
+                                        type="file"
+                                        name="file"
+                                        accept=".xls,.xlsx"
+                                        onChange={this.onChangeHandler}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className='btnUpload'>
+                            {/* <Button color="info" onClick={this.DownloadTemplate}>Download Template</Button> */}
+                            <div></div>
+                            <Button className='mr-2' color="primary" disabled={this.state.fileUpload === "" ? true : false} onClick={this.uploadDataRekven}>Upload</Button>
+                            <Button onClick={this.openUpRekven}>Cancel</Button>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                <Modal isOpen={this.state.modalDelRekven} toggle={this.confirmDel} centered={true}>
+                    <ModalBody>
+                        <div className={style.modalApprove}>
+                            <div>
+                                <text>
+                                    Anda yakin untuk menghapus data rekening vendor ?
+                                </text>
+                            </div>
+                            <div className={style.btnApprove}>
+                                <Button color="primary" onClick={() => this.delDataRekven()}>Ya</Button>
+                                <Button color="secondary" onClick={this.confirmDel}>Tidak</Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
             </>
         )
     }
@@ -3211,7 +4376,10 @@ const mapStateToProps = state => ({
     reason: state.reason,
     email: state.email,
     dokumen: state.dokumen,
-    verven: state.verven
+    verven: state.verven,
+    bank: state.bank,
+    vendor: state.vendor,
+    menu: state.menu
 })
 
 const mapDispatchToProps = {
@@ -3239,6 +4407,7 @@ const mapDispatchToProps = {
     getVerven: verven.getVerven,
     addVerven: verven.addVerven,
     submitVerifVerven: verven.submitVerifVerven,
+    submitVerifFinance: verven.submitVerifFinance,
     getDetailVerven: verven.getDetailVerven,
     rejectVerven: verven.rejectVerven,
     revisiVerven: verven.revisiVerven,
@@ -3248,7 +4417,15 @@ const mapDispatchToProps = {
     getDocument: verven.getDocument,
     resetVerven: verven.resetVerven,
     uploadDocVerven: verven.uploadDocVerven,
-    getResmail: email.getResmail
+    getRekven: verven.getRekven,
+    uploadRekven: verven.uploadRekven,
+    updateRekven: verven.updateRekven,
+    deleteRekven: verven.deleteRekven,
+    addRekven: verven.addRekven,
+    getResmail: email.getResmail,
+    getBank: bank.getBank,
+    getVendor: vendor.getVendor,
+    getSubMenu: menu.getSubMenu
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(IKK)

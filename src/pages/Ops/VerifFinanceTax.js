@@ -26,7 +26,6 @@ import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
 import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
-import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
@@ -45,6 +44,10 @@ import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import ListBbm from '../../components/Ops/ListBbm'
 import TableRincian from '../../components/Ops/tableRincian'
+import depo from '../../redux/actions/depo'
+import tarif from '../../redux/actions/tarif'
+import taxcode from '../../redux/actions/taxcode'
+import kliring from '../../redux/actions/kliring'
 const nonObject = 'Non Object PPh'
 const {REACT_APP_BACKEND_URL} = process.env
 
@@ -141,9 +144,28 @@ class VerifOps extends Component {
             statEmail: '',
             modResmail: false,
             dataZip: [],
+            listReject: [],
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
+    }
+
+    rejectApp = (val) => {
+        const data = [val]
+        this.setState({listReject: data})
+    }
+
+    rejectRej = (val) => {
+        const {listReject} = this.state
+        const data = []
+        for (let i = 0; i < listReject.length; i++) {
+            if (listReject[i] === val) {
+                data.push()
+            } else {
+                data.push(listReject[i])
+            }
+        }
+        this.setState({listReject: data})
     }
 
     checkDoc = (val) => {
@@ -269,7 +291,7 @@ class VerifOps extends Component {
     }
 
     rejectOps = async (val) => {
-        const {listMut, listReason, listMenu} = this.state
+        const {listMut, listReason, listMenu, listReject} = this.state
         const { detailOps } = this.props.ops
         const token = localStorage.getItem('token')
         const tempno = {
@@ -284,6 +306,7 @@ class VerifOps extends Component {
             list: listMut,
             alasan: temp + val.alasan,
             menu: listMenu.toString(),
+            type_reject: listReject[0],
             type: "verif"
         }
         await this.props.rejectOps(token, data)
@@ -381,8 +404,13 @@ class VerifOps extends Component {
         await this.props.submitAsset(token, detailStock[0].no_stock)
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         const dataCek = localStorage.getItem('docData')
+        const token = localStorage.getItem('token')
+        await this.props.getDepo(token, 'all', '', 1)
+        await this.props.getTarif(token, 'all', '', 1)
+        await this.props.getKliring(token, 'all', '', 1)
+        await this.props.getTaxcode(token, 'all', '', 1)
         const {item, type} = (this.props.location && this.props.location.state) || {}
         if (type === 'approve') {
             this.setState({
@@ -862,8 +890,8 @@ class VerifOps extends Component {
         }
         const cekKasbon = detailOps.find(({type_kasbon}) => type_kasbon === 'kasbon')
         const tipeKasbon = cekKasbon !== undefined ? 'kasbon' : 'ops'
-        const tipeProses = val === 'reject' ? 'reject perbaikan' : tipeKasbon === 'kasbon' && level === '2' ? 'verifikasi kasbon' : 'list ajuan bayar'
-        const tipeRoute = val === 'reject' ? 'revops' : tipeKasbon === 'kasbon' && level === '2' ? 'verifkasbon' : 'listops'
+        const tipeProses = val === 'reject' && listReject[0] === 'pembatalan' ? 'reject pembatalan' : val === 'reject' && listReject[0] !== 'pembatalan' ? 'reject perbaikan' : tipeKasbon === 'kasbon' && level === '2' ? 'verifikasi kasbon' : 'list ajuan bayar'
+        const tipeRoute = val === 'reject' && listReject[0] === 'pembatalan' ? 'ops' : val === 'reject' && listReject[0] !== 'pembatalan' ? 'revops' : tipeKasbon === 'kasbon' && level === '2' ? 'verifkasbon' : 'listops'
         // const tipeMenu = level === '4' || level === '14' || level === '24' || level === '34' ? 'list ajuan bayar' : 'verifikasi ops'
         const tipeMenu = val === 'reject' ? 'verifikasi finance' : tipeKasbon === 'kasbon' && level === '2' ? 'verifikasi kasbon' : 'list ajuan bayar'
         const tempno = {
@@ -925,6 +953,7 @@ class VerifOps extends Component {
 
     prepReject = async (val) => {
         const { detailOps } = this.props.ops
+        const { listReject } = this.state
         const level = localStorage.getItem("level")
         const token = localStorage.getItem("token")
         const app = detailOps[0].appForm
@@ -941,6 +970,7 @@ class VerifOps extends Component {
             kode: detailOps[0].kode_plant,
             jenis: 'ops',
             tipe: tipe,
+            typeReject: listReject[0],
             menu: cekMenu 
         }
         await this.props.getDraftEmail(token, tempno)
@@ -1524,7 +1554,7 @@ class VerifOps extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {dataRinci, dataZip, filter, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps} = this.state
+        const {dataRinci, dataZip, filter, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps, listReject} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, pageOps } = this.props.ops
@@ -2437,6 +2467,28 @@ class VerifOps extends Component {
                         {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
                             <div className={style.modalApprove}>
                                 <div className='mb-2 quest'>Anda yakin untuk reject ?</div>
+                                <div className='mb-2 titStatus'>Pilih reject :</div>
+                                <div className="ml-2">
+                                    <Input
+                                    addon
+                                    type="checkbox"
+                                    checked= {listReject.find(element => element === 'perbaikan') !== undefined ? true : false}
+                                    onClick={listReject.find(element => element === 'perbaikan') === undefined ? () => this.rejectApp('perbaikan') : () => this.rejectRej('perbaikan')}
+                                    />  Perbaikan
+                                </div>
+                                <div className="ml-2">
+                                    <Input
+                                    addon
+                                    type="checkbox"
+                                    checked= {listReject.find(element => element === 'pembatalan') !== undefined ? true : false}
+                                    onClick={listReject.find(element => element === 'pembatalan') === undefined ? () => this.rejectApp('pembatalan') : () => this.rejectRej('pembatalan')}
+                                    />  Pembatalan
+                                </div>
+                                <div className='ml-2'>
+                                    {listReject.length === 0 ? (
+                                        <text className={style.txtError}>Must be filled</text>
+                                    ) : null}
+                                </div>
                                 <div className='mb-2 titStatus'>Pilih alasan :</div>
                                 {dataReason.length > 0 && dataReason.map(item => {
                                     return (
@@ -2482,7 +2534,7 @@ class VerifOps extends Component {
                                     )
                                 })}
                                 <div className={style.btnApprove}>
-                                    <Button color="primary" disabled={(values.alasan === '.' || values.alasan === '') && (listReason.length === 0 || listMenu.length === 0) ? true : false} onClick={handleSubmit}>Submit</Button>
+                                    <Button color="primary" disabled={((values.alasan === '.' || values.alasan === '') && listReason.length === 0 ) || (listMenu.length === 0 || listReject.length === 0) ? true : false} onClick={handleSubmit}>Submit</Button>
                                     <Button className='ml-2' color="secondary" onClick={this.openModalReject}>Close</Button>
                                 </div>
                             </div>
@@ -2490,7 +2542,16 @@ class VerifOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.props.dokumen.isLoading || this.props.notif.isLoading || this.props.email.isLoading} size="sm">
+                <Modal isOpen={
+                    this.props.ops.isLoading || 
+                    this.props.dokumen.isLoading || 
+                    this.props.notif.isLoading || 
+                    this.props.email.isLoading ||
+                    this.props.depo.isLoading || 
+                    this.props.kliring.isLoading || 
+                    this.props.taxcode.isLoading || 
+                    this.props.tarif.isLoading  
+                    } size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2956,21 +3017,23 @@ class VerifOps extends Component {
 
 const mapStateToProps = state => ({
     approve: state.approve,
-    depo: state.depo,
     user: state.user,
     notif: state.notif,
     ops: state.ops,
     menu: state.menu,
     reason: state.reason,
     dokumen: state.dokumen,
-    email: state.email
+    email: state.email,
+    depo: state.depo,
+    tarif: state.tarif,
+    kliring: state.kliring,
+    taxcode: state.taxcode
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
     getDetailDepo: depo.getDetailDepo,
-    getDepo: depo.getDepo,
     getRole: user.getRole,
     getOps: ops.getOps,
     getDetail: ops.getDetail,
@@ -2993,7 +3056,11 @@ const mapDispatchToProps = {
     addNotif: notif.addNotif,
     getResmail: email.getResmail,
     downloadFormVerif: ops.downloadFormVerif,
-    nextOps: ops.nextOps
+    nextOps: ops.nextOps,
+    getDepo: depo.getDepo,
+    getTarif: tarif.getAllTarif,
+    getKliring: kliring.getAllKliring,
+    getTaxcode: taxcode.getAllTaxcode,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VerifOps)

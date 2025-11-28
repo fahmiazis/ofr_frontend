@@ -51,6 +51,30 @@ export default {
         type: 'UPLOAD_DOCVERVEN',
         payload: http(token).post(`/verven/updoc?no=${no}&id=${id}`, data)
     }),
+    deleteRekven: (token, id) => ({
+        type: 'DELETE_REKVEN',
+        payload: http(token).delete(`/verven/rekven/del/${id}`)
+    }),
+    getRekven: (token, data) => ({
+        type: 'GET_REKVEN',
+        payload: http(token).patch(`/verven/rekven/get`, data)
+    }),
+    uploadRekven: (token, data) => ({
+        type: 'UPLOAD_REKVEN',
+        payload: http(token).patch(`/verven/rekven/upload`, data)
+    }),
+    updateRekven: (token, data) => ({
+        type: 'UPDATE_REKVEN',
+        payload: http(token).patch(`/verven/rekven/update`, data)
+    }),
+    addRekven: (token, data) => ({
+        type: 'ADD_REKVEN',
+        payload: http(token).patch(`/verven/rekven/add`, data)
+    }),
+    submitVerifFinance: (token, data) => ({
+        type: 'VERIFFIN_VERVEN',
+        payload: http(token).patch(`/verven/veriffin`, data)
+    }),
     resetVerven: () => ({
         type: 'RESET_VERVEN'
     })

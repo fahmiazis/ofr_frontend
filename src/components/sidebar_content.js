@@ -70,6 +70,7 @@ const SidebarContent = props => {
   }
 
   const level = localStorage.getItem('level')
+  const accessVendor = [4, 14, 8, 7, 17, 2, 9, 1, 5, 6]
 
   return (
     <MaterialTitlePanel title="" style={style}>
@@ -107,7 +108,7 @@ const SidebarContent = props => {
             <FaTasks size={20} className="mr-2" />
             <text className={stile.txtSide}>Ikhtisar Kas Kecil</text>
         </button>
-        {(level === '4' || level === '14' || level === '5' || level === '1') && (
+        {(accessVendor.find(x => x === parseInt(level))) && (
             <button 
             // className={level === '4' || level === '14' ? stile.btnSide : stile.marginSide} 
             className={stile.btnSide}

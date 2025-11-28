@@ -79,7 +79,8 @@ class MasterUser extends Component {
             filter: null,
             filterName: 'All',
             modalDel: false,
-            listUser: []
+            listUser: [],
+            listRole: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -146,9 +147,40 @@ class MasterUser extends Component {
     onSetSidebarOpen = () => {
         this.setState({ sidebarOpen: !this.state.sidebarOpen });
     }
+
+    prosesOpenAdd = async (val) => {
+        this.setState({listRole: []})
+        const token = localStorage.getItem("token")
+        await this.props.getRole(token, '')
+        this.openModalAdd()
+    }
+
     openModalAdd = () => {
         this.setState({modalAdd: !this.state.modalAdd})
     }
+
+    prosesOpenEdit = async (val) => {
+        const token = localStorage.getItem("token")
+        this.setState({detail: val})
+        await this.props.getRole(token, '')
+        await this.props.getDetailUser(token, val.id)
+        const { detailUser } = this.props.user
+        if (detailUser.detail_role !== null && detailUser.detail_role !== undefined && detailUser.detail_role.length > 0) {
+            const multiRole = detailUser.detail_role
+            console.log(multiRole)
+            const listRole = []
+            for (let i = 0; i < multiRole.length; i++) {
+                listRole.push(multiRole[i].id_role)
+                console.log(multiRole[i].id_role)
+            }
+            this.setState({listRole: listRole})
+            this.openModalEdit()
+        } else {
+            this.setState({listRole: []})
+            this.openModalEdit()
+        }
+    }
+
     openModalEdit = () => {
         this.setState({modalEdit: !this.state.modalEdit})
     }
@@ -211,9 +243,43 @@ class MasterUser extends Component {
         });
     }
 
+    roleApp = (val) => {
+        const { listRole } = this.state
+        const { dataRole } = this.props.user
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < dataRole.length; i++) {
+                data.push(dataRole[i].name)
+            }
+            this.setState({listRole: data})
+        } else {
+            listRole.push(val)
+            this.setState({listRole: listRole})
+        }
+    }
+
+    roleRej = (val) => {
+        const { listRole } = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listRole: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listRole.length; i++) {
+                if (listRole[i] == val) {
+                    data.push()
+                } else {
+                    data.push(listRole[i])
+                }
+            }
+            this.setState({listRole: data})
+        }
+    }
+
     addUser = async (values) => {
         const token = localStorage.getItem("token")
         const destruct = values.depo === "-Pilih Depo-" ? ["", ""] : values.depo.split('-') 
+        const { listRole } = this.state
         const data = {
             username: values.username,
             fullname: values.fullname,
@@ -221,7 +287,8 @@ class MasterUser extends Component {
             level: values.level,
             kode_plant: destruct[0],
             email: values.email,
-            status: values.status
+            status: values.status,
+            multi_role: values.level == '5' ? '' : listRole.toString()
         }
         await this.props.addUser(token, data)
         const {isAdd} = this.props.user
@@ -286,6 +353,8 @@ class MasterUser extends Component {
     editUser = async (values,id) => {
         const token = localStorage.getItem("token")
         const destruct = values.depo === "" ? ["", ""] : values.depo.split('-')
+        const { listRole } = this.state
+        console.log(listRole)
         const data = {
             username: values.username,
             fullname: values.fullname,
@@ -293,7 +362,8 @@ class MasterUser extends Component {
             level: values.level,
             email: values.email,
             kode_plant: destruct[0],
-            status: values.status
+            status: values.status,
+            multi_role: values.level == '5' ? '' : listRole.toString()
         }
         await this.props.updateUser(token, id, data)
         const {isUpdate} = this.props.user
@@ -479,7 +549,7 @@ class MasterUser extends Component {
     }
 
     render() {
-        const {isOpen, dropOpen, listUser, detail, level, upload, errMsg} = this.state
+        const {isOpen, dropOpen, listUser, detail, level, upload, errMsg, listRole} = this.state
         const {dataUser, isGet, alertM, alertMsg, alertUpload, page, dataRole} = this.props.user
         const { dataDepo } = this.props.depo
         const levels = localStorage.getItem('level')
@@ -589,7 +659,7 @@ class MasterUser extends Component {
                                 </div>
                                 <div className='secEmail'>
                                     <div className={style.headEmail}>
-                                        <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
+                                        <Button className='mr-1' onClick={this.prosesOpenAdd} color="primary" size="lg">Add</Button>
                                         <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
                                         <Button className='mr-1' onClick={this.downloadData} color="success" size="lg">Download</Button>
                                     </div>
@@ -623,7 +693,7 @@ class MasterUser extends Component {
                                                     <th>Full Name</th>
                                                     <th>Kode Plant</th>
                                                     <th>Email</th>
-                                                    <th>User Level</th>
+                                                    <th>Role</th>
                                                     <th>Opsi</th>
                                                 </tr>
                                             </thead>
@@ -643,9 +713,15 @@ class MasterUser extends Component {
                                                         <td>{item.fullname}</td>
                                                         <td>{item.kode_plant === 0 ? "" : item.kode_plant}</td>
                                                         <td>{item.email}</td>
-                                                        <td className='uppercase'>{item.role === null ? '' : item.role.name}</td>
+                                                        <td className='uppercase'>
+                                                            {item.role === null ? '' : item.role.name}{item.detail_role.length > 0 && item.detail_role.map(x => {
+                                                                return (
+                                                                    `, ${dataRole.find(y => y.level === x.id_role) === undefined ? '' : dataRole.find(y => y.level === x.id_role).name}`
+                                                                )
+                                                            })}
+                                                            </td>
                                                         <td>
-                                                            <Button onClick={()=>this.openModalEdit(this.setState({detail: item}))} color='primary'>Edit</Button>
+                                                            <Button onClick={()=>this.prosesOpenEdit(item)} color='primary'>Edit</Button>
                                                         </td>
                                                     </tr>
                                                 )
@@ -671,7 +747,7 @@ class MasterUser extends Component {
                         </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
+                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd} size="lg">
                     <ModalHeader toggle={this.openModalAdd}>Add Master User</ModalHeader>
                     <Formik
                     initialValues={{
@@ -757,7 +833,7 @@ class MasterUser extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                User Level
+                                Role Utama
                             </text>
                             <div className="col-md-9">
                             <Input 
@@ -767,7 +843,7 @@ class MasterUser extends Component {
                                 onChange={handleChange("level")}
                                 onBlur={handleBlur("level")}
                                 >
-                                    <option>-Pilih Level-</option>
+                                    <option>-Pilih role-</option>
                                     {dataRole.length !== 0 && dataRole.map(item => {
                                         return (
                                             <option value={item.level}>{item.name}</option>
@@ -804,6 +880,29 @@ class MasterUser extends Component {
                                 ) : null}
                             </div>
                         </div>
+                        {(values.level != '1' && values.level != '5' && values.level !== '' && values.level !== null) && (
+                            <div className='addModalMenu'>
+                                <text className="col-md-3">
+                                    Role Tambahan
+                                </text>
+                                <div className="col-md-9 listcek">
+                                    {dataRole.length !== 0 && dataRole.filter(item => (item.level != 1 && item.level != 9 && item.level != 5 && item.level != parseInt(values.level))).map(item => {
+                                        return (
+                                            <div className='listcek mr-2'>
+                                                <Input 
+                                                type="checkbox" 
+                                                name="access"
+                                                checked={listRole.find(element => element == item.level) !== undefined ? true : false}
+                                                className='ml-1'
+                                                onChange={listRole.find(element => element == item.level) === undefined ? () => this.roleApp(item.level) : () => this.roleRej(item.level)}
+                                                />
+                                                <text className='ml-4'>{item.name}</text>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
                         <hr/>
                         <div className={style.foot}>
                             <div></div>
@@ -816,7 +915,7 @@ class MasterUser extends Component {
                         )}
                     </Formik>
                 </Modal>
-                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
+                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit} size="lg">
                     <ModalHeader toggle={this.openModalEdit}>Edit Master User</ModalHeader>
                     <Formik
                     initialValues={{
@@ -897,7 +996,7 @@ class MasterUser extends Component {
                         )}
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
-                                User Level
+                                Role utama
                             </text>
                             <div className="col-md-9">
                             <Input 
@@ -907,7 +1006,7 @@ class MasterUser extends Component {
                                 onChange={handleChange("level")}
                                 onBlur={handleBlur("level")}
                                 >
-                                    <option>-Pilih Level-</option>
+                                    <option>-Pilih role-</option>
                                     {dataRole.length !== 0 && dataRole.map(item => {
                                         return (
                                             <option value={item.level}>{item.name}</option>
@@ -957,6 +1056,29 @@ class MasterUser extends Component {
                                 ) : null}
                             </div>
                         </div> */}
+                        {(values.level != '1' && values.level != '5' && values.level !== '' && values.level !== null) && (
+                            <div className='addModalMenu'>
+                                <text className="col-md-3">
+                                    Role Tambahan
+                                </text>
+                                <div className="col-md-9 listcek">
+                                    {dataRole.length !== 0 && dataRole.filter(item => (item.level != 1 && item.level != 9 && item.level != 5 && item.level != parseInt(values.level))).map(item => {
+                                        return (
+                                            <div className='listcek mr-2'>
+                                                <Input 
+                                                type="checkbox" 
+                                                name="access"
+                                                checked={listRole.find(element => element == item.level) !== undefined ? true : false}
+                                                className='ml-1'
+                                                onChange={listRole.find(element => element == item.level) === undefined ? () => this.roleApp(item.level) : () => this.roleRej(item.level)}
+                                                />
+                                                <text className='ml-4'>{item.name}</text>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
                         <hr/>
                         <div className={style.foot}>
                             <div>
@@ -1150,7 +1272,8 @@ const mapDispatchToProps = {
     exportMaster: user.exportMaster,
     getRole: user.getRole,
     resetPassword: user.resetPassword,
-    deleteUser: user.deleteUser
+    deleteUser: user.deleteUser,
+    getDetailUser: user.getDetailUser
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(MasterUser)

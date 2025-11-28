@@ -25,7 +25,6 @@ import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
 import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
-import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
@@ -41,6 +40,10 @@ import Email from '../../components/Ops/Email'
 import ExcelJS from "exceljs";
 import fs from "file-saver";
 import { CSVLink } from "react-csv";
+import depo from '../../redux/actions/depo'
+import tarif from '../../redux/actions/tarif'
+import taxcode from '../../redux/actions/taxcode'
+import kliring from '../../redux/actions/kliring'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
@@ -128,7 +131,7 @@ class AjuanBayarOps extends Component {
             subject: '',
             message: '',
             time: 'pilih',
-            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
         }
         this.onSetOpen = this.onSetOpen.bind(this);
@@ -381,8 +384,13 @@ class AjuanBayarOps extends Component {
         await this.props.submitAsset(token, detailStock[0].no_stock)
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         // const level = localStorage.getItem('level')
+        const token = localStorage.getItem('token')
+        await this.props.getDepo(token, 'all', '', 1)
+        await this.props.getTarif(token, 'all', '', 1)
+        await this.props.getKliring(token, 'all', '', 1)
+        await this.props.getTaxcode(token, 'all', '', 1)
         this.getDataOps()
     }
 
@@ -1275,6 +1283,7 @@ class AjuanBayarOps extends Component {
     prosesModalMcm = () => {
         const { detailOps } = this.props.ops
         const {glListrik} = this.props.coa
+        // const dataKliring = this.props.kliring
         // const nilai =  detailOps.reduce((accumulator, object) => {
         //     return accumulator + parseInt(object.nilai_ajuan);
         // }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
@@ -1458,27 +1467,26 @@ class AjuanBayarOps extends Component {
                     <MaterialTitlePanel title={contentHeader}>
                     <div className={style.backgroundLogo}>
                         <div className={style.bodyDashboard}>
-                            {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
-                                <div>{alertM}</div>
-                            </Alert> */}
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Pembayaran List Ajuan Ops</div>
                             </div>
-                            <div className={style.secEmail3}>
-                                <div>
-                                    <text>Show: </text>
-                                    <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
-                                        <DropdownToggle caret color="light">
-                                            {this.state.limit}
-                                        </DropdownToggle>
-                                        <DropdownMenu>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
-                                        </DropdownMenu>
-                                    </ButtonDropdown>
-                                    <text className={style.textEntries}>entries</text>
+                            <div className={style.secEmail4}>
+                                <div className={style.headEmail2}>
+                                    <div>
+                                        <text>Show: </text>
+                                        <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                            <DropdownToggle caret color="light">
+                                                {this.state.limit}
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                            </DropdownMenu>
+                                        </ButtonDropdown>
+                                        <text className={style.textEntries}>entries</text>
+                                    </div>
                                 </div>
                                 <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
@@ -1487,7 +1495,6 @@ class AjuanBayarOps extends Component {
                                         <option value='bayar'>Telah Bayar</option>
                                     </Input>
                                 </div>
-                                <div></div>
                             </div>
                             <div className={[style.secEmail4]}>
                                 <div className='rowCenter'>
@@ -1796,7 +1803,7 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
-                                                <th>{item.depo.channel}</th>
+                                                <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).channel}</th>
                                             </tr>
                                             )
                                         })}
@@ -1906,7 +1913,7 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
-                                                <th>{item.depo.channel}</th>
+                                                <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).channel}</th>
                                             </tr>
                                             )
                                         })}
@@ -2106,7 +2113,7 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
-                                                <th>{item.depo.channel}</th>
+                                                <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).channel}</th>
                                             </tr>
                                             )
                                         })}
@@ -2695,7 +2702,15 @@ class AjuanBayarOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.props.email.isLoading || this.props.dokumen.isLoading} size="sm">
+                <Modal isOpen={
+                    this.props.ops.isLoading || 
+                    this.props.email.isLoading || 
+                    this.props.dokumen.isLoading ||
+                    this.props.depo.isLoading || 
+                    this.props.kliring.isLoading || 
+                    this.props.taxcode.isLoading || 
+                    this.props.tarif.isLoading 
+                    } size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -3055,13 +3070,16 @@ const mapStateToProps = state => ({
     dokumen: state.dokumen,
     email: state.email,
     coa: state.coa,
+    depo: state.depo,
+    tarif: state.tarif,
+    kliring: state.kliring,
+    taxcode: state.taxcode
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
     getDetailDepo: depo.getDetailDepo,
-    getDepo: depo.getDepo,
     getRole: user.getRole,
     getOps: ops.getOps,
     getDetail: ops.getDetail,
@@ -3085,7 +3103,11 @@ const mapDispatchToProps = {
     sendEmail: email.sendEmail,
     resetEmail: email.resetError,
     addNotif: notif.addNotif,
-    nextOps: ops.nextOps
+    nextOps: ops.nextOps,
+    getDepo: depo.getDepo,
+    getTarif: tarif.getAllTarif,
+    getKliring: kliring.getAllKliring,
+    getTaxcode: taxcode.getAllTaxcode,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarOps)

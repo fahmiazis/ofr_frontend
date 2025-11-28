@@ -673,7 +673,9 @@ class MasterFaktur extends Component {
                                                     <td>
                                                         {item.status !== null ? 'used' 
                                                         : item.force === 1 ? 'available'
-                                                        : Math.floor(Math.abs(moment().format('M') - moment(item.tgl_faktur).format('M'))) > 3 ? 'expired'
+                                                        : moment().format('YYYY') - moment(item.tgl_faktur).format('YYYY') > 1 ? 'expired'
+                                                        : moment().format('YYYY') - moment(item.tgl_faktur).format('YYYY') === 1 && moment().format('M') <= 3 && Math.abs((parseInt(moment().format('M')) + 12) - moment(item.tgl_faktur).format('M')) > 3 ? 'expired'
+                                                        : moment().format('YYYY') - moment(item.tgl_faktur).format('YYYY') === 0 && Math.floor(Math.abs(moment().format('M') - moment(item.tgl_faktur).format('M'))) > 3 ? 'expired'
                                                         : 'available'
                                                         }
                                                     </td>

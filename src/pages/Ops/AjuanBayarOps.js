@@ -26,7 +26,6 @@ import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
 import notif from '../../redux/actions/notif'
 import Pdf from "../../components/Pdf"
-import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
@@ -42,6 +41,10 @@ import Email from '../../components/Ops/Email'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import { VscTriangleDown } from "react-icons/vsc";
+import depo from '../../redux/actions/depo'
+import tarif from '../../redux/actions/tarif'
+import taxcode from '../../redux/actions/taxcode'
+import kliring from '../../redux/actions/kliring'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
@@ -131,7 +134,7 @@ class AjuanBayarOps extends Component {
             tipeReject: '',
             emailReject: false,
             time: 'pilih',
-            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             dataZip: [],
             docHist: false,
@@ -572,6 +575,10 @@ class AjuanBayarOps extends Component {
     async componentDidMount() {
         // const level = localStorage.getItem('level')
         const token = localStorage.getItem('token')
+        await this.props.getDepo(token, 'all', '', 1)
+        await this.props.getTarif(token, 'all', '', 1)
+        await this.props.getKliring(token, 'all', '', 1)
+        await this.props.getTaxcode(token, 'all', '', 1)
         await this.props.getCoa(token, 'opskasbon')
         this.getDataOps()
     }
@@ -1353,9 +1360,6 @@ class AjuanBayarOps extends Component {
                     <MaterialTitlePanel title={contentHeader}>
                     <div className={style.backgroundLogo}>
                         <div className={style.bodyDashboard}>
-                            {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
-                                <div>{alertM}</div>
-                            </Alert> */}
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Approval List Ajuan Bayar Operasional</div>
                             </div>
@@ -1527,13 +1531,12 @@ class AjuanBayarOps extends Component {
                                                         </th>
                                                         <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
                                                         <th>{item.no_transaksi}</th>
-                                                        <th>{item.depo.profit_center}</th>
+                                                        <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                         <th>{item.area}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.sub_coa}</th>
-                                                        <th>{item.tujuan_tf}
-                                                        </th>
+                                                        <th>{item.tujuan_tf}</th>
                                                         <th>{item.keterangan}</th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
                                                         <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
@@ -1674,7 +1677,7 @@ class AjuanBayarOps extends Component {
                                                     />
                                                 </th>
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
-                                                <th>{item.depo.profit_center}</th>
+                                                <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
                                                 <th>{item.keterangan}</th>
@@ -1768,7 +1771,7 @@ class AjuanBayarOps extends Component {
                                         return (
                                             <tr>
                                                 <th scope="row">{dataDownload.indexOf(item) + 1}</th>
-                                                <th>{item.depo.profit_center}</th>
+                                                <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
                                                 <th>{item.keterangan}</th>
@@ -1875,7 +1878,7 @@ class AjuanBayarOps extends Component {
                                                 <th scope="row">{dataDownload.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.area}</th>
-                                                <th>{item.depo.profit_center}</th>
+                                                <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                 <th>
                                                     {
                                                         glInternet.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Indihome' :
@@ -1891,7 +1894,7 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
-                                                <th>{item.depo.channel}</th>
+                                                <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).channel}</th>
                                             </tr>
                                         )
                                     })}
@@ -2002,7 +2005,7 @@ class AjuanBayarOps extends Component {
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{item.area}</th>
-                                                <th>{item.depo.profit_center}</th>
+                                                <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                 <th>
                                                     {
                                                         glInternet.find((e) => e === parseInt(item.no_coa)) !== undefined && item.tujuan_tf === 'ID Pelanggan' ? 'Indihome' :
@@ -2018,7 +2021,7 @@ class AjuanBayarOps extends Component {
                                                 <th>{item.nilai_bayar === null || item.nilai_bayar === undefined ? 0 : item.nilai_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                 <th>{item.keterangan}</th>
                                                 <th>-</th>
-                                                <th>{item.depo.channel}</th>
+                                                <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).channel}</th>
                                             </tr>
                                         )
                                     })}
@@ -2041,88 +2044,130 @@ class AjuanBayarOps extends Component {
                         <Table borderless responsive className="tabPreview mt-4">
                             <thead>
                                 <tr>
-                                    <th className="buatPre">Dibuat oleh,</th>
-                                    <th className="buatPre">Diketahui oleh,</th>
-                                    <th className="buatPre">Disetujui oleh,</th>
+                                    {ttdOpsList.pembuat !== undefined && ttdOpsList.pembuat.length > 0 && (
+                                        <th className="buatPre">Dibuat oleh,</th>
+                                    )}
+                                    {ttdOpsList.pemeriksa !== undefined && ttdOpsList.pemeriksa.length > 0 && (
+                                        <th className="buatPre">Diperiksa oleh,</th>
+                                    )}
+                                    {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.length > 0 && (
+                                        <th className="buatPre">Diketahui oleh,</th>
+                                    )}
+                                    {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.length > 0 && (
+                                        <th className="buatPre">Disetujui oleh,</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="tbodyPre">
                                 <tr>
-                                    <td className="restTable">
-                                        <Table bordered responsive className="divPre">
-                                                <thead>
-                                                    <tr>
+                                    {ttdOpsList.pembuat !== undefined && ttdOpsList.pembuat.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdOpsList.pembuat !== undefined && ttdOpsList.pembuat.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
                                                         {ttdOpsList.pembuat !== undefined && ttdOpsList.pembuat.map(item => {
                                                             return (
-                                                                <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
-                                                                </th>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                    {ttdOpsList.pembuat !== undefined && ttdOpsList.pembuat.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                    </tr>
-                                                </tbody>
-                                        </Table>
-                                    </td>
-                                    <td className="restTable">
-                                        <Table bordered responsive className="divPre">
-                                                <thead>
-                                                    <tr>
-                                                        {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.map(item => {
-                                                            return (
-                                                                <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
-                                                                </th>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.map(item => {
-                                                            return (
                                                                 <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
                                                             )
                                                         })}
-                                                    </tr>
-                                                </tbody>
-                                        </Table>
-                                    </td>
-                                    <td className="restTable">
-                                        <Table bordered responsive className="divPre">
-                                                <thead>
-                                                    <tr>
-                                                        {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.map(item => {
-                                                            return (
-                                                                <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
-                                                                </th>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.map(item => {
-                                                            return (
-                                                                <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </tbody>
-                                        </Table>
-                                    </td>
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                    )}
+                                    {ttdOpsList.pemeriksa !== undefined && ttdOpsList.pemeriksa.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdOpsList.pemeriksa !== undefined && ttdOpsList.pemeriksa.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            {ttdOpsList.pemeriksa !== undefined && ttdOpsList.pemeriksa.map(item => {
+                                                                return (
+                                                                    <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                    )}
+                                    {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.map(item => {
+                                                                return (
+                                                                    <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                    )}
+                                    {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.map(item => {
+                                                                return (
+                                                                    <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                    )}
                                 </tr>
                             </tbody>
                         </Table>
@@ -2556,7 +2601,15 @@ class AjuanBayarOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.props.email.isLoading || this.props.notif.isLoading} size="sm">
+                <Modal isOpen={
+                    this.props.ops.isLoading || 
+                    this.props.email.isLoading || 
+                    this.props.notif.isLoading ||
+                    this.props.depo.isLoading || 
+                    this.props.kliring.isLoading || 
+                    this.props.taxcode.isLoading || 
+                    this.props.tarif.isLoading 
+                    } size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2925,7 +2978,6 @@ class AjuanBayarOps extends Component {
 
 const mapStateToProps = state => ({
     approve: state.approve,
-    depo: state.depo,
     user: state.user,
     notif: state.notif,
     ops: state.ops,
@@ -2933,14 +2985,17 @@ const mapStateToProps = state => ({
     menu: state.menu,
     reason: state.reason,
     dokumen: state.dokumen,
-    email: state.email
+    email: state.email,
+    depo: state.depo,
+    tarif: state.tarif,
+    kliring: state.kliring,
+    taxcode: state.taxcode
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
     getDetailDepo: depo.getDetailDepo,
-    getDepo: depo.getDepo,
     getRole: user.getRole,
     getOps: ops.getOps,
     getDetail: ops.getDetail,
@@ -2964,7 +3019,11 @@ const mapDispatchToProps = {
     genNomorTransfer: ops.genNomorTransfer,
     addNotif: notif.addNotif,
     getCoa: coa.getCoa,
-    nextOps: ops.nextOps
+    nextOps: ops.nextOps,
+    getDepo: depo.getDepo,
+    getTarif: tarif.getAllTarif,
+    getKliring: kliring.getAllKliring,
+    getTaxcode: taxcode.getAllTaxcode,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(AjuanBayarOps)

@@ -558,8 +558,8 @@ class MasterUser extends Component {
                                                     <th>No</th>
                                                     <th>Name</th>
                                                     <th>Full Name</th>
-                                                    <th>Type</th>
                                                     <th>Level</th>
+                                                    <th>Type</th>
                                                     <th>Opsi</th>
                                                 </tr>
                                             </thead>

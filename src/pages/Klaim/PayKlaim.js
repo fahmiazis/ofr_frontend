@@ -128,7 +128,7 @@ class AjuanBayarKlaim extends Component {
             subject: '',
             message: '',
             time: 'pilih',
-            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
         }
         this.onSetOpen = this.onSetOpen.bind(this);

@@ -35,6 +35,14 @@ export default {
         type: 'EXPORT_MASTER_VENDOR',
         payload: http(token).get(`/vendor/export`)
     }),
+    deleteRekven: (token, id) => ({
+        type: 'DELETE_REKVENFIN',
+        payload: http(token).delete(`/vendor/rekven/del/${id}`)
+    }),
+    updateRekven: (token, data) => ({
+        type: 'UPDATE_REKVENFIN',
+        payload: http(token).patch(`/vendor/rekven/update`, data)
+    }),
     nextPage: (token, link) => ({
         type: 'NEXT_DATA_VENDOR',
         payload: http(token).get(`${link}`)

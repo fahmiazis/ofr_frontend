@@ -41,6 +41,8 @@ import Email from '../../components/Klaim/Email'
 import Countdown from 'react-countdown'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import ExcelJS from "exceljs"
+import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 
 const klaimSchema = Yup.object().shape({
@@ -130,11 +132,12 @@ class AjuanBayarKlaim extends Component {
             tipeReject: '',
             emailReject: false,
             time: 'pilih',
-            time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
+            time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             dataZip: [],
             docHist: false,
             detailDoc: {},
+            listPay: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -1043,6 +1046,127 @@ class AjuanBayarKlaim extends Component {
         this.setState({modalDownload: !this.state.modalDownload})
     }
 
+    downloadFaktur = async (val) => {
+        const token = localStorage.getItem('token')
+        const {listPay, listKlaim} = this.state
+        const {newKlaim} = this.props.klaim
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('data faktur')
+
+        // await ws.protect('F1n4NcePm4')
+
+        const borderStyles = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        }
+
+        ws.columns = [
+            { header: 'No Ajuan', key: 'c1' },
+            { header: 'No Faktur', key: 'c2' },
+            { header: 'Tgl Faktur', key: 'c3' },
+            { header: 'Value', key: 'c4' },
+            { header: 'Keterangan', key: 'c5' }
+        ]
+
+        console.log(listPay)
+        if (val === 'partial') {
+
+            const {detailKlaim} = this.props.klaim
+            for (let j = 0; j < detailKlaim.length; j++) {
+                const dataFaktur = detailKlaim[j].faktur
+                if (dataFaktur.length > 0) {
+                    dataFaktur.map((item, index) => {
+                        return (ws.addRow(
+                            {
+                                c1: detailKlaim[j].no_transaksi,
+                                c2: item.no_faktur,
+                                c3: item.date_faktur,
+                                c4: item.val,
+                                c5: item.keterangan,
+                            }
+                        )
+                        )
+                    })
+                }
+            }
+
+            ws.eachRow({ includeEmpty: true }, function (row, rowNumber) {
+                row.eachCell({ includeEmpty: true }, function (cell, colNumber) {
+                    cell.border = borderStyles;
+                })
+            })
+    
+            ws.columns.forEach(column => {
+                const lengths = column.values.map(v => v.toString().length)
+                const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+                column.width = maxLength + 5
+            })
+    
+            workbook.xlsx.writeBuffer().then(function (buffer) {
+                fs.saveAs(
+                    new Blob([buffer], { type: "application/octet-stream" }),
+                    `Data Faktur Klaim ${detailKlaim[0].no_pembayaran} ${moment().format('DD MMMM YYYY')}.xlsx`
+                )
+            })
+        } else {
+            const listData = val === 'ajuan bayar' ? listPay : listKlaim
+            if (listData.length === 0) {
+                this.setState({confirm: 'failDownload'})
+                this.openConfirm()
+            } else {
+                for (let i = 0; i < listData.length; i++) {
+                    const cekData = newKlaim.find(item => item.no_pembayaran === listData[i] || item.no_transaksi === listData[i])
+                    const tempno = {
+                        no: val === 'ajuan bayar' ? cekData.no_pembayaran : cekData.no_transaksi,
+                        tipe: val === 'ajuan bayar' ? 'ajuan bayar' : 'klaim'
+                    }
+                    await this.props.getDetail(token, tempno)
+                    const {detailKlaim} = this.props.klaim
+                    for (let j = 0; j < detailKlaim.length; j++) {
+                        const dataFaktur = detailKlaim[j].faktur
+                        if (dataFaktur.length > 0) {
+                            dataFaktur.map((item, index) => {
+                                return (ws.addRow(
+                                    {
+                                        c1: detailKlaim[j].no_transaksi,
+                                        c2: item.no_faktur,
+                                        c3: item.date_faktur,
+                                        c4: item.val,
+                                        c5: item.keterangan,
+                                    }
+                                )
+                                )
+                            })
+                        }
+                    }
+                }
+    
+                ws.eachRow({ includeEmpty: true }, function (row, rowNumber) {
+                    row.eachCell({ includeEmpty: true }, function (cell, colNumber) {
+                        cell.border = borderStyles;
+                    })
+                })
+        
+                ws.columns.forEach(column => {
+                    const lengths = column.values.map(v => v.toString().length)
+                    const maxLength = Math.max(...lengths.filter(v => typeof v === 'number'))
+                    column.width = maxLength + 5
+                })
+        
+                workbook.xlsx.writeBuffer().then(function (buffer) {
+                    fs.saveAs(
+                        new Blob([buffer], { type: "application/octet-stream" }),
+                        `Data Faktur Klaim ${moment().format('DD MMMM YYYY')}.xlsx`
+                    )
+                })
+            }
+        }
+    }
+
+
+
     openModalPdf = () => {
         this.setState({openPdf: !this.state.openPdf})
     }
@@ -1215,6 +1339,41 @@ class AjuanBayarKlaim extends Component {
         }
     }
 
+    chekAppPay = (val) => {
+        const { listPay } = this.state
+        const {newKlaim} = this.props.klaim
+        if (val === 'all') {
+            const data = []
+            for (let i = 0; i < newKlaim.length; i++) {
+                if (newKlaim[i].status_reject !== 1) {
+                    data.push(newKlaim[i].no_pembayaran)
+                }
+            }
+            this.setState({listPay: data})
+        } else {
+            listPay.push(val)
+            this.setState({listPay: listPay})
+        }
+    }
+
+    chekRejPay = (val) => {
+        const {listPay} = this.state
+        if (val === 'all') {
+            const data = []
+            this.setState({listPay: data})
+        } else {
+            const data = []
+            for (let i = 0; i < listPay.length; i++) {
+                if (listPay[i] === val) {
+                    data.push()
+                } else {
+                    data.push(listPay[i])
+                }
+            }
+            this.setState({listPay: data})
+        }
+    }
+
     prepareReject = async (val) => {
         const token = localStorage.getItem("token")
         await this.props.getAllMenu(token, 'reject', 'Klaim')
@@ -1246,7 +1405,7 @@ class AjuanBayarKlaim extends Component {
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
-        const {detailDoc, tipeTrans, tipeReject, dataRinci, listMut, listReason, dataMenu, listMenu, listKlaim, dataDownload, dataZip} = this.state
+        const {detailDoc, tipeTrans, tipeReject, dataRinci, listMut, listReason, dataMenu, listMenu, listKlaim, dataDownload, dataZip, listPay} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailKlaim, ttdKlaim, ttdKlaimList, dataDoc, newKlaim } = this.props.klaim
@@ -1309,6 +1468,19 @@ class AjuanBayarKlaim extends Component {
                                         <text className={style.textEntries}>entries</text>
                                     </div>
                                 </div>
+                                {this.state.filter === 'available' && level !== '2' ? (
+                                    <div className={style.searchEmail2}>
+                                    </div>
+                                ) : (
+                                    <div className={style.headEmail2}>
+                                        {this.state.filter === 'verif' && level === '2' ?  (
+                                            <>
+                                                <Button className='mr-1' onClick={this.prosesSubmit} color="primary" size="lg">Submit</Button>
+                                                {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button> */}
+                                            </>
+                                        ) : null}
+                                    </div>
+                                )}
                             </div>
                             <div className={style.secEmail4}>
                                 <div className={style.searchEmail2}>
@@ -1320,19 +1492,16 @@ class AjuanBayarKlaim extends Component {
                                         {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                     </Input>
                                 </div>
-                                {this.state.filter === 'available' && level !== '2' ? (
-                                    <div></div>
-                                ) : (
-                                    <div className={style.headEmail2}>
-                                        {this.state.filter === 'verif' && level === '2' ?  (
-                                            <>
-                                                <Button className='mr-1' onClick={this.prosesSubmit} color="primary" size="lg">Submit</Button>
-                                                {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button> */}
-                                            </>
-                                        ) : null}
-                                        <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download</Button>
-                                    </div>
-                                )}
+                                <div className={style.searchEmail2}>
+                                    <text>Search: </text>
+                                    <Input 
+                                    className={style.search}
+                                    onChange={this.onSearch}
+                                    value={this.state.search}
+                                    onKeyPress={this.onSearch}
+                                    >
+                                    </Input>
+                                </div>
                             </div>
                             <div className={[style.secEmail4]}>
                                 <div className='rowCenter'>
@@ -1371,15 +1540,11 @@ class AjuanBayarKlaim extends Component {
                                         </>
                                     ) : null}
                                 </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Search: </text>
-                                    <Input 
-                                    className={style.search}
-                                    onChange={this.onSearch}
-                                    value={this.state.search}
-                                    onKeyPress={this.onSearch}
-                                    >
-                                    </Input>
+                                <div className={style.headEmail2}>
+                                    {level === '2' &&  (
+                                        <Button className='mr-1' color="success" size="lg" onClick={this.prosesDownload}>Download Ajuan</Button>
+                                    )}
+                                    <Button className='mr-1' color="warning" size="lg" onClick={() => this.downloadFaktur(this.state.filter === 'verif' ? 'klaim' : 'ajuan bayar')}>Download Data Faktur</Button>
                                 </div>
                             </div>
                             <div className={style.tableDashboard}>
@@ -1442,6 +1607,15 @@ class AjuanBayarKlaim extends Component {
                                     <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
                                             <tr>
+                                                <th>
+                                                    <input  
+                                                    className='mr-2'
+                                                    type='checkbox'
+                                                    checked={listPay.length === 0 ? false : listPay.length === newKlaim.length ? true : false}
+                                                    onChange={() => listPay.length === newKlaim.length ? this.chekRejPay('all') : this.chekAppPay('all')}
+                                                    />
+                                                    Select
+                                                </th>
                                                 <th>No</th>
                                                 <th>NO.Transaksi Ajuan Bayar</th>
                                                 <th>Tanggal Submit Ajuan Bayar</th>
@@ -1454,6 +1628,14 @@ class AjuanBayarKlaim extends Component {
                                             {newKlaim.map(item => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
+                                                        <th>
+                                                            <input 
+                                                            type='checkbox'
+                                                            disabled={item.status_reject === 1 ? true : false}
+                                                            checked={listPay.find(element => element === item.no_pembayaran) !== undefined ? true : false}
+                                                            onChange={listPay.find(element => element === item.no_pembayaran) === undefined ? () => this.chekAppPay(item.no_pembayaran) : () => this.chekRejPay(item.no_pembayaran)}
+                                                            />
+                                                        </th>
                                                         <th>{newKlaim.indexOf(item) + 1}</th>
                                                         <th>{item.no_pembayaran}</th>
                                                         <th>{moment(item.tgl_sublist).format('DD MMMM YYYY')}</th>
@@ -1865,88 +2047,130 @@ class AjuanBayarKlaim extends Component {
                         <Table borderless responsive className="tabPreview mt-4">
                             <thead>
                                 <tr>
-                                    <th className="buatPre">Dibuat oleh,</th>
-                                    <th className="buatPre">Diketahui oleh,</th>
-                                    <th className="buatPre">Disetujui oleh,</th>
+                                    {ttdKlaimList.pembuat !== undefined && ttdKlaimList.pembuat.length > 0 && (
+                                        <th className="buatPre">Dibuat oleh,</th>
+                                    )}
+                                    {ttdKlaimList.pemeriksa !== undefined && ttdKlaimList.pemeriksa.length > 0 && (
+                                        <th className="buatPre">Diperiksa oleh,</th>
+                                    )}
+                                    {ttdKlaimList.mengetahui !== undefined && ttdKlaimList.mengetahui.length > 0 && (
+                                        <th className="buatPre">Diketahui oleh,</th>
+                                    )}
+                                    {ttdKlaimList.penyetuju !== undefined && ttdKlaimList.penyetuju.length > 0 && (
+                                        <th className="buatPre">Disetujui oleh,</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="tbodyPre">
                                 <tr>
-                                    <td className="restTable">
-                                        <Table bordered responsive className="divPre">
-                                                <thead>
-                                                    <tr>
+                                    {ttdKlaimList.pembuat !== undefined && ttdKlaimList.pembuat.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdKlaimList.pembuat !== undefined && ttdKlaimList.pembuat.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
                                                         {ttdKlaimList.pembuat !== undefined && ttdKlaimList.pembuat.map(item => {
                                                             return (
-                                                                <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
-                                                                </th>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                    {ttdKlaimList.pembuat !== undefined && ttdKlaimList.pembuat.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                    </tr>
-                                                </tbody>
-                                        </Table>
-                                    </td>
-                                    <td className="restTable">
-                                        <Table bordered responsive className="divPre">
-                                                <thead>
-                                                    <tr>
-                                                        {ttdKlaimList.mengetahui !== undefined && ttdKlaimList.mengetahui.map(item => {
-                                                            return (
-                                                                <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
-                                                                </th>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        {ttdKlaimList.mengetahui !== undefined && ttdKlaimList.mengetahui.map(item => {
-                                                            return (
                                                                 <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
                                                             )
                                                         })}
-                                                    </tr>
-                                                </tbody>
-                                        </Table>
-                                    </td>
-                                    <td className="restTable">
-                                        <Table bordered responsive className="divPre">
-                                                <thead>
-                                                    <tr>
-                                                        {ttdKlaimList.penyetuju !== undefined && ttdKlaimList.penyetuju.map(item => {
-                                                            return (
-                                                                <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
-                                                                </th>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        {ttdKlaimList.penyetuju !== undefined && ttdKlaimList.penyetuju.map(item => {
-                                                            return (
-                                                                <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </tbody>
-                                        </Table>
-                                    </td>
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                    )}
+                                    {ttdKlaimList.pemeriksa !== undefined && ttdKlaimList.pemeriksa.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdKlaimList.pemeriksa !== undefined && ttdKlaimList.pemeriksa.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            {ttdKlaimList.pemeriksa !== undefined && ttdKlaimList.pemeriksa.map(item => {
+                                                                return (
+                                                                    <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                    )}
+                                    {ttdKlaimList.mengetahui !== undefined && ttdKlaimList.mengetahui.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdKlaimList.mengetahui !== undefined && ttdKlaimList.mengetahui.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            {ttdKlaimList.mengetahui !== undefined && ttdKlaimList.mengetahui.map(item => {
+                                                                return (
+                                                                    <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                    )}
+                                    {ttdKlaimList.penyetuju !== undefined && ttdKlaimList.penyetuju.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdKlaimList.penyetuju !== undefined && ttdKlaimList.penyetuju.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            {ttdKlaimList.penyetuju !== undefined && ttdKlaimList.penyetuju.map(item => {
+                                                                return (
+                                                                    <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                    )}
                                 </tr>
                             </tbody>
                         </Table>
@@ -1956,6 +2180,7 @@ class AjuanBayarKlaim extends Component {
                     <div className="modalFoot ml-3">
                         <div>
                             <Button color='primary' onClick={() => this.props.history.push('/formlistklm')}>Download</Button>
+                            <Button className='ml-2' color='warning' onClick={() => this.downloadFaktur('partial')}>Download Data Faktur</Button>
                         </div>
                         <div className="btnFoot">
                             {this.state.filter === 'all' ? null : (
@@ -2529,7 +2754,15 @@ class AjuanBayarKlaim extends Component {
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Gagal Submit</div>
-                                <div className={[style.sucUpdate, style.green]}>Pilih data Operasional yg ingin diajukan terlebih dahulu</div>
+                                <div className={[style.sucUpdate, style.green]}>Pilih data klaim yg ingin diajukan terlebih dahulu</div>
+                            </div>
+                        </div>
+                    ) : this.state.confirm === 'failDownload' ?(
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <AiOutlineClose size={80} className={style.red} />
+                                <div className={[style.sucUpdate, style.green]}>Gagal Download</div>
+                                <div className={[style.sucUpdate, style.green]}>Pilih data klaim yg ingin didownload terlebih dahulu</div>
                             </div>
                         </div>
                     ) : (

@@ -27,7 +27,6 @@ import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
 // import notif from '../redux/actions/notif'
 import Pdf from "../../components/Pdf"
-import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
@@ -36,6 +35,10 @@ import ops from '../../redux/actions/ops'
 import dokumen from '../../redux/actions/dokumen'
 import ExcelJS from "exceljs";
 import fs from "file-saver";
+import depo from '../../redux/actions/depo'
+import tarif from '../../redux/actions/tarif'
+import taxcode from '../../redux/actions/taxcode'
+import kliring from '../../redux/actions/kliring'
 const {REACT_APP_BACKEND_URL} = process.env
 const ceknon = 'Non PPh'
 const cek21 = 'PPh Pasal 21'
@@ -353,8 +356,13 @@ class ReportOps extends Component {
         await this.props.submitAsset(token, detailStock[0].no_stock)
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         // const level = localStorage.getItem('level')
+        const token = localStorage.getItem('token')
+        await this.props.getDepo(token, 'all', '', 1)
+        await this.props.getTarif(token, 'all', '', 1)
+        await this.props.getKliring(token, 'all', '', 1)
+        await this.props.getTaxcode(token, 'all', '', 1)
         this.getDataOps()
     }
 
@@ -832,6 +840,7 @@ class ReportOps extends Component {
 
     downloadOps = async () => {
         const { dataDownload } = this.state
+        const { dataDepo } = this.props.depo
 
         const workbook = new ExcelJS.Workbook();
         const ws = workbook.addWorksheet('data operasional')
@@ -882,9 +891,9 @@ class ReportOps extends Component {
         dataDownload.map((item, index) => { return ( ws.addRow(
             {
                 c1: index + 1,
-                c2: item.finance.pic_finance,
+                c2: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic_finance,
                 c3: item.area,
-                c4: item.finance.channel,
+                c4: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).channel,
                 c5: "-",
                 c6: item.no_transaksi,
                 c7: item.kode_plant,
@@ -969,6 +978,10 @@ class ReportOps extends Component {
 
     downloadJurnal = async () => {
         this.setLoading(true)
+        const { dataDepo } = this.props.depo
+        const dataTaxcode = this.props.taxcode.dataAll
+        const dataTarif = this.props.tarif.dataAll
+
         const { dataDownload, jurnalMap, dataPph, jurnal2,
         jurnal3, jurnal4, jurnal6 } = this.state
 
@@ -1070,10 +1083,10 @@ class ReportOps extends Component {
         //             c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
         //             c6: '',
         //             c7: 'SA',
-        //             c8: item.finance.pic_finance,
+        //             c8: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic_finance,
         //             c9: 'IDR',
         //             c10: iter + 1,
-        //             c11: iter === 0 ? item.depo.gl_kk : '11010401',
+        //             c11: iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).gl_kk : '11010401',
         //             c12: iter === 0 ? 40 : 50,
         //             c13: '',
         //             c14: '',
@@ -1089,11 +1102,11 @@ class ReportOps extends Component {
         //             c24: '',
         //             c25: '',
         //             c26: '',
-        //             c27: item.depo.profit_center,
+        //             c27: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center,
         //             c28: '',
         //             c29: '',
         //             c30: '',
-        //             c31: item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`,
+        //             c31: dataTaxcode.find(e => e.tax_code === item.tax_code) === undefined ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`,
         //             c32: '',
         //             c33: '',
         //             c34: '',
@@ -1103,7 +1116,7 @@ class ReportOps extends Component {
         // ) })
 
         dataDownload.map((item, index) => { return (
-            item.veriftax !== null && item.veriftax.grouping !== null && item.veriftax.grouping.toLowerCase() === 'kasbon' ? (
+            dataTarif.find(e => e.gl_account === item.no_coa) !== undefined && dataTarif.find(e => e.gl_account === item.no_coa).grouping !== null && dataTarif.find(e => e.gl_account === item.no_coa).grouping.toLowerCase() === 'kasbon' ? (
                 jurnal2.map((x, iter) => {
                     return ( ws.addRow({
                         
@@ -1114,7 +1127,7 @@ class ReportOps extends Component {
                             c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                             c6: '',
                             c7: 'SA',
-                            c8: item.depo.pic.username,
+                            c8: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username,
                             c9: 'IDR',
                             c10:iter + 1,
                             c11: iter === 0 ? dataPph.kasbon : iter === 1 && dataPph.bankops,
@@ -1123,7 +1136,7 @@ class ReportOps extends Component {
                             c14: '',
                             c15: item.nilai_buku,
                             c16: '',
-                            c17: item.depo.profit_center,
+                            c17: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center,
                             c18: '',
                             c19: '',
                             c20: item.sub_coa + 's',
@@ -1133,7 +1146,7 @@ class ReportOps extends Component {
                             c24: '',
                             c25: '',
                             c26: '',
-                            c27: item.depo.profit_center,
+                            c27: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center,
                             c28: '',
                             c29: '',
                             c30: '',
@@ -1156,16 +1169,16 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.pic.username,
+                                c8: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
-                                c11: iter === 0 ? item.depo.gl_kk : iter === 1 && dataPph.bankops,
+                                c11: iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).gl_kk : iter === 1 && dataPph.bankops,
                                 c12: iter === 0 ? 40 : 50,
                                 c13: '',
                                 c14: '',
                                 c15: item.nilai_buku,
                                 c16: '',
-                                c17: iter === 0 ? item.depo.profit_center : '',
+                                c17: iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : '',
                                 c18: '',
                                 c19: '',
                                 c20: item.sub_coa + 's',
@@ -1175,7 +1188,7 @@ class ReportOps extends Component {
                                 c24: '',
                                 c25: '',
                                 c26: '',
-                                c27: iter === 0 ? item.depo.profit_center : dataPph.pc_ho,
+                                c27: iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : dataPph.pc_ho,
                                 c28: '',
                                 c29: '',
                                 c30: '',
@@ -1196,12 +1209,12 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.pic.username,
+                                c8: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
-                                c11: iter === 0 ? item.depo.gl_kk 
+                                c11: iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).gl_kk 
                                     : iter === 1 ? dataPph.bankops
-                                    : iter === 2 && item.veriftax !== null ? item.veriftax.gl_jurnal
+                                    : iter === 2 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal
                                     : iter === 3 && 
                                     (item.jenis_pph === cek21 ? dataPph.pph21 :
                                     item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -1212,7 +1225,7 @@ class ReportOps extends Component {
                                 c14: '',
                                 c15: iter === 0 || iter === 1 ? item.nilai_buku : item.nilai_utang,
                                 c16: '',
-                                c17: iter === 2 ? item.depo.profit_center : '',
+                                c17: iter === 2 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : '',
                                 c18: '',
                                 c19: '',
                                 c20: item.sub_coa + 's',
@@ -1222,7 +1235,7 @@ class ReportOps extends Component {
                                 c24: '',
                                 c25: '',
                                 c26: '',
-                                c27: iter === 1 ? dataPph.pc_ho : item.depo.profit_center,
+                                c27: iter === 1 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center,
                                 c28: '',
                                 c29: '',
                                 c30: '',
@@ -1243,20 +1256,20 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.pic.username,
+                                c8: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
-                                c11: iter === 0 ? item.depo.gl_kk 
+                                c11: iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).gl_kk 
                                     : iter === 1 ? dataPph.bankops
                                     : iter === 2 ? dataPph.ppn
-                                    : iter === 3 && item.veriftax !== null && item.veriftax.gl_jurnal
+                                    : iter === 3 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined && dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal
                                 ,
                                 c12: iter === 0 || iter === 2 ? 40 : 50,
                                 c13: '',
                                 c14: '',
                                 c15: iter === 0 || iter === 1 ? item.nilai_buku : item.ppn,
                                 c16: '',
-                                c17: iter === 3 ? item.depo.profit_center : '',
+                                c17: iter === 3 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : '',
                                 c18: '',
                                 c19: '',
                                 c20: item.sub_coa + 's',
@@ -1266,7 +1279,7 @@ class ReportOps extends Component {
                                 c24: '',
                                 c25: '',
                                 c26: '',
-                                c27: iter === 1 ? dataPph.pc_ho : item.depo.profit_center,
+                                c27: iter === 1 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center,
                                 c28: '',
                                 c29: '',
                                 c30: '',
@@ -1287,14 +1300,14 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.pic.username,
+                                c8: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
-                                c11: iter === 0 ? item.depo.gl_kk 
+                                c11: iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).gl_kk 
                                     : iter === 1 ? dataPph.bankops
                                     : iter === 2 ? dataPph.ppn
-                                    : iter === 3 && item.veriftax !== null ? item.veriftax.gl_jurnal
-                                    : iter === 4 && item.veriftax !== null ? item.veriftax.gl_jurnal
+                                    : iter === 3 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal
+                                    : iter === 4 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal
                                     : iter === 5 && 
                                         (item.jenis_pph === cek21 ? dataPph.pph21 :
                                         item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -1308,7 +1321,7 @@ class ReportOps extends Component {
                                 : item.nilai_utang
                                 ,
                                 c16: '',
-                                c17: (iter === 3 || iter === 4) ? item.depo.profit_center : '',
+                                c17: (iter === 3 || iter === 4) ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : '',
                                 c18: '',
                                 c19: '',
                                 c20: item.sub_coa + 's',
@@ -1318,7 +1331,7 @@ class ReportOps extends Component {
                                 c24: '',
                                 c25: '',
                                 c26: '',
-                                c27: iter === 1 ? dataPph.pc_ho : item.depo.profit_center,
+                                c27: iter === 1 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center,
                                 c28: '',
                                 c29: '',
                                 c30: '',
@@ -1341,16 +1354,16 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.pic.username,
+                                c8: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username,
                                 c9: 'IDR',
                                 c10:iter + 1,
-                                c11: iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal : iter === 1 && dataPph.bankops,
+                                c11: iter === 0 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal : iter === 1 && dataPph.bankops,
                                 c12: iter === 0 ? 40 : 50,
                                 c13: '',
                                 c14: '',
                                 c15: item.nilai_buku,
                                 c16: '',
-                                c17: iter === 0 ? item.depo.profit_center : '',
+                                c17: iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : '',
                                 c18: '',
                                 c19: '',
                                 c20: item.sub_coa + 's',
@@ -1360,7 +1373,7 @@ class ReportOps extends Component {
                                 c24: '',
                                 c25: '',
                                 c26: '',
-                                c27: iter === 0 ? item.depo.profit_center : dataPph.pc_ho,
+                                c27: iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : dataPph.pc_ho,
                                 c28: '',
                                 c29: '',
                                 c30: '',
@@ -1381,10 +1394,10 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.pic.username,
+                                c8: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
-                                c11: iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal 
+                                c11: iter === 0 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal 
                                     : iter === 1 ? 
                                     (item.jenis_pph === cek21 ? dataPph.pph21 :
                                     item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -1396,7 +1409,7 @@ class ReportOps extends Component {
                                 c14: '',
                                 c15: iter === 0 ? item.nilai_buku : iter === 1 ? item.nilai_utang : item.nilai_bayar,
                                 c16: '',
-                                c17: iter === 0 ? item.depo.profit_center : '',
+                                c17: iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : '',
                                 c18: '',
                                 c19: '',
                                 c20: item.sub_coa + 's',
@@ -1406,7 +1419,7 @@ class ReportOps extends Component {
                                 c24: '',
                                 c25: '',
                                 c26: '',
-                                c27: iter === 2 ? dataPph.pc_ho : item.depo.profit_center,
+                                c27: iter === 2 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center,
                                 c28: '',
                                 c29: '',
                                 c30: '',
@@ -1427,10 +1440,10 @@ class ReportOps extends Component {
                                 c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                 c6: '',
                                 c7: 'SA',
-                                c8: item.depo.pic.username,
+                                c8: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username,
                                 c9: 'IDR',
                                 c10: iter + 1,
-                                c11: iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal
+                                c11: iter === 0 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal
                                     : iter === 1 ? dataPph.ppn
                                     : iter === 2 && dataPph.bankops
                                 ,
@@ -1439,7 +1452,7 @@ class ReportOps extends Component {
                                 c14: '',
                                 c15: iter === 0 ? item.nilai_bayar : iter === 1 ? item.ppn : item.nilai_buku,
                                 c16: '',
-                                c17: iter === 0 ? item.depo.profit_center : '',
+                                c17: iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : '',
                                 c18: '',
                                 c19: '',
                                 c20: item.sub_coa + 's',
@@ -1449,7 +1462,7 @@ class ReportOps extends Component {
                                 c24: '',
                                 c25: '',
                                 c26: '',
-                                c27: iter === 2 ? dataPph.pc_ho : item.depo.profit_center,
+                                c27: iter === 2 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center,
                                 c28: '',
                                 c29: '',
                                 c30: '',
@@ -1470,10 +1483,10 @@ class ReportOps extends Component {
                                     c5: moment(item.tanggal_transfer).format('DDMMYYYY'),
                                     c6: '',
                                     c7: 'SA',
-                                    c8: item.depo.pic.username,
+                                    c8: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username,
                                     c9: 'IDR',
                                     c10: iter + 1,
-                                    c11: iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal 
+                                    c11: iter === 0 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal 
                                         : iter === 1 ? dataPph.ppn
                                         : iter === 2 ? 
                                         (item.jenis_pph === cek21 ? dataPph.pph21 :
@@ -1493,7 +1506,7 @@ class ReportOps extends Component {
                                         : iter === 3 && item.nilai_buku 
                                     ,
                                     c16: '',
-                                    c17: (iter === 0 || iter === 3) ? item.depo.profit_center : '',
+                                    c17: (iter === 0 || iter === 3) ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : '',
                                     c18: '',
                                     c19: '',
                                     c20: item.sub_coa + 's',
@@ -1503,7 +1516,7 @@ class ReportOps extends Component {
                                     c24: '',
                                     c25: '',
                                     c26: '',
-                                    c27: iter === 3 ? dataPph.pc_ho : item.depo.profit_center,
+                                    c27: iter === 3 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center,
                                     c28: '',
                                     c29: '',
                                     c30: '',
@@ -1593,6 +1606,8 @@ class ReportOps extends Component {
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, dataReport, page } = this.props.ops
+        const dataTaxcode = this.props.taxcode.dataAll
+        const dataTarif = this.props.tarif.dataAll
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1776,9 +1791,9 @@ class ReportOps extends Component {
                                                             />
                                                         </td>
                                                         <td>{(dataReport.indexOf(item) + (((page.currentPage - 1) * page.limitPerPage) + 1))}</td>
-                                                        <td>{item.finance.pic_finance}</td>
+                                                        <td>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic_finance}</td>
                                                         <td>{item.area}</td>
-                                                        <td>{item.finance.channel}</td>
+                                                        <td>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).channel}</td>
                                                         <td>{"-"}</td>
                                                         <td>{item.no_transaksi}</td>
                                                         <td>{item.kode_plant}</td>
@@ -1914,9 +1929,9 @@ class ReportOps extends Component {
                                     return (
                                         <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                             <td>{index + 1}</td>
-                                            <td>{item.finance.pic_finance}</td>
+                                            <td>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic_finance}</td>
                                             <td>{item.area}</td>
-                                            <td>{item.finance.channel}</td>
+                                            <td>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).channel}</td>
                                             <td>{"-"}</td>
                                             <td>{item.no_transaksi}</td>
                                             <td>{item.kode_plant}</td>
@@ -2581,7 +2596,14 @@ class ReportOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading || this.state.isLoading} size="sm">
+                <Modal isOpen={
+                    this.props.ops.isLoading ||
+                    this.state.isLoading ||
+                    this.props.depo.isLoading || 
+                    this.props.kliring.isLoading || 
+                    this.props.taxcode.isLoading || 
+                    this.props.tarif.isLoading 
+                    } size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2856,7 +2878,7 @@ class ReportOps extends Component {
                                 </tr>
                                 {dataDownload.length !== 0 && dataDownload.map((item, index) => {
                                     return (
-                                        item.veriftax !== null && item.veriftax.grouping !== null && item.veriftax.grouping.toLowerCase() === 'kasbon' ? (
+                                        dataTarif.find(e => e.gl_account === item.no_coa) !== undefined && dataTarif.find(e => e.gl_account === item.no_coa).grouping !== null && dataTarif.find(e => e.gl_account === item.no_coa).grouping.toLowerCase() === 'kasbon' ? (
                                             jurnal2.map((x, iter) => {
                                                 return (
                                                     <tr>
@@ -2867,16 +2889,16 @@ class ReportOps extends Component {
                                                         <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                         <th></th>
                                                         <th>SA</th>
-                                                        <th>{item.depo.pic.username}</th>
+                                                        <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username}</th>
                                                         <th>IDR</th>
                                                         <th>{iter + 1}</th>
-                                                        <th>{iter === 0 ? item.depo.gl_kk : iter === 1 && dataPph.bankops}</th>
+                                                        <th>{iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).gl_kk : iter === 1 && dataPph.bankops}</th>
                                                         <th>{iter === 0 ? 29 : 50}</th>
                                                         <th>{iter === 0 && 'E'}</th>
                                                         <th></th>
                                                         <th>{item.nilai_buku}</th>
                                                         <th></th>
-                                                        <th>{item.depo.profit_center}</th>
+                                                        <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                         <th></th>
                                                         <th></th>
                                                         <th>{item.sub_coa}s</th>
@@ -2886,11 +2908,11 @@ class ReportOps extends Component {
                                                         <th></th>
                                                         <th></th>
                                                         <th></th>
-                                                        <th>{item.depo.profit_center}</th>
+                                                        <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                         <th></th>
                                                         <th></th>
                                                         <th></th>
-                                                        {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                        {/* <th>{dataTaxcode.find(e => e.tax_code === item.tax_code) === undefined ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
                                                         <th></th>
                                                         <th></th>
                                                         <th></th>
@@ -2910,16 +2932,16 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.pic.username}</th>
+                                                            <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 ? item.depo.gl_kk : iter === 1 && dataPph.bankops}</th>
+                                                            <th>{iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).gl_kk : iter === 1 && dataPph.bankops}</th>
                                                             <th>{iter === 0 ? 40 : 50}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{item.nilai_buku}</th>
                                                             <th></th>
-                                                            <th>{iter === 0 && item.depo.profit_center}</th>
+                                                            <th>{iter === 0 && dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{item.sub_coa}s</th>
@@ -2929,11 +2951,11 @@ class ReportOps extends Component {
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th>{iter === 0 ? item.depo.profit_center : dataPph.pc_ho}</th>
+                                                            <th>{iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : dataPph.pc_ho}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            {/* <th>{dataTaxcode.find(e => e.tax_code === item.tax_code) === undefined ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
@@ -2952,12 +2974,12 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.pic.username}</th>
+                                                            <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 ? item.depo.gl_kk 
+                                                            <th>{iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).gl_kk 
                                                                 : iter === 1 ? dataPph.bankops
-                                                                : iter === 2 && item.veriftax !== null ? item.veriftax.gl_jurnal
+                                                                : iter === 2 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal
                                                                 : iter === 3 && 
                                                                 (item.jenis_pph === cek21 ? dataPph.pph21 :
                                                                 item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -2968,7 +2990,7 @@ class ReportOps extends Component {
                                                             <th></th>
                                                             <th>{iter === 0 || iter === 1 ? item.nilai_buku : item.nilai_utang}</th>
                                                             <th></th>
-                                                            <th>{iter === 2 && item.depo.profit_center}</th>
+                                                            <th>{iter === 2 && dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{item.sub_coa}s</th>
@@ -2978,11 +3000,11 @@ class ReportOps extends Component {
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th>{iter === 1 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th>{iter === 1 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            {/* <th>{dataTaxcode.find(e => e.tax_code === item.tax_code) === undefined ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
@@ -3001,20 +3023,20 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.pic.username}</th>
+                                                            <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 ? item.depo.gl_kk 
+                                                            <th>{iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).gl_kk 
                                                                 : iter === 1 ? dataPph.bankops
                                                                 : iter === 2 ? dataPph.ppn
-                                                                : iter === 3 && item.veriftax !== null && item.veriftax.gl_jurnal
+                                                                : iter === 3 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined && dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal
                                                             }</th>
                                                             <th>{iter === 0 || iter === 2 ? 40 : 50}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{iter === 0 || iter === 1 ? item.nilai_buku : item.ppn}</th>
                                                             <th></th>
-                                                            <th>{iter === 3 && item.depo.profit_center}</th>
+                                                            <th>{iter === 3 && dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{item.sub_coa}s</th>
@@ -3024,11 +3046,11 @@ class ReportOps extends Component {
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th>{iter === 1 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th>{iter === 1 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            {/* <th>{dataTaxcode.find(e => e.tax_code === item.tax_code) === undefined ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
@@ -3047,14 +3069,14 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.pic.username}</th>
+                                                            <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 ? item.depo.gl_kk 
+                                                            <th>{iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).gl_kk 
                                                                 : iter === 1 ? dataPph.bankops
                                                                 : iter === 2 ? dataPph.ppn
-                                                                : iter === 3 && item.veriftax !== null ? item.veriftax.gl_jurnal
-                                                                : iter === 4 && item.veriftax !== null ? item.veriftax.gl_jurnal
+                                                                : iter === 3 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal
+                                                                : iter === 4 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal
                                                                 : iter === 5 && 
                                                                     (item.jenis_pph === cek21 ? dataPph.pph21 :
                                                                     item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -3068,7 +3090,7 @@ class ReportOps extends Component {
                                                             : item.nilai_utang
                                                             }</th>
                                                             <th></th>
-                                                            <th>{(iter === 3 || iter === 4) && item.depo.profit_center}</th>
+                                                            <th>{(iter === 3 || iter === 4) && dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{item.sub_coa}s</th>
@@ -3078,11 +3100,11 @@ class ReportOps extends Component {
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th>{iter === 1 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th>{iter === 1 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            {/* <th>{dataTaxcode.find(e => e.tax_code === item.tax_code) === undefined ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
@@ -3103,16 +3125,16 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.pic.username}</th>
+                                                            <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal : iter === 1 && dataPph.bankops}</th>
+                                                            <th>{iter === 0 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal : iter === 1 && dataPph.bankops}</th>
                                                             <th>{iter === 0 ? 40 : 50}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{item.nilai_buku}</th>
                                                             <th></th>
-                                                            <th>{iter === 0 && item.depo.profit_center}</th>
+                                                            <th>{iter === 0 && dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{item.sub_coa}s</th>
@@ -3122,11 +3144,11 @@ class ReportOps extends Component {
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th>{iter === 0 ? item.depo.profit_center : dataPph.pc_ho}</th>
+                                                            <th>{iter === 0 ? dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center : dataPph.pc_ho}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            {/* <th>{dataTaxcode.find(e => e.tax_code === item.tax_code) === undefined ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
@@ -3145,10 +3167,10 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.pic.username}</th>
+                                                            <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal 
+                                                            <th>{iter === 0 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal 
                                                                 : iter === 1 ? 
                                                                 (item.jenis_pph === cek21 ? dataPph.pph21 :
                                                                 item.jenis_pph === cek23 ? dataPph.pph23 :
@@ -3160,7 +3182,7 @@ class ReportOps extends Component {
                                                             <th></th>
                                                             <th>{iter === 0 ? item.nilai_buku : iter === 1 ? item.nilai_utang : item.nilai_bayar}</th>
                                                             <th></th>
-                                                            <th>{iter === 0 && item.depo.profit_center}</th>
+                                                            <th>{iter === 0 && dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{item.sub_coa}s</th>
@@ -3170,11 +3192,11 @@ class ReportOps extends Component {
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th>{iter === 2 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th>{iter === 2 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            {/* <th>{dataTaxcode.find(e => e.tax_code === item.tax_code) === undefined ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
@@ -3193,10 +3215,10 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.pic.username}</th>
+                                                            <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal
+                                                            <th>{iter === 0 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal
                                                                 : iter === 1 ? dataPph.ppn
                                                                 : iter === 2 && dataPph.bankops
                                                             }</th>
@@ -3205,7 +3227,7 @@ class ReportOps extends Component {
                                                             <th></th>
                                                             <th>{iter === 0 ? item.nilai_bayar : iter === 1 ? item.ppn : item.nilai_buku}</th>
                                                             <th></th>
-                                                            <th>{iter === 0 && item.depo.profit_center}</th>
+                                                            <th>{iter === 0 && dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{item.sub_coa}s</th>
@@ -3215,11 +3237,11 @@ class ReportOps extends Component {
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th>{iter === 2 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th>{iter === 2 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            {/* <th>{dataTaxcode.find(e => e.tax_code === item.tax_code) === undefined ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
@@ -3238,10 +3260,10 @@ class ReportOps extends Component {
                                                             <th>{moment(item.tanggal_transfer).format('DDMMYYYY')}</th>
                                                             <th></th>
                                                             <th>SA</th>
-                                                            <th>{item.depo.pic.username}</th>
+                                                            <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).pic.username}</th>
                                                             <th>IDR</th>
                                                             <th>{iter + 1}</th>
-                                                            <th>{iter === 0 && item.veriftax !== null ? item.veriftax.gl_jurnal 
+                                                            <th>{iter === 0 && dataTarif.find(e => e.gl_account === item.no_coa) !== undefined ? dataTarif.find(e => e.gl_account === item.no_coa).gl_jurnal 
                                                                 : iter === 1 ? dataPph.ppn
                                                                 : iter === 2 ? 
                                                                 (item.jenis_pph === cek21 ? dataPph.pph21 :
@@ -3262,7 +3284,7 @@ class ReportOps extends Component {
                                                                 }
                                                             </th>
                                                             <th></th>
-                                                            <th>{(iter === 0 || iter === 3) && item.depo.profit_center}</th>
+                                                            <th>{(iter === 0 || iter === 3) && dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th>{item.sub_coa}s</th>
@@ -3272,11 +3294,11 @@ class ReportOps extends Component {
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            <th>{iter === 3 ? dataPph.pc_ho : item.depo.profit_center}</th>
+                                                            <th>{iter === 3 ? dataPph.pc_ho : dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
-                                                            {/* <th>{item.taxcode === null ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
+                                                            {/* <th>{dataTaxcode.find(e => e.tax_code === item.tax_code) === undefined ? '' : (item.tax_type !== "No Need Tax Type" && item.tax_type !== null) && `${item.tax_type}-${item.tax_code}`}</th> */}
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
@@ -3526,20 +3548,22 @@ class ReportOps extends Component {
 
 const mapStateToProps = state => ({
     approve: state.approve,
-    depo: state.depo,
     user: state.user,
     notif: state.notif,
     ops: state.ops,
     menu: state.menu,
     reason: state.reason,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    depo: state.depo,
+    tarif: state.tarif,
+    kliring: state.kliring,
+    taxcode: state.taxcode
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
     getDetailDepo: depo.getDetailDepo,
-    getDepo: depo.getDepo,
     getRole: user.getRole,
     getReport: ops.getReport,
     getDetail: ops.getDetail,
@@ -3550,8 +3574,12 @@ const mapDispatchToProps = {
     getReason: reason.getReason,
     rejectOps: ops.rejectOps,
     resetOps: ops.resetOps,
-    showDokumen: dokumen.showDokumenm,
-    nextPage: ops.nextPage
+    showDokumen: dokumen.showDokumen,
+    nextPage: ops.nextPage,
+    getDepo: depo.getDepo,
+    getTarif: tarif.getAllTarif,
+    getKliring: kliring.getAllKliring,
+    getTaxcode: taxcode.getAllTaxcode,
     // notifStock: notif.notifStock
 }
 

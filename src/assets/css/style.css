@@ -26,6 +26,9 @@ html,body{
 .fail {
     background-color: #686a74;
 }
+.yellow {
+    background-color: yellow;
+}
 .logoLogin {
     width: 15%;
     height: auto;

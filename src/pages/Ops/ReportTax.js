@@ -27,7 +27,6 @@ import menu from '../../redux/actions/menu'
 import reason from '../../redux/actions/reason'
 // import notif from '../redux/actions/notif'
 import Pdf from "../../components/Pdf"
-import depo from '../../redux/actions/depo'
 import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
@@ -36,6 +35,10 @@ import ops from '../../redux/actions/ops'
 import dokumen from '../../redux/actions/dokumen'
 import ExcelJS from "exceljs";
 import fs from "file-saver";
+import depo from '../../redux/actions/depo'
+import tarif from '../../redux/actions/tarif'
+import taxcode from '../../redux/actions/taxcode'
+import kliring from '../../redux/actions/kliring'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const stockSchema = Yup.object().shape({
@@ -128,6 +131,7 @@ class ReportOps extends Component {
             listOps: [],
             dataDownload: [],
             modalDownload: false,
+            dropItem: false
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -196,6 +200,8 @@ class ReportOps extends Component {
 
     downloadOps = async () => {
         const { dataDownload } = this.state
+        const { dataDepo } = this.props.depo
+        const dataTaxcode = this.props.taxcode.dataAll
 
         const workbook = new ExcelJS.Workbook();
         const ws = workbook.addWorksheet('data operasional')
@@ -250,8 +256,8 @@ class ReportOps extends Component {
                 c2: item.no_transaksi,
                 c3: '',
                 c4: moment(item.start_ops).format('DD MMMM YYYY'),
-                c5: item.depo.profit_center,
-                c6: item.depo === null ? '' : item.depo.kpp === null ? '' : item.depo.kpp.npwp,
+                c5: dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center,
+                c6: dataDepo.find(e => e.kode_plant === item.kode_plant) === undefined ? '' : dataDepo.find(e => e.kode_plant === item.kode_plant).kpp === null ? '' : dataDepo.find(e => e.kode_plant === item.kode_plant).kpp.npwp,
                 c7: '',
                 c8: moment(item.tgl_tagihanbayar).format('DD MMMM YYYY'),
                 c9: item.no_faktur,
@@ -269,7 +275,7 @@ class ReportOps extends Component {
                 c21: item.jenis_pph,
                 c22: item.tax_type,
                 c23: item.tax_code,
-                c24: item.taxcode !== null && item.taxcode.tax_objdesc,
+                c24: dataTaxcode.find(e => e.tax_code === item.tax_code) !== undefined && dataTaxcode.find(e => e.tax_code === item.tax_code).tax_objdesc,
                 c25: item.nilai_ajuan !== null && item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c26: item.nilai_buku !== null && item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 c27: item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
@@ -283,8 +289,22 @@ class ReportOps extends Component {
                 : item.status_transaksi === 3 ? 'Proses Verifikasi Finance' 
                 : item.status_transaksi === 4 ? 'Proses Verifikasi Tax' 
                 : item.status_transaksi === 5 ? 'Proses Ajuan Approval List Bayar' 
-                : item.status_transaksi === 2 ? item.appForm.length > 0 && 'Menunggu Approval ' + item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status === null))].jabatan
-                : item.status_transaksi === 6 ? item.appList.length > 0 && 'Menunggu Approval ' + item.appList[item.appList.indexOf(item.appList.find((x) => x.status === null))].jabatan
+                : item.status_transaksi === 2 ? 
+                  item.appForm.length > 0 && 
+                  'Menunggu Approval ' + (
+                    item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status === null))] !== undefined ? 
+                    item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status === null))].jabatan :
+                    item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status == 0))] !== undefined ? 
+                    item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status == 0))].jabatan : ''
+                  )
+                : item.status_transaksi === 6 ? 
+                  item.appList.length > 0 && 
+                  'Menunggu Approval ' + (
+                    item.appList[item.appList.indexOf(item.appList.find((x) => x.status === null))] !== undefined ? 
+                    item.appList[item.appList.indexOf(item.appList.find((x) => x.status === null))].jabatan : 
+                    item.appList[item.appList.indexOf(item.appList.find((x) => x.status == 0))] !== undefined ? 
+                    item.appList[item.appList.indexOf(item.appList.find((x) => x.status == 0))].jabatan : ''
+                  )
                 : '-'
             }
         )
@@ -468,6 +488,18 @@ class ReportOps extends Component {
         await this.props.nextPage(token, page.prevLink)
     }
 
+    goPage = async (val) => {
+        const { page } = this.props.ops
+        const strPage = `page=${val}`
+        const selPage = page.nextLink.split('&')[page.nextLink.split('&').length - 1]
+        const finPage = page.nextLink.replace(selPage, strPage)
+        // console.log(selPage)
+        // console.log(finPage)
+        const token = localStorage.getItem('token')
+        // await this.props.resetData()
+        await this.props.nextPage(token, finPage)
+    }
+
     onSetOpen(open) {
         this.setState({ open });
     }
@@ -505,8 +537,13 @@ class ReportOps extends Component {
         await this.props.submitAsset(token, detailStock[0].no_stock)
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         // const level = localStorage.getItem('level')
+        const token = localStorage.getItem('token')
+        await this.props.getDepo(token, 'all', '', 1)
+        await this.props.getTarif(token, 'all', '', 1)
+        await this.props.getKliring(token, 'all', '', 1)
+        await this.props.getTaxcode(token, 'all', '', 1)
         this.getDataOps()
     }
 
@@ -964,6 +1001,10 @@ class ReportOps extends Component {
         this.setState({drop: !this.state.drop})
     }
 
+    dropPage = () => {
+        this.setState({dropItem: !this.state.dropItem})
+    }
+
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
@@ -971,6 +1012,7 @@ class ReportOps extends Component {
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
         const { noDis, detailOps, ttdOps, dataDoc, newOps, dataReport, page } = this.props.ops
+        const dataTaxcode = this.props.taxcode.dataAll
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1155,8 +1197,8 @@ class ReportOps extends Component {
                                                         <th>{item.no_transaksi}</th>
                                                         <th></th>
                                                         <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
-                                                        <th>{item.depo.profit_center}</th>
-                                                        <th>{item.depo === null ? '' : item.depo.kpp === null ? '' : item.depo.kpp.npwp}</th>
+                                                        <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
+                                                        <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) === undefined ? '' : dataDepo.find(e => e.kode_plant === item.kode_plant).kpp === null ? '' : dataDepo.find(e => e.kode_plant === item.kode_plant).kpp.npwp}</th>
                                                         <th></th>
                                                         <th>{moment(item.tgl_tagihanbayar).format('DD MMMM YYYY')}</th>
                                                         <th>{item.no_faktur}</th>
@@ -1174,7 +1216,7 @@ class ReportOps extends Component {
                                                         <th>{item.jenis_pph}</th>
                                                         <th>{item.tax_type}</th>
                                                         <th>{item.tax_code}</th>
-                                                        <th>{item.taxcode !== null && item.taxcode.tax_objdesc}</th>
+                                                        <th>{dataTaxcode.find(e => e.tax_code === item.tax_code) !== undefined && dataTaxcode.find(e => e.tax_code === item.tax_code).tax_objdesc}</th>
                                                         <th>{item.nilai_ajuan !== null && item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                         <th>{item.nilai_buku !== null && item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                                         <th>{item.nilai_utang !== null && item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
@@ -1189,8 +1231,22 @@ class ReportOps extends Component {
                                                             : item.status_transaksi === 3 ? 'Proses Verifikasi Finance' 
                                                             : item.status_transaksi === 4 ? 'Proses Verifikasi Tax' 
                                                             : item.status_transaksi === 5 ? 'Proses Ajuan Approval List Bayar' 
-                                                            : item.status_transaksi === 2 ? item.appForm.length > 0 && 'Menunggu Approval ' + item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status === null))].jabatan
-                                                            : item.status_transaksi === 6 ? item.appList.length > 0 && 'Menunggu Approval ' + item.appList[item.appList.indexOf(item.appList.find((x) => x.status === null))].jabatan
+                                                            : item.status_transaksi === 2 ? 
+                                                            item.appForm.length > 0 && 
+                                                            'Menunggu Approval ' + (
+                                                                item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status === null))] !== undefined ? 
+                                                                item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status === null))].jabatan :
+                                                                item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status == 0))] !== undefined ? 
+                                                                item.appForm[item.appForm.indexOf(item.appForm.find((x) => x.status == 0))].jabatan : ''
+                                                            )
+                                                            : item.status_transaksi === 6 ?
+                                                             item.appList.length > 0 && 
+                                                             'Menunggu Approval ' + (
+                                                                item.appList[item.appList.indexOf(item.appList.find((x) => x.status === null))] !== undefined ? 
+                                                                item.appList[item.appList.indexOf(item.appList.find((x) => x.status === null))].jabatan :
+                                                                item.appList[item.appList.indexOf(item.appList.find((x) => x.status == 0))] !== undefined ? 
+                                                                item.appList[item.appList.indexOf(item.appList.find((x) => x.status == 0))].jabatan : ''
+                                                                )
                                                             : '-'
                                                             }
                                                         </th>
@@ -1203,7 +1259,23 @@ class ReportOps extends Component {
                                 </div>
                             <div>
                                 <div className={style.infoPageEmail1}>
-                                    <text>Showing {page.currentPage} of {page.pages} pages</text>
+                                    <div className='rowCenter'>
+                                        <div className='mr-1'>Showing</div>
+                                        {/* <Button color='light'>{page.currentPage}</Button> */}
+                                        <ButtonDropdown className={style.drop} isOpen={this.state.dropItem} toggle={this.dropPage}>
+                                            <DropdownToggle caret color="light">
+                                                {page.currentPage}
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                {Array(page.pages).fill().map((item, index) => {
+                                                    return (
+                                                        <DropdownItem className={style.item} onClick={() => this.goPage(index + 1)}>{index + 1}</DropdownItem>
+                                                    )
+                                                })}
+                                            </DropdownMenu>
+                                        </ButtonDropdown>
+                                        <div className='ml-1'>of {page.pages} pages</div>
+                                    </div>
                                     <div className={style.pageButton}>
                                         <button 
                                             className={style.btnPrev} 
@@ -1782,8 +1854,8 @@ class ReportOps extends Component {
                                             <th>{item.no_transaksi}</th>
                                             <th></th>
                                             <th>{moment(item.start_ops).format('DD MMMM YYYY')}</th>
-                                            <th>{item.depo.profit_center}</th>
-                                            <th>{item.depo === null ? '' : item.depo.kpp === null ? '' : item.depo.kpp.npwp}</th>
+                                            <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
+                                            <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) === undefined ? '' : dataDepo.find(e => e.kode_plant === item.kode_plant).kpp === null ? '' : dataDepo.find(e => e.kode_plant === item.kode_plant).kpp.npwp}</th>
                                             <th></th>
                                             <th>{moment(item.tgl_tagihanbayar).format('DD MMMM YYYY')}</th>
                                             <th>{item.no_faktur}</th>
@@ -1801,7 +1873,7 @@ class ReportOps extends Component {
                                             <th>{item.jenis_pph}</th>
                                             <th>{item.tax_type}</th>
                                             <th>{item.tax_code}</th>
-                                            <th>{item.taxcode !== null && item.taxcode.tax_objdesc}</th>
+                                            <th>{dataTaxcode.find(e => e.tax_code === item.tax_code) !== undefined && dataTaxcode.find(e => e.tax_code === item.tax_code).tax_objdesc}</th>
                                             <th>{item.nilai_ajuan.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                             <th>{item.nilai_buku.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
                                             <th>{item.nilai_utang.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</th>
@@ -1889,7 +1961,13 @@ class ReportOps extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
-                <Modal isOpen={this.props.ops.isLoading ? true : false} size="sm">
+                <Modal isOpen={
+                    this.props.ops.isLoading ||
+                    this.props.depo.isLoading || 
+                    this.props.kliring.isLoading || 
+                    this.props.taxcode.isLoading || 
+                    this.props.tarif.isLoading  
+                    ? true : false} size="sm">
                         <ModalBody>
                         <div>
                             <div className={style.cekUpdate}>
@@ -2303,20 +2381,22 @@ class ReportOps extends Component {
 
 const mapStateToProps = state => ({
     approve: state.approve,
-    depo: state.depo,
     user: state.user,
     notif: state.notif,
     ops: state.ops,
     menu: state.menu,
     reason: state.reason,
-    dokumen: state.dokumen
+    dokumen: state.dokumen,
+    depo: state.depo,
+    tarif: state.tarif,
+    kliring: state.kliring,
+    taxcode: state.taxcode
 })
 
 const mapDispatchToProps = {
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
     getDetailDepo: depo.getDetailDepo,
-    getDepo: depo.getDepo,
     getRole: user.getRole,
     getReport: ops.getReport,
     getDetail: ops.getDetail,
@@ -2328,7 +2408,11 @@ const mapDispatchToProps = {
     rejectOps: ops.rejectOps,
     resetOps: ops.resetOps,
     showDokumen: dokumen.showDokumen,
-    nextPage: ops.nextPage
+    nextPage: ops.nextPage,
+    getDepo: depo.getDepo,
+    getTarif: tarif.getAllTarif,
+    getKliring: kliring.getAllKliring,
+    getTaxcode: taxcode.getAllTaxcode,
     // notifStock: notif.notifStock
 }
 

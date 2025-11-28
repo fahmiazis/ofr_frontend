@@ -222,7 +222,7 @@ class NavStock extends Component {
                                         </div>
                                     </button> */}
                                 </>
-                            ) : level === '7' || level === '8' || level === '9' || level === '101' ? (
+                            ) : level === '7' || level === '17' || level === '8' || level === '9' || level === '101' ? (
                                 <>
                                     <button className="cardNav1" onClick={() => this.goRoute('navlistops')}>
                                         <RiDraftFill size={220} className="picHome" />

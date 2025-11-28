@@ -46,6 +46,7 @@ import readXlsxFile from 'read-excel-file'
 import ExcelJS from "exceljs"
 import fs from "file-saver"
 import { MdUpload, MdDownload, MdEditSquare, MdAddCircle, MdDelete } from "react-icons/md";
+import { CiWarning } from "react-icons/ci"
 const { REACT_APP_BACKEND_URL } = process.env
 
 const klaimSchema = Yup.object().shape({
@@ -171,7 +172,10 @@ class CartKlaim extends Component {
             dataDel: {},
             typeOut: '',
             nilai_ajuan: 0,
-            infoError: ''
+            infoError: '',
+            openRegis: false,
+            dataRegis: [],
+            venRekList: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -1913,7 +1917,22 @@ class CartKlaim extends Component {
         if (val === 'PMA') {
             this.setState({ tujuan_tf: val, bank: '', digit: 13 })
         } else {
-            this.setState({ tujuan_tf: val, bank: '', digit: 0 })
+            this.setState({tujuan_tf: val, bank: '', digit: 0})
+            // const { dataVendor } = this.props.vendor
+            // if (dataVendor.length === 0) {
+            //     this.setState({tujuan_tf: val, bank: '', digit: 0})
+            // } else if (dataVendor.length > 0) {
+            //     const rekNik = dataVendor[0].reknik === undefined ? [] : dataVendor[0].reknik
+            //     const rekNpwp = dataVendor[0].reknpwp === undefined ? [] : dataVendor[0].reknpwp
+            //     if ((rekNik.length === 0 && rekNpwp.length === 0) || (rekNik.find(item => item.status === 1) === undefined && rekNpwp.find(item => item.status === 1) === undefined)) {
+            //         this.prosesOpenRegisRek(dataVendor)
+            //         this.setState({tujuan_tf: val, bank: '', digit: 0})
+            //     } else {
+            //         this.setState({tujuan_tf: val, bank: '', digit: 0})
+            //     }
+            // } else {
+            //     this.setState({tujuan_tf: val, bank: '', digit: 0})
+            // }
         }
     }
 
@@ -1950,6 +1969,22 @@ class CartKlaim extends Component {
 
     dropDown = () => {
         this.setState({ drop: !this.state.drop })
+    }
+
+    prosesOpenRegisRek = (val) => {
+        this.setState({dataRegis: val})
+        this.openRegisRek()
+    }
+    
+    openRegisRek = () => {
+        this.setState({openRegis: !this.state.openRegis})
+    }
+
+    goRegis = () => {
+        this.props.history.push({
+            pathname: '/verifven',
+            state: {regis: this.state.dataRegis}
+        })
     }
 
     render() {
@@ -3006,7 +3041,7 @@ class CartKlaim extends Component {
                     <Formik
                         initialValues={{
                             no_faktur: "",
-                            tgl_faktur: "",
+                            date_faktur: "",
                             value: "",
                             keterangan: ""
                         }}
@@ -3956,6 +3991,21 @@ class CartKlaim extends Component {
                         </Formik>
                     </ModalBody>
                 </Modal>
+                <Modal isOpen={this.state.openRegis} toggle={() => this.openRegisRek()} size='lg'>
+                    <ModalBody>
+                        <div>
+                            <div className={style.cekUpdate}>
+                                <CiWarning size={80} className={style.yellow} />
+                                <div className={[style.sucUpdate, style.green]}>Tidak ada data rekening vendor</div>
+                                <div className={[style.sucUpdate, style.green, 'mt-2']}>Daftarkan rekening vendor terlebih dahulu</div>
+                            </div>
+                        </div>
+                    </ModalBody>
+                    <div className='row justify-content-md-center mb-4'>
+                        <Button size='md' onClick={() => this.goRegis()} color='primary'>Ajukan data rekening</Button>
+                        <Button className='ml-1' size='md' onClick={() => this.openRegisRek()} color='secondary'>Close</Button>
+                    </div>
+                </Modal>
                 <Modal isOpen={this.props.bank.isLoading
                     || this.props.coa.isLoading
                     || this.props.user.isLoading
@@ -4756,7 +4806,8 @@ const mapStateToProps = state => ({
     bank: state.bank,
     finance: state.finance,
     dokumen: state.dokumen,
-    email: state.email
+    email: state.email,
+    vendor: state.vendor
 })
 
 const mapDispatchToProps = {
