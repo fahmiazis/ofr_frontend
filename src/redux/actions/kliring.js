@@ -8,7 +8,7 @@ export default {
         payload: http(token).get(`/kliring/all`),
     }),
     getAllKliring: (token, limit, search, page) => ({
-        type: 'GET_ALL',
+        type: 'GET_ALL_KLIRING',
         payload: http(token).get(`/kliring/get?limit=${limit}&search=${search}&page=${page === undefined ? 1 : page}`)
     }),
     getDetailKliring: (token, id) => ({

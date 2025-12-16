@@ -48,6 +48,7 @@ import depo from '../../redux/actions/depo'
 import tarif from '../../redux/actions/tarif'
 import taxcode from '../../redux/actions/taxcode'
 import kliring from '../../redux/actions/kliring'
+import Select from 'react-select'
 const nonObject = 'Non Object PPh'
 const {REACT_APP_BACKEND_URL} = process.env
 
@@ -133,7 +134,7 @@ class VerifOps extends Component {
             openDraft: false,
             message: '',
             subject: '',
-            time: 'pilih',
+            time: 'last',
             time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             docHist: false,
@@ -145,6 +146,7 @@ class VerifOps extends Component {
             modResmail: false,
             dataZip: [],
             listReject: [],
+            filterVendor: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -754,25 +756,25 @@ class VerifOps extends Component {
         const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         const status = level === '2' ? 3 : 4
         const statusAll = 'all'
-        const {time1, time2, search, limit} = this.state
+        const {time1, time2, search, limit, time} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit, time)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit, time)
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
+            await this.props.getOps(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit, time)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit, time)
             this.setState({filter: val, newOps: newOps})
         }
     }
@@ -793,26 +795,26 @@ class VerifOps extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter, search, limit} = this.state
+        const {time1, time2, filter, search, limit, time} = this.state
         const token = localStorage.getItem("token")
         const level = localStorage.getItem('level')
         const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
-        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
+        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit, time)
     }
 
     getDataLimit = async (val) => {
         this.setState({limit: val})
-        const {time1, time2, filter, search} = this.state
+        const {time1, time2, filter, search, time} = this.state
         const token = localStorage.getItem("token")
         const level = localStorage.getItem('level')
         const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
-        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', val)
+        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', val, time)
     }
 
     prosesSubmit = async () => {
@@ -1053,13 +1055,13 @@ class VerifOps extends Component {
         this.setState({dataDownload: data})
         await this.props.downloadFormVerif(token, dataSend)
 
-        const {time1, time2, filter, search} = this.state
+        const {time1, time2, filter, search, time} = this.state
         const level = localStorage.getItem('level')
         const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
-        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit)
+        await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, search, undefined, undefined, 'all', limit, time)
         
         this.downloadExcel()
     }
@@ -1156,7 +1158,7 @@ class VerifOps extends Component {
 
     onSearch = async (e) => {
         this.setState({search: e.target.value})
-        const {time1, time2, filter, limit} = this.state
+        const {time1, time2, filter, limit, time} = this.state
         const token = localStorage.getItem("token")
         const level = localStorage.getItem('level')
         const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
@@ -1164,7 +1166,7 @@ class VerifOps extends Component {
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
         if(e.key === 'Enter'){
-            await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, e.target.value, undefined, undefined, 'all', limit)
+            await this.props.getOps(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, type, undefined, e.target.value, undefined, undefined, 'all', limit, time)
         }
     }
 
@@ -1551,13 +1553,33 @@ class VerifOps extends Component {
         this.setState({drop: !this.state.drop})
     }
 
+    selectVendor = (selected) => {
+        if (!selected) {
+            this.setState({ filterVendor: [] })
+            return
+        }
+        
+        const { vendorList } = this.props.ops
+        const val = selected.value
+        
+        if (val === 'all') {
+            this.setState({ filterVendor: [] }) // Kosong = show all
+        } else {
+            const dataFinal = vendorList
+                .filter(item => item.nama_vendor === val)
+                .map(item => item.no_transaksi)
+
+            this.setState({ filterVendor: dataFinal })
+        }
+    }
+
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
         const {dataRinci, dataZip, filter, tipeEmail, listMut, dataDownload, listReason, dataMenu, listMenu, detailDoc, listOps, listReject} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, dataDoc, newOps, pageOps } = this.props.ops
+        const { noDis, detailOps, ttdOps, dataDoc, newOps, pageOps, vendorList } = this.props.ops
         const type = level === '4' || level === '14' || level === '24' || level === '34' ? 'non kasbon' : 'undefined' 
         // const pages = this.props.depo.page
 
@@ -1616,17 +1638,6 @@ class VerifOps extends Component {
                                     </ButtonDropdown>
                                     <text className={style.textEntries}>entries</text>
                                 </div>
-                            </div>
-                            <div className={style.secEmail4}>
-                                <div className={style.searchEmail2}>
-                                    <text>Filter:  </text>
-                                    <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="all">All</option>
-                                        <option value="reject">Reject</option>
-                                        <option value="available">Available Submit</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                    </Input>
-                                </div>
                                 <div className={style.headEmail2}>
                                     {level === '14' ?  (
                                         <>
@@ -1656,15 +1667,46 @@ class VerifOps extends Component {
                                     ) : null }
                                 </div>
                             </div>
+                            <div className={style.secEmail4}>
+                                <div className={style.searchEmail2}>
+                                    <text>Filter:  </text>
+                                    <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
+                                        <option value="all">All</option>
+                                        <option value="reject">Reject</option>
+                                        <option value="available">Available Submit</option>
+                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                    </Input>
+                                </div>
+                                <div className={style.searchEmail2}>
+                                    <text>vendor:  </text>
+                                    <Select
+                                        className={style.filter}
+                                        options={
+                                            vendorList && vendorList.length > 0
+                                            ? [
+                                                { value: 'all', label: 'Semua Vendor' },
+                                                ...[...new Set(vendorList.map(v => v.nama_vendor))].map(nama => ({
+                                                    value: nama,
+                                                    label: nama
+                                                }))
+                                                ]
+                                            : [{ value: 'all', label: 'Semua Vendor' }]
+                                        }
+                                        onChange={this.selectVendor}
+                                        placeholder="Pilih Vendor"
+                                    />
+                                </div>
+                            </div>
                             <div className={[style.secEmail4]}>
                                 <div className='rowCenter'>
                                     <div className='rowCenter'>
                                         <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
                                             <option value="all">All</option>
-                                            <option value="pilih">Periode</option>
+                                            <option value="pilih">Tgl Ajuan</option>
+                                            <option value="last">Last Update</option>
                                         </Input>
                                     </div>
-                                    {this.state.time === 'pilih' ?  (
+                                    {this.state.time === 'pilih' || this.state.time === 'last' ?  (
                                         <>
                                             <div className='rowCenter'>
                                                 <text className='bold'>:</text>
@@ -1733,7 +1775,14 @@ class VerifOps extends Component {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newOps.map((item, index) => {
+                                            {newOps.length > 0 && 
+                                            newOps.filter((item) => {
+                                                // Filter vendor (kosong = show all)
+                                                const vendorMatch = this.state.filterVendor.length === 0 
+                                                    || this.state.filterVendor.includes(item.no_transaksi)
+                                                
+                                                return vendorMatch
+                                            }).map((item, index) => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         {(level === '14' || level === '2') && (

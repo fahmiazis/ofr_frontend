@@ -84,7 +84,8 @@ const opsState = {
         55020004
     ],
     depoOps: [],
-    depoKasbon: []
+    depoKasbon: [],
+    vendorList: []
 };
 
 export default (state = opsState, action) => {
@@ -130,6 +131,7 @@ export default (state = opsState, action) => {
                 // noDis: action.payload.data.noDis,
                 newOps: action.payload.data.newOps,
                 // depoOps: action.payload.data.findDepo,
+                vendorList: action.payload.data.vendorList,
                 pageOps: action.payload.data.pageInfo,
                 alertMsg: 'get coa Succesfully'
             };

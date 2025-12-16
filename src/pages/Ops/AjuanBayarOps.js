@@ -45,6 +45,7 @@ import depo from '../../redux/actions/depo'
 import tarif from '../../redux/actions/tarif'
 import taxcode from '../../redux/actions/taxcode'
 import kliring from '../../redux/actions/kliring'
+import Select from 'react-select'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
@@ -140,7 +141,8 @@ class AjuanBayarOps extends Component {
             docHist: false,
             detailDoc: {},
             jentrans: 'all',
-            tujuan_tf: 'all'
+            tujuan_tf: 'all',
+            filterVendor: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -1316,13 +1318,41 @@ class AjuanBayarOps extends Component {
         this.setState({drop: !this.state.drop})
     }
 
+    selectVendor = (selected) => {
+        const level = localStorage.getItem('level')
+        if (!selected) {
+            this.setState({ filterVendor: [] })
+            return
+        }
+        
+        const { vendorList } = this.props.ops
+        const val = selected.value
+        
+        if (val === 'all') {
+            this.setState({ filterVendor: [] }) // Kosong = show all
+        } else {
+            let dataFinal = []
+            if (this.state.filter === 'verif' && level === '2') {
+               dataFinal = vendorList
+                    .filter(item => item.nama_vendor === val)
+                    .map(item => item.no_transaksi)
+            } else {
+                dataFinal = vendorList
+                    .filter(item => item.nama_vendor === val)
+                    .map(item => item.no_pembayaran)
+            }
+
+            this.setState({ filterVendor: dataFinal })
+        }
+    }
+
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
         const {detailDoc, tipeTrans, dataRinci, listMut, listReason, dataMenu, listMenu, listOps, dataDownload, tipeReject, dataZip} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps, dataOps, pageOps } = this.props.ops
+        const { noDis, detailOps, ttdOps, ttdOpsList, dataDoc, newOps, dataOps, pageOps, vendorList } = this.props.ops
         const {glInternet, glListrik} = this.props.ops
         // const pages = this.props.depo.page
         const { allCoa } = this.props.coa
@@ -1363,25 +1393,48 @@ class AjuanBayarOps extends Component {
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Approval List Ajuan Bayar Operasional</div>
                             </div>
-                            {this.state.filter === 'verif' && level === '2' && (
+                            
                                 <div className={style.secEmail4}>
-                                    <div>
-                                        <text>Show: </text>
-                                        <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
-                                            <DropdownToggle caret color="light">
-                                                {this.state.limit}
-                                            </DropdownToggle>
-                                            <DropdownMenu>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
-                                            </DropdownMenu>
-                                        </ButtonDropdown>
-                                        <text className={style.textEntries}>entries</text>
+                                    {this.state.filter === 'verif' && level === '2' ? (
+                                        <div>
+                                            <text>Show: </text>
+                                            <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                                <DropdownToggle caret color="light">
+                                                    {this.state.limit}
+                                                </DropdownToggle>
+                                                <DropdownMenu>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                                </DropdownMenu>
+                                            </ButtonDropdown>
+                                            <text className={style.textEntries}>entries</text>
+                                        </div>
+                                    ) : (
+                                        <div></div>
+                                    )}
+                                    <div className={style.searchEmail2}>
+                                        <text>vendor:  </text>
+                                        <Select
+                                            className={style.filter}
+                                            options={
+                                                vendorList && vendorList.length > 0
+                                                ? [
+                                                    { value: 'all', label: 'Semua Vendor' },
+                                                    ...[...new Set(vendorList.map(v => v.nama_vendor))].map(nama => ({
+                                                        value: nama,
+                                                        label: nama
+                                                    }))
+                                                    ]
+                                                : [{ value: 'all', label: 'Semua Vendor' }]
+                                            }
+                                            onChange={this.selectVendor}
+                                            placeholder="Pilih Vendor"
+                                        />
                                     </div>
                                 </div>
-                            )}
+                            
                             <div className={style.secEmail4}>
                                 <div className={style.headEmail2}>
                                     {this.state.filter === 'verif' && level === '2' ?  (
@@ -1518,7 +1571,12 @@ class AjuanBayarOps extends Component {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {dataOps.map((item, index) => {
+                                            {dataOps.filter((item) => {
+                                                const vendorMatch = this.state.filterVendor.length === 0 
+                                                    || this.state.filterVendor.includes(item.no_transaksi)
+                                                
+                                                return vendorMatch
+                                            }).map((item, index) => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>
@@ -1563,7 +1621,12 @@ class AjuanBayarOps extends Component {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newOps.map((item, index) => {
+                                            {newOps.filter((item) => {
+                                                const vendorMatch = this.state.filterVendor.length === 0 
+                                                    || this.state.filterVendor.includes(item.no_pembayaran)
+                                                
+                                                return vendorMatch
+                                            }).map((item, index) => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_reject === 1 && 'bad'}>
                                                         <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>

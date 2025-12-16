@@ -131,7 +131,7 @@ class VerifKlaim extends Component {
             openDraft: false,
             message: '',
             subject: '',
-            time: 'pilih',
+            time: 'last',
             // time1: moment().subtract(2, 'month').startOf('month').format('YYYY-MM-DD'),
             time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
@@ -615,7 +615,7 @@ class VerifKlaim extends Component {
 
     changeFilter = async (val) => {
         const {dataKlaim, noDis} = this.props.klaim
-        const {time1, time2, search, limit} = this.state
+        const {time1, time2, search, limit, time} = this.state
         const type = localStorage.getItem('tipeKasbon')
         const level = localStorage.getItem('level')
         const cekTime1 = time1 === '' ? 'undefined' : time1
@@ -626,32 +626,32 @@ class VerifKlaim extends Component {
         const role = localStorage.getItem('role')
         if (val === 'available') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit)
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit, time)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'reject') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit)
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit, time)
             this.setState({filter: val, newKlaim: newKlaim})
         } else if (val === 'revisi') {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit)
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit, time)
             this.setState({filter: val, newKlaim: newKlaim})
         } else {
             const newKlaim = []
-            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2, search, 'all', limit)
+            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'verif', status, cekTime1, cekTime2, search, 'all', limit, time)
             this.setState({filter: val, newKlaim: newKlaim})
         }
     }
 
     getDataLimit = async (val) => {
-        const {time1, time2, filter, search} = this.state
+        const {time1, time2, filter, search, time} = this.state
         const level = localStorage.getItem('level')
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
         this.setState({limit: val})
-        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', val)
+        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', val, time)
     }
 
 
@@ -671,13 +671,13 @@ class VerifKlaim extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter, search, limit} = this.state
+        const {time1, time2, filter, search, limit, time} = this.state
         const level = localStorage.getItem('level')
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
-        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit)
+        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, search, 'all', limit, time)
     }
 
     prosesSubmitPre = async () => {
@@ -818,7 +818,7 @@ class VerifKlaim extends Component {
     }
 
     onSearch = async (e) => {
-        const {time1, time2, filter, limit} = this.state
+        const {time1, time2, filter, limit, time} = this.state
         const level = localStorage.getItem('level')
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
@@ -826,7 +826,7 @@ class VerifKlaim extends Component {
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, e.target.value, 'all', limit)
+            await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, e.target.value, 'all', limit, time)
         }
     }
 
@@ -1276,12 +1276,12 @@ class VerifKlaim extends Component {
         this.setState({dataDownload: data})
         await this.props.downloadFormVerif(token, dataSend)
 
-        const {time1, time2, filter, limit} = this.state
+        const {time1, time2, filter, limit, time} = this.state
         const level = localStorage.getItem('level')
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const status = filter === 'all' ? 'all' : level === '2' ? 3 : 4
-        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, this.state.search, 'all', limit)
+        await this.props.getKlaim(token, status, 'all', 'all', filter, 'verif', 'undefined', cekTime1, cekTime2, this.state.search, 'all', limit, time)
         
         this.downloadExcel()
     }
@@ -1714,6 +1714,7 @@ class VerifKlaim extends Component {
                                     <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
                                         <option value="all">Time (All)</option>
                                         <option value="pilih">Periode</option>
+                                        <option value="last">Last Update</option>
                                     </Input>
                                     {this.state.time === 'pilih' ?  (
                                         <>

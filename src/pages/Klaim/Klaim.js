@@ -136,7 +136,7 @@ class Klaim extends Component {
             message: '',
             openAppDoc: false,
             openRejDoc: false,
-            time: 'pilih',
+            time: 'last',
             time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             subject: '',
@@ -847,29 +847,29 @@ class Klaim extends Component {
         const token = localStorage.getItem("token")
         const status = val === 'bayar' || val === 'completed' ? 8 : 2
         const statusAll = 'all'
-        const {time1, time2, search, limit} = this.state
+        const {time1, time2, search, limit, time} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const role = localStorage.getItem('role')
         if (val === 'all') {
             const newKlaim = []
-            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', limit)
+            await this.props.getKlaim(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', limit, time)
             this.setState({filter: val, newKlaim: newKlaim})
         } else {
             const newKlaim = []
-            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', limit)
+            await this.props.getKlaim(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', limit, time)
             this.setState({filter: val, newKlaim: newKlaim})
         }
     }
 
     getDataLimit = async (val) => {
-        const {time1, time2, filter, search} = this.state
+        const {time1, time2, filter, search, time} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8 : 2
         this.setState({limit: val})
-        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', val)
+        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', val, time)
     }
 
     changeTime = async (val) => {
@@ -888,12 +888,12 @@ class Klaim extends Component {
     }
 
     getDataTime = async () => {
-        const {time1, time2, filter, search, limit} = this.state
+        const {time1, time2, filter, search, limit, time} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8 : 2
-        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', limit)
+        await this.props.getKlaim(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, search, 'all', limit, time)
     }
 
     prosesSubmitPre = async () => {
@@ -1149,14 +1149,14 @@ class Klaim extends Component {
     }
 
     onSearch = async (e) => {
-        const {time1, time2, filter, limit} = this.state
+        const {time1, time2, filter, limit, time} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8 : 2
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            await this.props.getKlaim(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, e.target.value, 'all', limit)
+            await this.props.getKlaim(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, e.target.value, 'all', limit, time)
         }
     }
 
@@ -1611,10 +1611,10 @@ class Klaim extends Component {
                             <div className={[style.secEmail4]}>
                                 <div className='rowCenter'>
                                     <div className='rowCenter'>
-                                        {/* <text className='mr-4'>Time:</text> */}
                                         <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
                                             <option value="all">Time (All)</option>
                                             <option value="pilih">Periode</option>
+                                            <option value="last">Last Update</option>
                                         </Input>
                                     </div>
                                     {this.state.time === 'pilih' ?  (

@@ -44,6 +44,7 @@ import depo from '../../redux/actions/depo'
 import tarif from '../../redux/actions/tarif'
 import taxcode from '../../redux/actions/taxcode'
 import kliring from '../../redux/actions/kliring'
+import FormList from '../../components/Ops/FormList'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const opsSchema = Yup.object().shape({
@@ -398,7 +399,7 @@ class AjuanBayarOps extends Component {
         const { isApplist, isRejectList, uploadBukti, detailOps } = this.props.ops
         const { isSend } = this.props.email
         const token = localStorage.getItem('token')
-        console.log(this.state.no_transfer, this.state.tgl_transfer)
+        // console.log(this.state.no_transfer, this.state.tgl_transfer)
         if (isApplist === false) {
             this.setState({confirm: 'rejApprove'})
             this.openConfirm()
@@ -692,6 +693,23 @@ class AjuanBayarOps extends Component {
         this.setState({submitPre: !this.state.submitPre})
     }
 
+    getDataKliring = (val, type) => {
+        let finalData = ''
+        const {dataAll} = this.props.kliring
+        const findKliring = dataAll.find(x => x.nama_singkat.toLowerCase() === (!val.bank_tujuan ? val.bank_tujuan.toLowerCase() : ''))
+        if (type === 'nama') {
+            if (val.bank_tujuan.toLowerCase() === 'bank mandiri') {
+                finalData = ''
+            } else {
+                finalData = !findKliring ? '' : findKliring.nama_singkat
+            }
+            return finalData
+        } else if (type === 'sandi') {
+            finalData = !findKliring ? '' : findKliring.sandi_kliring
+            return finalData
+        }
+    }
+
     approveDataOps = async () => {
         const { detailOps } = this.props.ops
         const level = localStorage.getItem("level")
@@ -756,7 +774,7 @@ class AjuanBayarOps extends Component {
         const data = {
             [val.target.name]: val.target.value
         }
-        console.log(data)
+        // console.log(data)
         this.setState(data)
     }
 
@@ -1222,8 +1240,8 @@ class AjuanBayarOps extends Component {
                     c8: item.no_transaksi.slice(0, 19),
                     c9: '',
                     c10: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
-                    c11: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.sandi_kliring,
-                    c12: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.nama_singkat,
+                    c11: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : this.getDataKliring(item, 'sandi'),
+                    c12: item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : this.getDataKliring(item, 'nama'),
                     c13: '',
                     c14: '',
                     c15: '',
@@ -1330,8 +1348,8 @@ class AjuanBayarOps extends Component {
                     item.no_transaksi.slice(0, 19),
                     "",
                     item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU',
-                    item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.sandi_kliring,
-                    item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.nama_singkat,
+                    item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : this.getDataKliring(item, 'sandi'),
+                    item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : this.getDataKliring(item, 'nama'),
                     "",
                     "",
                     "",
@@ -1921,13 +1939,17 @@ class AjuanBayarOps extends Component {
                                             <tr>
                                                 <th className='total' colSpan={7}>Total</th>
                                                 <th>
+                                                    {/* {detailOps.reduce((accumulator, object) => {
+                                                        return accumulator + parseInt((object.dpp !== null && object.dpp !== 0 && object.dpp !== '0' && object.dpp !== '') ? object.dpp : object.nilai_buku);
+                                                    }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} */}
+                                                </th>
+                                                <th></th>
+                                                <th></th>
+                                                <th>
                                                     {detailOps.reduce((accumulator, object) => {
                                                         return accumulator + parseInt(object.nilai_bayar);
                                                     }, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
                                                 </th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
                                             </tr>
                                         )}
                                 </tbody>
@@ -1936,88 +1958,135 @@ class AjuanBayarOps extends Component {
                         <Table borderless responsive className="tabPreview mt-4">
                             <thead>
                                 <tr>
-                                    <th className="buatPre">Dibuat oleh,</th>
-                                    <th className="buatPre">Diketahui oleh,</th>
-                                    <th className="buatPre">Disetujui oleh,</th>
+                                    {ttdOpsList.pembuat && ttdOpsList.pembuat.length > 0 && (
+                                        <th className="buatPre">Dibuat oleh,</th>
+                                    )}
+                                    {ttdOpsList.pemeriksa && ttdOpsList.pemeriksa.length > 0 && (
+                                        <th className="buatPre">Diketahui oleh,</th>
+                                    )}
+                                    {ttdOpsList.mengetahui && ttdOpsList.mengetahui.length > 0 && (
+                                        <th className="buatPre">Diketahui oleh,</th>
+                                    )}
+                                    {ttdOpsList.penyetuju && ttdOpsList.penyetuju.length > 0 && (
+                                        <th className="buatPre">Disetujui oleh,</th>
+                                    )}
+                                    
                                 </tr>
                             </thead>
                             <tbody className="tbodyPre">
                                 <tr>
-                                    <td className="restTable">
-                                        <Table bordered responsive className="divPre">
-                                                <thead>
-                                                    <tr>
+                                    {ttdOpsList.pembuat !== undefined && ttdOpsList.pembuat.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdOpsList.pembuat !== undefined && ttdOpsList.pembuat.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
                                                         {ttdOpsList.pembuat !== undefined && ttdOpsList.pembuat.map(item => {
                                                             return (
-                                                                <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
-                                                                </th>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                    {ttdOpsList.pembuat !== undefined && ttdOpsList.pembuat.map(item => {
-                                                        return (
-                                                            <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                        )
-                                                    })}
-                                                    </tr>
-                                                </tbody>
-                                        </Table>
-                                    </td>
-                                    <td className="restTable">
-                                        <Table bordered responsive className="divPre">
-                                                <thead>
-                                                    <tr>
-                                                        {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.map(item => {
-                                                            return (
-                                                                <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
-                                                                </th>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.map(item => {
-                                                            return (
                                                                 <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
                                                             )
                                                         })}
-                                                    </tr>
-                                                </tbody>
-                                        </Table>
-                                    </td>
-                                    <td className="restTable">
-                                        <Table bordered responsive className="divPre">
-                                                <thead>
-                                                    <tr>
-                                                        {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.map(item => {
-                                                            return (
-                                                                <th className="headPre">
-                                                                    <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
-                                                                    <div>{item.nama === null ? "-" : item.nama}</div>
-                                                                </th>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.map(item => {
-                                                            return (
-                                                                <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
-                                                            )
-                                                        })}
-                                                    </tr>
-                                                </tbody>
-                                        </Table>
-                                    </td>
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                    )}
+                                    
+                                    {ttdOpsList.pemeriksa !== undefined && ttdOpsList.pemeriksa.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdOpsList.pemeriksa !== undefined && ttdOpsList.pemeriksa.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            {ttdOpsList.pemeriksa !== undefined && ttdOpsList.pemeriksa.map(item => {
+                                                                return (
+                                                                    <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                    )}
+                                     
+                                     {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            {ttdOpsList.mengetahui !== undefined && ttdOpsList.mengetahui.map(item => {
+                                                                return (
+                                                                    <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                     )}
+                                    
+                                    {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.length > 0 && (
+                                        <td className="restTable">
+                                            <Table bordered responsive className="divPre">
+                                                    <thead>
+                                                        <tr>
+                                                            {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.map(item => {
+                                                                return (
+                                                                    <th className="headPre">
+                                                                        <div className="mb-3">{item.nama === null ? "-" : item.status === '0' ? `Reject (${moment(item.updatedAt).format('DD/MM/YYYY')})` : `Approve (${moment(item.updatedAt).format('DD/MM/YYYY')})`}</div>
+                                                                        <div>{item.nama === null ? "-" : item.nama}</div>
+                                                                    </th>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            {ttdOpsList.penyetuju !== undefined && ttdOpsList.penyetuju.map(item => {
+                                                                return (
+                                                                    <td className="footPre">{item.jabatan === null ? "-" : item.jabatan}</td>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    </tbody>
+                                            </Table>
+                                        </td>
+                                    )}
+                                    
                                 </tr>
                             </tbody>
                         </Table>
@@ -2029,9 +2098,10 @@ class AjuanBayarOps extends Component {
                             <Button color="primary" onClick={() => this.prosesModalMcm()}>
                                 Download MCM
                             </Button>
-                            <Button color="success ml-1" onClick={() => this.printData('formlistops')}>
+                            {/* <Button color="success" className='ml-1' onClick={() => this.printData('formlistops')}>
                                 Download Form
-                            </Button>
+                            </Button> */}
+                            <FormList />
                         </div>
                         {this.state.filter === 'ready' && (
                             <div className="btnFoot">
@@ -2239,8 +2309,8 @@ class AjuanBayarOps extends Component {
                                                         <th >{item.no_transaksi.slice(0, 19)}</th>
                                                         <th ></th>
                                                         <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? 'IBU' : 'LBU'}</th>
-                                                        <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.sandi_kliring}</th>
-                                                        <th >{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : item.kliring !== null && item.kliring.nama_singkat}</th>
+                                                        <th className='tabRep'>{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : this.getDataKliring(item, 'sandi')}</th>
+                                                        <th >{item.bank_tujuan.toLowerCase() === 'bank mandiri' ? '' : this.getDataKliring(item, 'nama')}</th>
                                                         <th ></th>
                                                         <th ></th>
                                                         <th ></th>
@@ -2709,6 +2779,7 @@ class AjuanBayarOps extends Component {
                     this.props.depo.isLoading || 
                     this.props.kliring.isLoading || 
                     this.props.taxcode.isLoading || 
+                    this.props.notif.isLoading || 
                     this.props.tarif.isLoading 
                     } size="sm">
                         <ModalBody>

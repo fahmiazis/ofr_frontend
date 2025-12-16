@@ -35,9 +35,9 @@ export default {
         type: 'SUBMIT_OPSFINAL',
         payload: http(token).patch(`/ops/subfinops`, qs.stringify(no))
     }),
-    getOps: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search, jentrans, desttf, depo, limit) => ({
+    getOps: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search, jentrans, desttf, depo, limit, time) => ({
         type: 'GET_OPS',
-        payload: http(token).patch(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${kasbon}&realisasi=${realisasi}&search=${search === undefined ? '' : search}&jentrans=${jentrans}&desttf=${desttf}&limit=${limit === undefined ? 100 : limit}&page=1`, data={depo: depo}),
+        payload: http(token).patch(`/ops/get?status=${status}&reject=${reject}&menu=${menu}&type=${type}&category=${category}&data=${data}&time1=${time1}&time2=${time2}&kasbon=${kasbon}&realisasi=${realisasi}&search=${search === undefined ? '' : search}&jentrans=${jentrans}&desttf=${desttf}&limit=${limit === undefined ? 100 : limit}&page=1&type_time=${time}`, data={depo: depo}),
     }),
     getKasbon: (token, status, reject, menu, type, category, data, time1, time2, kasbon, realisasi, search, depo, limit) => ({
         type: 'GET_KASBON',

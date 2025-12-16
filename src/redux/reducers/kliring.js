@@ -24,14 +24,14 @@ const kliringState = {
 
 export default (state=kliringState, action) => {
         switch(action.type){
-            case 'GET_ALL_PENDING': {
+            case 'GET_ALL_KLIRING_PENDING': {
                 return {
                     ...state,
                     isLoading: true,
                     alertMsg: 'Waiting ...'
                 };
             }
-            case 'GET_ALL_FULFILLED': {
+            case 'GET_ALL_KLIRING_FULFILLED': {
                 return {
                     ...state,
                     isLoading: false,
@@ -41,7 +41,7 @@ export default (state=kliringState, action) => {
                     page: action.payload.data.pageInfo
                 };
             }
-            case 'GET_ALL_REJECTED': {
+            case 'GET_ALL_KLIRING_REJECTED': {
                 return {
                     ...state,
                     isLoading: false,

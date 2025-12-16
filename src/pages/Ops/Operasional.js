@@ -51,6 +51,7 @@ import depo from '../../redux/actions/depo'
 import tarif from '../../redux/actions/tarif'
 import taxcode from '../../redux/actions/taxcode'
 import kliring from '../../redux/actions/kliring'
+import Select from 'react-select'
 const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
 const userAppArea = ['10', '11', '12', '15', '30']
 
@@ -184,9 +185,9 @@ class Ops extends Component {
             subject: '',
             openAppDoc: false,
             openRejDoc: false,
-            time: 'pilih',
-            time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
-            // time1: moment().startOf('month').format('YYYY-MM-DD'),
+            time: 'last',
+            // time1: moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
+            time1: moment().startOf('month').format('YYYY-MM-DD'),
             time2: moment().endOf('month').format('YYYY-MM-DD'),
             docHist: false,
             detailDoc: {},
@@ -203,7 +204,8 @@ class Ops extends Component {
             modResmail: false,
             idDoc: 0,
             dataColl: [],
-            fileName: {}
+            fileName: {},
+            filterVendor: []
         }
         this.onSetOpen = this.onSetOpen.bind(this);
         this.menuButtonClick = this.menuButtonClick.bind(this);
@@ -912,47 +914,30 @@ class Ops extends Component {
         const token = localStorage.getItem("token")
         const status = val === 'bayar' || val === 'completed' ? 8 : 2
         const statusAll = 'all'
-        const {time1, time2, search, limit} = this.state
+        const {time1, time2, search, limit, time} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const typeKasbon = 'non kasbon'
         if (val === 'all') {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit, time)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit)
+            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit, time)
             this.setState({filter: val, newOps: newOps})
         }
     }
 
-    // changeFilter = async (val) => {
-    //     const {dataOps, noDis} = this.props.ops
-    //     const level = localStorage.getItem('level')
-    //     const token = localStorage.getItem("token")
-    //     const { detailUser, dataRole } = this.props.user
-    //     const { dataDepo } = this.props.depo
-
-    //     const status = val === 'available' ? 2 : val === 'selesai' ? 8 : 'all'
-    //     const {time1, time2, search, limit} = this.state
-    //     const cekTime1 = time1 === '' ? 'undefined' : time1
-    //     const cekTime2 = time2 === '' ? 'undefined' : time2
-    //     const typeKasbon = 'non kasbon'
-
-    //     await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit)
-        
-    // }
-
     getDataLimit = async (val) => {
         const typeKasbon = 'non kasbon'
-        const {time1, time2, filter, search} = this.state
+        const {time1, time2, filter, search, time} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8: 2
         this.setState({limit: val})
-        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', val)
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', val, time)
     }
 
     changeTime = async (val) => {
@@ -972,12 +957,12 @@ class Ops extends Component {
 
     getDataTime = async () => {
         const typeKasbon = 'non kasbon'
-        const {time1, time2, filter, search, limit} = this.state
+        const {time1, time2, filter, search, limit, time} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8: 2
-        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit)
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit, time)
     }
     
     cekDataDoc = () => {
@@ -1245,13 +1230,13 @@ class Ops extends Component {
     onSearch = async (e) => {
         this.setState({search: e.target.value})
         const typeKasbon = 'non kasbon'
-        const {time1, time2, filter, limit} = this.state
+        const {time1, time2, filter, limit, time} = this.state
         const cekTime1 = time1 === '' ? 'undefined' : time1
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8 : 2
         if(e.key === 'Enter'){
-            await this.props.getOps(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, e.target.value, undefined, undefined, 'all', limit)
+            await this.props.getOps(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, e.target.value, undefined, undefined, 'all', limit, time)
         }
     }
 
@@ -1646,13 +1631,33 @@ class Ops extends Component {
         this.setState({openBukti: !this.state.openBukti})
     }
 
+    selectVendor = (selected) => {
+        if (!selected) {
+            this.setState({ filterVendor: [] })
+            return
+        }
+        
+        const { vendorList } = this.props.ops
+        const val = selected.value
+        
+        if (val === 'all') {
+            this.setState({ filterVendor: [] }) // Kosong = show all
+        } else {
+            const dataFinal = vendorList
+                .filter(item => item.nama_vendor === val)
+                .map(item => item.no_transaksi)
+
+            this.setState({ filterVendor: dataFinal })
+        }
+    }
+
     render() {
         const level = localStorage.getItem('level')
         const names = localStorage.getItem('name')
         const {listReject, listMut, tipeEmail, listReason, dataMenu, listMenu, detailDoc, filter, dataZip, dataColl, fileName} = this.state
         const { detailDepo, dataDepo } = this.props.depo
         const { dataReason } = this.props.reason
-        const { noDis, detailOps, ttdOps, dataDoc, newOps, idOps, docBukti, pageOps } = this.props.ops
+        const { noDis, detailOps, ttdOps, dataDoc, newOps, idOps, docBukti, pageOps, vendorList } = this.props.ops
         // const pages = this.props.depo.page
 
         const contentHeader =  (
@@ -1694,29 +1699,72 @@ class Ops extends Component {
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Pengajuan Operasional</div>
                             </div>
-                            {(level === '5' || level === '6') && (
+                            
                                 <div className={[style.secEmail4]}>
-                                    <Button onClick={() => this.goProses({route: 'cartops', type: 'non kasbon'})} color="info" size="lg">Create</Button>
+                                    {(level === '5' || level === '6') ? (
+                                        <Button onClick={() => this.goProses({route: 'cartops', type: 'non kasbon'})} color="info" size="lg">Create</Button>
+                                    ) : (
+                                        <div className={style.searchEmail2}>
+                                            <div>
+                                                <text>Show: </text>
+                                                <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                                    <DropdownToggle caret color="light">
+                                                        {this.state.limit}
+                                                    </DropdownToggle>
+                                                    <DropdownMenu>
+                                                        <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                                        <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                                        <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                                        <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                                    </DropdownMenu>
+                                                </ButtonDropdown>
+                                                <text className={style.textEntries}>entries</text>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                           
                             <div className={[style.secEmail4]}>
-                                <div className={style.searchEmail2}>
-                                    <div>
-                                        <text>Show: </text>
-                                        <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
-                                            <DropdownToggle caret color="light">
-                                                {this.state.limit}
-                                            </DropdownToggle>
-                                            <DropdownMenu>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
-                                            </DropdownMenu>
-                                        </ButtonDropdown>
-                                        <text className={style.textEntries}>entries</text>
+                                {(level === '5' || level === '6') ? (
+                                    <div className={style.searchEmail2}>
+                                        <div>
+                                            <text>Show: </text>
+                                            <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                                <DropdownToggle caret color="light">
+                                                    {this.state.limit}
+                                                </DropdownToggle>
+                                                <DropdownMenu>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                                </DropdownMenu>
+                                            </ButtonDropdown>
+                                            <text className={style.textEntries}>entries</text>
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className={style.searchEmail2}>
+                                        <text>vendor:  </text>
+                                        <Select
+                                            className={style.filter}
+                                            options={
+                                                vendorList && vendorList.length > 0
+                                                ? [
+                                                    { value: 'all', label: 'Semua Vendor' },
+                                                    ...[...new Set(vendorList.map(v => v.nama_vendor))].map(nama => ({
+                                                        value: nama,
+                                                        label: nama
+                                                    }))
+                                                    ]
+                                                : [{ value: 'all', label: 'Semua Vendor' }]
+                                            }
+                                            onChange={this.selectVendor}
+                                            placeholder="Pilih Vendor"
+                                        />
+                                    </div>
+                                )}
+                                
                                 <div className={style.searchEmail2}>
                                     <text>Filter:  </text>
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
@@ -1735,9 +1783,10 @@ class Ops extends Component {
                                         <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
                                             <option value="all">Time (All)</option>
                                             <option value="pilih">Periode</option>
+                                            <option value="last">Last Update</option>
                                         </Input>
                                     </div>
-                                    {this.state.time === 'pilih' ?  (
+                                    {this.state.time === 'pilih' || this.state.time === 'last'?  (
                                         <>
                                             <div className='rowCenter'>
                                                 <text className='bold'>:</text>
@@ -1795,7 +1844,19 @@ class Ops extends Component {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newOps.length > 0 && newOps.filter(({ end_ops }) => (filter !== 'bayar' && filter !== 'completed') || (filter === 'completed' && end_ops !== null) || (filter === 'bayar' && end_ops === null)).map((item, index)=> {
+                                            {newOps.length > 0 && 
+                                            newOps.filter((item) => {
+                                                // Filter status
+                                                const statusMatch = (filter !== 'bayar' && filter !== 'completed') 
+                                                    || (filter === 'completed' && item.end_ops !== null) 
+                                                    || (filter === 'bayar' && item.end_ops === null)
+                                                
+                                                // Filter vendor (kosong = show all)
+                                                const vendorMatch = this.state.filterVendor.length === 0 
+                                                    || this.state.filterVendor.includes(item.no_transaksi)
+                                                
+                                                return statusMatch && vendorMatch
+                                            }).map((item, index)=> {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_transaksi === 0 ? 'fail' : item.status_reject === 1 && 'bad'}>
                                                         <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
@@ -1848,7 +1909,19 @@ class Ops extends Component {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {newOps.length > 0 && newOps.filter(({ end_ops }) => (filter !== 'bayar' && filter !== 'completed') || (filter === 'completed' && end_ops !== null) || (filter === 'bayar' && end_ops === null)).map((item, index) => {
+                                            {newOps.length > 0 && 
+                                            newOps.filter((item) => {
+                                                // Filter status
+                                                const statusMatch = (filter !== 'bayar' && filter !== 'completed') 
+                                                    || (filter === 'completed' && item.end_ops !== null) 
+                                                    || (filter === 'bayar' && item.end_ops === null)
+                                                
+                                                // Filter vendor (kosong = show all)
+                                                const vendorMatch = this.state.filterVendor.length === 0 
+                                                    || this.state.filterVendor.includes(item.no_transaksi)
+                                                
+                                                return statusMatch && vendorMatch
+                                            }).map((item, index) => {
                                                 return (
                                                     <tr className={item.status_reject === 0 ? 'note' : item.status_transaksi === 0 ? 'fail' : item.status_reject === 1 && 'bad'}>
                                                         <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
