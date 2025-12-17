@@ -1617,7 +1617,7 @@ class Klaim extends Component {
                                             <option value="last">Last Update</option>
                                         </Input>
                                     </div>
-                                    {this.state.time === 'pilih' ?  (
+                                    {this.state.time === 'pilih' || this.state.time === 'last' ?  (
                                         <>
                                             <div className='rowCenter'>
                                                 <text className='bold'>:</text>

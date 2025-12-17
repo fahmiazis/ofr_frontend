@@ -1716,7 +1716,7 @@ class VerifKlaim extends Component {
                                         <option value="pilih">Periode</option>
                                         <option value="last">Last Update</option>
                                     </Input>
-                                    {this.state.time === 'pilih' ?  (
+                                    {this.state.time === 'pilih' || this.state.time === 'last' ?  (
                                         <>
                                             <div className='rowCenter'>
                                                 <text className='bold'>:</text>
