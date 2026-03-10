@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 
 import VerifVendor from './pages/VerifVendor'
+import AccessDenied from './components/AccessDenied'
 
 //Klaim
 import NavKlaim from './pages/Klaim/NavKlaim'
@@ -123,6 +124,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/notif'>
                     <Notif />
+                </PrivateRoute>
+                <PrivateRoute path='/access-denied' exact>
+                    <AccessDenied />
                 </PrivateRoute>
 
                 {/* Klaim */}

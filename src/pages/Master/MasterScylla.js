@@ -106,6 +106,9 @@ class MasterScylla extends Component {
             url: `${REACT_APP_BACKEND_URL}/masters/scylla.xlsx`,
             method: 'GET',
             responseType: 'blob',
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
         }).then((response) => {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');

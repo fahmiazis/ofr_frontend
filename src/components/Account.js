@@ -13,6 +13,7 @@ import {VscAccount} from 'react-icons/vsc'
 import { useHistory } from 'react-router-dom'
 import notif from '../redux/actions/notif'
 import style from '../assets/css/input.module.css'
+import http from '../helpers/http'
 const {REACT_APP_BACKEND_URL} = process.env
 
 const changeSchema = Yup.object().shape({
@@ -39,7 +40,8 @@ class Account extends Component {
         confirm: '',
         username: '',
         fullname: '',
-        email: ''
+        email: '',
+        blobUrl: null
     }
 
     editUser = async (val) => {
@@ -117,7 +119,12 @@ class Account extends Component {
         await this.props.getAllNotif(token)
         await this.props.getDetail(token, id)
         const {detailUser} = this.props.user
-        this.setState({username: detailUser.username, fullname: detailUser.fullname, email: detailUser.email})
+        const res = await (detailUser.image
+          && http().get(detailUser.image, { responseType: 'blob' })
+        )
+
+        const url = URL.createObjectURL(res.data)
+        this.setState({username: detailUser.username, fullname: detailUser.fullname, email: detailUser.email, blobUrl: url})
     }
 
     componentDidUpdate () {
@@ -141,6 +148,7 @@ class Account extends Component {
     const names = localStorage.getItem('fullname')
     const {detailUser} = this.props.user
     const color = this.props.color
+    const { blobUrl } = this.state
     return (
         <>
             <UncontrolledDropdown>
@@ -148,7 +156,7 @@ class Account extends Component {
                     {detailUser.image === null || detailUser.image === undefined ? (
                         <VscAccount size={30} className={color === undefined ? 'mr-2 white' : `mr-2 ${color}`} />
                     ) : (
-                        <img className="pictTask mr-2" src={`${REACT_APP_BACKEND_URL}/${detailUser.image}`} alt="profile1" />
+                        <img className="pictTask mr-2" src={blobUrl} alt="profile1" />
                     )}
                     <div className={color === undefined ? 'mr-2 white' : `mr-2 ${color}`}>
                         <text>
@@ -352,9 +360,9 @@ class Account extends Component {
                                 {detailUser.image === null ? (
                                     <VscAccount size={120} className={'black mb-4'} />
                                 ) : (
-                                    <img className="pictProf mb-4" src={`${REACT_APP_BACKEND_URL}/${detailUser.image}`} alt="profile1" />
+                                    <img className="pictProf mb-4" src={blobUrl} alt="profile1" />
                                 )}
-                                <Input type="file" onChange={this.uploadGambar}
+                                <Input accept='.jpg, .png, .jpeg' type="file" onChange={this.uploadGambar}
                                     className="bol btn btn-outline-secondary btn-block text-secondary"
                                 >
                                     Select image

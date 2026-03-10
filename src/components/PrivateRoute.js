@@ -58,6 +58,9 @@ class PrivateRoute extends Component {
   }
 
   render () {
+    const level = localStorage.getItem('level')
+    const { listRoute } = this.props.auth
+    const { detailUser } = this.props.user
     return (
       <Route render={
         (props) => {
@@ -67,8 +70,21 @@ class PrivateRoute extends Component {
             }
             return child
           })
+          const dataRoute = listRoute 
+              && listRoute.length > 0 
+              && listRoute.find(item => (`/${item.route}` === childWithProps[0].props.location.pathname))
           if (localStorage.getItem('token')) {
-            return childWithProps
+            if (detailUser.level === 1) {
+              return childWithProps
+            } else if (dataRoute) {
+              if (dataRoute.level.find(x => x === detailUser.level)) {
+                return childWithProps
+              } else {
+                return <Redirect to={{ pathname: '/access-denied' }} />
+              }
+            } else {
+              return childWithProps
+            }
           } else {
             return <Redirect to={{ pathname: '/login' }} />
           }
@@ -81,6 +97,7 @@ class PrivateRoute extends Component {
 
 const mapStateToProps = state => ({
   auth: state.auth,
+  user: state.user
 })
 
 const mapDispatchToProps = {
