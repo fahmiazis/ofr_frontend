@@ -242,6 +242,34 @@ export default (state=userState, action) => {
                     alert: action.payload.response !== undefined ? action.payload.response.data.error : 'something went wrong'
                 };
             }
+            case 'GET_DETAIL_USER_MASTER_PENDING': {
+                return {
+                    ...state,
+                    isLoading: true,
+                    isDetailMaster: false,
+                    alertMsg: 'Waiting ...'
+                };
+            }
+            case 'GET_DETAIL_USER_MASTER_FULFILLED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isError: false,
+                    isDetailMaster: true,
+                    detailUserMaster: action.payload.data.result,
+                    alertMsg: 'get detail user Succesfully'
+                };
+            }
+            case 'GET_DETAIL_USER_MASTER_REJECTED': {
+                return {
+                    ...state,
+                    isLoading: false,
+                    isDetailMaster: false,
+                    isError: true,
+                    alertMsg: action.payload.response !== undefined ? action.payload.response.data.message : 'something went wrong',
+                    alert: action.payload.response !== undefined ? action.payload.response.data.error : 'something went wrong'
+                };
+            }
             case 'GET_DETAIL_ROLE_PENDING': {
                 return {
                     ...state,

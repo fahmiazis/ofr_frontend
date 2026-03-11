@@ -31,6 +31,10 @@ export default {
         type: 'GET_DETAIL_USER',
         payload: http(token).get(`/user/detail/${id}`)
     }),
+    getDetailUserMaster: (token, id) => ({
+        type: 'GET_DETAIL_USER_MASTER',
+        payload: http(token).get(`/user/detail/${id}`)
+    }),
     nextPage: (token, link) => ({
         type: 'NEXT_DATA_USER',
         payload: http(token).get(`${link}`)

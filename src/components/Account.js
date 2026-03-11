@@ -123,7 +123,10 @@ class Account extends Component {
           && http().get(detailUser.image, { responseType: 'blob' })
         )
 
-        const url = URL.createObjectURL(res.data)
+        let url = null
+        if (res && res.data) {
+            url = URL.createObjectURL(res.data)
+        }
         this.setState({username: detailUser.username, fullname: detailUser.fullname, email: detailUser.email, blobUrl: url})
     }
 

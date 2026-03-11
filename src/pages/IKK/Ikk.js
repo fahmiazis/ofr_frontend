@@ -230,7 +230,11 @@ class IKK extends Component {
         const remoteZips = dataDoc.map(async (item) => {
             const cekData = dataZip.find(e => e === item.id)
             if (cekData !== undefined) {
-                const response = await fetch(`${REACT_APP_BACKEND_URL}/show/doc/${item.id}`);
+                const response = await fetch(`${REACT_APP_BACKEND_URL}/show/doc/${item.id}`, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
                 const data = await response.blob();
                 zip.file(`${item.desc} ~ ${item.history}`, data);
                 return data;

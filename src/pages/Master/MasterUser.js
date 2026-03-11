@@ -163,10 +163,10 @@ class MasterUser extends Component {
         const token = localStorage.getItem("token")
         this.setState({detail: val})
         await this.props.getRole(token, '')
-        await this.props.getDetailUser(token, val.id)
-        const { detailUser } = this.props.user
-        if (detailUser.detail_role !== null && detailUser.detail_role !== undefined && detailUser.detail_role.length > 0) {
-            const multiRole = detailUser.detail_role
+        await this.props.getDetailUserMaster(token, val.id)
+        const { detailUserMaster } = this.props.user
+        if (detailUserMaster.detail_role !== null && detailUserMaster.detail_role !== undefined && detailUserMaster.detail_role.length > 0) {
+            const multiRole = detailUserMaster.detail_role
             console.log(multiRole)
             const listRole = []
             for (let i = 0; i < multiRole.length; i++) {
@@ -1273,7 +1273,7 @@ const mapDispatchToProps = {
     getRole: user.getRole,
     resetPassword: user.resetPassword,
     deleteUser: user.deleteUser,
-    getDetailUser: user.getDetailUser
+    getDetailUserMaster: user.getDetailUserMaster
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(MasterUser)
