@@ -19,7 +19,7 @@ const authState = {
     { route: 'reason', level: [1] },
     { route: 'dokumen', level: [1] },
     { route: 'rekening', level: [1] },
-    { route: 'tarif', level: [1] },
+    { route: 'tarif', level: [1, 102] },
     { route: 'pagu', level: [1] },
     { route: 'email', level: [1] },
     { route: 'vendor', level: [1, 102] },
@@ -33,7 +33,7 @@ const authState = {
     { route: 'role', level: [1] },
     { route: 'reservoir', level: [1, 101] },
     { route: 'taxcode', level: [1, 102] },
-    { route: 'glikk', level: [1, 102] },
+    { route: 'glikk', level: [1] },
     { route: 'scylla', level: [1] },
     { route: 'verifven', level: [4, 14, 8, 7, 17, 2, 9, 1, 5, 6] }
   ]
