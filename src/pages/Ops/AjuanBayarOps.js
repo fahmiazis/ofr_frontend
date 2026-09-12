@@ -811,24 +811,24 @@ class AjuanBayarOps extends Component {
         const type = 'undefined' 
         const role = localStorage.getItem('role')
         if (val === 'available') {
-            const newOps = []
             await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', limit)
+            const { newOps } = this.props.ops
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'reject') {
-            const newOps = []
             await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', limit)
+            const { newOps } = this.props.ops
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'revisi') {
-            const newOps = []
             await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', limit)
+            const { newOps } = this.props.ops
             this.setState({filter: val, newOps: newOps})
         } else if (val === 'verif') {
-            const newOps = []
             await this.props.getOps(token, status, 'all', 'all', val, category, 'undefined', cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', limit)
+            const { newOps } = this.props.ops
             this.setState({filter: val, newOps: newOps})
         } else {
-            const newOps = []
             await this.props.getOps(token, statusAll, 'all', 'all', val, category, status, cekTime1, cekTime2, type, 'undefined', search, jentrans, tujuan_tf, 'all', limit)
+            const { newOps } = this.props.ops
             this.setState({filter: val, newOps: newOps})
         }
     }
