@@ -74,10 +74,10 @@ class PrivateRoute extends Component {
               && listRoute.length > 0 
               && listRoute.find(item => (`/${item.route}` === childWithProps[0].props.location.pathname))
           if (localStorage.getItem('token')) {
-            if (detailUser.level === 1) {
+            if (parseInt(level) === 1) {
               return childWithProps
             } else if (dataRoute) {
-              if (dataRoute.level.find(x => x === detailUser.level)) {
+              if (dataRoute.level.find(x => x === parseInt(level))) {
                 return childWithProps
               } else {
                 return <Redirect to={{ pathname: '/access-denied' }} />
