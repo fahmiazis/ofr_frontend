@@ -109,7 +109,7 @@ class App extends Component {
 
     render() {
         return (
-        <BrowserRouter>
+        <BrowserRouter basename="/devofr">
             <Switch>
                 <Route path='/login' exact component={Login} />
                 <Route path='/tes' exact component={Tes} />
