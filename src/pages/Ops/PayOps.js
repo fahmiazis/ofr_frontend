@@ -699,7 +699,7 @@ class AjuanBayarOps extends Component {
     getDataKliring = (val, type) => {
         let finalData = ''
         const {dataAll} = this.props.kliring
-        const findKliring = dataAll.find(x => x.nama_singkat.toLowerCase() === (!val.bank_tujuan ? val.bank_tujuan.toLowerCase() : ''))
+        const findKliring = dataAll.find(x => x.nama_singkat.toLowerCase() === (val.bank_tujuan ? val.bank_tujuan.toLowerCase() : ''))
         if (type === 'nama') {
             if (val.bank_tujuan.toLowerCase() === 'bank mandiri') {
                 finalData = ''
