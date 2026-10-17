@@ -3,6 +3,7 @@ import {  NavbarBrand, DropdownToggle, DropdownMenu,
     DropdownItem, Table, ButtonDropdown, Input, Button,
     Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
 import style from '../../assets/css/input.module.css'
+import { PageCard, Toolbar, ToolbarSpacer, FilterField, SearchBox, Pager } from '../../components/ui/Page'
 import {FaSearch, FaBars} from 'react-icons/fa'
 import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
 import depo from '../../redux/actions/depo'
@@ -468,46 +469,37 @@ class MasterEmail extends Component {
                                 <div>{errMsg}</div>
                             </Alert>
                             <div className={style.bodyDashboard}>
-                                <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master Email</div>
-                                </div>
-                                <div className={style.secHeadDashboard} >
-                                    <div>
-                                        <text>Show: </text>
-                                        <ButtonDropdown className={style.drop} isOpen={dropOpen} toggle={this.dropDown}>
-                                        <DropdownToggle caret color="light">
-                                            {this.state.limit}
-                                        </DropdownToggle>
-                                        <DropdownMenu>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
-                                        </DropdownMenu>
-                                        </ButtonDropdown>
-                                        <text className={style.textEntries}>entries</text>
-                                    </div>
-                                    <div className='filterReason'>
-                                    </div>
-                                </div>
-                                <div className='secEmail'>
-                                    <div className={style.headEmail}>
-                                        <Button className='mr-1' onClick={this.prosesModalAdd} color="primary" size="lg">Add</Button>
-                                        {/* <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' onClick={this.ExportMaster} color="success" size="lg">Download</Button> */}
-                                    </div>
-                                    <div className={style.searchEmail}>
-                                        <text>Search: </text>
-                                        <Input 
-                                        className={style.search}
-                                        onChange={this.onSearch}
-                                        value={this.state.search}
-                                        onKeyPress={this.onSearch}
-                                        >
-                                            <FaSearch size={20} />
-                                        </Input>
-                                    </div>
-                                </div>
+                                <PageCard
+                                    title="Master Email"
+                                    actions={
+                                        <>
+                                            <Button onClick={this.prosesModalAdd} color="primary">Add</Button>
+                                            {/* <Button onClick={this.openModalUpload} color="warning">Upload</Button>
+                                            <Button onClick={this.ExportMaster} color="success">Download</Button> */}
+                                        </>
+                                    }
+                                >
+                                    <Toolbar>
+                                        <SearchBox
+                                            value={this.state.search}
+                                            onChange={this.onSearch}
+                                            onKeyPress={this.onSearch}
+                                        />
+                                        <ToolbarSpacer />
+                                        <FilterField label="Show entries">
+                                            <ButtonDropdown className={style.drop} isOpen={dropOpen} toggle={this.dropDown}>
+                                            <DropdownToggle caret color="light">
+                                                {this.state.limit}
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
+                                            </DropdownMenu>
+                                            </ButtonDropdown>
+                                        </FilterField>
+                                    </Toolbar>
                                 {dataEmail.length === 0? (
                                     <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
@@ -553,15 +545,15 @@ class MasterEmail extends Component {
                                     </Table>
                                 </div>  
                                 )}
-                                <div>
-                                    <div className='infoPageEmail'>
-                                        <text>Showing {page.currentPage} of {page.pages} pages</text>
-                                        <div className={style.pageButton}>
-                                            <button className={style.btnPrev} color="info" disabled={page.prevLink === null ? true : false} onClick={this.prev}>Prev</button>
-                                            <button className={style.btnPrev} color="info" disabled={page.nextLink === null ? true : false} onClick={this.next}>Next</button>
-                                        </div>
-                                    </div>
-                                </div>
+                                    <Pager
+                                        current={page.currentPage}
+                                        pages={page.pages}
+                                        onPrev={this.prev}
+                                        onNext={this.next}
+                                        prevDisabled={page.prevLink === null}
+                                        nextDisabled={page.nextLink === null}
+                                    />
+                                </PageCard>
                             </div>
                         </div>
                     </MaterialTitlePanel>

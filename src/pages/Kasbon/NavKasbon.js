@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/alt-text */
 import React, { Component } from 'react'
-import Sidebar from '../../components/Sidebar'
+import AppLayout from '../../components/AppLayout'
 import {VscAccount} from 'react-icons/vsc'
 import { Row, DropdownItem, UncontrolledDropdown, DropdownToggle, DropdownMenu, Button,
     Modal, ModalHeader, ModalBody, Input } from 'reactstrap'
@@ -16,9 +16,8 @@ import user from '../../redux/actions/user'
 // import notif from '../redux/actions/notif'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import Bell from '../../components/Bell'
-import Account from '../../components/Account'
 import style from '../../assets/css/input.module.css'
+import styleHome from '../../assets/css/home.module.css'
 
 const changeSchema = Yup.object().shape({
     current_password: Yup.string().required('must be filled'),
@@ -143,63 +142,54 @@ class NavOps extends Component {
         const dataNotif = []
         return (
             <>
-            <div className="bodyHome">
-                <div className="leftHome">
-                    <Sidebar />
-                </div>
-                <div className="rightHome">
-                    <div className="bodyAkun">
-                        <div></div>
-                        <div className="akun">
-                            <Bell dataNotif={dataNotif} color={"black"}/>
-                            <Account color={"black"}/>
-                        </div>
-                    </div>
+            <AppLayout>
                     <div>
-                        <div className="titHome">Kasbon menu</div>
-                        <div className="txtChoose">Please select an option</div>
-                        <div className="mainBody">
+                        <div className={styleHome.hero}>
+                            <div className={styleHome.heroTitle}>Kasbon menu</div>
+                            <div className={styleHome.heroDesc}>Silakan pilih menu</div>
+                        </div>
+                        <div className={styleHome.menuGrid}>
                             {level === '5' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('kasbon')}>
-                                        <FiSend size={220} className="picHome" />
-                                        <div className="titCard">
+                                    <button className={styleHome.menuCard} onClick={() => this.goRoute('kasbon')}>
+                                        <div className={styleHome.iconWrap}><FiSend size={44} /></div>
+                                        <div className={styleHome.cardTitle}>
                                             Pengajuan Kasbon
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goRoute('realkasbon')}>
-                                        <MdAssignment size={220} className="picHome" />
-                                        <div className="titCard">
+                                    <button className={styleHome.menuCard} onClick={() => this.goRoute('realkasbon')}>
+                                        <div className={styleHome.iconWrap}><MdAssignment size={44} /></div>
+                                        <div className={styleHome.cardTitle}>
                                             Realisasi Kasbon
                                         </div>
                                     </button>
-                                    {/* <button className="cardNav1" onClick={() => this.goRoute('revkasbon')}>
-                                        <BiRevision size={220} className="picHome" />
-                                        <div className="titCard">
+                                    {/* <button className={styleHome.menuCard} onClick={() => this.goRoute('revkasbon')}>
+                                        <div className={styleHome.iconWrap}><BiRevision size={44} /></div>
+                                        <div className={styleHome.cardTitle}>
                                             Revisi Kasbon
                                         </div>
                                     </button> */}
                                 </>
                             ): level === '2' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goRoute('verifrealkasbon')}>
-                                        <MdVerifiedUser size={220} className="picHome" />
-                                        <div className="titCard">
+                                    <button className={styleHome.menuCard} onClick={() => this.goRoute('verifrealkasbon')}>
+                                        <div className={styleHome.iconWrap}><MdVerifiedUser size={44} /></div>
+                                        <div className={styleHome.cardTitle}>
                                             Verifikasi Finance (Realisasi Kasbon)
                                         </div>
                                     </button>
                                 </>
                             ) : level === '4' || level === '14' ? (
                                 <>
-                                    <button className="cardNav1" onClick={() => this.goProses({route: 'verifkasbon', type: 'kasbon'})}>
-                                        <MdVerifiedUser size={220} className="picHome" />
-                                        <div className="titCard">
+                                    <button className={styleHome.menuCard} onClick={() => this.goProses({route: 'verifkasbon', type: 'kasbon'})}>
+                                        <div className={styleHome.iconWrap}><MdVerifiedUser size={44} /></div>
+                                        <div className={styleHome.cardTitle}>
                                             Verifikasi Tax (Pengajuan Kasbon)
                                         </div>
                                     </button>
-                                    <button className="cardNav1" onClick={() => this.goProses({route: 'verifrealkasbon', type: 'non kasbon'})}>
-                                        <MdVerifiedUser size={220} className="picHome" />
-                                        <div className="titCard">
+                                    <button className={styleHome.menuCard} onClick={() => this.goProses({route: 'verifrealkasbon', type: 'non kasbon'})}>
+                                        <div className={styleHome.iconWrap}><MdVerifiedUser size={44} /></div>
+                                        <div className={styleHome.cardTitle}>
                                             Verifikasi Tax (Realisasi Kasbon)
                                         </div>
                                     </button>
@@ -207,32 +197,31 @@ class NavOps extends Component {
                             ) 
                             // : level === '7' || level === '8' || level === '9' ? (
                             //     <>
-                            //         <button className="cardNav1" onClick={() => this.goRoute('navlistops')}>
-                            //             <RiDraftFill size={220} className="picHome" />
-                            //             <div className="titCard">
+                            //         <button className={styleHome.menuCard} onClick={() => this.goRoute('navlistops')}>
+                            //             <div className={styleHome.iconWrap}><RiDraftFill size={44} /></div>
+                            //             <div className={styleHome.cardTitle}>
                             //                 List Ajuan Bayar
                             //             </div>
                             //         </button>
-                            //         <button className="cardNav1" onClick={() => this.goRoute('repops')}>
-                            //             <HiOutlineDocumentReport size={220} className="picHome" />
-                            //             <div className="titCard">
+                            //         <button className={styleHome.menuCard} onClick={() => this.goRoute('repops')}>
+                            //             <div className={styleHome.iconWrap}><HiOutlineDocumentReport size={44} /></div>
+                            //             <div className={styleHome.cardTitle}>
                             //                 Report Operasional
                             //             </div>
                             //         </button>
                             //     </>
                             // ) 
                             : (
-                                <button className="cardNav1" onClick={() => this.goRoute('kasbon')}>
-                                    <FiSend size={220} className="picHome" />
-                                    <div className="titCard">
+                                <button className={styleHome.menuCard} onClick={() => this.goRoute('kasbon')}>
+                                    <div className={styleHome.iconWrap}><FiSend size={44} /></div>
+                                    <div className={styleHome.cardTitle}>
                                         Pengajuan Kasbon
                                     </div>
                                 </button>
                             )} 
                         </div>
                     </div>
-                </div>
-            </div>
+            </AppLayout>
             <Modal isOpen={this.state.modalChange} toggle={this.openModalChange}>
                 <ModalHeader>Change Password</ModalHeader>
                 <Formik

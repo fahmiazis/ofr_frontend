@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/alt-text */
 import React, { Component } from 'react'
-import Sidebar from '../components/Sidebar'
+import AppLayout from '../components/AppLayout'
 import auth from '../redux/actions/auth'
 import { Input, Button, Modal, ModalHeader, ModalBody, Alert, 
     UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem, Dropdown, Row } from 'reactstrap'
@@ -22,8 +22,7 @@ import {GrMoney} from 'react-icons/gr'
 import {MdBalance} from 'react-icons/md'
 import { FaFileSignature, FaHandshake, FaCashRegister } from 'react-icons/fa'
 import { FiLogOut } from 'react-icons/fi'
-import Bell from '../components/Bell'
-import Account from '../components/Account'
+import styleHome from '../assets/css/home.module.css'
 
 const userEditSchema = Yup.object().shape({
     fullname: Yup.string().required('must be filled'),
@@ -183,55 +182,35 @@ class Home extends Component {
         const {dataNull} = this.state
         const id = localStorage.getItem('id')
         const { alertM, alertMsg } = this.props.user
-        const {dataAllNotif} = this.props.notif
+        const hideKlaim = level === '4' || level === '14' || level === '24' || level === '34' || level === '102'
+        const menuHome = [
+            ...(hideKlaim ? [] : [{ route: 'navklaim', title: 'Klaim', desc: 'Pengajuan dan monitoring klaim', icon: FaHandshake }]),
+            { route: 'navops', title: 'Operasional', desc: 'Ajuan dana biaya operasional', icon: BsGearWideConnected },
+            { route: 'navikk', title: 'Ikhtisar Kas Kecil', desc: 'Pengelolaan dan pertanggungjawaban kas kecil', icon: GiNotebook },
+            { route: 'navkasbon', title: 'Kasbon', desc: 'Pengajuan dan realisasi kasbon', icon: FaCashRegister },
+        ]
         return (
             <>
-            <div className="bodyHome">
-                <div className="leftHome">
-                    <Sidebar />
+            <AppLayout>
+                <div className={styleHome.hero}>
+                    <div className={styleHome.heroTitle}>Welcome to Web OFR</div>
+                    <div className={styleHome.heroDesc}>Operational Fund Request &mdash; silakan pilih menu pengajuan</div>
                 </div>
-                <div className="rightHome">
-                    <div className="bodyAkun">
-                        <div></div>
-                        <div className="akun">
-                            <Bell dataNotif={dataAllNotif} color={"black"}/>
-                            <Account color={"black"}/>
-                        </div>
-                    </div>
-                    <div className='mainHome'>
-                        <div className="titHome">Welcome to web ofr</div>
-                        <div className="txtChoose">Please select an option</div>
-                        <div className="mainBody">
-                            {level === '4' || level === '14' || level === '24' || level === '34' || level === '102' ? null : (
-                                <button className="cardHome1" onClick={() => this.goRoute('navklaim')}>
-                                    <FaHandshake size={220} className="picHome" />
-                                    <div className="titCard">
-                                        Klaim
-                                    </div>
-                                </button>
-                            )}
-                            <button className="cardHome2" onClick={() => this.goRoute('navops')}>
-                                <BsGearWideConnected size={220} className="picHome" />
-                                <div className="titCard">
-                                    Operasional
+                <div className={styleHome.menuGrid}>
+                    {menuHome.map(item => {
+                        const Icon = item.icon
+                        return (
+                            <button key={item.route} className={styleHome.menuCard} onClick={() => this.goRoute(item.route)}>
+                                <div className={styleHome.iconWrap}>
+                                    <Icon size={44} />
                                 </div>
+                                <div className={styleHome.cardTitle}>{item.title}</div>
+                                <div className={styleHome.cardDesc}>{item.desc}</div>
                             </button>
-                            <button className="cardHome2" onClick={() => this.goRoute('navikk')}>
-                                <GiNotebook color='danger' size={220} className="picHome" />
-                                <div className="titCard">
-                                    Ikhtisar Kas Kecil
-                                </div>
-                            </button>
-                            <button className="cardHome1" onClick={() => this.goRoute('navkasbon')}>
-                                <FaCashRegister color='danger' size={220} className="picHome" />
-                                <div className="titCard">
-                                    Kasbon
-                                </div>
-                            </button>
-                        </div>
-                    </div>
+                        )
+                    })}
                 </div>
-            </div>
+            </AppLayout>
             <Modal isOpen={this.state.modalEdit}>
                 <ModalHeader>Lengkapi nama lengkap dan email terlebih dahulu</ModalHeader>
                 <Formik

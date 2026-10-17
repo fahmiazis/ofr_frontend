@@ -7,6 +7,7 @@ import {NavbarBrand, UncontrolledDropdown, DropdownToggle, DropdownMenu, Dropdow
 import logo from "../assets/img/logo.png"
 import Pdf from "../components/Pdf"
 import style from '../assets/css/input.module.css'
+import { PageCard } from '../components/ui/Page'
 import {FaSearch, FaUserCircle, FaBars, FaTrash, FaFileSignature} from 'react-icons/fa'
 import {AiOutlineFileExcel, AiFillCheckCircle,  AiOutlineCheck, AiOutlineClose} from 'react-icons/ai'
 import {BsCircle, BsDashCircleFill, BsFillCircleFill} from 'react-icons/bs'
@@ -332,9 +333,7 @@ class TrackingMutasi extends Component {
                             <div className={style.bodyDashboard}>
                                 <Alert color="danger" className={style.alertWrong} isOpen={alert}>
                                 </Alert>
-                                <div className={style.headMaster}> 
-                                    <div className={style.titleDashboard}>Notification</div>
-                                </div>
+                                <PageCard title="Notification">
                                 <Row className="cartDisposal">
                                     {newData.length === 0 ? (
                                         <Col md={8} xl={8} sm={12}>
@@ -391,6 +390,7 @@ class TrackingMutasi extends Component {
                                         </Col>
                                     )}
                                 </Row>
+                                </PageCard>
                             </div>
                         </div>
                     </MaterialTitlePanel>

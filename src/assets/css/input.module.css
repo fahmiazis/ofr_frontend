@@ -175,7 +175,10 @@ html,body{
   border-radius: 4px;
 }
 .titleDashboard {
-  font-size: 300%;
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
   text-align: center;
   /* margin-top: 4%; */
   width: 100%;
@@ -238,7 +241,8 @@ html,body{
   align-items: center;
 }
 .bodyDashboard {
-  padding-top: 6%;
+  padding-top: 84px;
+  padding-bottom: 30px;
 }
 .textEntries {
   margin-left: 5px;
@@ -367,10 +371,14 @@ html,body{
   color: black;
 }
 .tab > thead > tr > th{
-  border: 1px solid #9b9b9b;
-  background-color: #76923B;
-  color: black;
+  border: 1px solid #2c3e50;
+  background-color: #2c3e50;
+  color: white;
+  font-weight: 600;
+  font-size: small;
+  padding: 12px;
   white-space: nowrap;
+  vertical-align: middle;
 }
 .tabikk {
   margin-bottom: 0 !important;
@@ -927,4 +935,56 @@ html,body{
   display: flex;
   justify-content: space-between;
   flex-direction: row;
+}
+
+/* ===== Tabel & filter (mengikuti gaya web asset) ===== */
+.tab {
+  background-color: white;
+}
+.tab > tbody > tr > th,
+.tab > tbody > tr > td {
+  border-color: #ddd !important;
+  padding: 10px 12px;
+  vertical-align: middle;
+  font-weight: normal;
+}
+.tab > tbody > tr:hover {
+  background-color: #e6f4ea;
+}
+.tableDashboard {
+  background-color: white;
+}
+
+.search,
+.search2,
+.filter,
+.filter2,
+.filter3 {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.search:focus,
+.search2:focus,
+.filter:focus,
+.filter2:focus,
+.filter3:focus {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 0.2rem rgba(192, 57, 43, 0.15);
+}
+/* react-select sudah punya border sendiri, hindari border ganda */
+div.filter,
+div.filter2,
+div.filter3,
+div.search {
+  border: none;
+}
+.drop {
+  border: 1px solid #ddd;
+}
+.drop:focus-within {
+  border-color: #c0392b;
+}
+.headMaster {
+  justify-content: center;
 }

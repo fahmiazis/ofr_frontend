@@ -15,6 +15,7 @@ import { AiOutlineFileExcel, AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} 
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
+import { PageCard, Toolbar, ToolbarSpacer, FilterField, SearchBox, Pager, RangeSep } from '../../components/ui/Page'
 import placeholder from  "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
@@ -1638,18 +1639,70 @@ class VerifKlaim extends Component {
                             {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
                                 <div>{alertM}</div>
                             </Alert> */}
-                            <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Verifikasi {level === '2' ? 'Finance' : "Klaim"}</div>
-                            </div>
-                            <div className={style.secEmail4}>
-                                {accKlaim.find(item => item.toString() === level) !== undefined ? (
-                                    <div className='rowCenter'>
-                                        <Button className='mr-1' onClick={this.downloadTandaTerima} color="primary" size="lg">Download Tanda Terima</Button>
-                                    </div>
-                                ) : (
-                                <div className={style.searchEmail2}>
-                                    <div>
-                                        <text>Show: </text>
+                            <PageCard
+                                title={`Verifikasi ${level === '2' ? 'Finance' : "Klaim"}`}
+                                actions={accKlaim.find(item => item.toString() === level) !== undefined ? (
+                                    <>
+                                        <Button onClick={this.downloadTandaTerima} color="primary">Download Tanda Terima</Button>
+                                        <Button onClick={this.openModalUpload} color="warning">Upload Template</Button>
+                                        <Button onClick={this.downloadAjuan} color="success">Download Template</Button>
+                                    </>
+                                ) : level === '2' ? (
+                                    <Button
+                                    color="success"
+                                    onClick={this.prosesDownloadFinance}
+                                    disabled={this.state.listKlaim.length > 0 ? false : true}
+                                    >
+                                        Download Ajuan
+                                    </Button>
+                                ) : null}
+                            >
+                                <Toolbar>
+                                    <SearchBox
+                                        value={this.state.search}
+                                        onChange={this.onSearch}
+                                        onKeyPress={this.onSearch}
+                                    />
+                                    <FilterField label="Filter">
+                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Submit</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        </Input>
+                                    </FilterField>
+                                    <FilterField label="Periode" auto>
+                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                            <option value="all">Time (All)</option>
+                                            <option value="pilih">Periode</option>
+                                            <option value="last">Last Update</option>
+                                        </Input>
+                                        {(this.state.time === 'pilih' || this.state.time === 'last') && (
+                                            <>
+                                                <Input
+                                                    type= "date"
+                                                    className="inputRinci"
+                                                    value={this.state.time1}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                />
+                                                <RangeSep />
+                                                <Input
+                                                    type= "date"
+                                                    className="inputRinci"
+                                                    value={this.state.time2}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false}
+                                                color='primary'
+                                                onClick={this.getDataTime}>
+                                                    Go
+                                                </Button>
+                                            </>
+                                        )}
+                                    </FilterField>
+                                    <ToolbarSpacer />
+                                    <FilterField label="Show entries">
                                         <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
                                             <DropdownToggle caret color="light">
                                                 {this.state.limit}
@@ -1661,107 +1714,8 @@ class VerifKlaim extends Component {
                                                 <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
                                             </DropdownMenu>
                                         </ButtonDropdown>
-                                        <text className={style.textEntries}>entries</text>
-                                    </div>
-                                </div>
-                                )}
-                                {accKlaim.find(item => item.toString() === level) !== undefined && (
-                                    <div className={style.searchEmail2}>
-                                        <div>
-                                            <text>Show: </text>
-                                            <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
-                                                <DropdownToggle caret color="light">
-                                                    {this.state.limit}
-                                                </DropdownToggle>
-                                                <DropdownMenu>
-                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
-                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
-                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
-                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
-                                                </DropdownMenu>
-                                            </ButtonDropdown>
-                                            <text className={style.textEntries}>entries</text>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className={style.secEmail4}>
-                                {accKlaim.find(item => item.toString() === level) !== undefined ? (
-                                    <div className='rowCenter'>
-                                        <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload Template</Button>
-                                        <Button className='mr-1' onClick={this.downloadAjuan} color="success" size="lg">Download Template</Button>
-                                    </div>
-                                ) : level === '2' ? (
-                                    <div className='rowCenter'>
-                                        <Button 
-                                        className='mr-1' 
-                                        color="success" 
-                                        size="lg" 
-                                        onClick={this.prosesDownloadFinance}
-                                        disabled={this.state.listKlaim.length > 0 ? false : true}
-                                        >
-                                            Download Ajuan
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div></ div>
-                                )}
-                                <div className={style.searchEmail2}>
-                                    <text>Filter:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="all">All</option>
-                                        <option value="reject">Reject</option>
-                                        <option value="available">Available Submit</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                    </Input>
-                                </div>
-                            </div>
-                            <div className={[style.secEmail4]}>
-                                <div className='rowCenter'>
-                                    <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                        <option value="all">Time (All)</option>
-                                        <option value="pilih">Periode</option>
-                                        <option value="last">Last Update</option>
-                                    </Input>
-                                    {this.state.time === 'pilih' || this.state.time === 'last' ?  (
-                                        <>
-                                            <div className='rowCenter'>
-                                                <text className='bold'>:</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    value={this.state.time1}
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
-                                                />
-                                                <text className='mr-1 ml-1'>To</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    value={this.state.time2}
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                />
-                                                <Button
-                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
-                                                color='primary' 
-                                                onClick={this.getDataTime} 
-                                                className='ml-1'>
-                                                    Go
-                                                </Button>
-                                            </div>
-                                        </>
-                                    ) : null}
-                                </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Search: </text>
-                                    <Input 
-                                    className={style.search2}
-                                    onChange={this.onSearch}
-                                    value={this.state.search}
-                                    onKeyPress={this.onSearch}
-                                    >
-                                    </Input>
-                                </div>
-                            </div>
+                                    </FilterField>
+                                </Toolbar>
                                 <div className={style.tableDashboard1}>
                                     <Table bordered responsive hover className={
                                         [
@@ -1990,27 +1944,15 @@ class VerifKlaim extends Component {
                                         </div>
                                     )}
                                 </div>
-                            <div>
-                                <div className={style.infoPageEmail1}>
-                                    <text>Showing 1 of 1 pages</text>
-                                    <div className={style.pageButton}>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.prevLink === null ? true : false} 
-                                            onClick={this.prev}>Prev
-                                        </button>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.nextLink === null ? true : false} 
-                                            onClick={this.next}>Next
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                                <Pager
+                                    current={1}
+                                    pages={1}
+                                    onPrev={this.prev}
+                                    onNext={this.next}
+                                    prevDisabled
+                                    nextDisabled
+                                />
+                            </PageCard>
                         </div>
                     </div>
                     </MaterialTitlePanel>

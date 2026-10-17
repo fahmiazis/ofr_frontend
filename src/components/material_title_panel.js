@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useContext } from "react";
 import PropTypes from "prop-types";
+import { LayoutContext } from "./AppLayout";
 
 const styles = {
   root: {
@@ -8,8 +9,8 @@ const styles = {
     fontWeight: 300,
   },
   header: {
-    backgroundColor: "#9A1353",
-    color: "#9A1353",
+    backgroundColor: "#c0392b",
+    color: "#c0392b",
     // padding: "16px",
     // paddingLeft: "10px",
     // width: '95%',
@@ -20,13 +21,15 @@ const styles = {
 };
 
 const MaterialTitlePanel = props => {
+  const inLayout = useContext(LayoutContext);
   const rootStyle = props.style
     ? { ...styles.root, ...props.style }
     : styles.root;
 
   return (
     <div style={rootStyle}>
-      <div style={styles.header}>{props.title}</div>
+      {/* navbar lama tidak dirender lagi jika sudah memakai layout baru (NewNavbar) */}
+      {!inLayout && <div style={styles.header}>{props.title}</div>}
       {props.children}
     </div>
   );

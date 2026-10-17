@@ -8,6 +8,7 @@ import { Container, Collapse, Nav, Navbar,
     Modal, ModalHeader, ModalBody, ModalFooter, Alert, Spinner} from 'reactstrap'
 import logo from "../../assets/img/logo.png"
 import style from '../../assets/css/input.module.css'
+import { PageCard } from '../../components/ui/Page'
 import {FaSearch, FaUserCircle, FaBars} from 'react-icons/fa'
 import {AiOutlineFileExcel, AiFillCheckCircle, AiOutlineClose} from 'react-icons/ai'
 import {Formik} from 'formik'
@@ -373,41 +374,14 @@ class Approve extends Component {
                                 <div>{errMsg}</div>
                             </Alert>
                             <div className={style.bodyDashboard}>
-                                <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Setting Approval</div>
-                                </div>
-                                {/* <div className={style.secHeadDashboard}>
-                                    <div>
-                                        <text>Show: </text>
-                                        <ButtonDropdown className={style.drop} isOpen={dropOpen} toggle={this.dropDown}>
-                                        <DropdownToggle caret color="light">
-                                            {this.state.limit}
-                                        </DropdownToggle>
-                                        <DropdownMenu>
-                                        <DropdownItem className={style.item} onClick={() => this.getDataApprove({limit: 10, search: ''})}>10</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataApprove({limit: 20, search: ''})}>20</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataApprove({limit: 50, search: ''})}>50</DropdownItem>
-                                        </DropdownMenu>
-                                        </ButtonDropdown>
-                                        <text className={style.textEntries}>entries</text>
-                                    </div>
-                                </div> */}
-                                <div className={style.secEmail4}>
-                                    <div className={style.headEmail}>
-                                        <Button color="success" size="lg" onClick={() => this.openCreateName()}>Create</Button>
-                                    </div>
-                                    <div className={style.searchEmail}>
-                                        {/* <text>Search: </text>
-                                        <Input 
-                                        className={style.search}
-                                        onChange={this.onSearch}
-                                        value={this.state.search}
-                                        onKeyPress={this.onSearch}
-                                        >
-                                            <FaSearch size={20} />
-                                        </Input> */}
-                                    </div>
-                                </div>
+                                <PageCard
+                                    title="Setting Approval"
+                                    actions={
+                                        <>
+                                            <Button color="success" onClick={() => this.openCreateName()}>Create</Button>
+                                        </>
+                                    }
+                                >
                                 {dataName.length === 0 ? (
                                     <div className={style.tableDashboard}>
                                         <Table bordered responsive hover className={style.tab}>
@@ -457,15 +431,7 @@ class Approve extends Component {
                                         </Table>
                                     </div>
                                 )}
-                                <div>
-                                    <div className={style.infoPageEmail}>
-                                        {/* <text>Showing {page.currentPage} of {page.pages} pages</text>
-                                        <div className={style.pageButton}>
-                                            <button className={style.btnPrev} color="info" disabled={page.prevLink === null ? true : false} onClick={this.prev}>Prev</button>
-                                            <button className={style.btnPrev} color="info" disabled={page.nextLink === null ? true : false} onClick={this.next}>Next</button>
-                                        </div> */}
-                                    </div>
-                                </div>
+                                </PageCard>
                             </div>
                         </div>
                     </MaterialTitlePanel>

@@ -16,6 +16,7 @@ import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
+import { PageCard, Pager } from '../../components/ui/Page'
 import placeholder from  "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
 import ikk from '../../redux/actions/ikk'
@@ -1577,14 +1578,16 @@ class CartIkk extends Component {
                             {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
                                 <div>{alertM}</div>
                             </Alert> */}
-                            <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Draft Pengajuan IKK</div>
-                            </div>
+                            <PageCard
+                                title="Draft Pengajuan IKK"
+                                actions={
+                                    <>
+                                        <Button onClick={this.prosesOpenAdd} color="info">Add</Button>
+                                        <Button onClick={this.prosesSubmitPre} color="success">Submit</Button>
+                                    </>
+                                }
+                            >
                             <div className='pagu'>
-                                <div className={style.secPaguIkk}>
-                                    <Button className='mr-2 mb-2' onClick={this.prosesOpenAdd} color="info" size="lg">Add</Button>
-                                    <Button className='mb-2' onClick={this.prosesSubmitPre} color="success" size="lg">Submit</Button>
-                                </div>
                                 <div className='divPagu'>
                                     <Row className="mb-2 rowRinci">
                                         <Col md={6} className="uppercase">Nilai Pagu</Col> 
@@ -1659,25 +1662,13 @@ class CartIkk extends Component {
                                         </tbody>
                                     </Table>
                                 </div>
-                                <div>
-                                    <div className={style.infoPageEmail1}>
-                                        <text>Showing 1 of 1 pages</text>
-                                        <div className={style.pageButton}>
-                                            <button 
-                                                className={style.btnPrev} 
-                                                color="info" 
-                                                // disabled={page.prevLink === null ? true : false} 
-                                                onClick={this.prev}>Prev
-                                            </button>
-                                            <button 
-                                                className={style.btnPrev} 
-                                                color="info" 
-                                                // disabled={page.nextLink === null ? true : false} 
-                                                onClick={this.next}>Next
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                <Pager
+                                    current={1}
+                                    pages={1}
+                                    onPrev={this.prev}
+                                    onNext={this.next}
+                                />
+                            </PageCard>
                         </div>
                     </div>
                     </MaterialTitlePanel>

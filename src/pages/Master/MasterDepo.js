@@ -7,6 +7,7 @@ import { Container, Collapse, Nav, Navbar,
     Modal, ModalHeader, ModalBody, ModalFooter, Alert, Spinner} from 'reactstrap'
 import logo from "../../assets/img/logo.png"
 import style from '../../assets/css/input.module.css'
+import { PageCard, Toolbar, ToolbarSpacer, FilterField, SearchBox, Pager } from '../../components/ui/Page'
 import {FaSearch, FaUserCircle, FaBars} from 'react-icons/fa'
 import {AiOutlineFileExcel, AiFillCheckCircle} from 'react-icons/ai'
 import {Formik} from 'formik'
@@ -358,44 +359,37 @@ class MasterDepo extends Component {
                                 <div>{errMsg}</div>
                             </Alert>
                             <div className={style.bodyDashboard}>
-                                <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Master Area</div>
-                                </div>
-                                <div className={style.secHeadDashboard}>
-                                    <div>
-                                        <text>Show: </text>
-                                        <ButtonDropdown className={style.drop} isOpen={dropOpen} toggle={this.dropDown}>
-                                        <DropdownToggle caret color="light">
-                                            {this.state.limit}
-                                        </DropdownToggle>
-                                        <DropdownMenu>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataDepo({limit: 10, search: ''})}>10</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataDepo({limit: 20, search: ''})}>20</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataDepo({limit: 50, search: ''})}>50</DropdownItem>
-                                            <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
-                                        </DropdownMenu>
-                                        </ButtonDropdown>
-                                        <text className={style.textEntries}>entries</text>
-                                    </div>
-                                </div>
-                                <div className='secEmail'>
-                                    <div className={style.headEmail}>
-                                        <Button className='mr-1' onClick={this.openModalAdd} color="primary" size="lg">Add</Button>
-                                        <Button className='mr-1' onClick={this.openModalUpload} color="warning" size="lg">Upload</Button>
-                                        <Button className='mr-1' color="success" size="lg" onClick={this.ExportMaster}>Download</Button>
-                                    </div>
-                                    <div className={style.searchEmail}>
-                                        <text>Search: </text>
-                                        <Input 
-                                        className={style.search}
-                                        onChange={this.onSearch}
-                                        value={this.state.search}
-                                        onKeyPress={this.onSearch}
-                                        >
-                                            <FaSearch size={20} />
-                                        </Input>
-                                    </div>
-                                </div>
+                                <PageCard
+                                    title="Master Area"
+                                    actions={
+                                        <>
+                                            <Button onClick={this.openModalAdd} color="primary">Add</Button>
+                                            <Button onClick={this.openModalUpload} color="warning">Upload</Button>
+                                            <Button color="success" onClick={this.ExportMaster}>Download</Button>
+                                        </>
+                                    }
+                                >
+                                    <Toolbar>
+                                        <SearchBox
+                                            value={this.state.search}
+                                            onChange={this.onSearch}
+                                            onKeyPress={this.onSearch}
+                                        />
+                                        <ToolbarSpacer />
+                                        <FilterField label="Show entries">
+                                            <ButtonDropdown className={style.drop} isOpen={dropOpen} toggle={this.dropDown}>
+                                            <DropdownToggle caret color="light">
+                                                {this.state.limit}
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataDepo({limit: 10, search: ''})}>10</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataDepo({limit: 20, search: ''})}>20</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataDepo({limit: 50, search: ''})}>50</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
+                                            </DropdownMenu>
+                                            </ButtonDropdown>
+                                        </FilterField>
+                                    </Toolbar>
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
@@ -485,15 +479,15 @@ class MasterDepo extends Component {
                                         </div>
                                     )}
                                 </div>
-                                <div>
-                                    <div className='infoPageEmail'>
-                                        <text>Showing {page.currentPage} of {page.pages} pages</text>
-                                        <div className={style.pageButton}>
-                                            <button className={[style.btnPrev]} color="info" disabled={page.prevLink === null ? true : false} onClick={this.prev}>Prev</button>
-                                            <button className={style.btnPrev} color="info" disabled={page.nextLink === null ? true : false} onClick={this.next}>Next</button>
-                                        </div>
-                                    </div>
-                                </div>
+                                    <Pager
+                                        current={page.currentPage}
+                                        pages={page.pages}
+                                        onPrev={this.prev}
+                                        onNext={this.next}
+                                        prevDisabled={page.prevLink === null}
+                                        nextDisabled={page.nextLink === null}
+                                    />
+                                </PageCard>
                             </div>
                         </div>
                     </MaterialTitlePanel>

@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/alt-text */
 import React, { Component } from 'react'
-import Sidebar from '../../components/Sidebar'
+import AppLayout from '../../components/AppLayout'
 import {VscAccount} from 'react-icons/vsc'
 import { Row, DropdownItem, UncontrolledDropdown, DropdownToggle, DropdownMenu, Button,
     Modal, ModalHeader, ModalBody, Input } from 'reactstrap'
@@ -16,9 +16,8 @@ import user from '../../redux/actions/user'
 // import notif from '../redux/actions/notif'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
-import Bell from '../../components/Bell'
-import Account from '../../components/Account'
 import style from '../../assets/css/input.module.css'
+import styleHome from '../../assets/css/home.module.css'
 
 const changeSchema = Yup.object().shape({
     current_password: Yup.string().required('must be filled'),
@@ -123,40 +122,30 @@ class NavOps extends Component {
         const dataNotif = []
         return (
             <>
-            <div className="bodyHome">
-                <div className="leftHome">
-                    <Sidebar />
-                </div>
-                <div className="rightHome">
-                    <div className="bodyAkun">
-                        <div></div>
-                        <div className="akun">
-                            <Bell dataNotif={dataNotif} color={"black"}/>
-                            <Account color={"black"}/>
-                        </div>
-                    </div>
+            <AppLayout>
                     <div>
-                        <div className="titHome">Menu list ajuan bayar operasional</div>
-                        <div className="txtChoose">Please select an option</div>
-                        <div className="mainBody">
+                        <div className={styleHome.hero}>
+                            <div className={styleHome.heroTitle}>Menu list ajuan bayar operasional</div>
+                            <div className={styleHome.heroDesc}>Silakan pilih menu</div>
+                        </div>
+                        <div className={styleHome.menuGrid}>
                             <>
-                                <button className="cardNav1" onClick={() => this.goRoute('listops')}>
-                                    <MdAssignment size={220} className="picHome" />
-                                    <div className="titCard">
+                                <button className={styleHome.menuCard} onClick={() => this.goRoute('listops')}>
+                                    <div className={styleHome.iconWrap}><MdAssignment size={44} /></div>
+                                    <div className={styleHome.cardTitle}>
                                         Approval (List Ajuan Operasional)
                                     </div>
                                 </button>
-                                <button className="cardNav1" onClick={() => this.goRoute('payops')}>
-                                    <FaRupiahSign size={220} className="picHome" />
-                                    <div className="titCard">
+                                <button className={styleHome.menuCard} onClick={() => this.goRoute('payops')}>
+                                    <div className={styleHome.iconWrap}><FaRupiahSign size={44} /></div>
+                                    <div className={styleHome.cardTitle}>
                                         Pembayaran (List Ajuan Operasional)
                                     </div>
                                 </button>
                             </>
                         </div>
                     </div>
-                </div>
-            </div>
+            </AppLayout>
             <Modal isOpen={this.state.modalChange} toggle={this.openModalChange}>
                 <ModalHeader>Change Password</ModalHeader>
                 <Formik

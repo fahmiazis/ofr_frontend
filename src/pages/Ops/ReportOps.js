@@ -16,6 +16,7 @@ import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
+import { PageCard, Toolbar, ToolbarSpacer, FilterField, SearchBox, Pager, RangeSep } from '../../components/ui/Page'
 import placeholder from  "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
@@ -1649,13 +1650,63 @@ class ReportOps extends Component {
                             {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
                                 <div>{alertM}</div>
                             </Alert> */}
-                            <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Report Konsol Operasional</div>
-                            </div>
-                            <div className={style.secEmail3}>
-                                <div className={style.headEmail2}>
-                                    <div>
-                                        <text>Show: </text>
+                            <PageCard
+                                title="Report Konsol Operasional"
+                                actions={
+                                    <>
+                                        <Button color='success' onClick={this.prosesDownload}>Download Konsol</Button>
+                                        <Button
+                                            color='warning'
+                                            onClick={() => this.prosesJurnal('Jurnal')}>
+                                                Download Jurnal
+                                        </Button>
+                                    </>
+                                }
+                            >
+                                <Toolbar>
+                                    <SearchBox
+                                        value={this.state.search}
+                                        onChange={this.onSearch}
+                                        onKeyPress={this.onSearch}
+                                    />
+                                    <FilterField label="Status">
+                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                            <option value="bayar">Telah Bayar</option>
+                                            <option value="ready">Siap Bayar</option>
+                                            <option value="reject">Reject</option>
+                                        </Input>
+                                    </FilterField>
+                                    <FilterField label="Periode" auto>
+                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
+                                        {(this.state.time === 'pilih') && (
+                                            <>
+                                                <Input
+                                                    type= "date"
+                                                    className="inputRinci"
+                                                    value={this.state.time1}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                />
+                                                <RangeSep />
+                                                <Input
+                                                    type= "date"
+                                                    className="inputRinci"
+                                                    value={this.state.time2}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false}
+                                                color='primary'
+                                                onClick={this.getDataTime}>
+                                                    Go
+                                                </Button>
+                                            </>
+                                        )}
+                                    </FilterField>
+                                    <ToolbarSpacer />
+                                    <FilterField label="Show entries">
                                         <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
                                             <DropdownToggle caret color="light">
                                                 {this.state.limit}
@@ -1667,76 +1718,8 @@ class ReportOps extends Component {
                                                 <DropdownItem className={style.item} onClick={() => this.changeLimit(100)}>100</DropdownItem>
                                             </DropdownMenu>
                                         </ButtonDropdown>
-                                        <text className={style.textEntries}>entries</text>
-                                    </div>
-                                </div>
-                                <div></div>
-                            </div>
-                            <div className={style.secEmail4}>
-                                <div className={style.headEmail2}>
-                                    <Button className="mr-2" color='success' onClick={this.prosesDownload}>Download Konsol</Button>
-                                    <Button 
-                                        color='warning' 
-                                        className='mr-2' 
-                                        onClick={() => this.prosesJurnal('Jurnal')}>
-                                            Download Jurnal
-                                    </Button>
-                                </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Status:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="bayar">Telah Bayar</option>
-                                        <option value="ready">Siap Bayar</option>
-                                        <option value="reject">Reject</option>
-                                    </Input>
-                                </div>
-                            </div>
-                            <div className={[style.secEmail4]}>
-                                <div className={style.headEmail2}>
-                                    <Input className={style.filter2} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                        <option value="all">All</option>
-                                        <option value="pilih">Periode</option>
-                                    </Input>
-                                    {this.state.time === 'pilih' ?  (
-                                        <>
-                                            <div className='rowCenter'>
-                                                <text className='bold'>:</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    value={this.state.time1}
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
-                                                />
-                                                <text className='mr-1 ml-1'>To</text>
-                                                <Input
-                                                    type= "date"
-                                                    value={this.state.time2}
-                                                    className="inputRinci"
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                />
-                                                <Button
-                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
-                                                color='primary' 
-                                                onClick={this.getDataTime} 
-                                                className='ml-1'>
-                                                    Go
-                                                </Button>
-                                            </div>
-                                        </>
-                                    ) : null}
-                                </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Search: </text>
-                                    <Input 
-                                    className={style.search}
-                                    onChange={this.onSearch}
-                                    value={this.state.search}
-                                    onKeyPress={this.onSearch}
-                                    >
-                                    </Input>
-                                </div>
-                            </div>
-                            <div className='mb-4 mt-2' />
+                                    </FilterField>
+                                </Toolbar>
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={[style.tab, dataReport.length > 0 && 'tableJurnal']} id="table-ops">
                                         <thead>
@@ -1861,27 +1844,15 @@ class ReportOps extends Component {
                                         </tbody>
                                     </Table>
                                 </div>
-                                <div>
-                                    <div className={style.infoPageEmail1}>
-                                        <text>Showing {page.currentPage} of {page.pages} pages</text>
-                                        <div className={style.pageButton}>
-                                            <button 
-                                                className={style.btnPrev} 
-                                                color="info" 
-                                                // disabled
-                                                disabled={page.prevLink === null ? true : false} 
-                                                onClick={this.prev}>Prev
-                                            </button>
-                                            <button 
-                                                className={style.btnPrev} 
-                                                color="info" 
-                                                // disabled
-                                                disabled={page.nextLink === null ? true : false} 
-                                                onClick={this.next}>Next
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                <Pager
+                                    current={page.currentPage}
+                                    pages={page.pages}
+                                    onPrev={this.prev}
+                                    onNext={this.next}
+                                    prevDisabled={page.prevLink === null}
+                                    nextDisabled={page.nextLink === null}
+                                />
+                            </PageCard>
                         </div>
                     </div>
                     </MaterialTitlePanel>

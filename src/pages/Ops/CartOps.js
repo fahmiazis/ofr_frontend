@@ -18,6 +18,7 @@ import { CiWarning } from "react-icons/ci"
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
+import { PageCard, Pager } from '../../components/ui/Page'
 import placeholder from  "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
 import ops from '../../redux/actions/ops'
@@ -2451,19 +2452,19 @@ class CartOps extends Component {
                             {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
                                 <div>{alertM}</div>
                             </Alert> */}
-                            <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Draft Pengajuan {type_kasbon === 'kasbon' ? 'Kasbon' : 'Operasional'}</div>
-                            </div>
-                            <div className='pagu'>
-                                <div className={style.secPaguOps}>
-                                    <Button className='mr-2 mb-2' onClick={this.prosesOpenAdd} color="info" size="lg">Add</Button>
-                                    <Button className='mb-2' onClick={this.prosesSubmitPre} color="success" size="lg">Submit</Button>
-                                </div>
+                            <PageCard
+                                title={`Draft Pengajuan ${type_kasbon === 'kasbon' ? 'Kasbon' : 'Operasional'}`}
+                                actions={
+                                    <>
+                                        <Button onClick={this.prosesOpenAdd} color="info">Add</Button>
+                                        <Button onClick={this.prosesSubmitPre} color="success">Submit</Button>
+                                    </>
+                                }
+                            >
                                 {/* <div className='rowGeneral divPagu'>
-                                    <div className="uppercase mr-1">Nilai Pagu :</div> 
+                                    <div className="uppercase mr-1">Nilai Pagu :</div>
                                     <div className="ml-1">{(parseFloat(dataPagu.pagu) - this.state.nominal).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>
                                 </div> */}
-                            </div>
                             <div className={style.tableDashboard1}>
                                 <Table bordered responsive hover className={[style.tab, dataCart.length > 0 && 'tableJurnal1']}>
                                     <thead>
@@ -2522,25 +2523,13 @@ class CartOps extends Component {
                                     </tbody>
                                 </Table>
                             </div>
-                            <div>
-                                <div className={style.infoPageEmail1}>
-                                    <text>Showing 1 of 1 pages</text>
-                                    <div className={style.pageButton}>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            // disabled={page.prevLink === null ? true : false} 
-                                            onClick={this.prev}>Prev
-                                        </button>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            // disabled={page.nextLink === null ? true : false} 
-                                            onClick={this.next}>Next
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                                <Pager
+                                    current={1}
+                                    pages={1}
+                                    onPrev={this.prev}
+                                    onNext={this.next}
+                                />
+                            </PageCard>
                         </div>
                     </div>
                     </MaterialTitlePanel>

@@ -18,6 +18,7 @@ import { AiOutlineFileExcel, AiOutlineCheck, AiOutlineClose, AiFillCheckCircle }
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
+import { PageCard, Pager } from '../../components/ui/Page'
 import placeholder from "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
 import klaim from '../../redux/actions/klaim'
@@ -2034,13 +2035,15 @@ class CartKlaim extends Component {
                                 {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
                                 <div>{alertM}</div>
                             </Alert> */}
-                                <div className={style.headMaster}>
-                                    <div className={style.titleDashboard}>Draft Pengajuan Klaim</div>
-                                </div>
-                                <div className={style.secklaim}>
-                                    <Button className='mr-2 mb-2' onClick={this.prosesOpenAdd} color="info" size="lg">Add</Button>
-                                    <Button className='mb-2' onClick={this.prosesSubmitPre} color="success" size="lg">Submit</Button>
-                                </div>
+                                <PageCard
+                                    title="Draft Pengajuan Klaim"
+                                    actions={
+                                        <>
+                                            <Button onClick={this.prosesOpenAdd} color="info">Add</Button>
+                                            <Button onClick={this.prosesSubmitPre} color="success">Submit</Button>
+                                        </>
+                                    }
+                                >
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab}>
                                         <thead>
@@ -2136,25 +2139,13 @@ class CartKlaim extends Component {
                                         </tbody>
                                     </Table> */}
                                 </div>
-                                <div>
-                                    <div className={style.infoPageEmail1}>
-                                        <text>Showing 1 of 1 pages</text>
-                                        <div className={style.pageButton}>
-                                            <button
-                                                className={style.btnPrev}
-                                                color="info"
-                                                // disabled={page.prevLink === null ? true : false} 
-                                                onClick={this.prev}>Prev
-                                            </button>
-                                            <button
-                                                className={style.btnPrev}
-                                                color="info"
-                                                // disabled={page.nextLink === null ? true : false} 
-                                                onClick={this.next}>Next
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                    <Pager
+                                        current={1}
+                                        pages={1}
+                                        onPrev={this.prev}
+                                        onNext={this.next}
+                                    />
+                                </PageCard>
                             </div>
                         </div>
                     </MaterialTitlePanel>

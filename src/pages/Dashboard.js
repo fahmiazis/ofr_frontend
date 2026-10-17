@@ -16,6 +16,7 @@ import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai
 import MaterialTitlePanel from "../components/material_title_panel"
 import SidebarContent from "../components/sidebar_content"
 import style from '../assets/css/input.module.css'
+import { PageCard, Toolbar, FilterField, SearchBox, RangeSep } from '../components/ui/Page'
 import placeholder from  "../assets/img/placeholder.png"
 import user from '../redux/actions/user'
 import {connect} from 'react-redux'
@@ -1545,107 +1546,77 @@ class Klaim extends Component {
                             <div className={style.headMaster}>
                                 <div className={style.titleDashboard}>Dashboard</div>
                             </div>
-                            <div className='boxDash'>
-                                <div className='rowBetween'>
-                                    <div className='subtitle' onClick={() => this.goRoute('navklaim')}>Klaim </div>
-                                    <MdOpenInNew size={30} onClick={() => this.goRoute('navklaim')} />
-                                </div>
-                                <div className={style.secEmail3}>
-                                    <Button color='primary' onClick={() => this.downloadData('klaim')}>Download</Button>
-                                    {level === '5' || level === '6' ? (
-                                        <div></div>
-                                    ) : (
-                                        <div className={style.searchEmail2}>
-                                            <Col md={2}>
-                                                Depo:
-                                            </Col>
-                                            <Col md={10}>
-                                                <Input className={style.filter} type="select" value={this.state.depoKlaim} onClick={() => this.prosesOpenDepo('klaim')}>
-                                                    <option disabled value="pilih">---Pilih Depo---</option>
-                                                    <option disabled value="all">All</option>
-                                                    <option disabled value={this.state.depoKlaim}>{this.state.depoKlaim}</option>
-                                                </Input>
-                                            </Col>
-                                        </div>
+                            <PageCard
+                                title={<span style={{cursor: 'pointer'}} onClick={() => this.goRoute('navklaim')}>Klaim</span>}
+                                actions={
+                                    <>
+                                        <Button color='primary' onClick={() => this.downloadData('klaim')}>Download</Button>
+                                        <Button color='light' onClick={() => this.goRoute('navklaim')}><MdOpenInNew size={20} /></Button>
+                                    </>
+                                }
+                            >
+                                <Toolbar>
+                                    <SearchBox
+                                        onChange={this.searchKlaim}
+                                        value={this.state.searchKlaim}
+                                        onKeyPress={this.searchKlaim}
+                                    />
+                                    {level === '5' || level === '6' ? null : (
+                                        <FilterField label="Depo">
+                                            <Input className={style.filter} type="select" value={this.state.depoKlaim} onClick={() => this.prosesOpenDepo('klaim')}>
+                                                <option disabled value="pilih">---Pilih Depo---</option>
+                                                <option disabled value="all">All</option>
+                                                <option disabled value={this.state.depoKlaim}>{this.state.depoKlaim}</option>
+                                            </Input>
+                                        </FilterField>
                                     )}
-                                </div>
-                                <div className={style.secEmail4}>
-                                    <div className={style.searchEmail2}>
-                                        <text>Search: </text>
-                                        <Input 
-                                            className={style.search}
-                                            onChange={this.searchKlaim}
-                                            value={this.state.searchKlaim}
-                                            onKeyPress={this.searchKlaim}
-                                            >
+                                    <FilterField label="Filter">
+                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilterKlaim(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
                                         </Input>
-                                    </div>
-                                    <div className={style.searchEmail2}>
-                                        <Col md={2}>
-                                            Filter:
-                                        </Col>
-                                        <Col md={10}>
-                                            <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilterKlaim(e.target.value)}>
-                                                <option value="all">All</option>
-                                                <option value="reject">Reject</option>
-                                                <option value="available">Available Approve</option>
-                                            </Input>
-                                        </Col>
-                                    </div>
-                                </div>
-                                <div className={[style.secEmail4]}>
-                                    <div className='rowCenter'>
-                                        <div className='rowCenter'>
-                                            {/* <text className='mr-4'>Time:</text> */}
-                                            <Input className={style.filter3} type="select" value={this.state.timeKlaim} onChange={e => this.changeTimeKlaim(e.target.value)}>
-                                                <option value="all">Time (All)</option>
-                                                <option value="pilih">Periode</option>
-                                            </Input>
-                                        </div>
-                                        {this.state.timeKlaim === 'pilih' ?  (
+                                    </FilterField>
+                                    <FilterField label="Status">
+                                        <Input className={style.filter} type="select" value={this.state.statKlaim} onChange={e => this.changeStatKlaim(e.target.value)}>
+                                            <option value='all'>All</option>
+                                            <option value={2} >Pengajuan Area</option>
+                                            <option value={3} >Verifikasi Finance</option>
+                                            <option value={4} >Verifikasi Klaim</option>
+                                            <option value={6} >List Ajuan Bayar</option>
+                                            <option value={8} >Sudah Payment</option>
+                                        </Input>
+                                    </FilterField>
+                                    <FilterField label="Periode" auto>
+                                        <Input className={style.filter3} type="select" value={this.state.timeKlaim} onChange={e => this.changeTimeKlaim(e.target.value)}>
+                                            <option value="all">Time (All)</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
+                                        {(this.state.timeKlaim === 'pilih') && (
                                             <>
-                                                <div className='rowCenter'>
-                                                    <text className='bold'>:</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        value={this.state.time1Klaim}
-                                                        onChange={e => this.selectTimeKlaim({val: e.target.value, type: 'time1Klaim'})}
-                                                    />
-                                                    <text className='mr-1 ml-1'>To</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        value={this.state.time2Klaim}
-                                                        onChange={e => this.selectTimeKlaim({val: e.target.value, type: 'time2Klaim'})}
-                                                    />
-                                                    <Button
-                                                    disabled={this.state.time1Klaim === '' || this.state.time2Klaim === '' ? true : false} 
-                                                    color='primary' 
-                                                    onClick={this.getDataTimeKlaim} 
-                                                    className='ml-1'>
-                                                        Go
-                                                    </Button>
-                                                </div>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time1Klaim}
+                                                    onChange={e => this.selectTimeKlaim({val: e.target.value, type: 'time1Klaim'})}
+                                                />
+                                                <RangeSep />
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time2Klaim}
+                                                    onChange={e => this.selectTimeKlaim({val: e.target.value, type: 'time2Klaim'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1Klaim === '' || this.state.time2Klaim === '' ? true : false} 
+                                                color='primary' 
+                                                onClick={this.getDataTimeKlaim} >
+                                                    Go
+                                                </Button>
                                             </>
-                                        ) : null}
-                                    </div>
-                                    <div className={style.searchEmail2}>
-                                        <Col md={2}>
-                                            Status:
-                                        </Col>
-                                        <Col md={10}>
-                                            <Input className={style.filter} type="select" value={this.state.statKlaim} onChange={e => this.changeStatKlaim(e.target.value)}>
-                                                <option value='all'>All</option>
-                                                <option value={2} >Pengajuan Area</option>
-                                                <option value={3} >Verifikasi Finance</option>
-                                                <option value={4} >Verifikasi Klaim</option>
-                                                <option value={6} >List Ajuan Bayar</option>
-                                                <option value={8} >Sudah Payment</option>
-                                            </Input>
-                                        </Col>
-                                    </div>
-                                </div>
+                                        )}
+                                    </FilterField>
+                                </Toolbar>
                                 <div className={style.tableDashboard}>
                                     <TblHead tagBody={
                                         <tbody>
@@ -1714,105 +1685,79 @@ class Klaim extends Component {
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                            <div className='boxDash'>
-                                <div className='rowBetween'>
-                                    <div className='subtitle' onClick={() => this.goRoute('navops')}>Operasional </div>
-                                    <MdOpenInNew size={30} onClick={() => this.goRoute('navops')} />
-                                </div>
-                                <div className={style.secEmail3}>
-                                    <Button color='primary' onClick={() => this.downloadData('ops')}>Download</Button>
-                                    {level === '5' || level === '6' ? (
-                                        <div></div>
-                                    ) : (
-                                        <div className={style.searchEmail2}>
-                                            <Col md={2}>
-                                                Depo:
-                                            </Col>
-                                            <Col md={10}>
-                                                <Input className={style.filter} type="select" value={this.state.depoOps} onClick={() => this.prosesOpenDepo('ops')}>
-                                                    <option disabled value="pilih">---Pilih Depo---</option>
-                                                    <option disabled value="all">All</option>
-                                                    <option disabled value={this.state.depoOps}>{this.state.depoOps}</option>
-                                                </Input>
-                                            </Col>
-                                        </div>
+                            </PageCard>
+                            <PageCard
+                                title={<span style={{cursor: 'pointer'}} onClick={() => this.goRoute('navops')}>Operasional</span>}
+                                actions={
+                                    <>
+                                        <Button color='primary' onClick={() => this.downloadData('ops')}>Download</Button>
+                                        <Button color='light' onClick={() => this.goRoute('navops')}><MdOpenInNew size={20} /></Button>
+                                    </>
+                                }
+                            >
+                                <Toolbar>
+                                    <SearchBox
+                                        onChange={this.searchOps}
+                                        value={this.state.searchOps}
+                                        onKeyPress={this.searchOps}
+                                    />
+                                    {level === '5' || level === '6' ? null : (
+                                        <FilterField label="Depo">
+                                            <Input className={style.filter} type="select" value={this.state.depoOps} onClick={() => this.prosesOpenDepo('ops')}>
+                                                <option disabled value="pilih">---Pilih Depo---</option>
+                                                <option disabled value="all">All</option>
+                                                <option disabled value={this.state.depoOps}>{this.state.depoOps}</option>
+                                            </Input>
+                                        </FilterField>
                                     )}
-                                </div>
-                                <div className={style.secEmail4}>
-                                    <div className={style.searchEmail2}>
-                                        <text>Search: </text>
-                                        <Input 
-                                            className={style.search}
-                                            onChange={this.searchOps}
-                                            value={this.state.searchOps}
-                                            onKeyPress={this.searchOps}
-                                            >
+                                    <FilterField label="Filter">
+                                        <Input className={style.filter} type="select" value={this.state.filterOps} onChange={e => this.changeFilterOps(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                         </Input>
-                                    </div>
-                                    <div className={style.searchEmail2}>
-                                        <Col md={2}>Filter:  </Col>
-                                        <Col md={10}>
-                                            <Input className={style.filter} type="select" value={this.state.filterOps} onChange={e => this.changeFilterOps(e.target.value)}>
-                                                <option value="all">All</option>
-                                                <option value="reject">Reject</option>
-                                                <option value="available">Available Approve</option>
-                                                {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                            </Input>
-                                        </Col>
-                                    </div>
-                                </div>
-                                <div className={[style.secEmail4]}>
-                                    <div className='rowCenter'>
-                                        <div className='rowCenter'>
-                                            {/* <text className='mr-4'>Time:</text> */}
-                                            <Input className={style.filter3} type="select" value={this.state.timeOps} onChange={e => this.changeTimeOps(e.target.value)}>
-                                                <option value="all">Time (All)</option>
-                                                <option value="pilih">Periode</option>
-                                            </Input>
-                                        </div>
-                                        {this.state.timeOps === 'pilih' ?  (
+                                    </FilterField>
+                                    <FilterField label="Status">
+                                        <Input className={style.filter} type="select" value={this.state.statOps} onChange={e => this.changeStatOps(e.target.value)}>
+                                            <option value='all'>All</option>
+                                            <option value={2} >Pengajuan Area</option>
+                                            <option value={3} >Verifikasi Finance</option>
+                                            {/* <option value={4} >Verifikasi Tax</option> */}
+                                            <option value={6} >List Ajuan Bayar</option>
+                                            <option value={8} >Sudah Payment</option>
+                                        </Input>
+                                    </FilterField>
+                                    <FilterField label="Periode" auto>
+                                        <Input className={style.filter3} type="select" value={this.state.timeOps} onChange={e => this.changeTimeOps(e.target.value)}>
+                                            <option value="all">Time (All)</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
+                                        {(this.state.timeOps === 'pilih') && (
                                             <>
-                                                <div className='rowCenter'>
-                                                    <text className='bold'>:</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        value={this.state.time1Ops}
-                                                        onChange={e => this.selectTimeOps({val: e.target.value, type: 'time1Ops'})}
-                                                    />
-                                                    <text className='mr-1 ml-1'>To</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        value={this.state.time2Ops}
-                                                        onChange={e => this.selectTimeOps({val: e.target.value, type: 'time2Ops'})}
-                                                    />
-                                                    <Button
-                                                    disabled={this.state.time1Ops === '' || this.state.time2Ops === '' ? true : false} 
-                                                    color='primary' 
-                                                    onClick={this.getDataTimeOps} 
-                                                    className='ml-1'>
-                                                        Go
-                                                    </Button>
-                                                </div>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time1Ops}
+                                                    onChange={e => this.selectTimeOps({val: e.target.value, type: 'time1Ops'})}
+                                                />
+                                                <RangeSep />
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time2Ops}
+                                                    onChange={e => this.selectTimeOps({val: e.target.value, type: 'time2Ops'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1Ops === '' || this.state.time2Ops === '' ? true : false} 
+                                                color='primary' 
+                                                onClick={this.getDataTimeOps} >
+                                                    Go
+                                                </Button>
                                             </>
-                                        ) : null}
-                                    </div>
-                                    <div className={style.searchEmail2}>
-                                        <Col md={2}>Status:  </Col>
-                                        <Col md={10}>
-                                            <Input className={style.filter} type="select" value={this.state.statOps} onChange={e => this.changeStatOps(e.target.value)}>
-                                                <option value='all'>All</option>
-                                                <option value={2} >Pengajuan Area</option>
-                                                <option value={3} >Verifikasi Finance</option>
-                                                {/* <option value={4} >Verifikasi Tax</option> */}
-                                                <option value={6} >List Ajuan Bayar</option>
-                                                <option value={8} >Sudah Payment</option>
-                                            </Input>
-                                        </Col>
-                                    </div>
-                                </div>
+                                        )}
+                                    </FilterField>
+                                </Toolbar>
                                 <div className={style.tableDashboard}>
                                     <TblHead tagBody={
                                         <tbody>
@@ -1877,105 +1822,79 @@ class Klaim extends Component {
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                            <div className='boxDash'>
-                                <div className='rowBetween'>
-                                    <div className='subtitle' onClick={() => this.goRoute('navkasbon')}>Kasbon </div>
-                                    <MdOpenInNew size={30} onClick={() => this.goRoute('navkasbon')} />
-                                </div>
-                                <div className={style.secEmail3}>
-                                    <Button color='primary' onClick={() => this.downloadData('kasbon')}>Download</Button>
-                                    {level === '5' || level === '6' ? (
-                                        <div></div>
-                                    ) : (
-                                        <div className={style.searchEmail2}>
-                                            <Col md={2}>
-                                                Depo:
-                                            </Col>
-                                            <Col md={10}>
-                                                <Input className={style.filter} type="select" value={this.state.depoKasbon} onClick={() => this.prosesOpenDepo('kasbon')}>
-                                                    <option disabled value="pilih">---Pilih Depo---</option>
-                                                    <option disabled value="all">All</option>
-                                                    <option disabled value={this.state.depoKasbon}>{this.state.depoKasbon}</option>
-                                                </Input>
-                                            </Col>
-                                        </div>
+                            </PageCard>
+                            <PageCard
+                                title={<span style={{cursor: 'pointer'}} onClick={() => this.goRoute('navkasbon')}>Kasbon</span>}
+                                actions={
+                                    <>
+                                        <Button color='primary' onClick={() => this.downloadData('kasbon')}>Download</Button>
+                                        <Button color='light' onClick={() => this.goRoute('navkasbon')}><MdOpenInNew size={20} /></Button>
+                                    </>
+                                }
+                            >
+                                <Toolbar>
+                                    <SearchBox
+                                        onChange={this.searchKasbon}
+                                        value={this.state.searchKasbon}
+                                        onKeyPress={this.searchKasbon}
+                                    />
+                                    {level === '5' || level === '6' ? null : (
+                                        <FilterField label="Depo">
+                                            <Input className={style.filter} type="select" value={this.state.depoKasbon} onClick={() => this.prosesOpenDepo('kasbon')}>
+                                                <option disabled value="pilih">---Pilih Depo---</option>
+                                                <option disabled value="all">All</option>
+                                                <option disabled value={this.state.depoKasbon}>{this.state.depoKasbon}</option>
+                                            </Input>
+                                        </FilterField>
                                     )}
-                                </div>
-                                <div className={style.secEmail4}>
-                                    <div className={style.searchEmail2}>
-                                        <text>Search: </text>
-                                        <Input 
-                                            className={style.search}
-                                            onChange={this.searchKasbon}
-                                            value={this.state.searchKasbon}
-                                            onKeyPress={this.searchKasbon}
-                                            >
+                                    <FilterField label="Filter">
+                                        <Input className={style.filter} type="select" value={this.state.filterKasbon} onChange={e => this.changeFilterKasbon(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                         </Input>
-                                    </div>
-                                    <div className={style.searchEmail2}>
-                                        <Col md={2}>Filter:  </Col>
-                                        <Col md={10}>
-                                            <Input className={style.filter} type="select" value={this.state.filterKasbon} onChange={e => this.changeFilterKasbon(e.target.value)}>
-                                                <option value="all">All</option>
-                                                <option value="reject">Reject</option>
-                                                <option value="available">Available Approve</option>
-                                                {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                            </Input>
-                                        </Col>
-                                    </div>
-                                </div>
-                                <div className={[style.secEmail4]}>
-                                    <div className='rowCenter'>
-                                        <div className='rowCenter'>
-                                            {/* <text className='mr-4'>Time:</text> */}
-                                            <Input className={style.filter3} type="select" value={this.state.timeKasbon} onChange={e => this.changeTimeKasbon(e.target.value)}>
-                                                <option value="all">Time (All)</option>
-                                                <option value="pilih">Periode</option>
-                                            </Input>
-                                        </div>
-                                        {this.state.timeKasbon === 'pilih' ?  (
+                                    </FilterField>
+                                    <FilterField label="Status">
+                                        <Input className={style.filter} type="select" value={this.state.statKasbon} onChange={e => this.changeStatKasbon(e.target.value)}>
+                                            <option value='all'>All</option>
+                                            <option value={2} >Pengajuan Area</option>
+                                            <option value={3} >Verifikasi Finance</option>
+                                            <option value={4} >Verifikasi Tax</option>
+                                            <option value={6} >List Ajuan Bayar</option>
+                                            <option value={8} >Sudah Payment</option>
+                                        </Input>
+                                    </FilterField>
+                                    <FilterField label="Periode" auto>
+                                        <Input className={style.filter3} type="select" value={this.state.timeKasbon} onChange={e => this.changeTimeKasbon(e.target.value)}>
+                                            <option value="all">Time (All)</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
+                                        {(this.state.timeKasbon === 'pilih') && (
                                             <>
-                                                <div className='rowCenter'>
-                                                    <text className='bold'>:</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        value={this.state.time1Kasbon}
-                                                        onChange={e => this.selectTimeKasbon({val: e.target.value, type: 'time1Kasbon'})}
-                                                    />
-                                                    <text className='mr-1 ml-1'>To</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        value={this.state.time2Kasbon}
-                                                        onChange={e => this.selectTimeKasbon({val: e.target.value, type: 'time2Kasbon'})}
-                                                    />
-                                                    <Button
-                                                    disabled={this.state.time1Kasbon === '' || this.state.time2Kasbon === '' ? true : false} 
-                                                    color='primary' 
-                                                    onClick={this.getDataTimeKasbon} 
-                                                    className='ml-1'>
-                                                        Go
-                                                    </Button>
-                                                </div>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time1Kasbon}
+                                                    onChange={e => this.selectTimeKasbon({val: e.target.value, type: 'time1Kasbon'})}
+                                                />
+                                                <RangeSep />
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time2Kasbon}
+                                                    onChange={e => this.selectTimeKasbon({val: e.target.value, type: 'time2Kasbon'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1Kasbon === '' || this.state.time2Kasbon === '' ? true : false} 
+                                                color='primary' 
+                                                onClick={this.getDataTimeKasbon} >
+                                                    Go
+                                                </Button>
                                             </>
-                                        ) : null}
-                                    </div>
-                                    <div className={style.searchEmail2}>
-                                        <Col md={2}>Status:  </Col>
-                                        <Col md={10}>
-                                            <Input className={style.filter} type="select" value={this.state.statKasbon} onChange={e => this.changeStatKasbon(e.target.value)}>
-                                                <option value='all'>All</option>
-                                                <option value={2} >Pengajuan Area</option>
-                                                <option value={3} >Verifikasi Finance</option>
-                                                <option value={4} >Verifikasi Tax</option>
-                                                <option value={6} >List Ajuan Bayar</option>
-                                                <option value={8} >Sudah Payment</option>
-                                            </Input>
-                                        </Col>
-                                    </div>
-                                </div>
+                                        )}
+                                    </FilterField>
+                                </Toolbar>
                                 <div className={style.tableDashboard}>
                                     <TblHead tagBody={
                                         <tbody>
@@ -2042,105 +1961,80 @@ class Klaim extends Component {
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                            <div className='boxDash mb-4'>
-                                <div className='rowBetween'>
-                                    <div className='subtitle' onClick={() => this.goRoute('navikk')}>Ikhtisar Kas Kecil </div>
-                                    <MdOpenInNew size={30} onClick={() => this.goRoute('navikk')} />
-                                </div>
-                                <div className={style.secEmail3}>
-                                    <Button color='primary' onClick={() => this.downloadData('ikk')}>Download</Button>
-                                    {level === '5' || level === '6' ? (
-                                        <div></div>
-                                    ) : (
-                                        <div className={style.searchEmail2}>
-                                            <Col md={2}>
-                                                Depo:
-                                            </Col>
-                                            <Col md={10}>
-                                                <Input className={style.filter} type="select" value={this.state.depoIkk} onClick={() => this.prosesOpenDepo('ikk')}>
-                                                    <option disabled value="pilih">---Pilih Depo---</option>
-                                                    <option disabled value="all">All</option>
-                                                    <option disabled value={this.state.depoIkk}>{this.state.depoIkk}</option>
-                                                </Input>
-                                            </Col>
-                                        </div>
+                            </PageCard>
+                            <PageCard
+                                className={'mb-4'}
+                                title={<span style={{cursor: 'pointer'}} onClick={() => this.goRoute('navikk')}>Ikhtisar Kas Kecil</span>}
+                                actions={
+                                    <>
+                                        <Button color='primary' onClick={() => this.downloadData('ikk')}>Download</Button>
+                                        <Button color='light' onClick={() => this.goRoute('navikk')}><MdOpenInNew size={20} /></Button>
+                                    </>
+                                }
+                            >
+                                <Toolbar>
+                                    <SearchBox
+                                        onChange={this.searchIkk}
+                                        value={this.state.searchIkk}
+                                        onKeyPress={this.searchIkk}
+                                    />
+                                    {level === '5' || level === '6' ? null : (
+                                        <FilterField label="Depo">
+                                            <Input className={style.filter} type="select" value={this.state.depoIkk} onClick={() => this.prosesOpenDepo('ikk')}>
+                                                <option disabled value="pilih">---Pilih Depo---</option>
+                                                <option disabled value="all">All</option>
+                                                <option disabled value={this.state.depoIkk}>{this.state.depoIkk}</option>
+                                            </Input>
+                                        </FilterField>
                                     )}
-                                </div>
-                                <div className={style.secEmail4}>
-                                <div className={style.searchEmail2}>
-                                        <text>Search: </text>
-                                        <Input 
-                                            className={style.search}
-                                            onChange={this.searchIkk}
-                                            value={this.state.searchIkk}
-                                            onKeyPress={this.searchIkk}
-                                            >
+                                    <FilterField label="Filter">
+                                        <Input className={style.filter} type="select" value={this.state.filterIkk} onChange={e => this.changeFilterIkk(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
                                         </Input>
-                                    </div>
-                                    <div className={style.searchEmail2}>
-                                        <Col md={2}>Filter:  </Col>
-                                        <Col md={10}>
-                                            <Input className={style.filter} type="select" value={this.state.filterIkk} onChange={e => this.changeFilterIkk(e.target.value)}>
-                                                <option value="all">All</option>
-                                                <option value="reject">Reject</option>
-                                                <option value="available">Available Approve</option>
-                                                {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                            </Input>
-                                        </Col>
-                                    </div>
-                                </div>
-                                <div className={[style.secEmail4]}>
-                                    <div className='rowCenter'>
-                                        <div className='rowCenter'>
-                                            {/* <text className='mr-4'>Time:</text> */}
-                                            <Input className={style.filter3} type="select" value={this.state.timeIkk} onChange={e => this.changeTimeIkk(e.target.value)}>
-                                                <option value="all">Time (All)</option>
-                                                <option value="pilih">Periode</option>
-                                            </Input>
-                                        </div>
-                                        {this.state.timeIkk === 'pilih' ?  (
+                                    </FilterField>
+                                    <FilterField label="Status">
+                                        <Input className={style.filter} type="select" value={this.state.statIkk} onChange={e => this.changeStatIkk(e.target.value)}>
+                                            <option value='all'>All</option>
+                                            <option value={2} >Pengajuan Area</option>
+                                            <option value={3} >Verifikasi Finance</option>
+                                            {/* <option value={4} >Verifikasi Tax</option> */}
+                                            <option value={6} >List Ajuan Bayar</option>
+                                            <option value={8} >Sudah Payment</option>
+                                        </Input>
+                                    </FilterField>
+                                    <FilterField label="Periode" auto>
+                                        <Input className={style.filter3} type="select" value={this.state.timeIkk} onChange={e => this.changeTimeIkk(e.target.value)}>
+                                            <option value="all">Time (All)</option>
+                                            <option value="pilih">Periode</option>
+                                        </Input>
+                                        {(this.state.timeIkk === 'pilih') && (
                                             <>
-                                                <div className='rowCenter'>
-                                                    <text className='bold'>:</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        value={this.state.time1Ikk}
-                                                        onChange={e => this.selectTimeIkk({val: e.target.value, type: 'time1Ikk'})}
-                                                    />
-                                                    <text className='mr-1 ml-1'>To</text>
-                                                    <Input
-                                                        type= "date" 
-                                                        className="inputRinci"
-                                                        value={this.state.time2Ikk}
-                                                        onChange={e => this.selectTimeIkk({val: e.target.value, type: 'time2Ikk'})}
-                                                    />
-                                                    <Button
-                                                    disabled={this.state.time1Ikk === '' || this.state.time2Ikk === '' ? true : false} 
-                                                    color='primary' 
-                                                    onClick={this.getDataTimeIkk} 
-                                                    className='ml-1'>
-                                                        Go
-                                                    </Button>
-                                                </div>
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time1Ikk}
+                                                    onChange={e => this.selectTimeIkk({val: e.target.value, type: 'time1Ikk'})}
+                                                />
+                                                <RangeSep />
+                                                <Input
+                                                    type= "date" 
+                                                    className="inputRinci"
+                                                    value={this.state.time2Ikk}
+                                                    onChange={e => this.selectTimeIkk({val: e.target.value, type: 'time2Ikk'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1Ikk === '' || this.state.time2Ikk === '' ? true : false} 
+                                                color='primary' 
+                                                onClick={this.getDataTimeIkk} >
+                                                    Go
+                                                </Button>
                                             </>
-                                        ) : null}
-                                    </div>
-                                    <div className={style.searchEmail2}>
-                                        <Col md={2}>Status:  </Col>
-                                        <Col md={10}>
-                                            <Input className={style.filter} type="select" value={this.state.statIkk} onChange={e => this.changeStatIkk(e.target.value)}>
-                                                <option value='all'>All</option>
-                                                <option value={2} >Pengajuan Area</option>
-                                                <option value={3} >Verifikasi Finance</option>
-                                                {/* <option value={4} >Verifikasi Tax</option> */}
-                                                <option value={6} >List Ajuan Bayar</option>
-                                                <option value={8} >Sudah Payment</option>
-                                            </Input>
-                                        </Col>
-                                    </div>
-                                </div>
+                                        )}
+                                    </FilterField>
+                                </Toolbar>
                                 <div className={style.tableDashboard}>
                                     <TblHead tagBody={
                                         <tbody>
@@ -2209,7 +2103,7 @@ class Klaim extends Component {
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            </PageCard>
                         </div>
                     </div>
                     </MaterialTitlePanel>

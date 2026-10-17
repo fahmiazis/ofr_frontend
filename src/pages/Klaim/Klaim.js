@@ -16,6 +16,7 @@ import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
+import { PageCard, Toolbar, ToolbarSpacer, FilterField, SearchBox, Pager, RangeSep } from '../../components/ui/Page'
 import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
 import moment from 'moment'
@@ -1577,18 +1578,60 @@ class Klaim extends Component {
                             {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
                                 <div>{alertM}</div>
                             </Alert> */}
-                            <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Pengajuan Klaim</div>
-                            </div>
-                            {(level === '5' || level === '6') && (
-                                <div className={[style.secEmail4]}>
-                                    <Button onClick={() => this.goRoute('cartklaim')} color="info" size="lg">Create</Button>
-                                </div>
-                            )}
-                            <div className={[style.secEmail4]}>
-                                <div className={style.searchEmail2}>
-                                    <div>
-                                        <text>Show: </text>
+                            <PageCard
+                                title="Pengajuan Klaim"
+                                actions={(level === '5' || level === '6') && (
+                                    <Button onClick={() => this.goRoute('cartklaim')} color="info">Create</Button>
+                                )}
+                            >
+                                <Toolbar>
+                                    <SearchBox
+                                        value={this.state.search}
+                                        onChange={this.onSearch}
+                                        onKeyPress={this.onSearch}
+                                    />
+                                    <FilterField label="Filter">
+                                        <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            <option value="bayar">Telah Bayar</option>
+                                            <option value="completed">Selesai</option>
+                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                        </Input>
+                                    </FilterField>
+                                    <FilterField label="Periode" auto>
+                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                            <option value="all">Time (All)</option>
+                                            <option value="pilih">Periode</option>
+                                            <option value="last">Last Update</option>
+                                        </Input>
+                                        {(this.state.time === 'pilih' || this.state.time === 'last') && (
+                                            <>
+                                                <Input
+                                                    type= "date"
+                                                    className="inputRinci"
+                                                    value={this.state.time1}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                />
+                                                <RangeSep />
+                                                <Input
+                                                    type= "date"
+                                                    className="inputRinci"
+                                                    value={this.state.time2}
+                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                />
+                                                <Button
+                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false}
+                                                color='primary'
+                                                onClick={this.getDataTime}>
+                                                    Go
+                                                </Button>
+                                            </>
+                                        )}
+                                    </FilterField>
+                                    <ToolbarSpacer />
+                                    <FilterField label="Show entries">
                                         <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
                                             <DropdownToggle caret color="light">
                                                 {this.state.limit}
@@ -1600,69 +1643,8 @@ class Klaim extends Component {
                                                 <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
                                             </DropdownMenu>
                                         </ButtonDropdown>
-                                        <text className={style.textEntries}>entries</text>
-                                    </div>
-                                </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Filter:  </text>
-                                    <Input className={style.filter} type="select" value={filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="all">All</option>
-                                        <option value="reject">Reject</option>
-                                        <option value="available">Available Approve</option>
-                                        <option value="bayar">Telah Bayar</option>
-                                        <option value="completed">Selesai</option>
-                                        {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                    </Input>
-                                </div>
-                            </div>
-                            <div className={[style.secEmail4]}>
-                                <div className='rowCenter'>
-                                    <div className='rowCenter'>
-                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                            <option value="all">Time (All)</option>
-                                            <option value="pilih">Periode</option>
-                                            <option value="last">Last Update</option>
-                                        </Input>
-                                    </div>
-                                    {this.state.time === 'pilih' || this.state.time === 'last' ?  (
-                                        <>
-                                            <div className='rowCenter'>
-                                                <text className='bold'>:</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    value={this.state.time1}
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
-                                                />
-                                                <text className='mr-1 ml-1'>To</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    value={this.state.time2}
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                />
-                                                <Button
-                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
-                                                color='primary' 
-                                                onClick={this.getDataTime} 
-                                                className='ml-1'>
-                                                    Go
-                                                </Button>
-                                            </div>
-                                        </>
-                                    ) : null}
-                                </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Search: </text>
-                                    <Input 
-                                    className={style.search}
-                                    onChange={this.onSearch}
-                                    value={this.state.search}
-                                    onKeyPress={this.onSearch}
-                                    >
-                                    </Input>
-                                </div>
-                            </div>
+                                    </FilterField>
+                                </Toolbar>
                             {level === '5' || level === '6' ? (
                                 <div className={style.tableDashboard1}>
                                     <Table bordered responsive hover className={[style.tab, newKlaim.length > 0 && 'tableJurnal1']} id="table-klaim">
@@ -1764,25 +1746,15 @@ class Klaim extends Component {
                                     )}
                                 </div>
                             )}
-                            <div className={style.infoPageEmail1}>
-                                <text>Showing {pageKlaim.currentPage} of {pageKlaim.pages === 0 ? 1 : pageKlaim.pages} pages</text>
-                                <div className={style.pageButton}>
-                                    <button 
-                                        className={style.btnPrev} 
-                                        color="info" 
-                                        // disabled
-                                        disabled={pageKlaim.prevLink === null ? true : false} 
-                                        onClick={this.prev}>Prev
-                                    </button>
-                                    <button 
-                                        className={style.btnPrev} 
-                                        color="info" 
-                                        // disabled
-                                        disabled={pageKlaim.nextLink === null ? true : false} 
-                                        onClick={this.next}>Next
-                                    </button>
-                                </div>
-                            </div>
+                                <Pager
+                                    current={pageKlaim.currentPage}
+                                    pages={pageKlaim.pages === 0 ? 1 : pageKlaim.pages}
+                                    onPrev={this.prev}
+                                    onNext={this.next}
+                                    prevDisabled={pageKlaim.prevLink === null}
+                                    nextDisabled={pageKlaim.nextLink === null}
+                                />
+                            </PageCard>
                         </div>
                     </div>
                     </MaterialTitlePanel>

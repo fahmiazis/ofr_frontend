@@ -3,6 +3,7 @@ import {  NavbarBrand, DropdownToggle, DropdownMenu,
     DropdownItem, Table, ButtonDropdown, Input, Button, Row, Col, 
     Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
 import style from '../../assets/css/input.module.css'
+import { PageCard, Toolbar, FilterField } from '../../components/ui/Page'
 import {FaSearch, FaBars} from 'react-icons/fa'
 import {AiFillCheckCircle, AiOutlineFileExcel} from 'react-icons/ai'
 import {FaFileSignature, FaTrash} from 'react-icons/fa'
@@ -480,20 +481,19 @@ class MasterEmail extends Component {
                         <div className={style.backgroundLogo}>
                             <div className={style.bodyDashboard}>
                                 <div className={dataAllNotif.length > 2 ? 'bodyNotif heightAuto' : 'bodyNotif heightNotif'}>
-                                    <div className={style.headMaster}>
-                                        <div className={style.titleDashboard}>Notification</div>
-                                    </div>
-                                    <div className='notifNav'>
-                                        <div className={style.searchEmail2}>
-                                            <text>Filter:  </text>
+                                    <PageCard
+                                        title="Notification"
+                                        actions={<Button color='danger'>Delete All</Button>}
+                                    >
+                                    <Toolbar>
+                                        <FilterField label="Filter">
                                             <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                                 <option value="all">All</option>
                                                 <option value="read">Read</option>
                                                 <option value="unread">Unread</option>
                                             </Input>
-                                        </div>
-                                        <Button color='danger'>Delete All</Button>
-                                    </div>
+                                        </FilterField>
+                                    </Toolbar>
                                     {dataAllNotif.length === 0 ? (
                                             <div className="txtDisposEmpty">Data Notification Tidak Ditemukan</div>
                                     ) : (
@@ -546,6 +546,7 @@ class MasterEmail extends Component {
                                                 </div>
                                             </Col>
                                         )} */}
+                                    </PageCard>
                                 </div>
                             </div>
                         </div>

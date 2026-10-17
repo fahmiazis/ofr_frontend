@@ -16,6 +16,7 @@ import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
+import { PageCard, Toolbar, SearchBox, FilterField, Pager, RangeSep } from '../../components/ui/Page'
 import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
 import moment from 'moment'
@@ -1507,12 +1508,14 @@ class Kasbon extends Component {
                             {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
                                 <div>{alertM}</div>
                             </Alert> */}
-                            <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Realisasi Kasbon</div>
-                            </div>
-                            <div className={[style.secEmail4]}>
-                                <div className={style.searchEmail2}>
-                                    <text>Filter:  </text>
+                            <PageCard title="Realisasi Kasbon">
+                            <Toolbar>
+                                <SearchBox
+                                    value={this.state.search}
+                                    onChange={this.onSearch}
+                                    onKeyPress={this.onSearch}
+                                />
+                                <FilterField label="Status">
                                     <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                         <option value="all">All</option>
                                         <option value="revisi">Open</option>
@@ -1521,58 +1524,37 @@ class Kasbon extends Component {
                                             <option value="available">Outstanding</option>
                                         )}
                                     </Input>
-                                </div>
-                                <div className={style.searchEmail2}>
-                                </div>
-                            </div>
-                            <div className={[style.secEmail4]}>
-                                <div className='rowCenter'>
-                                    <div className='rowCenter'>
-                                        <text className='mr-4'>Time:</text>
-                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="pilih">Periode</option>
-                                        </Input>
-                                    </div>
-                                    {this.state.time === 'pilih' ?  (
-                                        <>
-                                            <div className='rowCenter'>
-                                                <text className='bold'>:</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    value={this.state.time1}
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
-                                                />
-                                                <text className='mr-1 ml-1'>To</text>
-                                                <Input
-                                                    type= "date" 
-                                                    className="inputRinci"
-                                                    value={this.state.time2}
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                />
-                                                <Button
-                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false} 
-                                                color='primary' 
-                                                onClick={this.getDataTime} 
-                                                className='ml-1'>
-                                                    Go
-                                                </Button>
-                                            </div>
-                                        </>
-                                    ) : null}
-                                </div>
-                                <div className={style.searchEmail2}>
-                                    <text>Search: </text>
-                                    <Input 
-                                    className={style.search}
-                                    onChange={this.onSearch}
-                                    value={this.state.search}
-                                    onKeyPress={this.onSearch}
-                                    >
+                                </FilterField>
+                                <FilterField label="Time" auto>
+                                    <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                        <option value="all">All</option>
+                                        <option value="pilih">Periode</option>
                                     </Input>
-                                </div>
-                            </div>
+                                    {this.state.time === 'pilih' && (
+                                        <>
+                                            <Input
+                                                type= "date"
+                                                className="inputRinci"
+                                                value={this.state.time1}
+                                                onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                            />
+                                            <RangeSep />
+                                            <Input
+                                                type= "date"
+                                                className="inputRinci"
+                                                value={this.state.time2}
+                                                onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                            />
+                                            <Button
+                                            disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false}
+                                            color='primary'
+                                            onClick={this.getDataTime}>
+                                                Go
+                                            </Button>
+                                        </>
+                                    )}
+                                </FilterField>
+                            </Toolbar>
                             {level === '5' || level === '6' ? (
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-ops">
@@ -1683,27 +1665,15 @@ class Kasbon extends Component {
                                     )}
                                 </div>
                             )}
-                            <div>
-                                <div className={style.infoPageEmail1}>
-                                    <text>Showing 1 of 1 pages</text>
-                                    <div className={style.pageButton}>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.prevLink === null ? true : false} 
-                                            onClick={this.prev}>Prev
-                                        </button>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.nextLink === null ? true : false} 
-                                            onClick={this.next}>Next
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                                <Pager
+                                    current={1}
+                                    pages={1}
+                                    onPrev={this.prev}
+                                    onNext={this.next}
+                                    prevDisabled
+                                    nextDisabled
+                                />
+                            </PageCard>
                         </div>
                     </div>
                     </MaterialTitlePanel>

@@ -15,6 +15,7 @@ import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
+import { PageCard, Toolbar, SearchBox, Pager } from '../../components/ui/Page'
 import placeholder from  "../../assets/img/placeholder.png"
 import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
@@ -969,32 +970,24 @@ class RevisiIkk extends Component {
                             {/* <Alert color="danger" className={style.alertWrong} isOpen={this.state.alert}>
                                 <div>{alertM}</div>
                             </Alert> */}
-                            <div className={style.headMaster}>
-                                <div className={style.titleDashboard}>Revisi Ikk</div>
-                            </div>
-                            <div className={style.secEmail3}>
-                            </div>
-                            <div className={[style.secEmail4]}>
-                                {/* <div className={style.searchEmail2}>
-                                    <text>Filter:  </text>
-                                    <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                        <option value="all">All</option>
-                                        <option value="reject">Reject</option>
-                                        <option value="available">Available Approve</option>
-                                        <option value="revisi">Available Reapprove (Revisi)</option>
-                                    </Input>
-                                </div> */}
-                                <div className={style.searchEmail2}>
-                                    <text>Search: </text>
-                                    <Input 
-                                    className={style.search}
-                                    onChange={this.onSearch}
-                                    value={this.state.search}
-                                    onKeyPress={this.onSearch}
-                                    >
-                                    </Input>
-                                </div>
-                            </div>
+                            <PageCard
+                                title="Revisi Ikk"
+                            >
+                                <Toolbar>
+                                    <SearchBox
+                                        value={this.state.search}
+                                        onChange={this.onSearch}
+                                        onKeyPress={this.onSearch}
+                                    />
+                                    {/* <FilterField label="Status">
+                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                            <option value="all">All</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="available">Available Approve</option>
+                                            <option value="revisi">Available Reapprove (Revisi)</option>
+                                        </Input>
+                                    </FilterField> */}
+                                </Toolbar>
                                 <div className={style.tableDashboard}>
                                     <Table bordered responsive hover className={style.tab} id="table-klaim">
                                         <thead>
@@ -1040,27 +1033,15 @@ class RevisiIkk extends Component {
                                         </div>
                                     )}
                                 </div>
-                            <div>
-                                <div className={style.infoPageEmail1}>
-                                    <text>Showing 1 of 1 pages</text>
-                                    <div className={style.pageButton}>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.prevLink === null ? true : false} 
-                                            onClick={this.prev}>Prev
-                                        </button>
-                                        <button 
-                                            className={style.btnPrev} 
-                                            color="info" 
-                                            disabled
-                                            // disabled={page.nextLink === null ? true : false} 
-                                            onClick={this.next}>Next
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                                <Pager
+                                    current={1}
+                                    pages={1}
+                                    onPrev={this.prev}
+                                    onNext={this.next}
+                                    prevDisabled
+                                    nextDisabled
+                                />
+                            </PageCard>
                         </div>
                     </div>
                     </MaterialTitlePanel>

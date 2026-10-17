@@ -3,9 +3,11 @@ import {Formik} from 'formik'
 import * as Yup from 'yup'
 import auth from '../redux/actions/auth'
 import {connect} from 'react-redux'
-import { Input, Container, Form, Alert, Modal, ModalBody, Spinner } from 'reactstrap'
+import { Form, Alert, Modal, ModalBody, Spinner } from 'reactstrap'
 import logo from '../assets/img/logo.png'
+import illustration from '../assets/img/login-ofr.svg'
 import style from '../assets/css/input.module.css'
+import styleLogin from '../assets/css/login.module.css'
 import { AiOutlineCopyrightCircle } from "react-icons/ai"
 
 const loginSchema = Yup.object().shape({
@@ -50,71 +52,78 @@ class Login extends Component {
         const {isLogin} = this.props.auth
         return (
             <>
-            { isLogin === false ? (
-                <Alert color="danger" className={style.alertWrong}>
-                    username or password invalid !
-                </Alert>
-            ): (
-                <div></div>
-            )}
             <Formik
                 initialValues={{ username: '', password: '', cost_center: ''}}
                 validationSchema={loginSchema}
                 onSubmit={(values, { resetForm }) => {this.login(values); resetForm({ values: '' })}}>
                 {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
-                <Form className={style.bodyLogin}>
-                    <div className={style.imgLogin}>
-                        <img src={logo} alt='logo' className={style.imgBig} />
-                    </div>
-                        <div className={style.form}>
-                            <div className={style.textLogin}>Please login with your account</div>
+                <div className={styleLogin.loginPage}>
+                    <div className={styleLogin.loginCard}>
+                        <div className={styleLogin.illustration}>
                             <div>
+                                <div className={styleLogin.illuTitle}>Operational Fund Request</div>
+                                <div className={styleLogin.illuDesc}>Pengajuan dana operasional, klaim, kasbon, dan kas kecil dalam satu aplikasi.</div>
+                            </div>
+                            <img src={illustration} alt='ilustrasi ajuan dana operasional' className={styleLogin.illuImage} />
+                        </div>
+                        <Form className={styleLogin.formSide}>
+                            <img src={logo} alt='logo' className={styleLogin.logo} />
+                            <div className={styleLogin.formTitle}>Selamat Datang</div>
+                            <div className={styleLogin.formSubtitle}>Please login with your account</div>
+                            { isLogin === false && (
+                                <Alert color="danger" className={styleLogin.alert}>
+                                    username or password invalid !
+                                </Alert>
+                            )}
+                            <div className={styleLogin.field}>
+                                <label className={styleLogin.label}>Username</label>
                                 <input 
-                                className={style.input1}
-                                placeholder='Username'
+                                className={styleLogin.input}
+                                placeholder='Masukkan username'
                                 type='name' 
                                 onChange= {handleChange('username')}
                                 onBlur= {handleBlur('username')}
                                 value={values.username}
                                 />
+                                {errors.username ? (
+                                    <text className={styleLogin.error}>{errors.username}</text>
+                                ) : null}
                             </div>
-                            {errors.username ? (
-                                <text className={style.txtError}>{errors.username}</text>
-                            ) : null}
                             {(values.username === 'P000' || values.username === 'p000') && (
-                                <>
-                                    <div>
-                                        <input 
-                                        className={style.input2}
-                                        placeholder='Cost Center'
-                                        type='text' 
-                                        onChange= {handleChange('cost_center')}
-                                        onBlur= {handleBlur('cost_center')}
-                                        value={values.cost_center}
-                                        />
-                                    </div>
+                                <div className={styleLogin.field}>
+                                    <label className={styleLogin.label}>Cost Center</label>
+                                    <input 
+                                    className={styleLogin.input}
+                                    placeholder='Masukkan cost center'
+                                    type='text' 
+                                    onChange= {handleChange('cost_center')}
+                                    onBlur= {handleBlur('cost_center')}
+                                    value={values.cost_center}
+                                    />
                                     {values.cost_center === '' ? (
-                                        <text className={style.txtError}>must be filled</text>
+                                        <text className={styleLogin.error}>must be filled</text>
                                     ) : null}
-                                </>
+                                </div>
                             )}
-                            <div>
+                            <div className={styleLogin.field}>
+                                <label className={styleLogin.label}>Password</label>
                                 <input
-                                className={style.input2}
-                                placeholder='Password'
+                                className={styleLogin.input}
+                                placeholder='Masukkan password'
                                 type='password'
                                 onChange= {handleChange('password')}
                                 onBlur= {handleBlur('password')}
                                 value={values.password}
                                 />
+                                {errors.password ? (
+                                    <text className={styleLogin.error}>{errors.password}</text>
+                                ) : null}
                             </div>
-                            {errors.password ? (
-                                <text className={style.txtError}>{errors.password}</text>
-                            ) : null}
-                            <button disabled={(values.username === 'p000' || values.username === 'P000') && values.cost_center === '' ? true : false} onClick={handleSubmit} className={style.button}>LOGIN</button>
-                        </div>
-                        <div className='icon mt-4'><AiOutlineCopyrightCircle size={18} className="mr-3" />OFR-PMA 2022</div>
-                </Form>
+                            <button type='submit' disabled={(values.username === 'p000' || values.username === 'P000') && values.cost_center === '' ? true : false} onClick={handleSubmit} className={styleLogin.button}>LOGIN</button>
+                            <div className={styleLogin.copyright}><AiOutlineCopyrightCircle size={16} className="mr-2" />OFR-PMA 2022</div>
+                        </Form>
+                    </div>
+                </div>
                 )}
                 </Formik>
                 <Modal isOpen={this.props.auth.isLoading ? true: false} size="sm">
