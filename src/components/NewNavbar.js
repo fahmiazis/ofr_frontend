@@ -5,7 +5,7 @@ import logo from '../assets/img/logo.png'
 import styleLayout from '../assets/css/layout.module.css'
 import { FaBars, FaDatabase, FaTicketAlt, FaCashRegister, FaTasks, FaHandshake } from 'react-icons/fa'
 import { BsFillHouseDoorFill, BsClipboardData } from 'react-icons/bs'
-import { AiFillDashboard, AiOutlineMail, AiOutlineMenu } from 'react-icons/ai'
+import { AiOutlineMail, AiOutlineMenu } from 'react-icons/ai'
 import { RiBankCardFill } from 'react-icons/ri'
 import { HiOutlineDocumentText } from 'react-icons/hi'
 import { FiUser, FiTruck } from 'react-icons/fi'
@@ -156,7 +156,6 @@ class NewNavbar extends Component {
 
         const mainMenu = [
             { route: '', label: 'Home', icon: BsFillHouseDoorFill },
-            { route: 'dashboard', label: 'Dashboard', icon: AiFillDashboard },
             ...(level !== '4' && level !== '14' ? [{ route: 'navklaim', label: 'Klaim', icon: FaHandshake }] : []),
             { route: 'navkasbon', label: 'Kasbon', icon: FaCashRegister },
             { route: 'navops', label: 'Operasional', icon: FiTruck },

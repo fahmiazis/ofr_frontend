@@ -1,0 +1,216 @@
+/* Grafik status transaksi di halaman Home */
+.card {
+  margin-top: 28px;
+  background-color: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1E293B;
+  margin: 0;
+}
+
+.subtitle {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  color: #64748B;
+}
+
+.select {
+  width: 200px;
+  height: 38px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.select:focus {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 0.2rem rgba(192, 57, 43, 0.15);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 20px 0 8px;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rows {
+  transition: opacity 0.2s ease;
+}
+
+.loading {
+  opacity: 0.5;
+}
+
+.row {
+  padding: 16px 0;
+  border-top: 1px solid #F1F5F9;
+}
+
+.row:first-child {
+  border-top: none;
+}
+
+.rowHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.rowTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #1E293B;
+}
+
+.rowIcon {
+  color: #c0392b;
+}
+
+.rowTotal {
+  font-size: 0.9rem;
+  color: #64748B;
+}
+
+.rowTotal b {
+  color: #1E293B;
+}
+
+/* bar bertumpuk: segmen dipisah celah 2px, ujung membulat 4px */
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 16px;
+}
+
+.segment {
+  position: relative;
+  min-width: 4px;
+  flex-basis: 0;
+  cursor: default;
+}
+
+.segment:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.segment:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.segment:only-child {
+  border-radius: 4px;
+}
+
+/* area hover lebih tinggi dari bar */
+.segment::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -6px;
+  bottom: -6px;
+}
+
+.tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background-color: white;
+  color: #1E293B;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  z-index: 5;
+  align-items: center;
+  gap: 6px;
+}
+
+.segment:hover .tooltip {
+  display: inline-flex;
+}
+
+.track {
+  height: 16px;
+  border-radius: 4px;
+  background-color: #EEF2F6;
+}
+
+.empty {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #94A3B8;
+}
+
+.values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #1E293B;
+}
+
+.value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.valueLabel {
+  color: #64748B;
+}
+
+.valuePct {
+  color: #94A3B8;
+}
+
+@media (max-width: 576px) {
+  .card {
+    padding: 20px 16px;
+  }
+
+  .select {
+    width: 100%;
+  }
+}

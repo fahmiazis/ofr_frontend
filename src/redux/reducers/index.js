@@ -35,6 +35,8 @@ import ops from './ops'
 import verven from './verven'
 //notif
 import notif from './notif'
+//dashboard
+import dashboard from './dashboard'
 
 export default combineReducers({
   auth,
@@ -66,5 +68,6 @@ export default combineReducers({
   notif,
   verven,
   picklaim,
-  spvklaim
+  spvklaim,
+  dashboard
 })

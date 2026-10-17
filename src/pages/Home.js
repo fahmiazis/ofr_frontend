@@ -23,6 +23,8 @@ import {MdBalance} from 'react-icons/md'
 import { FaFileSignature, FaHandshake, FaCashRegister } from 'react-icons/fa'
 import { FiLogOut } from 'react-icons/fi'
 import styleHome from '../assets/css/home.module.css'
+import dashboard from '../redux/actions/dashboard'
+import DashboardStatus, { periodeOptions } from '../components/DashboardStatus'
 
 const userEditSchema = Yup.object().shape({
     fullname: Yup.string().required('must be filled'),
@@ -43,7 +45,16 @@ class Home extends Component {
         alert: false,
         setting: false,
         modalChange: false,
-        dataNull: []
+        dataNull: [],
+        periodeDash: 'm6'
+    }
+
+    getDashboard = async (val) => {
+        const token = localStorage.getItem('token')
+        const periodeDash = val || this.state.periodeDash
+        const pilih = periodeOptions().find(x => x.value === periodeDash) || periodeOptions()[0]
+        this.setState({ periodeDash })
+        await this.props.getStatusTransaksi(token, pilih.periode)
     }
 
     openModalEdit = () => {
@@ -152,6 +163,7 @@ class Home extends Component {
         const id = localStorage.getItem('id')
         const level = localStorage.getItem('level')
         await this.props.getAllNotif(token)
+        this.getDashboard()
         if (email === 'null' || email === '' || fullname === 'null' || fullname === '') {
             if (id !== null && level !== '5') {
                 this.openModalEdit()
@@ -184,10 +196,10 @@ class Home extends Component {
         const { alertM, alertMsg } = this.props.user
         const hideKlaim = level === '4' || level === '14' || level === '24' || level === '34' || level === '102'
         const menuHome = [
-            ...(hideKlaim ? [] : [{ route: 'navklaim', title: 'Klaim', desc: 'Pengajuan dan monitoring klaim', icon: FaHandshake }]),
-            { route: 'navops', title: 'Operasional', desc: 'Ajuan dana biaya operasional', icon: BsGearWideConnected },
-            { route: 'navikk', title: 'Ikhtisar Kas Kecil', desc: 'Pengelolaan dan pertanggungjawaban kas kecil', icon: GiNotebook },
-            { route: 'navkasbon', title: 'Kasbon', desc: 'Pengajuan dan realisasi kasbon', icon: FaCashRegister },
+            ...(hideKlaim ? [] : [{ route: 'navklaim', transaksi: 'klaim', title: 'Klaim', desc: 'Pengajuan dan monitoring klaim', icon: FaHandshake }]),
+            { route: 'navops', transaksi: 'operasional', title: 'Operasional', desc: 'Ajuan dana biaya operasional', icon: BsGearWideConnected },
+            { route: 'navikk', transaksi: 'ikk', title: 'Ikhtisar Kas Kecil', desc: 'Pengelolaan dan pertanggungjawaban kas kecil', icon: GiNotebook },
+            { route: 'navkasbon', transaksi: 'kasbon', title: 'Kasbon', desc: 'Pengajuan dan realisasi kasbon', icon: FaCashRegister },
         ]
         return (
             <>
@@ -210,6 +222,18 @@ class Home extends Component {
                         )
                     })}
                 </div>
+                <DashboardStatus
+                    rows={menuHome.map(item => ({
+                        ...((this.props.dashboard.dataStatus || []).find(x => x.transaksi === item.transaksi) || {}),
+                        transaksi: item.transaksi,
+                        title: item.title,
+                        icon: item.icon
+                    }))}
+                    periode={this.props.dashboard.periode}
+                    isLoading={this.props.dashboard.isLoading}
+                    periodeValue={this.state.periodeDash}
+                    onChangePeriode={this.getDashboard}
+                />
             </AppLayout>
             <Modal isOpen={this.state.modalEdit}>
                 <ModalHeader>Lengkapi nama lengkap dan email terlebih dahulu</ModalHeader>
@@ -378,7 +402,8 @@ class Home extends Component {
 const mapStateToProps = state => ({
     auth: state.auth,
     user: state.user,
-    notif: state.notif
+    notif: state.notif,
+    dashboard: state.dashboard
 })
 
 const mapDispatchToProps = {
@@ -387,6 +412,7 @@ const mapDispatchToProps = {
     logout: auth.logout,
     changePassword: user.changePassword,
     getAllNotif: notif.getAllNotif,
+    getStatusTransaksi: dashboard.getStatusTransaksi,
     // upNotif: notif.upNotif
 }
 
