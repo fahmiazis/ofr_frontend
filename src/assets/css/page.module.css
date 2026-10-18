@@ -67,6 +67,14 @@
   flex: 1 1 auto;
 }
 
+.toolbarRow {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -78,9 +86,45 @@
   flex: 0 1 300px;
 }
 
-/* lebar mengikuti isi, misal filter periode dengan dua tanggal */
+/* lebar mengikuti isi, misal filter periode dengan dua tanggal (tidak ikut menyempit) */
 .fieldAuto {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+
+.fieldAuto .fieldControl {
+  flex-wrap: wrap;
+}
+
+.fieldAuto .fieldControl > * {
+  flex: 0 0 auto;
+}
+
+.fieldAuto .fieldControl select {
+  width: 150px;
+}
+
+.fieldAuto .fieldControl input[type='date'] {
+  width: 160px;
+  min-width: 0;
+}
+
+/* field sempit, mis. show entries */
+.fieldNarrow {
+  flex: 0 0 120px;
+  min-width: 120px;
+}
+
+/* baris field berbentuk grid: kolom mengikuti lebar layar, field sedikit tidak ikut memanjang */
+.toolbarGrid {
+  flex: 1 1 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.toolbarGrid > .field {
+  min-width: 0;
 }
 
 .fieldLabel {

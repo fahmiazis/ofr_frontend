@@ -16,7 +16,7 @@ import { AiOutlineCheck, AiOutlineClose, AiFillCheckCircle} from 'react-icons/ai
 import MaterialTitlePanel from "../../components/material_title_panel"
 import SidebarContent from "../../components/sidebar_content"
 import style from '../../assets/css/input.module.css'
-import { PageCard, Toolbar, ToolbarSpacer, FilterField, SearchBox, Pager, RangeSep } from '../../components/ui/Page'
+import { PageCard, Toolbar, ToolbarSpacer, ToolbarRow, ToolbarGrid, FilterField, SearchBox, Pager, RangeSep } from '../../components/ui/Page'
 import user from '../../redux/actions/user'
 import {connect} from 'react-redux'
 import moment from 'moment'
@@ -1711,85 +1711,89 @@ class Ops extends Component {
                                 )}
                             >
                                 <Toolbar>
-                                    <SearchBox
-                                        value={this.state.search}
-                                        onChange={this.onSearch}
-                                        onKeyPress={this.onSearch}
-                                    />
-                                    {(level !== '5' && level !== '6') && (
-                                        <FilterField label="Vendor" wide>
-                                            <Select
-                                                className={style.filter}
-                                                options={
-                                                    vendorList && vendorList.length > 0
-                                                    ? [
-                                                        { value: 'all', label: 'Semua Vendor' },
-                                                        ...[...new Set(vendorList.map(v => v.nama_vendor))].map(nama => ({
-                                                            value: nama,
-                                                            label: nama
-                                                        }))
-                                                        ]
-                                                    : [{ value: 'all', label: 'Semua Vendor' }]
-                                                }
-                                                onChange={this.selectVendor}
-                                                placeholder="Pilih Vendor"
-                                            />
+                                    <ToolbarRow>
+                                        <FilterField label="Periode" auto>
+                                            <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
+                                                <option value="all">Time (All)</option>
+                                                <option value="pilih">Periode</option>
+                                                <option value="last">Last Update</option>
+                                            </Input>
+                                            {(this.state.time === 'pilih' || this.state.time === 'last') && (
+                                                <>
+                                                    <Input
+                                                        type= "date"
+                                                        className="inputRinci"
+                                                        value={this.state.time1}
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                                    />
+                                                    <RangeSep />
+                                                    <Input
+                                                        type= "date"
+                                                        className="inputRinci"
+                                                        value={this.state.time2}
+                                                        onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
+                                                    />
+                                                    <Button
+                                                    disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false}
+                                                    color='primary'
+                                                    onClick={this.getDataTime}>
+                                                        Go
+                                                    </Button>
+                                                </>
+                                            )}
                                         </FilterField>
-                                    )}
-                                    <FilterField label="Status">
-                                        <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
-                                            <option value="all">All</option>
-                                            <option value="reject">Reject</option>
-                                            <option value="available">Available Approve</option>
-                                            <option value="bayar">Telah Bayar</option>
-                                            <option value="completed">Selesai</option>
-                                            {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
-                                        </Input>
-                                    </FilterField>
-                                    <FilterField label="Periode" auto>
-                                        <Input className={style.filter3} type="select" value={this.state.time} onChange={e => this.changeTime(e.target.value)}>
-                                            <option value="all">Time (All)</option>
-                                            <option value="pilih">Periode</option>
-                                            <option value="last">Last Update</option>
-                                        </Input>
-                                        {(this.state.time === 'pilih' || this.state.time === 'last') && (
-                                            <>
-                                                <Input
-                                                    type= "date"
-                                                    className="inputRinci"
-                                                    value={this.state.time1}
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time1'})}
+                                        <ToolbarSpacer />
+                                        <FilterField label="Show entries" narrow>
+                                            <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
+                                                <DropdownToggle caret color="light">
+                                                    {this.state.limit}
+                                                </DropdownToggle>
+                                                <DropdownMenu>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
+                                                    <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
+                                                </DropdownMenu>
+                                            </ButtonDropdown>
+                                        </FilterField>
+                                    </ToolbarRow>
+                                    <ToolbarGrid>
+                                        <SearchBox
+                                            value={this.state.search}
+                                            onChange={this.onSearch}
+                                            onKeyPress={this.onSearch}
+                                        />
+                                        {(level !== '5' && level !== '6') && (
+                                            <FilterField label="Vendor">
+                                                <Select
+                                                    className={style.filter}
+                                                    options={
+                                                        vendorList && vendorList.length > 0
+                                                        ? [
+                                                            { value: 'all', label: 'Semua Vendor' },
+                                                            ...[...new Set(vendorList.map(v => v.nama_vendor))].map(nama => ({
+                                                                value: nama,
+                                                                label: nama
+                                                            }))
+                                                            ]
+                                                        : [{ value: 'all', label: 'Semua Vendor' }]
+                                                    }
+                                                    onChange={this.selectVendor}
+                                                    placeholder="Pilih Vendor"
                                                 />
-                                                <RangeSep />
-                                                <Input
-                                                    type= "date"
-                                                    className="inputRinci"
-                                                    value={this.state.time2}
-                                                    onChange={e => this.selectTime({val: e.target.value, type: 'time2'})}
-                                                />
-                                                <Button
-                                                disabled={this.state.time1 === '' || this.state.time2 === '' ? true : false}
-                                                color='primary'
-                                                onClick={this.getDataTime}>
-                                                    Go
-                                                </Button>
-                                            </>
+                                            </FilterField>
                                         )}
-                                    </FilterField>
-                                    <ToolbarSpacer />
-                                    <FilterField label="Show entries">
-                                        <ButtonDropdown className={style.drop} isOpen={this.state.drop} toggle={this.dropDown}>
-                                            <DropdownToggle caret color="light">
-                                                {this.state.limit}
-                                            </DropdownToggle>
-                                            <DropdownMenu>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(10)}>10</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(20)}>20</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(50)}>50</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataLimit(100)}>100</DropdownItem>
-                                            </DropdownMenu>
-                                        </ButtonDropdown>
-                                    </FilterField>
+                                        <FilterField label="Status">
+                                            <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
+                                                <option value="all">All</option>
+                                                <option value="reject">Reject</option>
+                                                <option value="available">Available Approve</option>
+                                                <option value="bayar">Telah Bayar</option>
+                                                <option value="completed">Selesai</option>
+                                                {/* <option value="revisi">Available Reapprove (Revisi)</option> */}
+                                            </Input>
+                                        </FilterField>
+                                    </ToolbarGrid>
                                 </Toolbar>
                             {level === '5' || level === '6' ? (
                                 <div className={style.tableDashboard1}>

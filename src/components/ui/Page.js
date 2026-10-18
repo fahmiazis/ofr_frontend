@@ -36,8 +36,14 @@ export const RangeSep = ({ children = 's/d' }) => <span className={s.rangeSep}>{
 // dorong item setelahnya ke sisi kanan toolbar
 export const ToolbarSpacer = () => <div className={s.spacer} />
 
-export const FilterField = ({ label, children, wide, auto, className }) => (
-    <div className={`${s.field} ${wide ? s.fieldWide : ''} ${auto ? s.fieldAuto : ''} ${className || ''}`}>
+// satu baris di dalam Toolbar, untuk toolbar bertingkat (baris search lalu baris filter)
+export const ToolbarRow = ({ children }) => <div className={s.toolbarRow}>{children}</div>
+
+// field dalam grid kolom rata (mis. search, status, vendor di bawah filter periode)
+export const ToolbarGrid = ({ children }) => <div className={s.toolbarGrid}>{children}</div>
+
+export const FilterField = ({ label, children, wide, auto, narrow, className }) => (
+    <div className={`${s.field} ${wide ? s.fieldWide : ''} ${auto ? s.fieldAuto : ''} ${narrow ? s.fieldNarrow : ''} ${className || ''}`}>
         {label && <label className={s.fieldLabel}>{label}</label>}
         <div className={s.fieldControl}>{children}</div>
     </div>
@@ -45,7 +51,7 @@ export const FilterField = ({ label, children, wide, auto, className }) => (
 
 // input pencarian dengan ikon; props diteruskan ke <input> (value, onChange, onKeyPress, dll)
 export const SearchBox = ({ label = 'Search', placeholder = 'Cari data...', className, ...props }) => (
-    <div className={`${s.field} ${s.fieldWide} ${className || ''}`}>
+    <div className={`${s.field} ${s.fieldWide} ${s.searchField} ${className || ''}`}>
         {label && <label className={s.fieldLabel}>{label}</label>}
         <div className={s.searchBox}>
             <FaSearch className={s.searchIcon} size={14} />
