@@ -11,8 +11,8 @@ import styleLogin from '../assets/css/login.module.css'
 import { AiOutlineCopyrightCircle } from "react-icons/ai"
 
 const loginSchema = Yup.object().shape({
-    username: Yup.string().required('must be filled'),
-    password: Yup.string().required('must be filled')
+    username: Yup.string().required('Must be filled'),
+    password: Yup.string().required('Must be filled')
 });
 
 class Login extends Component {
@@ -62,24 +62,24 @@ class Login extends Component {
                         <div className={styleLogin.illustration}>
                             <div>
                                 <div className={styleLogin.illuTitle}>Operational Fund Request</div>
-                                <div className={styleLogin.illuDesc}>Pengajuan dana operasional, klaim, kasbon, dan kas kecil dalam satu aplikasi.</div>
+                                <div className={styleLogin.illuDesc}>Submit operational funds, claims, cash advances, and petty cash in one application.</div>
                             </div>
                             <img src={illustration} alt='ilustrasi ajuan dana operasional' className={styleLogin.illuImage} />
                         </div>
                         <Form className={styleLogin.formSide}>
                             <img src={logo} alt='logo' className={styleLogin.logo} />
-                            <div className={styleLogin.formTitle}>Selamat Datang</div>
-                            <div className={styleLogin.formSubtitle}>Please login with your account</div>
+                            <div className={styleLogin.formTitle}>Welcome Back</div>
+                            <div className={styleLogin.formSubtitle}>Please sign in to your account</div>
                             { isLogin === false && (
                                 <Alert color="danger" className={styleLogin.alert}>
-                                    username or password invalid !
+                                    Invalid username or password.
                                 </Alert>
                             )}
                             <div className={styleLogin.field}>
                                 <label className={styleLogin.label}>Username</label>
                                 <input 
                                 className={styleLogin.input}
-                                placeholder='Masukkan username'
+                                placeholder='Enter your username'
                                 type='name' 
                                 onChange= {handleChange('username')}
                                 onBlur= {handleBlur('username')}
@@ -94,14 +94,14 @@ class Login extends Component {
                                     <label className={styleLogin.label}>Cost Center</label>
                                     <input 
                                     className={styleLogin.input}
-                                    placeholder='Masukkan cost center'
+                                    placeholder='Enter your cost center'
                                     type='text' 
                                     onChange= {handleChange('cost_center')}
                                     onBlur= {handleBlur('cost_center')}
                                     value={values.cost_center}
                                     />
                                     {values.cost_center === '' ? (
-                                        <text className={styleLogin.error}>must be filled</text>
+                                        <text className={styleLogin.error}>Must be filled</text>
                                     ) : null}
                                 </div>
                             )}
@@ -109,7 +109,7 @@ class Login extends Component {
                                 <label className={styleLogin.label}>Password</label>
                                 <input
                                 className={styleLogin.input}
-                                placeholder='Masukkan password'
+                                placeholder='Enter your password'
                                 type='password'
                                 onChange= {handleChange('password')}
                                 onBlur= {handleBlur('password')}
@@ -131,7 +131,7 @@ class Login extends Component {
                         <div>
                             <div className={style.cekUpdate}>
                                 <Spinner />
-                                <div sucUpdate>Waiting....</div>
+                                <div sucUpdate>Please wait...</div>
                             </div>
                         </div>
                     </ModalBody>
