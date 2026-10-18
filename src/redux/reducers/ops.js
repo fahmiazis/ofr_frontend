@@ -377,7 +377,9 @@ export default (state = opsState, action) => {
                 isLoading: false,
                 isAdd: false,
                 isError: true,
-                alertMsg: "Unable connect to server"
+                alertMsg: "Unable connect to server",
+                // pesan dari backend, mis. jenis transaksi dibatasi untuk area tertentu
+                msgAddCart: action.payload.response?.data?.message || ''
             };
         }
         case 'EDIT_OPS_PENDING': {

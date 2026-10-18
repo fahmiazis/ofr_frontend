@@ -8,7 +8,7 @@ import { BsFillHouseDoorFill, BsClipboardData } from 'react-icons/bs'
 import { AiOutlineMail, AiOutlineMenu } from 'react-icons/ai'
 import { RiBankCardFill } from 'react-icons/ri'
 import { HiOutlineDocumentText } from 'react-icons/hi'
-import { FiUser, FiTruck } from 'react-icons/fi'
+import { FiUser, FiTruck, FiSliders } from 'react-icons/fi'
 import { SiReason } from 'react-icons/si'
 import { MdOutlineDomainVerification, MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md'
 import Bell from './Bell'
@@ -24,6 +24,7 @@ const masterMenu = {
         { route: 'kpp', label: 'Master KPP', icon: BsClipboardData },
         { route: 'taxcode', label: 'Master Taxcode', icon: BsClipboardData },
         { route: 'tarif', label: 'Master Tarif', icon: FaTicketAlt },
+        { route: 'configtrans', label: 'Konfigurasi Transaksi', icon: FiSliders },
         { route: 'vendor', label: 'Master Vendor', icon: BsClipboardData },
     ],
     '101': [
@@ -58,6 +59,7 @@ const masterMenu = {
         { route: 'role', label: 'Master Role', icon: FiUser },
         { route: 'taxcode', label: 'Master Taxcode', icon: BsClipboardData },
         { route: 'tarif', label: 'Master Tarif', icon: FaTicketAlt },
+        { route: 'configtrans', label: 'Konfigurasi Transaksi', icon: FiSliders },
         { route: 'user', label: 'Master User', icon: FiUser },
         { route: 'vendor', label: 'Master Vendor', icon: BsClipboardData },
         { route: 'reservoir', label: 'Reservoir', icon: BsClipboardData },

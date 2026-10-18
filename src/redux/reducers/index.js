@@ -37,6 +37,7 @@ import verven from './verven'
 import notif from './notif'
 //dashboard
 import dashboard from './dashboard'
+import configTransaksi from './configTransaksi'
 
 export default combineReducers({
   auth,
@@ -69,5 +70,6 @@ export default combineReducers({
   verven,
   picklaim,
   spvklaim,
-  dashboard
+  dashboard,
+  configTransaksi
 })

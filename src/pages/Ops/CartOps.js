@@ -1027,7 +1027,7 @@ class CartOps extends Component {
         const type = localStorage.getItem('tipeKasbon')
         const token = localStorage.getItem("token")
         if (isAdd === false) {
-            this.openConfirm(this.setState({confirm: 'rejCart'}))
+            this.openConfirm(this.setState({confirm: 'rejCart', msgRejCart: this.props.ops.msgAddCart}))
             this.props.resetOps()
         } else if (isUpload === true) {
             const { noops } = this.props.ops
@@ -5485,7 +5485,9 @@ class CartOps extends Component {
                             <div className={style.cekUpdate}>
                                 <AiOutlineClose size={80} className={style.red} />
                                 <div className={[style.sucUpdate, style.green]}>Gagal Menambahkan Data</div>
-                                <div className={[style.sucUpdate, style.green]}>Pastikan seluruh kolom data telah terisi</div>
+                                <div className={[style.sucUpdate, style.green]}>
+                                    {this.state.msgRejCart && this.state.msgRejCart !== 'Error' ? this.state.msgRejCart : 'Pastikan seluruh kolom data telah terisi'}
+                                </div>
                             </div>
                         </div>
                     ) : this.state.confirm === 'isApprove' ? (

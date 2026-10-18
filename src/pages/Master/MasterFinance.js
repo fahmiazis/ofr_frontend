@@ -667,6 +667,7 @@ class MasterFinance extends Component {
                                                 <th>BM</th>
                                                 <th>NOM</th>
                                                 <th>RBM</th>
+                                                <th>Hanya Konfigurasi</th>
                                             </tr>
                                         </thead>
                                     </Table>
@@ -715,6 +716,7 @@ class MasterFinance extends Component {
                                                 <th>BM</th>
                                                 <th>NOM</th>
                                                 <th>RBM</th>
+                                                <th>Hanya Konfigurasi</th>
                                                 <th>Opsi</th>
                                             </tr>
                                         </thead>
@@ -756,6 +758,7 @@ class MasterFinance extends Component {
                                                     <td>{item.bm}</td>
                                                     <td>{item.nom}</td>
                                                     <td>{item.rbm}</td>
+                                                    <td>{parseInt(item.config_only) === 1 ? 'Ya' : 'Tidak'}</td>
                                                     <td>
                                                         <Button onClick={()=>this.openModalEdit(this.setState({detail: item}))} color='primary'>Edit</Button>
                                                     </td>
@@ -806,12 +809,13 @@ class MasterFinance extends Component {
                         rom: '',
                         bm: '',
                         nom: '',
-                        rbm: ''
+                        rbm: '',
+                        config_only: '0'
                     }}
                     validationSchema={financeSchema}
                     onSubmit={(values) => {this.addFinance(values)}}
                     >
-                        {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                        {({ handleChange, handleBlur, handleSubmit, values, errors, touched, setFieldValue}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
@@ -1236,6 +1240,25 @@ class MasterFinance extends Component {
                                 {errors.rbm ? (
                                     <text className={style.txtError}>{errors.rbm}</text>
                                 ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Konfigurasi Transaksi
+                            </text>
+                            <div className="col-md-9">
+                                <div className="custom-control custom-checkbox">
+                                    <input
+                                    type="checkbox"
+                                    id="configOnlyAdd"
+                                    className="custom-control-input"
+                                    checked={values.config_only === '1'}
+                                    onChange={e => setFieldValue('config_only', e.target.checked ? '1' : '0')}
+                                    />
+                                    <label className="custom-control-label" htmlFor="configOnlyAdd">
+                                        Area hanya boleh mengajukan jenis transaksi yang disetting di Konfigurasi Transaksi
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <hr/>
@@ -1278,12 +1301,13 @@ class MasterFinance extends Component {
                     rom: detail.rom === null ? '' : detail.rom,
                     bm: detail.bm === null ? '' : detail.bm,
                     nom: detail.nom === null ? '' : detail.nom,
-                    rbm: detail.rbm === null ? '' : detail.rbm
+                    rbm: detail.rbm === null ? '' : detail.rbm,
+                    config_only: `${detail.config_only || 0}`
                     }}
                     validationSchema={financeSchema}
                     onSubmit={(values) => {this.editFinance(values, detail.id)}}
                     >
-                        {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                        {({ handleChange, handleBlur, handleSubmit, values, errors, touched, setFieldValue}) => (
                     <ModalBody>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
@@ -1708,6 +1732,25 @@ class MasterFinance extends Component {
                                 {errors.rbm ? (
                                     <text className={style.txtError}>{errors.rbm}</text>
                                 ) : null}
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                Konfigurasi Transaksi
+                            </text>
+                            <div className="col-md-9">
+                                <div className="custom-control custom-checkbox">
+                                    <input
+                                    type="checkbox"
+                                    id="configOnlyEdit"
+                                    className="custom-control-input"
+                                    checked={values.config_only === '1'}
+                                    onChange={e => setFieldValue('config_only', e.target.checked ? '1' : '0')}
+                                    />
+                                    <label className="custom-control-label" htmlFor="configOnlyEdit">
+                                        Area hanya boleh mengajukan jenis transaksi yang disetting di Konfigurasi Transaksi
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <hr/>
