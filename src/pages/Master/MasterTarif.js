@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import {  NavbarBrand, DropdownToggle, DropdownMenu,
     DropdownItem, Table, ButtonDropdown, Input, Button,
-    Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown} from 'reactstrap'
+    Modal, ModalHeader, ModalBody, Alert, Spinner, UncontrolledDropdown, Row, Col, Badge} from 'reactstrap'
 import style from '../../assets/css/input.module.css'
 import { PageCard, Toolbar, ToolbarSpacer, FilterField, SearchBox, Pager } from '../../components/ui/Page'
 import {FaSearch, FaBankCircle, FaBars} from 'react-icons/fa'
@@ -31,29 +31,29 @@ const tarifSchema = Yup.object().shape({
     type_transaksi: Yup.string().required(),
     jenis_pph: Yup.string().required(),
     status_npwp: Yup.string().required(),
-    tarif_pph: Yup.string().required(),
-    dpp_nongrossup: Yup.string().required(),
-    dpp_grossup: Yup.string().required(),
+    tarif_pph: Yup.number().typeError('must be a number').required(),
+    dpp_nongrossup: Yup.number().typeError('must be a number').required(),
+    dpp_grossup: Yup.number().typeError('must be a number').required(),
     tax_type: Yup.string().required(),
     tax_code: Yup.string().required(),
-    grouping: Yup.string().required()
+    grouping: Yup.string().required(),
+    min_nominal: Yup.number().transform((val, ori) => ori === '' ? null : val).typeError('must be a number').nullable(),
+    max_nominal: Yup.number().transform((val, ori) => ori === '' ? null : val).typeError('must be a number').nullable()
 });
 
-const tarifEditSchema = Yup.object().shape({
-    system: Yup.string().required(),
-    gl_account: Yup.number().required(),
-    gl_name: Yup.string().required(),
-    jenis_transaksi: Yup.string().required(),
-    type_transaksi: Yup.string().required(),
-    jenis_pph: Yup.string().required(),
-    status_npwp: Yup.string().required(),
-    tarif_pph: Yup.string().required(),
-    dpp_nongrossup: Yup.string().required(),
-    dpp_grossup: Yup.string().required(),
-    tax_type: Yup.string().required(),
-    tax_code: Yup.string().required(),
-    grouping: Yup.string().required()
-});
+const tarifEditSchema = tarifSchema
+
+// nilai persen di db "2%" -> 2 untuk input form
+const persenInput = (val) => val === null || val === undefined || val === '' ? '' : `${parseFloat(String(val).split('%')[0])}`
+const dateInput = (val) => val === null || val === undefined || val === '' ? '' : moment(val).format('YYYY-MM-DD')
+// non active bila end_period sudah lewat
+const isActive = (item) => item.end_period === null || moment(item.end_period).isAfter(moment())
+
+const statusOptions = [
+    {value: 'all', name: 'All'},
+    {value: 'active', name: 'Active'},
+    {value: 'non_active', name: 'Non Active'}
+]
 
 const changeSchema = Yup.object().shape({
     confirm_password: Yup.string().required('must be filled'),
@@ -95,6 +95,7 @@ class MasterTarif extends Component {
             modalReset: false,
             filter: null,
             filterName: 'All',
+            status: 'all',
             modalDel: false,
             page: 1,
             listData: []
@@ -273,10 +274,10 @@ class MasterTarif extends Component {
                 c12: item.tax_code,
                 c13: item.min_nominal === null ? '0' : item.min_nominal,
                 c14: item.max_nominal === null ? '-' : item.max_nominal,
-                c15: (parseFloat(item.tarif_pph.split("%")[0]) * 100) + '%',
-                c16: (parseFloat(item.dpp_nongrossup.split("%")[0]) * 100) + '%',
-                c17: (parseFloat(item.dpp_grossup.split("%")[0]) * 100) + '%',
-                c18: item.start_period === null ? '20-12-2023' : moment(item.start_period).format('DD-MM-YYYY'),
+                c15: item.tarif_pph,
+                c16: item.dpp_nongrossup,
+                c17: item.dpp_grossup,
+                c18: item.start_period === null ? '' : moment(item.start_period).format('DD-MM-YYYY'),
                 c19: item.end_period === null ? '' : moment(item.end_period).format('DD-MM-YYYY')
             }
         )
@@ -406,7 +407,7 @@ class MasterTarif extends Component {
     onSearch = (e) => {
         this.setState({search: e.target.value})
         if(e.key === 'Enter'){
-            this.getDataCount({limit: 10, search: this.state.search, page: 1})
+            this.getDataCount({limit: this.state.limit, search: this.state.search, page: 1})
         }
     }
 
@@ -435,7 +436,7 @@ class MasterTarif extends Component {
         await this.props.updateTarif(token, values, id)
         const {isUpdate} = this.props.tarif
         if (isUpdate) {
-            this.setState({confirm: 'edit'})
+            this.setState({confirm: values.mode === 'new' ? 'editNew' : 'edit'})
             this.openConfirm()
             this.getDataCount()
             this.openModalEdit()
@@ -483,9 +484,13 @@ class MasterTarif extends Component {
         const search = value === undefined ? '' : this.state.search
         const limit = value === undefined ? this.state.limit : value.limit
         const filter = value === undefined || value.filter === undefined ? this.state.filter : value.filter
-        console.log(this.state.filter)
-        await this.props.getTarif(token, limit, search, pages, filter)
-        this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages})
+        const status = value === undefined || value.status === undefined ? this.state.status : value.status
+        await this.props.getTarif(token, limit, search, pages, status)
+        this.setState({limit: value === undefined ? 10 : value.limit, search: search, filter: filter, page: pages, status: status})
+    }
+
+    changeStatus = (e) => {
+        this.getDataCount({limit: this.state.limit, search: this.state.search, status: e.target.value, page: 1})
     }
 
     changeFilter = async (val) => {
@@ -508,6 +513,55 @@ class MasterTarif extends Component {
 
     openModalDel = () => {
         this.setState({modalDel: !this.state.modalDel})
+    }
+
+    // field form add / edit tarif, 2 kolom
+    renderFormTarif = ({ handleChange, handleBlur, values, errors }) => {
+        const field = (name, label, type = 'text', options) => (
+            <Col md={6} className="mb-3" key={name}>
+                <label className="mb-1">{label}</label>
+                <Input
+                type={type}
+                name={name}
+                value={values[name]}
+                onBlur={handleBlur(name)}
+                onChange={handleChange(name)}
+                >
+                    {options && <option value="">-Pilih-</option>}
+                    {options && options.map(item => (
+                        <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                </Input>
+                {errors[name] ? (
+                    <text className={style.txtError}>{errors[name]}</text>
+                ) : null}
+            </Col>
+        )
+        const opt = (list) => list.map(item => typeof item === 'string' ? {value: item, label: item} : item)
+        return (
+            <Row>
+                {field('system', 'System', 'select', opt(['SAP', 'SCYLLA']))}
+                {field('grouping', 'Grouping', 'select', opt(['KASBON', 'NON KASBON']))}
+                {field('gl_account', 'GL Account')}
+                {field('gl_jurnal', 'GL Jurnal')}
+                {field('gl_name', 'GL Name')}
+                {field('jenis_transaksi', 'Jenis Transaksi')}
+                {field('po', 'PO/NON PO')}
+                {field('type_transaksi', 'Type Transaksi (OP/Badan)', 'select', opt(['Badan', 'Orang Pribadi', 'Non Object PPh']))}
+                {field('jenis_pph', 'Jenis PPh')}
+                {field('status_npwp', 'Status NPWP/NIK', 'select', opt(['NPWP', 'NIK', 'No Need NPWP/NIK']))}
+                {field('tax_type', 'Tax Type')}
+                {field('tax_code', 'Tax Code')}
+                {field('min_nominal', 'Nominal Minimum', 'number')}
+                {field('max_nominal', 'Nominal Maximum', 'number')}
+                {field('tarif_pph', 'Tarif PPh (%)', 'number')}
+                {field('dpp_nongrossup', 'Tarif DPP Non Grossup (%)', 'number')}
+                {field('dpp_grossup', 'Tarif DPP Grossup (%)', 'number')}
+                {field('status_ident', 'Status Identitas', 'select', [{value: 'Ya', label: 'Wajib Isi'}, {value: 'Tidak', label: 'Tidak Wajib Isi'}])}
+                {field('start_period', 'Start Periode', 'date')}
+                {field('end_period', 'End Periode', 'date')}
+            </Row>
+        )
     }
 
     render() {
@@ -578,6 +632,13 @@ class MasterTarif extends Component {
                                             value={this.state.search}
                                             onKeyPress={this.onSearch}
                                         />
+                                        <FilterField label="Status" auto>
+                                            <Input type="select" value={this.state.status} onChange={this.changeStatus}>
+                                                {statusOptions.map(item => (
+                                                    <option key={item.value} value={item.value}>{item.name}</option>
+                                                ))}
+                                            </Input>
+                                        </FilterField>
                                         <ToolbarSpacer />
                                         <FilterField label="Show entries">
                                             <ButtonDropdown className={style.drop} isOpen={dropOpen} toggle={this.dropDown}>
@@ -585,10 +646,10 @@ class MasterTarif extends Component {
                                                 {this.state.limit}
                                             </DropdownToggle>
                                             <DropdownMenu>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: ''})}>10</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: ''})}>20</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: ''})}>50</DropdownItem>
-                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: ''})}>All</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 10, search: this.state.search, page: 1})}>10</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 20, search: this.state.search, page: 1})}>20</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 50, search: this.state.search, page: 1})}>50</DropdownItem>
+                                                <DropdownItem className={style.item} onClick={() => this.getDataCount({limit: 'all', search: this.state.search, page: 1})}>All</DropdownItem>
                                             </DropdownMenu>
                                             </ButtonDropdown>
                                         </FilterField>
@@ -627,6 +688,9 @@ class MasterTarif extends Component {
                                                 <th>Tarif DPP Grossup</th>
                                                 <th>Start Periode</th>
                                                 <th>End Periode</th>
+                                                <th>Status</th>
+                                                <th>History End Periode</th>
+                                                <th>Updated By</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -655,11 +719,18 @@ class MasterTarif extends Component {
                                                     <td>{item.tax_code}</td>
                                                     <td>{item.min_nominal === null ? '0' : item.min_nominal}</td>
                                                     <td>{item.max_nominal === null ? '-' : item.max_nominal}</td>
-                                                    <td>{parseFloat(item.tarif_pph.split("%")[0]) * 100}%</td>
-                                                    <td>{parseFloat(item.dpp_nongrossup.split("%")[0]) * 100}%</td>
-                                                    <td>{parseFloat(item.dpp_grossup.split("%")[0]) * 100}%</td>
-                                                    <td>{item.start_period === null ? '20 Desember 2023' : moment(item.start_period).format('DD MMMM YYYY')}</td>
+                                                    <td>{item.tarif_pph}</td>
+                                                    <td>{item.dpp_nongrossup}</td>
+                                                    <td>{item.dpp_grossup}</td>
+                                                    <td>{item.start_period === null ? '-' : moment(item.start_period).format('DD MMMM YYYY')}</td>
                                                     <td>{item.end_period === null ? '-' : moment(item.end_period).format('DD MMMM YYYY')}</td>
+                                                    <td>
+                                                        <Badge color={isActive(item) ? 'success' : 'secondary'}>
+                                                            {isActive(item) ? 'Active' : 'Non Active'}
+                                                        </Badge>
+                                                    </td>
+                                                    <td>{item.history_end_period ? moment(item.history_end_period).format('DD MMMM YYYY HH:mm') : '-'}</td>
+                                                    <td>{item.updated_by || '-'}</td>
                                                 </tr>
                                             )})}
                                         </tbody>
@@ -683,16 +754,18 @@ class MasterTarif extends Component {
                         </div>
                     </MaterialTitlePanel>
                 </Sidebar>
-                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd}>
+                <Modal toggle={this.openModalAdd} isOpen={this.state.modalAdd} size="lg">
                     <ModalHeader toggle={this.openModalAdd}>Add Master VerifTax</ModalHeader>
                     <Formik
                     initialValues={{
                         system: '',
                         gl_account: '',
+                        gl_jurnal: '',
                         gl_name: '',
                         jenis_transaksi: '',
                         type_transaksi: '',
                         jenis_pph: '',
+                        po: '',
                         status_npwp: '',
                         status_ident: '',
                         tarif_pph: '',
@@ -701,277 +774,22 @@ class MasterTarif extends Component {
                         tax_type: '',
                         tax_code: '',
                         grouping: '',
+                        min_nominal: '',
+                        max_nominal: '',
+                        start_period: '',
+                        end_period: ''
                     }}
                     validationSchema={tarifSchema}
                     onSubmit={(values) => {this.addTarif(values)}}
                     >
-                        {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                        {(formik) => (
                     <ModalBody>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                System
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="select" 
-                                name="system"
-                                value={values.system}
-                                onBlur={handleBlur("system")}
-                                onChange={handleChange("system")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="SAP">SAP</option>
-                                    <option value="SCYLLA">SCYLLA</option>
-                                </Input>
-                                {errors.system ? (
-                                    <text className={style.txtError}>{errors.system}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                GL Account
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="gl_account"
-                                value={values.gl_account}
-                                onBlur={handleBlur("gl_account")}
-                                onChange={handleChange("gl_account")}
-                                />
-                                {errors.gl_account ? (
-                                    <text className={style.txtError}>{errors.gl_account}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                GL Name
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="gl_name"
-                                value={values.gl_name}
-                                onBlur={handleBlur("gl_name")}
-                                onChange={handleChange("gl_name")}
-                                />
-                                {errors.gl_name ? (
-                                    <text className={style.txtError}>{errors.gl_name}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Jenis Transaksi
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="jenis_transaksi"
-                                value={values.jenis_transaksi}
-                                onBlur={handleBlur("jenis_transaksi")}
-                                onChange={handleChange("jenis_transaksi")}
-                                />
-                                {errors.jenis_transaksi ? (
-                                    <text className={style.txtError}>{errors.jenis_transaksi}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Type Transaksi
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="type_transaksi"
-                                value={values.type_transaksi}
-                                onBlur={handleBlur("type_transaksi")}
-                                onChange={handleChange("type_transaksi")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="Badan">Badan</option>
-                                    <option value="Orang Pribadi">Orang Pribadi</option>
-                                    <option value="Non Object PPh">Non Object PPh</option>
-                                </Input>
-                                {errors.type_transaksi ? (
-                                    <text className={style.txtError}>{errors.type_transaksi}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Jenis PPh
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="jenis_pph"
-                                value={values.jenis_pph}
-                                onBlur={handleBlur("jenis_pph")}
-                                onChange={handleChange("jenis_pph")}
-                                />
-                                {errors.jenis_pph ? (
-                                    <text className={style.txtError}>{errors.jenis_pph}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Grouping
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="select" 
-                                name="grouping"
-                                value={values.grouping}
-                                onBlur={handleBlur("grouping")}
-                                onChange={handleChange("grouping")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="KASBON">KASBON</option>
-                                    <option value="NON KASBON">NON KASBON</option>
-                                </Input>
-                                {errors.grouping ? (
-                                    <text className={style.txtError}>{errors.grouping}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Status NPWP/NIK
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="status_npwp"
-                                value={values.status_npwp}
-                                onBlur={handleBlur("status_npwp")}
-                                onChange={handleChange("status_npwp")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="NPWP">NPWP</option>
-                                    <option value="NIK">NIK</option>
-                                    <option value="No Need NPWP/NIK">No Need NPWP/NIK</option>
-                                </Input>
-                                {errors.status_npwp ? (
-                                    <text className={style.txtError}>{errors.status_npwp}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tax Type
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="tax_type"
-                                value={values.tax_type}
-                                onBlur={handleBlur("tax_type")}
-                                onChange={handleChange("tax_type")}
-                                />
-                                {errors.tax_type ? (
-                                    <text className={style.txtError}>{errors.tax_type}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tax Code
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="tax_code"
-                                value={values.tax_code}
-                                onBlur={handleBlur("tax_code")}
-                                onChange={handleChange("tax_code")}
-                                />
-                                {errors.tax_code ? (
-                                    <text className={style.txtError}>{errors.tax_code}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif PPh
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="tarif_pph"
-                                value={values.tarif_pph}
-                                onBlur={handleBlur("tarif_pph")}
-                                onChange={handleChange("tarif_pph")}
-                                />
-                                {errors.tarif_pph ? (
-                                    <text className={style.txtError}>{errors.tarif_pph}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif DPP Non Grossup
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="dpp_nongrossup"
-                                value={values.dpp_nongrossup}
-                                onBlur={handleBlur("dpp_nongrossup")}
-                                onChange={handleChange("dpp_nongrossup")}
-                                />
-                                {errors.dpp_nongrossup ? (
-                                    <text className={style.txtError}>{errors.dpp_nongrossup}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif DPP Grossup
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="dpp_grossup"
-                                value={values.dpp_grossup}
-                                onBlur={handleBlur("dpp_grossup")}
-                                onChange={handleChange("dpp_grossup")}
-                                />
-                                {errors.dpp_grossup ? (
-                                    <text className={style.txtError}>{errors.dpp_grossup}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Status Identitas
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="status_ident"
-                                value={values.status_ident}
-                                onBlur={handleBlur("status_ident")}
-                                onChange={handleChange("status_ident")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value={'Ya'}>Wajib Isi</option>
-                                    <option value="Tidak">Tidak Wajib Isi</option>
-                                </Input>
-                                {errors.status_ident ? (
-                                    <text className={style.txtError}>{errors.status_ident}</text>
-                                ) : null}
-                            </div>
-                        </div>
+                        {this.renderFormTarif(formik)}
                         <hr/>
                         <div className={style.foot}>
                             <div></div>
                             <div>
-                                <Button className="mr-2" onClick={handleSubmit} color="primary">Save</Button>
+                                <Button className="mr-2" onClick={formik.handleSubmit} color="primary">Save</Button>
                                 <Button className="mr-3" onClick={this.openModalAdd}>Cancel</Button>
                             </div>
                         </div>
@@ -979,297 +797,87 @@ class MasterTarif extends Component {
                         )}
                     </Formik>
                 </Modal>
-                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit}>
+                <Modal toggle={this.openModalEdit} isOpen={this.state.modalEdit} size="lg">
                     <ModalHeader toggle={this.openModalEdit}>Edit Master VerifTax</ModalHeader>
                     <Formik
                     initialValues={{
-                        system: detail.system === null ? '' : detail.system,
-                        gl_account: detail.gl_account === null ? '' : detail.gl_account,
-                        gl_name: detail.gl_name === null ? '' : detail.gl_name,
-                        jenis_transaksi: detail.jenis_transaksi === null ? '' : detail.jenis_transaksi,
-                        type_transaksi: detail.type_transaksi === null ? '' : detail.type_transaksi,
-                        jenis_pph: detail.jenis_pph === null ? '' : detail.jenis_pph,
-                        status_npwp: detail.status_npwp === null ? '' : detail.status_npwp,
-                        status_ident: detail.status_ident === null && detail.jenis_pph === 'Non PPh' ? 'Tidak' : 'Ya',
-                        tarif_pph: detail.tarif_pph === null ? '' : detail.tarif_pph,
-                        dpp_nongrossup: detail.dpp_nongrossup === null ? '' : detail.dpp_nongrossup,
-                        dpp_grossup: detail.dpp_grossup === null ? '' : detail.dpp_grossup,
-                        tax_type: detail.tax_type === null ? '' : detail.tax_type,
-                        tax_code: detail.tax_code === null ? '' : detail.tax_code,
-                        grouping: detail.grouping === null ? '' : detail.grouping,
+                        system: detail.system || '',
+                        gl_account: detail.gl_account || '',
+                        gl_jurnal: detail.gl_jurnal || '',
+                        gl_name: detail.gl_name || '',
+                        jenis_transaksi: detail.jenis_transaksi || '',
+                        type_transaksi: detail.type_transaksi || '',
+                        jenis_pph: detail.jenis_pph || '',
+                        po: detail.po || '',
+                        status_npwp: detail.status_npwp || '',
+                        status_ident: detail.status_ident ? detail.status_ident : detail.jenis_pph === 'Non PPh' ? 'Tidak' : 'Ya',
+                        tarif_pph: persenInput(detail.tarif_pph),
+                        dpp_nongrossup: persenInput(detail.dpp_nongrossup),
+                        dpp_grossup: persenInput(detail.dpp_grossup),
+                        tax_type: detail.tax_type || '',
+                        tax_code: detail.tax_code || '',
+                        grouping: detail.grouping || '',
+                        min_nominal: detail.min_nominal === null || detail.min_nominal === undefined ? '' : detail.min_nominal,
+                        max_nominal: detail.max_nominal === null || detail.max_nominal === undefined ? '' : detail.max_nominal,
+                        start_period: dateInput(detail.start_period),
+                        end_period: dateInput(detail.end_period),
+                        mode: 'update'
                     }}
                     validationSchema={tarifEditSchema}
                     onSubmit={(values) => {this.editTarif(values, detail.id)}}
                     >
-                        {({ handleChange, handleBlur, handleSubmit, values, errors, touched,}) => (
+                        {(formik) => (
                     <ModalBody>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                System
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="select" 
-                                name="system"
-                                value={values.system}
-                                onBlur={handleBlur("system")}
-                                onChange={handleChange("system")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="SAP">SAP</option>
-                                    <option value="SCYLLA">SCYLLA</option>
-                                </Input>
-                                {errors.system ? (
-                                    <text className={style.txtError}>{errors.system}</text>
-                                ) : null}
+                        <div className="mb-3">
+                            <label className="mb-1"><b>Jenis Update</b></label>
+                            <div>
+                                <label className="mr-4">
+                                    <input
+                                    type="radio"
+                                    className="mr-2"
+                                    name="mode"
+                                    checked={formik.values.mode === 'update'}
+                                    onChange={() => formik.setFieldValue('mode', 'update')}
+                                    />
+                                    Ubah data ini saja (koreksi data)
+                                </label>
+                                <label>
+                                    <input
+                                    type="radio"
+                                    className="mr-2"
+                                    name="mode"
+                                    checked={formik.values.mode === 'new'}
+                                    onChange={() => {
+                                        formik.setFieldValue('mode', 'new')
+                                        formik.setFieldValue('start_period', moment().format('YYYY-MM-DD'))
+                                        formik.setFieldValue('end_period', '')
+                                    }}
+                                    />
+                                    Perubahan tarif (data ini jadi Non Active &amp; dibuat baris baru)
+                                </label>
                             </div>
+                            {formik.values.mode === 'new' && (
+                                <small className="text-muted">
+                                    Data ini akan diberi end periode hari ini dan history end periode, lalu data baru dibuat dengan isian di bawah.
+                                </small>
+                            )}
                         </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                GL Account
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="gl_account"
-                                value={values.gl_account}
-                                onBlur={handleBlur("gl_account")}
-                                onChange={handleChange("gl_account")}
-                                />
-                                {errors.gl_account ? (
-                                    <text className={style.txtError}>{errors.gl_account}</text>
-                                ) : null}
+                        {this.renderFormTarif(formik)}
+                        {detail.history_end_period && (
+                            <div className="mb-2">
+                                <small className="text-muted">
+                                    Tergantikan data baru pada {moment(detail.history_end_period).format('DD MMMM YYYY HH:mm')}
+                                </small>
                             </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                GL Name
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="gl_name"
-                                value={values.gl_name}
-                                onBlur={handleBlur("gl_name")}
-                                onChange={handleChange("gl_name")}
-                                />
-                                {errors.gl_name ? (
-                                    <text className={style.txtError}>{errors.gl_name}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Jenis Transaksi
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="jenis_transaksi"
-                                value={values.jenis_transaksi}
-                                onBlur={handleBlur("jenis_transaksi")}
-                                onChange={handleChange("jenis_transaksi")}
-                                />
-                                {errors.jenis_transaksi ? (
-                                    <text className={style.txtError}>{errors.jenis_transaksi}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Type Transaksi
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="select" 
-                                name="type_transaksi"
-                                value={values.type_transaksi}
-                                onBlur={handleBlur("type_transaksi")}
-                                onChange={handleChange("type_transaksi")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="Badan">Badan</option>
-                                    <option value="Orang Pribadi">Orang Pribadi</option>
-                                    <option value="Non Object PPh">Non Object PPh</option>
-                                </Input>
-                                {errors.type_transaksi ? (
-                                    <text className={style.txtError}>{errors.type_transaksi}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Grouping
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="select" 
-                                name="grouping"
-                                value={values.grouping}
-                                onBlur={handleBlur("grouping")}
-                                onChange={handleChange("grouping")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="KASBON">KASBON</option>
-                                    <option value="NON KASBON">NON KASBON</option>
-                                </Input>
-                                {errors.grouping ? (
-                                    <text className={style.txtError}>{errors.grouping}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Jenis PPh
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="jenis_pph"
-                                value={values.jenis_pph}
-                                onBlur={handleBlur("jenis_pph")}
-                                onChange={handleChange("jenis_pph")}
-                                />
-                                {errors.jenis_pph ? (
-                                    <text className={style.txtError}>{errors.jenis_pph}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Status NPWP/NIK
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="select" 
-                                name="status_npwp"
-                                value={values.status_npwp}
-                                onBlur={handleBlur("status_npwp")}
-                                onChange={handleChange("status_npwp")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value="NPWP">NPWP</option>
-                                    <option value="NIK">NIK</option>
-                                    <option value="No Need NPWP/NIK">No Need NPWP/NIK</option>
-                                </Input>
-                                {errors.status_npwp ? (
-                                    <text className={style.txtError}>{errors.status_npwp}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tax Type
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="tax_type"
-                                value={values.tax_type}
-                                onBlur={handleBlur("tax_type")}
-                                onChange={handleChange("tax_type")}
-                                />
-                                {errors.tax_type ? (
-                                    <text className={style.txtError}>{errors.tax_type}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tax Code
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="tax_code"
-                                value={values.tax_code}
-                                onBlur={handleBlur("tax_code")}
-                                onChange={handleChange("tax_code")}
-                                />
-                                {errors.tax_code ? (
-                                    <text className={style.txtError}>{errors.tax_code}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif PPh
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="tarif_pph"
-                                value={values.tarif_pph}
-                                onBlur={handleBlur("tarif_pph")}
-                                onChange={handleChange("tarif_pph")}
-                                />
-                                {errors.tarif_pph ? (
-                                    <text className={style.txtError}>{errors.tarif_pph}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif DPP Non Grossup
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="dpp_nongrossup"
-                                value={values.dpp_nongrossup}
-                                onBlur={handleBlur("dpp_nongrossup")}
-                                onChange={handleChange("dpp_nongrossup")}
-                                />
-                                {errors.dpp_nongrossup ? (
-                                    <text className={style.txtError}>{errors.dpp_nongrossup}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Tarif DPP Grossup
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="name" 
-                                name="dpp_grossup"
-                                value={values.dpp_grossup}
-                                onBlur={handleBlur("dpp_grossup")}
-                                onChange={handleChange("dpp_grossup")}
-                                />
-                                {errors.dpp_grossup ? (
-                                    <text className={style.txtError}>{errors.dpp_grossup}</text>
-                                ) : null}
-                            </div>
-                        </div>
-                        <div className={style.addModalDepo}>
-                            <text className="col-md-3">
-                                Status Identitas
-                            </text>
-                            <div className="col-md-9">
-                                <Input 
-                                type="select" 
-                                name="status_ident"
-                                value={values.status_ident}
-                                onBlur={handleBlur("status_ident")}
-                                onChange={handleChange("status_ident")}
-                                >
-                                    <option>-Pilih-</option>
-                                    <option value={'Ya'}>Wajib Isi</option>
-                                    <option value="Tidak">Tidak Wajib Isi</option>
-                                </Input>
-                                {errors.status_ident ? (
-                                    <text className={style.txtError}>{errors.status_ident}</text>
-                                ) : null}
-                            </div>
-                        </div>
+                        )}
                         <hr/>
                         <div className={style.foot}>
                             <div>
                                 <Button className="mr-2" onClick={this.openModalDel} color='danger'>Delete Tarif</Button>
                             </div>
                             <div>
-                                <Button  onClick={handleSubmit} color="primary">Save</Button>
+                                <Button className="mr-2" onClick={formik.handleSubmit} color="primary">Save</Button>
+                                <Button onClick={this.openModalEdit}>Cancel</Button>
                             </div>
                         </div>
                     </ModalBody>
@@ -1306,6 +914,11 @@ class MasterTarif extends Component {
                         <div className={style.cekUpdate}>
                             <AiFillCheckCircle size={80} className={style.green} />
                             <div className={style.sucUpdate}>Berhasil Memperbarui Tarif</div>
+                        </div>
+                        ) : this.state.confirm === 'editNew' ? (
+                        <div className={style.cekUpdate}>
+                            <AiFillCheckCircle size={80} className={style.green} />
+                            <div className={style.sucUpdate}>Berhasil Membuat Tarif Baru, Data Lama Non Active</div>
                         </div>
                         ) : this.state.confirm === 'add' ? (
                             <div className={style.cekUpdate}>
@@ -1423,12 +1036,12 @@ class MasterTarif extends Component {
                     <div className={style.modalApprove}>
                         <div>
                             <text>
-                                Anda yakin untuk delete tarif {detail.name} ?
+                                Anda yakin untuk delete tarif {detail.jenis_transaksi} ?
                             </text>
                         </div>
                         <div className={style.btnApprove}>
                             <Button color="primary" onClick={() => this.delTarif()}>Ya</Button>
-                            <Button color="secondary" onClick={this.openModalApprove}>Tidak</Button>
+                            <Button color="secondary" onClick={this.openModalDel}>Tidak</Button>
                         </div>
                     </div>
                 </ModalBody>

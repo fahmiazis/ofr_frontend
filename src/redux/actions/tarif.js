@@ -7,9 +7,9 @@ export default {
         type: 'GET_TARIF',
         payload: http(token).get(`/tarif/all`),
     }),
-    getAllTarif: (token, limit, search, page) => ({
+    getAllTarif: (token, limit, search, page, status) => ({
         type: 'GET_ALL_TARIF',
-        payload: http(token).get(`/tarif/get?limit=${limit}&search=${search}&page=${page === undefined ? 1 : page}`)
+        payload: http(token).get(`/tarif/get?limit=${limit}&search=${search}&page=${page === undefined ? 1 : page}&status=${status || 'all'}`)
     }),
     getDetailTarif: (token, id) => ({
         type: 'DETAIL_TARIF',

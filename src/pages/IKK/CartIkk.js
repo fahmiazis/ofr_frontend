@@ -1229,12 +1229,12 @@ class CartIkk extends Component {
 
             const cekVal = ((nilaiUtang / nilaiBuku) * 100).toFixed(1)
             const finVal = `${cekVal.toString()}%`
-            if (selectOp.tarif_pph === finVal) {
+            if (selectOp !== undefined && parseFloat(selectOp.tarif_pph) === parseFloat(finVal)) {
                 this.selectTrans({value: selectOp.id, label: `${selectOp.gl_account} ~ ${selectOp.jenis_transaksi}`})
                 setTimeout(() => {
                     this.selectJenis(selectOp.type_transaksi)
                 }, 300)
-            } else if (selectBadan.tarif_pph === finVal) {
+            } else if (selectBadan !== undefined && parseFloat(selectBadan.tarif_pph) === parseFloat(finVal)) {
                 this.selectTrans({value: selectBadan.id, label: `${selectBadan.gl_account} ~ ${selectBadan.jenis_transaksi}`})
                 setTimeout(() => {
                     this.selectJenis(selectBadan.type_transaksi)
@@ -1432,29 +1432,29 @@ class CartIkk extends Component {
         if (dataTrans.jenis_pph === 'Non PPh' || dataTrans.jenis_pph === undefined) {
             this.setState({nilai_ajuan: nilai, nilai_utang: 0, nilai_buku: nilai, nilai_vendor: nilai, tipeVendor: nonObject})
         } else {
-            const tarifPph = tipeSkb === 'SKB' ? '0%' : tipeSkb === 'SKT' ? '0.05%' : dataTrans.tarif_pph
-            const grossup = tipeSkb === 'SKB' ? '1%' : tipeSkb === 'SKT' ? '1%' : dataTrans.dpp_grossup
+            const tarifPph = tipeSkb === 'SKB' ? '0%' : tipeSkb === 'SKT' ? '5%' : dataTrans.tarif_pph
+            const grossup = tipeSkb === 'SKB' ? '100%' : tipeSkb === 'SKT' ? '100%' : dataTrans.dpp_grossup
             if (tipePpn === 'Ya') {
                 if (tipe === 'PMA') {
                     const nilai_buku = nilai_dpp
-                    const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                    const nilai_utang = Math.round(parseFloat(nilai_buku) * (parseFloat(tarifPph) / 100))
                     const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 } else if (tipe === 'Vendor') {
                     const nilai_buku = nilai_dpp
-                    const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                    const nilai_utang = Math.round(parseFloat(nilai_buku) * (parseFloat(tarifPph) / 100))
                     const nilai_vendor = Math.round((parseFloat(nilai_buku) + parseFloat(nilai_ppn)) - parseFloat(nilai_utang))
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 }
             } else {
                 if (tipe === 'PMA') {
-                    const nilai_buku = Math.round(parseFloat(nilai) / parseFloat(grossup))
-                    const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                    const nilai_buku = Math.round(parseFloat(nilai) / (parseFloat(grossup) / 100))
+                    const nilai_utang = Math.round(parseFloat(nilai_buku) * (parseFloat(tarifPph) / 100))
                     const nilai_vendor = nilai
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 } else if (tipe === 'Vendor') {
                     const nilai_buku = nilai
-                    const nilai_utang = Math.round(parseFloat(nilai_buku) * parseFloat(tarifPph))
+                    const nilai_utang = Math.round(parseFloat(nilai_buku) * (parseFloat(tarifPph) / 100))
                     const nilai_vendor = Math.round(parseFloat(nilai) - parseFloat(nilai_utang))
                     this.setState({nilai_ajuan: nilai, nilai_utang: nilai_utang, nilai_buku: nilai_buku, nilai_vendor: nilai_vendor, tipeVendor: tipe})
                 }

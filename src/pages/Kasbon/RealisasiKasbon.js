@@ -1315,12 +1315,12 @@ class Kasbon extends Component {
 
             const cekVal = ((nilaiUtang / nilaiBuku) * 100).toFixed(1)
             const finVal = `${cekVal.toString()}%`
-            if (selectOp.tarif_pph === finVal) {
+            if (selectOp !== undefined && parseFloat(selectOp.tarif_pph) === parseFloat(finVal)) {
                 this.selectTrans({value: selectOp.id, label: `${selectOp.gl_account} ~ ${selectOp.jenis_transaksi}`})
                 setTimeout(() => {
                     this.selectJenis(selectOp.type_transaksi)
                 }, 300)
-            } else if (selectBadan.tarif_pph === finVal) {
+            } else if (selectBadan !== undefined && parseFloat(selectBadan.tarif_pph) === parseFloat(finVal)) {
                 this.selectTrans({value: selectBadan.id, label: `${selectBadan.gl_account} ~ ${selectBadan.jenis_transaksi}`})
                 setTimeout(() => {
                     this.selectJenis(selectBadan.type_transaksi)
