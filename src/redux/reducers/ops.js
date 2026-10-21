@@ -41,6 +41,7 @@ const opsState = {
     appRevisi: null,
     isEdit: null,
     subRevisi: null,
+    isVerifUlang: null,
     subVerif: null,
     subRealisasi: null,
     subBayar: null,
@@ -617,6 +618,29 @@ export default (state = opsState, action) => {
                 alertMsg: "Unable connect to server"
             };
         }
+        case 'VERIF_ULANG_OPS_PENDING': {
+            return {
+                ...state,
+                isLoading: true,
+                alertMsg: 'Waiting ...'
+            };
+        }
+        case 'VERIF_ULANG_OPS_FULFILLED': {
+            return {
+                ...state,
+                isLoading: false,
+                isVerifUlang: true,
+                alertMsg: 'success verif ulang ops',
+            };
+        }
+        case 'VERIF_ULANG_OPS_REJECTED': {
+            return {
+                ...state,
+                isLoading: false,
+                isVerifUlang: false,
+                alertMsg: "Unable connect to server"
+            };
+        }
         case 'CHANGE_NOTRANS_PENDING': {
             return {
                 ...state,
@@ -1128,6 +1152,7 @@ export default (state = opsState, action) => {
                 appRevisi: null,
                 isEdit: null,
                 subRevisi: null,
+                isVerifUlang: null,
                 subVerif: null,
                 subRealisasi: null,
                 editVrf: null,

@@ -91,6 +91,10 @@ export default {
         type: 'SUBMIT_REVISI',
         payload: http(token).patch(`/ops/subrev`, qs.stringify(data))
     }),
+    verifUlangOps: (token, data) => ({
+        type: 'VERIF_ULANG_OPS',
+        payload: http(token).patch(`/ops/verifulang`, qs.stringify(data))
+    }),
     submitVerif: (token, data) => ({
         type: 'SUBMIT_VERIF',
         payload: http(token).patch(`/ops/verif`, data)
