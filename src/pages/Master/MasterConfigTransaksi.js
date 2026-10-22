@@ -164,6 +164,9 @@ class MasterConfigTransaksi extends Component {
     }
 
     renderAkses = (item) => {
+        if (item.tipe_akses === 'arc') {
+            return <Badge color="info" pill>AR Center</Badge>
+        }
         if (item.tipe_akses !== 'area') {
             return <Badge color="success" pill>Semua Area</Badge>
         }
@@ -192,7 +195,7 @@ class MasterConfigTransaksi extends Component {
                     )}
                     <PageCard
                         title="Konfigurasi Transaksi"
-                        subtitle="Atur jenis transaksi (master tarif) yang boleh diajukan semua area atau hanya area tertentu. Jenis transaksi yang belum dikonfigurasi dapat diajukan oleh semua area, kecuali area yang dicentang 'Hanya Konfigurasi' di Master Finance."
+                        subtitle="Atur jenis transaksi (master tarif) yang boleh diajukan semua area atau hanya area tertentu. Jenis transaksi yang belum dikonfigurasi dapat diajukan oleh semua area, kecuali area yang dicentang 'Hanya Konfigurasi' di Master Finance. Akses AR Center: hanya user AR Center yang dapat mengajukan untuk area yang di-cover AR Center."
                         actions={<Button color="primary" onClick={() => this.openForm()}>Add</Button>}
                     >
                         <Toolbar>
@@ -309,6 +312,21 @@ class MasterConfigTransaksi extends Component {
                                 />
                                 <label className="custom-control-label" htmlFor="aksesArea">Hanya area tertentu</label>
                             </div>
+                            <div className="custom-control custom-radio custom-control-inline">
+                                <input
+                                    type="radio"
+                                    id="aksesArc"
+                                    className="custom-control-input"
+                                    checked={form.tipe_akses === 'arc'}
+                                    onChange={() => this.changeForm({ tipe_akses: 'arc' })}
+                                />
+                                <label className="custom-control-label" htmlFor="aksesArc">AR Center</label>
+                            </div>
+                            {form.tipe_akses === 'arc' && (
+                                <small className="d-block text-muted mt-1">
+                                    Hanya user AR Center yang dapat mengajukan jenis transaksi ini untuk area yang di-cover AR Center (Mapping AR Center). Area yang tidak di-cover tetap dapat mengajukan.
+                                </small>
+                            )}
                         </div>
                         {form.tipe_akses === 'area' && (
                             <div className="mb-3">

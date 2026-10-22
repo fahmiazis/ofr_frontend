@@ -53,7 +53,7 @@ import ExcelJS from "exceljs"
 import fs from "file-saver"
 const {REACT_APP_BACKEND_URL} = process.env
 const userArea = ['5', '6']
-const userAppArea = ['10', '11', '12', '15']
+const userAppArea = ['10', '11', '12', '15', '53']
 const userFinance = ['2']
 const userFinApp = ['7', '8', '9']
 const userKlaim = ['3', '13', '23']

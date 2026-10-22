@@ -81,6 +81,7 @@ import MasterReason from './pages/Master/MasterReason'
 import MasterRekening from './pages/Master/MasterRekening'
 import MasterTarif from './pages/Master/MasterTarif'
 import MasterConfigTransaksi from './pages/Master/MasterConfigTransaksi'
+import MasterMappingArc from './pages/Master/MasterMappingArc'
 import MasterPagu from './pages/Master/MasterPagu'
 import MasterEmail from './pages/Master/MasterEmail'
 import MasterVendor from './pages/Master/MasterVendor'
@@ -312,6 +313,9 @@ class App extends Component {
                 </PrivateRoute>
                 <PrivateRoute path='/configtrans'>
                     <MasterConfigTransaksi />
+                </PrivateRoute>
+                <PrivateRoute path='/arc'>
+                    <MasterMappingArc />
                 </PrivateRoute>
                 <PrivateRoute path='/pagu'>
                     <MasterPagu />

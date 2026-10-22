@@ -54,7 +54,7 @@ import taxcode from '../../redux/actions/taxcode'
 import kliring from '../../redux/actions/kliring'
 import Select from 'react-select'
 const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
-const userAppArea = ['10', '11', '12', '15', '30']
+const userAppArea = ['10', '11', '12', '15', '30', '53']
 
 const options = {
     // default is `save`
@@ -1832,7 +1832,7 @@ class Ops extends Component {
                                                         <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
-                                                        <th>{item.area}</th>
+                                                        <th>{item.area}{parseInt(item.is_arc) === 1 && <div><small className="text-muted">Dibuat oleh {item.created_name} (AR Center)</small></div>}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
@@ -1897,7 +1897,7 @@ class Ops extends Component {
                                                         <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
-                                                        <th>{item.area}</th>
+                                                        <th>{item.area}{parseInt(item.is_arc) === 1 && <div><small className="text-muted">Dibuat oleh {item.created_name} (AR Center)</small></div>}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
@@ -1997,7 +1997,7 @@ class Ops extends Component {
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
-                                                <th>{item.area}</th>
+                                                <th>{item.area}{parseInt(item.is_arc) === 1 && <div><small className="text-muted">Dibuat oleh {item.created_name} (AR Center)</small></div>}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
                                                 <th>{item.keterangan}</th>
