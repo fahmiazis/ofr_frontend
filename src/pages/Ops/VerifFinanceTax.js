@@ -1824,7 +1824,7 @@ class VerifOps extends Component {
                                                                 <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
                                                                 <th>{item.history !== null && item.history.split(',').reverse()[0]}</th>
                                                                 <th>
-                                                                    <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>{filter === 'available' ? 'Proses' : 'Detail'}</Button>
+                                                                    <Button size='sm' onClick={() => this.prosesDetail(item)} className='mb-1 mr-1' color='success'>{filter === 'available' && !(level === '2' && parseInt(item.status_transaksi) === 5) ? 'Proses' : 'Detail'}</Button>
                                                                     <Button size='sm' className='mb-1 mr-1' onClick={() => this.prosesTracking(item)} color='warning'>Tracking</Button>
                                                                     {filter === 'reject' && parseInt(item.status_transaksi) === 0 && (
                                                                         <Button size='sm' className='mb-1 text-white font-weight-bold' onClick={() => this.prepareVerifUlang(item)} color='warning'>Verif Ulang</Button>
@@ -2015,7 +2015,7 @@ class VerifOps extends Component {
                                     Verifikasi Ulang
                                 </Button>
                             )}
-                            {filter !== 'available' && filter !== 'revisi' ? (
+                            {(filter !== 'available' && filter !== 'revisi') || (level === '2' && detailOps.length > 0 && parseInt(detailOps[0].status_transaksi) === 5) ? (
                                 <div></div>
                             ) : (
                                 <>
