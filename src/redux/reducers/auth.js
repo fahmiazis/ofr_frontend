@@ -60,7 +60,7 @@ export default (state = authState, action) => {
       localStorage.setItem('kode', user.kode_plant)
       localStorage.setItem('id', user.id)
       localStorage.setItem('role', user.role)
-      // user AR Center: kode = area yang sedang diwakili
+      // user AR Central: kode = area yang sedang diwakili
       localStorage.setItem('arc', user.arc ? '1' : '0')
       localStorage.setItem('arc_area', JSON.stringify(user.arc_area || []))
 
@@ -95,7 +95,7 @@ export default (state = authState, action) => {
       return { ...authState, isLogin: false }
     }
 
-    // ── ganti area user AR Center ────────────────────────────────────────────
+    // ── ganti area user AR Central ────────────────────────────────────────────
     case 'SWITCH_AREA_FULFILLED': {
       const { access_token, kode_plant, arc_area } = action.payload.data
 

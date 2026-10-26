@@ -25,6 +25,7 @@ import moment from 'moment'
 import {Formik} from 'formik'
 import * as Yup from 'yup'
 import auth from '../../redux/actions/auth'
+import { isUserArc } from '../../components/AreaArc'
 import menu from '../../redux/actions/menu'
 import finance from '../../redux/actions/finance'
 import reason from '../../redux/actions/reason'
@@ -1118,6 +1119,16 @@ class RevisiOps extends Component {
     }
 
     prosesDetail = async (val) => {
+        // revisi AR Central memakai area ajuan: jenis transaksi & rekening area ikut berganti
+        if (isUserArc() && val.kode_plant !== localStorage.getItem('kode')) {
+            try {
+                await this.props.switchArea(val.kode_plant)
+                const type = localStorage.getItem('tipeKasbon')
+                await this.props.getCoa(localStorage.getItem('token'), type === 'kasbon' ? 'kasbon' :'ops')
+            } catch (err) {
+                return alert((err.response && err.response.data && err.response.data.message) || 'Gagal ganti area')
+            }
+        }
         const token = localStorage.getItem("token")
         const tempno = {
             no: val.no_transaksi
@@ -4670,6 +4681,7 @@ const mapStateToProps = state => ({
 })
 
 const mapDispatchToProps = {
+    switchArea: auth.switchArea,
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
     getDetailFinance: finance.getDetailFinance,

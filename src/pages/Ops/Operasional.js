@@ -31,6 +31,7 @@ import {default as axios} from 'axios'
 // import TableStock from '../components/TableStock'
 import ReactHtmlToExcel from "react-html-table-to-excel"
 import NavBar from '../../components/NavBar'
+import AreaArc, { isUserArc } from '../../components/AreaArc'
 import ops from '../../redux/actions/ops'
 import Tracking from '../../components/Ops/tracking'
 import TableRincian from '../../components/Ops/tableRincian'
@@ -54,7 +55,7 @@ import taxcode from '../../redux/actions/taxcode'
 import kliring from '../../redux/actions/kliring'
 import Select from 'react-select'
 const {REACT_APP_BACKEND_URL, REACT_APP_URL_FULL} = process.env
-const userAppArea = ['10', '11', '12', '15', '30', '53']
+const userAppArea = ['10', '11', '12', '15', '30', '53', '54']
 
 const options = {
     // default is `save`
@@ -172,6 +173,7 @@ class Ops extends Component {
             dropOp: false,
             noAsset: null,
             filter: 'available',
+            areaArc: 'all',
             newOps: [],
             totalfpd: 0,
             dataMenu: [],
@@ -916,6 +918,10 @@ class Ops extends Component {
         this.setState({history: !this.state.history})
     }
 
+    changeAreaArc = (val) => {
+        this.setState({areaArc: val}, () => this.changeFilter(this.state.filter))
+    }
+
     changeFilter = async (val) => {
         const {dataOps, noDis} = this.props.ops
         const level = localStorage.getItem('level')
@@ -928,11 +934,11 @@ class Ops extends Component {
         const typeKasbon = 'non kasbon'
         if (val === 'all') {
             const newOps = []
-            await this.props.getOps(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit, time)
+            await this.props.getOps(token, statusAll, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit, time, this.state.areaArc)
             this.setState({filter: val, newOps: newOps})
         } else {
             const newOps = []
-            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit, time)
+            await this.props.getOps(token, status, 'all', 'all', val, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit, time, this.state.areaArc)
             this.setState({filter: val, newOps: newOps})
         }
     }
@@ -945,7 +951,7 @@ class Ops extends Component {
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8: 2
         this.setState({limit: val})
-        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', val, time)
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', val, time, this.state.areaArc)
     }
 
     changeTime = async (val) => {
@@ -970,7 +976,7 @@ class Ops extends Component {
         const cekTime2 = time2 === '' ? 'undefined' : time2
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8: 2
-        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit, time)
+        await this.props.getOps(token, filter === 'all' ? 'all' : status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, search, undefined, undefined, 'all', limit, time, this.state.areaArc)
     }
     
     cekDataDoc = () => {
@@ -1244,7 +1250,7 @@ class Ops extends Component {
         const token = localStorage.getItem("token")
         const status = filter === 'all' ? 'all' : filter === 'bayar' || filter === 'completed' ? 8 : 2
         if(e.key === 'Enter'){
-            await this.props.getOps(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, e.target.value, undefined, undefined, 'all', limit, time)
+            await this.props.getOps(token, status, 'all', 'all', filter, 'approve', 'undefined', cekTime1, cekTime2, typeKasbon, undefined, e.target.value, undefined, undefined, 'all', limit, time, this.state.areaArc)
         }
     }
 
@@ -1783,6 +1789,11 @@ class Ops extends Component {
                                                 />
                                             </FilterField>
                                         )}
+                                        {isUserArc() && (
+                                            <FilterField label="Area">
+                                                <AreaArc withAll className={style.filter} value={this.state.areaArc} onChange={this.changeAreaArc} />
+                                            </FilterField>
+                                        )}
                                         <FilterField label="Status">
                                             <Input className={style.filter} type="select" value={this.state.filter} onChange={e => this.changeFilter(e.target.value)}>
                                                 <option value="all">All</option>
@@ -1832,7 +1843,7 @@ class Ops extends Component {
                                                         <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
-                                                        <th>{item.area}{parseInt(item.is_arc) === 1 && <div><small className="text-muted">Dibuat oleh {item.created_name} (AR Center)</small></div>}</th>
+                                                        <th>{item.area}{parseInt(item.is_arc) === 1 && <div><small className="text-muted">Dibuat oleh {item.created_name} (AR Central)</small></div>}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
@@ -1897,7 +1908,7 @@ class Ops extends Component {
                                                         <th>{(index + (((pageOps.currentPage - 1) * pageOps.limitPerPage) + 1))}</th>
                                                         <th>{item.no_transaksi}</th>
                                                         <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
-                                                        <th>{item.area}{parseInt(item.is_arc) === 1 && <div><small className="text-muted">Dibuat oleh {item.created_name} (AR Center)</small></div>}</th>
+                                                        <th>{item.area}{parseInt(item.is_arc) === 1 && <div><small className="text-muted">Dibuat oleh {item.created_name} (AR Central)</small></div>}</th>
                                                         <th>{item.no_coa}</th>
                                                         <th>{item.nama_coa}</th>
                                                         <th>{item.keterangan}</th>
@@ -1997,7 +2008,7 @@ class Ops extends Component {
                                                 <th scope="row">{detailOps.indexOf(item) + 1}</th>
                                                 <th>{item.no_transaksi}</th>
                                                 <th>{dataDepo.find(e => e.kode_plant === item.kode_plant) !== undefined && dataDepo.find(e => e.kode_plant === item.kode_plant).profit_center}</th>
-                                                <th>{item.area}{parseInt(item.is_arc) === 1 && <div><small className="text-muted">Dibuat oleh {item.created_name} (AR Center)</small></div>}</th>
+                                                <th>{item.area}{parseInt(item.is_arc) === 1 && <div><small className="text-muted">Dibuat oleh {item.created_name} (AR Central)</small></div>}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
                                                 <th>{item.keterangan}</th>

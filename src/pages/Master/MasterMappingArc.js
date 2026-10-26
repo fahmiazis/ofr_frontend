@@ -7,6 +7,9 @@ import { PageCard, Toolbar, ToolbarSpacer, FilterField, SearchBox, Pager } from 
 import style from '../../assets/css/input.module.css'
 import arcAct from '../../redux/actions/mappingArc'
 
+// .badge-pill global (style.css) dipaksa bulat 36x36, jadi label pakai rounded sendiri
+const styleBadge = { borderRadius: '10rem', padding: '0.4em 0.75em', fontSize: '85%' }
+
 const formKosong = {
     isEdit: false,
     username: '',
@@ -15,6 +18,8 @@ const formKosong = {
 
 // menu dropdown harus di atas elemen modal lain
 const selectStyles = { menu: base => ({ ...base, zIndex: 10 }) }
+
+const labelApprover = { spv_arc: 'SPV ARC', rom_arc: 'ROM ARC' }
 
 const errMessage = (err, def) => (err && err.response && err.response.data && err.response.data.message) || def
 
@@ -35,7 +40,8 @@ class MasterMappingArc extends Component {
         searchSpv: '',
         pilihSpv: [],
         modalSpv: false,
-        formSpv: ''
+        formSpv: '',
+        kolomSpv: 'spv_arc'
     }
 
     componentDidMount() {
@@ -95,7 +101,7 @@ class MasterMappingArc extends Component {
         const token = localStorage.getItem('token')
         const { form } = this.state
         if (form.username === '') {
-            return this.setState({ errorForm: 'Pilih user AR Center terlebih dahulu' })
+            return this.setState({ errorForm: 'Pilih user AR Central terlebih dahulu' })
         }
         if (form.areas.length === 0) {
             return this.setState({ errorForm: 'Pilih minimal 1 area' })
@@ -157,22 +163,22 @@ class MasterMappingArc extends Component {
         this.setState({ pilihSpv: pilihSpv.includes(kode) ? pilihSpv.filter(x => x !== kode) : [...pilihSpv, kode] })
     }
 
-    openSpv = () => {
+    openSpv = (kolomSpv) => {
         if (this.state.pilihSpv.length === 0) {
             return this.showAlert('danger', 'Centang minimal 1 area')
         }
-        this.setState({ modalSpv: true, formSpv: '', errorForm: '' })
+        this.setState({ modalSpv: true, formSpv: '', kolomSpv, errorForm: '' })
     }
 
     saveSpv = async () => {
         const token = localStorage.getItem('token')
         try {
-            await this.props.saveSpv(token, { areas: this.state.pilihSpv, spv_arc: this.state.formSpv })
+            await this.props.saveSpv(token, { areas: this.state.pilihSpv, kolom: this.state.kolomSpv, nama: this.state.formSpv })
             this.setState({ modalSpv: false, pilihSpv: [] })
-            this.showAlert('success', 'SPV AR Center berhasil disimpan')
+            this.showAlert('success', `${labelApprover[this.state.kolomSpv]} berhasil disimpan`)
             this.props.getSpv(token).catch(() => {})
         } catch (err) {
-            this.setState({ errorForm: errMessage(err, 'Gagal menyimpan SPV AR Center') })
+            this.setState({ errorForm: errMessage(err, `Gagal menyimpan ${labelApprover[this.state.kolomSpv]}`) })
         }
     }
 
@@ -180,7 +186,7 @@ class MasterMappingArc extends Component {
         const { dataSpv, isLoading } = this.props.mappingArc
         const { pilihSpv, searchSpv } = this.state
         const key = searchSpv.toLowerCase()
-        const listSpv = dataSpv.filter(x => key === '' || `${x.kode_plant} ${x.area || ''} ${x.spv_arc || ''}`.toLowerCase().includes(key))
+        const listSpv = dataSpv.filter(x => key === '' || `${x.kode_plant} ${x.area || ''} ${x.spv_arc || ''} ${x.rom_arc || ''}`.toLowerCase().includes(key))
         const allCheck = listSpv.length > 0 && listSpv.every(x => pilihSpv.includes(x.kode_plant))
         return (
             <>
@@ -188,10 +194,11 @@ class MasterMappingArc extends Component {
                     <SearchBox
                         value={searchSpv}
                         onChange={e => this.setState({ searchSpv: e.target.value })}
-                        placeholder="Cari kode plant, area, SPV..."
+                        placeholder="Cari kode plant, area, SPV, ROM..."
                     />
                     <ToolbarSpacer />
-                    <Button color="primary" onClick={this.openSpv}>Set SPV ({pilihSpv.length})</Button>
+                    <Button color="primary" className="mr-2" onClick={() => this.openSpv('spv_arc')}>Set SPV ARC ({pilihSpv.length})</Button>
+                    <Button color="primary" onClick={() => this.openSpv('rom_arc')}>Set ROM ARC ({pilihSpv.length})</Button>
                 </Toolbar>
                 <div className={style.tableDashboard} style={{ opacity: isLoading ? 0.5 : 1 }}>
                     <Table bordered responsive hover className={style.tab}>
@@ -207,8 +214,8 @@ class MasterMappingArc extends Component {
                                 <th>Kode Plant</th>
                                 <th>Area</th>
                                 <th>Jumlah PIC ARC</th>
-                                <th>SPV AR Center</th>
-                                <th>ROM</th>
+                                <th>SPV ARC</th>
+                                <th>ROM ARC</th>
                                 <th>NOM</th>
                             </tr>
                         </thead>
@@ -222,14 +229,14 @@ class MasterMappingArc extends Component {
                                     <td>{item.area}</td>
                                     <td>{item.jumlah_pic}</td>
                                     <td>{item.spv_arc || <span className="text-danger">Belum diatur</span>}</td>
-                                    <td>{item.rom}</td>
+                                    <td>{item.rom_arc || <span className="text-danger">Belum diatur</span>}</td>
                                     <td>{item.nom}</td>
                                 </tr>
                             ))}
                         </tbody>
                     </Table>
                     {listSpv.length === 0 && (
-                        <div className={style.spin}>Belum ada area yang di-cover AR Center</div>
+                        <div className={style.spin}>Belum ada area yang di-cover AR Central</div>
                     )}
                 </div>
             </>
@@ -241,7 +248,7 @@ class MasterMappingArc extends Component {
         const tampil = list.slice(0, 3).join(', ')
         return (
             <>
-                <Badge color="info" pill className="mr-2">{list.length} Area</Badge>
+                <Badge color="info" style={styleBadge} className="mr-2">{list.length} Area</Badge>
                 <span title={list.join(', ')}>{tampil}{list.length > 3 ? `, +${list.length - 3} lainnya` : ''}</span>
             </>
         )
@@ -250,12 +257,13 @@ class MasterMappingArc extends Component {
     render() {
         const { dataMapping, page, optionUser, optionArea, isLoading } = this.props.mappingArc
         const { form, alert, hasilUpload } = this.state
-        // user area biasa sudah punya kode plant sendiri, user AR Center tidak
+        // user area biasa sudah punya kode plant sendiri, user AR Central tidak
         const listUser = optionUser
             .filter(x => !x.kode_plant || x.username === form.username)
             .map(x => ({ value: x.username, label: `${x.fullname || x.username} (${x.email || x.username})` }))
         const listArea = optionArea.map(x => ({ value: x.kode_plant, label: `${x.area || '-'} (${x.kode_plant})` }))
-        const listSpv = this.props.mappingArc.optionSpv.map(x => ({ value: x.fullname, label: `${x.fullname} (${x.email || x.username})` }))
+        const optionApprover = this.state.kolomSpv === 'rom_arc' ? this.props.mappingArc.optionRom : this.props.mappingArc.optionSpv
+        const listSpv = optionApprover.map(x => ({ value: x.fullname, label: `${x.fullname} (${x.email || x.username})` }))
         const { tab } = this.state
         const startNo = page.currentPage ? ((page.currentPage - 1) * page.limitPerPage) : 0
         return (
@@ -265,8 +273,8 @@ class MasterMappingArc extends Component {
                         <Alert color={alert.color} className="mb-3">{alert.message}</Alert>
                     )}
                     <PageCard
-                        title="Mapping AR Center"
-                        subtitle="Atur area (master finance) yang dapat diwakili user AR Center saat mengajukan operasional, dan SPV AR Center tiap area. Jenis transaksi AR Center diatur di menu Konfigurasi Transaksi."
+                        title="Mapping AR Central"
+                        subtitle="Atur area (master finance) yang dapat diwakili user AR Central saat mengajukan operasional, serta SPV ARC dan ROM ARC tiap area (NOM mengikuti master finance). Jenis transaksi AR Central diatur di menu Konfigurasi Transaksi."
                         actions={tab === 'pic' && (
                             <>
                                 <Button color="success" className="mr-2" onClick={this.openUpload}>Upload</Button>
@@ -276,7 +284,7 @@ class MasterMappingArc extends Component {
                     >
                         <div className="mb-3">
                             <Button color={tab === 'pic' ? 'primary' : 'light'} className="mr-2" onClick={() => this.changeTab('pic')}>PIC ARC</Button>
-                            <Button color={tab === 'spv' ? 'primary' : 'light'} onClick={() => this.changeTab('spv')}>SPV per Area</Button>
+                            <Button color={tab === 'spv' ? 'primary' : 'light'} onClick={() => this.changeTab('spv')}>Approver per Area</Button>
                         </div>
                         {tab === 'spv' ? this.renderSpv() : (
                         <>
@@ -327,7 +335,7 @@ class MasterMappingArc extends Component {
                                 </tbody>
                             </Table>
                             {dataMapping.length === 0 && (
-                                <div className={style.spin}>Belum ada mapping AR Center</div>
+                                <div className={style.spin}>Belum ada mapping AR Central</div>
                             )}
                         </div>
                         <Pager
@@ -344,13 +352,13 @@ class MasterMappingArc extends Component {
                 </AppLayout>
 
                 <Modal isOpen={this.state.modalForm} toggle={this.closeForm} size="lg">
-                    <ModalHeader toggle={this.closeForm}>{form.isEdit ? 'Edit' : 'Add'} Mapping AR Center</ModalHeader>
+                    <ModalHeader toggle={this.closeForm}>{form.isEdit ? 'Edit' : 'Add'} Mapping AR Central</ModalHeader>
                     <ModalBody>
                         {this.state.errorForm !== '' && (
                             <Alert color="danger">{this.state.errorForm}</Alert>
                         )}
                         <div className="mb-3">
-                            <label className="font-weight-bold">User AR Center <span className="text-danger">*</span></label>
+                            <label className="font-weight-bold">User AR Central <span className="text-danger">*</span></label>
                             <Select
                                 styles={selectStyles}
                                 options={listUser}
@@ -388,7 +396,7 @@ class MasterMappingArc extends Component {
                 </Modal>
 
                 <Modal isOpen={this.state.modalUpload} toggle={() => this.setState({ modalUpload: false })} size="lg">
-                    <ModalHeader toggle={() => this.setState({ modalUpload: false })}>Upload Mapping AR Center</ModalHeader>
+                    <ModalHeader toggle={() => this.setState({ modalUpload: false })}>Upload Mapping AR Central</ModalHeader>
                     <ModalBody>
                         {this.state.errorForm !== '' && (
                             <Alert color="danger">{this.state.errorForm}</Alert>
@@ -441,7 +449,7 @@ class MasterMappingArc extends Component {
                 </Modal>
 
                 <Modal isOpen={this.state.modalSpv} toggle={() => this.setState({ modalSpv: false })}>
-                    <ModalHeader toggle={() => this.setState({ modalSpv: false })}>Set SPV AR Center</ModalHeader>
+                    <ModalHeader toggle={() => this.setState({ modalSpv: false })}>Set {labelApprover[this.state.kolomSpv]}</ModalHeader>
                     <ModalBody>
                         {this.state.errorForm !== '' && (
                             <Alert color="danger">{this.state.errorForm}</Alert>
@@ -453,7 +461,7 @@ class MasterMappingArc extends Component {
                             options={listSpv}
                             value={listSpv.find(x => x.value === this.state.formSpv) || null}
                             onChange={e => this.setState({ formSpv: e ? e.value : '' })}
-                            placeholder="Pilih user SPV AR Center (kosongkan untuk menghapus)..."
+                            placeholder={`Pilih user ${labelApprover[this.state.kolomSpv]} (kosongkan untuk menghapus)...`}
                         />
                     </ModalBody>
                     <ModalFooter>

@@ -13,7 +13,6 @@ import { SiReason } from 'react-icons/si'
 import { MdOutlineDomainVerification, MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md'
 import Bell from './Bell'
 import Account from './Account'
-import AreaArc from './AreaArc'
 
 const accessVendor = [4, 14, 8, 7, 17, 2, 9, 1, 5, 6]
 
@@ -61,7 +60,7 @@ const masterMenu = {
         { route: 'taxcode', label: 'Master Taxcode', icon: BsClipboardData },
         { route: 'tarif', label: 'Master Tarif', icon: FaTicketAlt },
         { route: 'configtrans', label: 'Konfigurasi Transaksi', icon: FiSliders },
-        { route: 'arc', label: 'Mapping AR Center', icon: FiUser },
+        { route: 'arc', label: 'Mapping AR Central', icon: FiUser },
         { route: 'user', label: 'Master User', icon: FiUser },
         { route: 'vendor', label: 'Master Vendor', icon: BsClipboardData },
         { route: 'reservoir', label: 'Reservoir', icon: BsClipboardData },
@@ -158,9 +157,9 @@ class NewNavbar extends Component {
         const pathname = (this.props.location && this.props.location.pathname) || '/'
         const current = pathname.replace(/^\//, '').split('/')[0]
 
-        // user AR Center hanya mengajukan operasional atas nama area
-        // SPV AR Center (level 53) hanya approve ajuan operasional AR Center
-        const isArc = localStorage.getItem('arc') === '1' || level === '53'
+        // user AR Central hanya mengajukan operasional atas nama area
+        // SPV ARC (53) & ROM ARC (54) hanya approve ajuan operasional AR Central
+        const isArc = localStorage.getItem('arc') === '1' || level === '53' || level === '54'
         const mainMenu = isArc ? [
             { route: '', label: 'Home', icon: BsFillHouseDoorFill },
             { route: 'navops', label: 'Operasional', icon: FiTruck },
@@ -223,7 +222,6 @@ class NewNavbar extends Component {
                         </div>
                     </div>
                     <div className={styleLayout.navIcons}>
-                        <AreaArc />
                         <Bell color={'white'} />
                         <Account color={'white'} />
                     </div>

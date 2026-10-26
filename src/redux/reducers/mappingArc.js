@@ -6,6 +6,7 @@ const mappingState = {
     page: {},
     optionUser: [],
     optionSpv: [],
+    optionRom: [],
     optionArea: [],
     dataSpv: []
 }
@@ -34,6 +35,7 @@ export default (state = mappingState, action) => {
                 isLoading: false,
                 optionUser: action.payload.data.users,
                 optionSpv: action.payload.data.spv,
+                optionRom: action.payload.data.rom || [],
                 optionArea: action.payload.data.areas
             }
         }

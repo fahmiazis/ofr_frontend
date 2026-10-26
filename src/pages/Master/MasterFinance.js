@@ -185,21 +185,17 @@ class MasterFinance extends Component {
         this.setState({modalStruktur: !this.state.modalStruktur})
     }
 
+    // header harus sama dengan validasi upload master finance di backend
     DownloadTemplate = () => {
-        axios({
-            url: `${REACT_APP_BACKEND_URL}/masters/finance.xlsx`,
-            method: 'GET',
-            responseType: 'blob',
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        }).then((response) => {
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', "master finance.xlsx");
-            document.body.appendChild(link);
-            link.click();
+        const workbook = new ExcelJS.Workbook();
+        const ws = workbook.addWorksheet('master finance')
+        const header = ['KODE PLANT', 'PROFIT/COST CENTER', 'NAMA AREA', 'REGION', 'INISIAL', 'NO REK SPENDING CARD', 'NO REK ZBA', 'NO REK BANK COLL', 'PAGU IKK', 'SISTEM AREA', 'PIC CONSOLE', 'SPV FINANCE 1', 'SPV FINANCE 2', 'ASST MGR FIN', 'MGR FIN', 'PIC TAX', 'SPV TAX', 'ASMEN TAX', 'MGR TAX', 'AOS', 'ROM', 'BM', 'NOM', 'RBM', 'CHANNEL', 'SPV ARC', 'ROM ARC']
+        ws.columns = header.map(item => ({header: item, key: item, width: item.length + 5}))
+        workbook.xlsx.writeBuffer().then(function(buffer) {
+            fs.saveAs(
+              new Blob([buffer], { type: 'application/octet-stream' }),
+              'Template Master Finance.xlsx'
+            );
         });
     }
 
@@ -500,7 +496,9 @@ class MasterFinance extends Component {
             {header: 'BM', key: 'c23'}, 
             {header: 'NOM', key: 'c24'}, 
             {header: 'RBM', key: 'c25'}, 
-            {header: 'CHANNEL', key: 'c26'}
+            {header: 'CHANNEL', key: 'c26'},
+            {header: 'SPV ARC', key: 'c27'},
+            {header: 'ROM ARC', key: 'c28'}
         ]
 
         dataDownload.map((item, index) => { return ( ws.addRow(
@@ -529,7 +527,9 @@ class MasterFinance extends Component {
                 c23: item.bm,
                 c24: item.nom,
                 c25: item.rbm,
-                c26: item.channel
+                c26: item.channel,
+                c27: item.spv_arc,
+                c28: item.rom_arc
             }
         )
         ) })
@@ -667,6 +667,8 @@ class MasterFinance extends Component {
                                                 <th>BM</th>
                                                 <th>NOM</th>
                                                 <th>RBM</th>
+                                                <th>SPV ARC</th>
+                                                <th>ROM ARC</th>
                                                 <th>Hanya Konfigurasi</th>
                                             </tr>
                                         </thead>
@@ -716,6 +718,8 @@ class MasterFinance extends Component {
                                                 <th>BM</th>
                                                 <th>NOM</th>
                                                 <th>RBM</th>
+                                                <th>SPV ARC</th>
+                                                <th>ROM ARC</th>
                                                 <th>Hanya Konfigurasi</th>
                                                 <th>Opsi</th>
                                             </tr>
@@ -758,6 +762,8 @@ class MasterFinance extends Component {
                                                     <td>{item.bm}</td>
                                                     <td>{item.nom}</td>
                                                     <td>{item.rbm}</td>
+                                                    <td>{item.spv_arc}</td>
+                                                    <td>{item.rom_arc}</td>
                                                     <td>{parseInt(item.config_only) === 1 ? 'Ya' : 'Tidak'}</td>
                                                     <td>
                                                         <Button onClick={()=>this.openModalEdit(this.setState({detail: item}))} color='primary'>Edit</Button>
@@ -810,7 +816,9 @@ class MasterFinance extends Component {
                         bm: '',
                         nom: '',
                         rbm: '',
-                        config_only: '0'
+                        config_only: '0',
+                        spv_arc: '',
+                        rom_arc: ''
                     }}
                     validationSchema={financeSchema}
                     onSubmit={(values) => {this.addFinance(values)}}
@@ -1244,6 +1252,36 @@ class MasterFinance extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
+                                SPV ARC
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="spv_arc"
+                                value={values.spv_arc}
+                                onBlur={handleBlur("spv_arc")}
+                                onChange={handleChange("spv_arc")}
+                                placeholder="Kosongkan bila area tidak di-cover AR Central"
+                                />
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                ROM ARC
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rom_arc"
+                                value={values.rom_arc}
+                                onBlur={handleBlur("rom_arc")}
+                                onChange={handleChange("rom_arc")}
+                                placeholder="Kosongkan bila area tidak di-cover AR Central"
+                                />
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
                                 Konfigurasi Transaksi
                             </text>
                             <div className="col-md-9">
@@ -1302,7 +1340,9 @@ class MasterFinance extends Component {
                     bm: detail.bm === null ? '' : detail.bm,
                     nom: detail.nom === null ? '' : detail.nom,
                     rbm: detail.rbm === null ? '' : detail.rbm,
-                    config_only: `${detail.config_only || 0}`
+                    config_only: `${detail.config_only || 0}`,
+                    spv_arc: detail.spv_arc === null || detail.spv_arc === undefined ? '' : detail.spv_arc,
+                    rom_arc: detail.rom_arc === null || detail.rom_arc === undefined ? '' : detail.rom_arc
                     }}
                     validationSchema={financeSchema}
                     onSubmit={(values) => {this.editFinance(values, detail.id)}}
@@ -1736,6 +1776,36 @@ class MasterFinance extends Component {
                         </div>
                         <div className={style.addModalDepo}>
                             <text className="col-md-3">
+                                SPV ARC
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="spv_arc"
+                                value={values.spv_arc}
+                                onBlur={handleBlur("spv_arc")}
+                                onChange={handleChange("spv_arc")}
+                                placeholder="Kosongkan bila area tidak di-cover AR Central"
+                                />
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
+                                ROM ARC
+                            </text>
+                            <div className="col-md-9">
+                                <Input 
+                                type="name" 
+                                name="rom_arc"
+                                value={values.rom_arc}
+                                onBlur={handleBlur("rom_arc")}
+                                onChange={handleChange("rom_arc")}
+                                placeholder="Kosongkan bila area tidak di-cover AR Central"
+                                />
+                            </div>
+                        </div>
+                        <div className={style.addModalDepo}>
+                            <text className="col-md-3">
                                 Konfigurasi Transaksi
                             </text>
                             <div className="col-md-9">
@@ -1860,6 +1930,11 @@ class MasterFinance extends Component {
                                     <AiOutlineClose size={80} className={style.red} />
                                     <div className={[style.sucUpdate, style.green, style.mb4]}>Gagal Upload</div>
                                     <div className={[style.sucUpdate, style.green, style.mb3]}>{this.props.finance.alertMsg}</div>
+                                    {Array.isArray(this.props.finance.alertUpload) && this.props.finance.alertUpload.map(item => {
+                                        return (
+                                            <div className={style.mb3}>{item}</div>
+                                        )
+                                    })}
                                 </div>
                             </div>
                         ) : (
