@@ -49,6 +49,7 @@ import ExcelJS from "exceljs"
 import fs from "file-saver"
 import { MdUpload, MdDownload, MdEditSquare, MdAddCircle, MdDelete } from "react-icons/md";
 import Countdown from 'react-countdown'
+import AreaArc, { isUserArc, getListArea } from '../../components/AreaArc'
 
 const {REACT_APP_BACKEND_URL} = process.env
 const nonObject = 'Non Object PPh'
@@ -173,6 +174,9 @@ class CartOps extends Component {
             isLoading: false,
             typeniknpwp: '',
             type_kasbon: '',
+            areaArc: 'all',
+            modalAreaArc: false,
+            pilihArea: '',
             modalDelete: false,
             dataDelete: '',
             showOptions: false,
@@ -936,6 +940,48 @@ class CartOps extends Component {
         this.getDataCart()
     }
 
+    // filter draft user AR Central (hanya untuk melihat), default seluruh area
+    changeAreaArc = (val) => {
+        this.setState({areaArc: val, listMut: []}, () => this.getDataCart())
+    }
+
+    // user AR Central mewakili area kodePlant: token, jenis transaksi & rekening area ikut berganti
+    gantiAreaArc = async (kodePlant) => {
+        if (!isUserArc() || kodePlant === localStorage.getItem('kode')) return true
+        try {
+            await this.props.switchArea(kodePlant)
+            const type = localStorage.getItem('tipeKasbon')
+            await this.props.getCoa(localStorage.getItem('token'), type === 'kasbon' ? 'kasbon' :'ops')
+            return true
+        } catch (err) {
+            alert((err.response && err.response.data && err.response.data.message) || 'Gagal ganti area')
+            return false
+        }
+    }
+
+    openAddArc = () => {
+        if (isUserArc()) {
+            this.setState({modalAreaArc: true, pilihArea: ''})
+        } else {
+            this.prosesOpenAdd()
+        }
+    }
+
+    pilihAreaAdd = async () => {
+        const berhasil = await this.gantiAreaArc(this.state.pilihArea)
+        if (berhasil) {
+            this.setState({modalAreaArc: false})
+            this.prosesOpenAdd()
+        }
+    }
+
+    // edit draft AR Central memakai area draft tersebut
+    openEditArc = async (item) => {
+        if (await this.gantiAreaArc(item.kode_plant)) {
+            this.prosesOpenEdit(item.id)
+        }
+    }
+
     openDraftEmail = () => {
         this.setState({openDraft: !this.state.openDraft}) 
     }
@@ -951,7 +997,8 @@ class CartOps extends Component {
         const tipe = 'approve'
         const tempno = {
             no: noops,
-            kode: dataCart[0].kode_plant,
+            // draft AR Central bisa lintas area, area yang disubmit = area aktif
+            kode: isUserArc() ? localStorage.getItem('kode') : dataCart[0].kode_plant,
             jenis: 'ops',
             tipe: tipe,
             menu: 'Pengajuan Operasional (Operasional)'
@@ -1015,7 +1062,7 @@ class CartOps extends Component {
         await this.props.sendEmail(token, data)
         await this.props.submitOpsFinal(token, tempno)
         await this.props.addNotif(token, data)
-        await this.props.getCart(token, type)
+        await this.props.getCart(token, type, this.state.areaArc)
         this.openModalDoc()
         this.modalSubmitPre()
         this.openDraftEmail()
@@ -1038,7 +1085,7 @@ class CartOps extends Component {
             this.props.getDocOps(token, tempno)
             this.props.resetOps()
         } else if (isEdit === true) {
-            this.props.getCart(token, type)
+            this.props.getCart(token, type, this.state.areaArc)
             this.setState({confirm: 'editcart'})
             this.openConfirm()
             this.props.resetOps()
@@ -1154,7 +1201,7 @@ class CartOps extends Component {
     getDataCart = async (value) => {
         const token = localStorage.getItem("token")
         const type = localStorage.getItem('tipeKasbon')
-        await this.props.getCart(token, type)
+        await this.props.getCart(token, type, this.state.areaArc)
         // await this.props.getPagu(token)
         this.prepareSelect()
         this.setState({limit: value === undefined ? 10 : value.limit})
@@ -1224,7 +1271,11 @@ class CartOps extends Component {
                     temp.push(dataCek)
                 }
             }
-            if (temp.length === listMut.length) {
+            const listArea = [...new Set(listMut.map(id => (dataCart.find(item => item.id === id) || {}).kode_plant))]
+            if (isUserArc() && listArea.length > 1) {
+                alert('Ajuan AR Central hanya dapat disubmit untuk 1 area, pilih draft dengan area yang sama')
+            } else if (temp.length === listMut.length) {
+                if (isUserArc() && !(await this.gantiAreaArc(listArea[0]))) return
                 this.modalSubmitPre()
             } else {
                 this.openConfirm(this.setState({confirm: 'failSubCoa'}))
@@ -1274,7 +1325,7 @@ class CartOps extends Component {
         const {dataDelete} = this.state
         const type = localStorage.getItem('tipeKasbon')
         await this.props.deleteCart(token, dataDelete)
-        await this.props.getCart(token, type)
+        await this.props.getCart(token, type, this.state.areaArc)
         this.setState({confirm: 'delCart'})
         this.openConfirm()
         this.openModalDelete()
@@ -1366,12 +1417,12 @@ class CartOps extends Component {
                 await this.props.uploadBbm(token, send)
     
                 this.openModalAdd()
-                this.props.getCart(token, type)
+                this.props.getCart(token, type, this.state.areaArc)
                 this.openConfirm(this.setState({confirm: 'addcart'}))
             } else {
                 await this.props.addCart(token, data, dataTrans.id)
                 this.openModalAdd()
-                this.props.getCart(token, type)
+                this.props.getCart(token, type, this.state.areaArc)
                 this.openConfirm(this.setState({confirm: 'addcart'}))
             }
             
@@ -2456,11 +2507,19 @@ class CartOps extends Component {
                                 title={`Draft Pengajuan ${type_kasbon === 'kasbon' ? 'Kasbon' : 'Operasional'}`}
                                 actions={
                                     <>
-                                        <Button onClick={this.prosesOpenAdd} color="info">Add</Button>
+                                        <Button onClick={this.openAddArc} color="info">Add</Button>
                                         <Button onClick={this.prosesSubmitPre} color="success">Submit</Button>
                                     </>
                                 }
                             >
+                                {isUserArc() && (
+                                    <div className='rowGeneral mb-3'>
+                                        <div className='mr-2'>Area :</div>
+                                        <div style={{ minWidth: 260 }}>
+                                            <AreaArc withAll value={this.state.areaArc} onChange={this.changeAreaArc} />
+                                        </div>
+                                    </div>
+                                )}
                                 {/* <div className='rowGeneral divPagu'>
                                     <div className="uppercase mr-1">Nilai Pagu :</div>
                                     <div className="ml-1">{(parseFloat(dataPagu.pagu) - this.state.nominal).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")}</div>
@@ -2479,6 +2538,7 @@ class CartOps extends Component {
                                                 Select
                                             </th>
                                             <th>NO</th>
+                                            {isUserArc() && <th>AREA</th>}
                                             <th>COST CENTRE</th>
                                             <th>NO COA</th>
                                             <th>NAMA COA</th>
@@ -2503,6 +2563,7 @@ class CartOps extends Component {
                                                     />
                                                 </th>
                                                 <th scope="row">{dataCart.indexOf(item) + 1}</th>
+                                                {isUserArc() && <th>{item.area} ({item.kode_plant})</th>}
                                                 <th>{item.cost_center}</th>
                                                 <th>{item.no_coa}</th>
                                                 <th>{item.nama_coa}</th>
@@ -2513,7 +2574,7 @@ class CartOps extends Component {
                                                 <th>{item.nama_tujuan}</th>
                                                 <th>{item.type_kasbon === 'kasbon' ? 'Kasbon' : 'Non Kasbon'}</th>
                                                 <th>
-                                                    <Button onClick={() => this.prosesOpenEdit(item.id)} className='mb-1 mr-1' color='success'><MdEditSquare size={25}/></Button>
+                                                    <Button onClick={() => this.openEditArc(item)} className='mb-1 mr-1' color='success'><MdEditSquare size={25}/></Button>
                                                     <Button onClick={() => this.prosesDelete(item.id)} color='danger'><MdDelete size={25}/></Button>
                                                 </th>
                                             </tr>
@@ -2534,6 +2595,22 @@ class CartOps extends Component {
                     </div>
                     </MaterialTitlePanel>
                 </Sidebar>
+                <Modal isOpen={this.state.modalAreaArc} toggle={() => this.setState({modalAreaArc: false})} centered>
+                    <ModalHeader>Pilih Area Pengajuan</ModalHeader>
+                    <ModalBody>
+                        <div className='mb-2'>Ajuan ini akan dibuat atas nama area:</div>
+                        <Input type="select" value={this.state.pilihArea} onChange={e => this.setState({pilihArea: e.target.value})}>
+                            <option value="">-Pilih Area-</option>
+                            {getListArea().map(item => (
+                                <option key={item.kode_plant} value={item.kode_plant}>{item.area} ({item.kode_plant})</option>
+                            ))}
+                        </Input>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button color="primary" disabled={this.state.pilihArea === ''} onClick={this.pilihAreaAdd}>Lanjut</Button>
+                        <Button color="secondary" onClick={() => this.setState({modalAreaArc: false})}>Batal</Button>
+                    </ModalFooter>
+                </Modal>
                 <Modal className='modalrinci' isOpen={this.state.modalAdd} size="xl">
                     <ModalHeader>
                         Tambah Ajuan Operasional {type_kasbon}
@@ -5782,6 +5859,7 @@ const mapStateToProps = state => ({
 })
 
 const mapDispatchToProps = {
+    switchArea: auth.switchArea,
     logout: auth.logout,
     getNameApprove: approve.getNameApprove,
     getDetailFinance: finance.getDetailFinance,

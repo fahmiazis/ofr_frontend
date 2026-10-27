@@ -7,6 +7,9 @@ import { PageCard, Toolbar, ToolbarSpacer, FilterField, SearchBox, Pager } from 
 import style from '../../assets/css/input.module.css'
 import configAct from '../../redux/actions/configTransaksi'
 
+// .badge-pill global (style.css) dipaksa bulat 36x36, jadi label pakai rounded sendiri
+const styleBadge = { borderRadius: '10rem', padding: '0.4em 0.75em', fontSize: '85%' }
+
 const formKosong = {
     id: null,
     jenis_transaksi: '',
@@ -164,14 +167,17 @@ class MasterConfigTransaksi extends Component {
     }
 
     renderAkses = (item) => {
+        if (item.tipe_akses === 'arc') {
+            return <Badge color="info" style={styleBadge}>AR Central</Badge>
+        }
         if (item.tipe_akses !== 'area') {
-            return <Badge color="success" pill>Semua Area</Badge>
+            return <Badge color="success" style={styleBadge}>Semua Area</Badge>
         }
         const list = (item.area || []).map(x => (x.finance && x.finance.area) || x.kode_plant)
         const tampil = list.slice(0, 3).join(', ')
         return (
             <>
-                <Badge color="warning" pill className="mr-2">{list.length} Area</Badge>
+                <Badge color="warning" style={styleBadge} className="mr-2">{list.length} Area</Badge>
                 <span title={list.join(', ')}>{tampil}{list.length > 3 ? `, +${list.length - 3} lainnya` : ''}</span>
             </>
         )
@@ -192,7 +198,7 @@ class MasterConfigTransaksi extends Component {
                     )}
                     <PageCard
                         title="Konfigurasi Transaksi"
-                        subtitle="Atur jenis transaksi (master tarif) yang boleh diajukan semua area atau hanya area tertentu. Jenis transaksi yang belum dikonfigurasi dapat diajukan oleh semua area, kecuali area yang dicentang 'Hanya Konfigurasi' di Master Finance."
+                        subtitle="Atur jenis transaksi (master tarif) yang boleh diajukan semua area atau hanya area tertentu. Jenis transaksi yang belum dikonfigurasi dapat diajukan oleh semua area, kecuali area yang dicentang 'Hanya Konfigurasi' di Master Finance. Akses AR Central: hanya user AR Central yang dapat mengajukan untuk area yang di-cover AR Central."
                         actions={<Button color="primary" onClick={() => this.openForm()}>Add</Button>}
                     >
                         <Toolbar>
@@ -309,6 +315,21 @@ class MasterConfigTransaksi extends Component {
                                 />
                                 <label className="custom-control-label" htmlFor="aksesArea">Hanya area tertentu</label>
                             </div>
+                            <div className="custom-control custom-radio custom-control-inline">
+                                <input
+                                    type="radio"
+                                    id="aksesArc"
+                                    className="custom-control-input"
+                                    checked={form.tipe_akses === 'arc'}
+                                    onChange={() => this.changeForm({ tipe_akses: 'arc' })}
+                                />
+                                <label className="custom-control-label" htmlFor="aksesArc">AR Central</label>
+                            </div>
+                            {form.tipe_akses === 'arc' && (
+                                <small className="d-block text-muted mt-1">
+                                    Hanya user AR Central yang dapat mengajukan jenis transaksi ini untuk area yang di-cover AR Central (Mapping AR Central). Area yang tidak di-cover tetap dapat mengajukan.
+                                </small>
+                            )}
                         </div>
                         {form.tipe_akses === 'area' && (
                             <div className="mb-3">

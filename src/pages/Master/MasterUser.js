@@ -862,6 +862,7 @@ class MasterUser extends Component {
                                 onBlur={handleBlur("depo")}
                                 >
                                     <option>-Pilih Depo-</option>
+                                    <option value="-ARC-">AR Central (area diatur di Mapping AR Central)</option>
                                     {dataDepo.length !== 0 && dataDepo.map(item => {
                                         return (
                                             <option value={item.kode_plant + '-' + item.area}>{item.kode_plant + '-' + item.area}</option>
@@ -913,7 +914,7 @@ class MasterUser extends Component {
                     <Formik
                     initialValues={{
                     username: detail.username === null ? '' : detail.username,
-                    depo: detail.level === 5 && dataDepo.find(({kode_plant}) => kode_plant === detail.kode_plant) !== undefined ? detail.kode_plant + "-" + dataDepo.find(({kode_plant}) => kode_plant === detail.kode_plant).area  : '',
+                    depo: detail.level === 5 && !detail.kode_plant ? '-ARC-' : detail.level === 5 && dataDepo.find(({kode_plant}) => kode_plant === detail.kode_plant) !== undefined ? detail.kode_plant + "-" + dataDepo.find(({kode_plant}) => kode_plant === detail.kode_plant).area  : '',
                     level: detail.level === null ? '' : detail.level,
                     email: detail.email === null ? '' : detail.email,
                     fullname: detail.fullname === null ? '' : detail.fullname
@@ -971,6 +972,7 @@ class MasterUser extends Component {
                                     onBlur={handleBlur("depo")}
                                     >
                                         <option>-Pilih Depo-</option>
+                                        <option value="-ARC-">AR Central (area diatur di Mapping AR Central)</option>
                                         {dataDepo.length !== 0 && dataDepo.map(item => {
                                             return (
                                                 <option value={item.kode_plant + '-' + item.area}>{item.kode_plant + '-' + item.area}</option>

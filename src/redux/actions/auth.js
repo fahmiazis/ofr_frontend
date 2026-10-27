@@ -34,6 +34,14 @@ export default {
     return { type: 'LOGOUT' }
   },
 
+  switchArea: (kodePlant) => ({
+    type: 'SWITCH_AREA',
+    payload: http().post('/auth/switch-area', {
+      refresh_token: localStorage.getItem('refresh_token'),
+      kode_plant: kodePlant
+    })
+  }),
+
   setToken: (token) => ({
     type: 'SET_TOKEN',
     payload: { token }

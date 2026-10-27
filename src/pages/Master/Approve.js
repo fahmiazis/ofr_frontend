@@ -546,6 +546,7 @@ class Approve extends Component {
                                     <option>-Pilih Jenis Approval-</option>
                                     <option value='Pengajuan Klaim'>Pengajuan Klaim</option>
                                     <option value='Pengajuan Ops'>Pengajuan Ops</option>
+                                    <option value='Pengajuan Ops ARC'>Pengajuan Ops ARC</option>
                                     <option value='Pengajuan IKK'>Pengajuan IKK</option>
                                     <option value='Ajuan Bayar'>Ajuan Bayar</option>
                                 </Input>
@@ -652,6 +653,7 @@ class Approve extends Component {
                                     <option>-Pilih Jenis Approval-</option>
                                     <option value='Pengajuan Klaim'>Pengajuan Klaim</option>
                                     <option value='Pengajuan Ops'>Pengajuan Ops</option>
+                                    <option value='Pengajuan Ops ARC'>Pengajuan Ops ARC</option>
                                     <option value='Pengajuan IKK'>Pengajuan IKK</option>
                                     <option value='Ajuan Bayar'>Ajuan Bayar</option>
                                 </Input>

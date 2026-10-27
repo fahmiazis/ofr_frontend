@@ -60,6 +60,7 @@ const masterMenu = {
         { route: 'taxcode', label: 'Master Taxcode', icon: BsClipboardData },
         { route: 'tarif', label: 'Master Tarif', icon: FaTicketAlt },
         { route: 'configtrans', label: 'Konfigurasi Transaksi', icon: FiSliders },
+        { route: 'arc', label: 'Mapping AR Central', icon: FiUser },
         { route: 'user', label: 'Master User', icon: FiUser },
         { route: 'vendor', label: 'Master Vendor', icon: BsClipboardData },
         { route: 'reservoir', label: 'Reservoir', icon: BsClipboardData },
@@ -156,7 +157,13 @@ class NewNavbar extends Component {
         const pathname = (this.props.location && this.props.location.pathname) || '/'
         const current = pathname.replace(/^\//, '').split('/')[0]
 
-        const mainMenu = [
+        // user AR Central hanya mengajukan operasional atas nama area
+        // SPV ARC (53) & ROM ARC (54) hanya approve ajuan operasional AR Central
+        const isArc = localStorage.getItem('arc') === '1' || level === '53' || level === '54'
+        const mainMenu = isArc ? [
+            { route: '', label: 'Home', icon: BsFillHouseDoorFill },
+            { route: 'navops', label: 'Operasional', icon: FiTruck },
+        ] : [
             { route: '', label: 'Home', icon: BsFillHouseDoorFill },
             ...(level !== '4' && level !== '14' ? [{ route: 'navklaim', label: 'Klaim', icon: FaHandshake }] : []),
             { route: 'navkasbon', label: 'Kasbon', icon: FaCashRegister },

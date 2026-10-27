@@ -35,6 +35,7 @@ const authState = {
     { route: 'taxcode', level: [1, 102] },
     { route: 'glikk', level: [1] },
     { route: 'scylla', level: [1] },
+    { route: 'arc', level: [1] },
     { route: 'verifven', level: [4, 14, 8, 7, 17, 2, 9, 1, 5, 6] }
   ]
 }
@@ -59,6 +60,9 @@ export default (state = authState, action) => {
       localStorage.setItem('kode', user.kode_plant)
       localStorage.setItem('id', user.id)
       localStorage.setItem('role', user.role)
+      // user AR Central: kode = area yang sedang diwakili
+      localStorage.setItem('arc', user.arc ? '1' : '0')
+      localStorage.setItem('arc_area', JSON.stringify(user.arc_area || []))
 
       return {
         ...state,
@@ -89,6 +93,17 @@ export default (state = authState, action) => {
       // refresh token expired → paksa logout
       localStorage.clear()
       return { ...authState, isLogin: false }
+    }
+
+    // ── ganti area user AR Central ────────────────────────────────────────────
+    case 'SWITCH_AREA_FULFILLED': {
+      const { access_token, kode_plant, arc_area } = action.payload.data
+
+      localStorage.setItem('token', access_token)
+      localStorage.setItem('kode', kode_plant)
+      localStorage.setItem('arc_area', JSON.stringify(arc_area || []))
+
+      return { ...state, token: access_token }
     }
 
     case 'SET_TOKEN': {

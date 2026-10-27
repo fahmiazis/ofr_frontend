@@ -38,6 +38,7 @@ import notif from './notif'
 //dashboard
 import dashboard from './dashboard'
 import configTransaksi from './configTransaksi'
+import mappingArc from './mappingArc'
 
 export default combineReducers({
   auth,
@@ -71,5 +72,6 @@ export default combineReducers({
   picklaim,
   spvklaim,
   dashboard,
-  configTransaksi
+  configTransaksi,
+  mappingArc
 })
