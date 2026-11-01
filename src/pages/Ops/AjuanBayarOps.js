@@ -342,8 +342,8 @@ class AjuanBayarOps extends Component {
             route: tipeRoute,
             listData: this.state.listMut
         }
-        await this.props.sendEmail(token, tempno)
-        await this.props.addNotif(token, tempno)
+        // email & notif tidak saling bergantung, jalankan bersamaan
+        await Promise.all([this.props.sendEmail(token, tempno), this.props.addNotif(token, tempno)])
         
         if (tipeTrans === 'submit') {
             this.getDataOps()
